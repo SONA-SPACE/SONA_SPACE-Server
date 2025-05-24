@@ -20,10 +20,27 @@ var path = require("path");
 var cookieParser = require("cookie-parser");
 var logger = require("morgan");
 
+// Authentication middleware
+const authMiddleware = require('./middleware/auth');
+
+// Import all route files
 var indexRouter = require("./routes/index");
 var usersRouter = require("./routes/users");
 var productsRouter = require("./routes/products"); 
 var categoriesRouter = require("./routes/categories");
+var variantsRouter = require("./routes/variants");
+var roomsRouter = require("./routes/rooms");
+var wishlistsRouter = require("./routes/wishlists");
+var ordersRouter = require("./routes/orders");
+var orderStatusRouter = require("./routes/orderStatus");
+var paymentsRouter = require("./routes/payments");
+var contactFormsRouter = require("./routes/contactForms");
+var couponcodesRouter = require("./routes/couponcodes");
+var commentsRouter = require("./routes/comments");
+var newsRouter = require("./routes/news");
+var newsCategoriesRouter = require("./routes/newsCategories");
+var authRouter = require("./routes/auth");
+var debugRouter = require("./routes/debug");
 
 var app = express();
 
@@ -51,19 +68,50 @@ app.get('/health', function(req, res) {
   });
 });
 
+// Base routes
 app.use("/", indexRouter);
-app.use("/users", usersRouter);
+app.use("/api/auth", authRouter);
+
+// API routes - public
 app.use("/api/products", productsRouter);
 app.use("/api/categories", categoriesRouter);
+app.use("/api/variants", variantsRouter);
+app.use("/api/rooms", roomsRouter);
+app.use("/api/news", newsRouter);
+app.use("/api/news-categories", newsCategoriesRouter);
+app.use("/api/contact-forms", contactFormsRouter);
+app.use("/api/comments", commentsRouter);
+app.use("/api/debug", debugRouter);
+
+// API routes - protected
+app.use("/api/users", authMiddleware.verifyToken, usersRouter);
+app.use("/api/wishlists", authMiddleware.verifyToken, wishlistsRouter);
+app.use("/api/orders", authMiddleware.verifyToken, ordersRouter);
+app.use("/api/order-status", authMiddleware.verifyToken, orderStatusRouter);
+app.use("/api/payments", authMiddleware.verifyToken, paymentsRouter);
+app.use("/api/couponcodes", authMiddleware.verifyToken, couponcodesRouter);
 
 app.use(function (req, res, next) {
   next(createError(404));
 });
 
 app.use(function (err, req, res, next) {
+  // Log the error for server-side debugging
+  console.error(err);
+  
+  // Return JSON error response for API requests
+  if (req.path.startsWith('/api/')) {
+    return res.status(err.status || 500).json({
+      error: {
+        message: err.message,
+        status: err.status || 500
+      }
+    });
+  }
+  
+  // Render error page for web requests
   res.locals.message = err.message;
   res.locals.error = req.app.get("env") === "development" ? err : {};
-
   res.status(err.status || 500);
   res.render("error");
 });

@@ -32,10 +32,15 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
-
+ecosystem.config.js
 # vercel
 .vercel
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# config
+start-direct.sh
+start-pm2.sh
+check-dotenv.js

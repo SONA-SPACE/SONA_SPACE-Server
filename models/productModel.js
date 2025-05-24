@@ -3,7 +3,7 @@ const router = express.Router();
 const db = require("../config/database");
 
 //Get all products
-const LIMIT_ALL_PRODUCT = 9;
+const LIMIT_ALL_PRODUCT = 8;
 router.get("/", async (req, res) => {
   try {
     const sql = `SELECT * FROM san_pham WHERE an_hien = 1 ORDER BY ngay ASC LIMIT 0,${LIMIT_ALL_PRODUCT}`;
@@ -16,7 +16,7 @@ router.get("/", async (req, res) => {
 });
 
 //Get Hot Product
-const LIMIT_HOT_PRODUCT = 9;
+const LIMIT_HOT_PRODUCT = 8;
 router.get("/hot", async (req, res) => {
   try {
     const sql = `SELECT * FROM san_pham WHERE an_hien = 1 AND hot = 1 ORDER BY ngay DESC LIMIT 0,${LIMIT_HOT_PRODUCT}`;
@@ -29,7 +29,7 @@ router.get("/hot", async (req, res) => {
 });
 
 //GET product By ID
-const LIMIT_PRODUCT_BYID = 9;
+const LIMIT_PRODUCT_BYID = 8;
 router.get("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);

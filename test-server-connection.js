@@ -3,7 +3,7 @@ const http = require('http');
 // Make a simple request to the root path
 const options = {
   hostname: 'localhost',
-  port: 3500,
+  port: 3501,
   path: '/',
   method: 'GET'
 };

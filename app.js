@@ -11,7 +11,7 @@ if (result.error) {
 
 // Log important environment variables for debugging
 console.log("Environment:", process.env.NODE_ENV || "development");
-console.log("Port:", process.env.PORT || "3500");
+console.log("Port:", process.env.PORT || "3501");
 
 var createError = require("http-errors");
 var express = require("express");

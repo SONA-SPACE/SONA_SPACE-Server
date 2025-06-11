@@ -18,11 +18,11 @@ const endpoints = [
 function makeRequest(path, name) {
   return new Promise((resolve, reject) => {
     console.log(`\n=== Đang kiểm tra ${name} ===`);
-    console.log(`GET http://localhost:3500${path}`);
+    console.log(`GET http://localhost:3501${path}`);
     
     const options = {
       hostname: 'localhost',
-      port: 3500,
+      port: 3501,
       path: path,
       method: 'GET',
       headers: {

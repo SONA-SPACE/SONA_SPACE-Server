@@ -9,7 +9,7 @@ const endpoint = '/api/comments';
 // Make a request to the protected endpoint
 const options = {
   hostname: 'localhost',
-  port: 3500,
+  port: 3501,
   path: endpoint,
   method: 'GET',
   headers: {

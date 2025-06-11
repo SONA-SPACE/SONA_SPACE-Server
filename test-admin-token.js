@@ -6,7 +6,7 @@ const adminToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Mywicm9sZSI6ImF
 // Endpoint đơn giản để kiểm tra
 const options = {
   hostname: 'localhost',
-  port: 3500,
+  port: 3501,
   path: '/api/orders/count',
   method: 'GET',
   headers: {

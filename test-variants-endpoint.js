@@ -3,7 +3,7 @@ const http = require('http');
 // Make a request specifically to the variants endpoint
 const options = {
   hostname: 'localhost',
-  port: 3500,
+  port: 3501,
   path: '/api/variants',
   method: 'GET',
   headers: {

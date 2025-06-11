@@ -6,7 +6,7 @@ const authToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjUsImlhdCI6
 // Cấu hình request
 const options = {
   hostname: 'localhost',
-  port: 3500,
+  port: 3501,
   path: '/api/orders/count',  // Endpoint đơn giản hơn để kiểm tra
   method: 'GET',
   headers: {

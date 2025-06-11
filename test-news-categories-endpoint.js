@@ -3,7 +3,7 @@ const http = require('http');
 // Make a request specifically to the news-categories endpoint
 const options = {
   hostname: 'localhost',
-  port: 3500,
+  port: 3501,
   path: '/api/news-categories',
   method: 'GET',
   headers: {

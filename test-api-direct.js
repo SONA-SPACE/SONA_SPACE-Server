@@ -7,7 +7,7 @@ function testCategoriesEndpoint() {
   // Options for the HTTP request
   const options = {
     hostname: 'localhost',
-    port: 3500,
+    port: 3501,
     path: '/api/categories',
     method: 'GET',
     headers: {
@@ -63,7 +63,7 @@ function testHealthEndpoint() {
   
   const options = {
     hostname: 'localhost',
-    port: 3500,
+    port: 3501,
     path: '/health',
     method: 'GET'
   };

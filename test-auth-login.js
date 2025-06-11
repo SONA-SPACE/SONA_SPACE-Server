@@ -7,14 +7,14 @@ const loginData = {
   password: 'hashed_password_5' // The actual password from the database
 };
 
-console.log('Attempting to login to http://localhost:3500/api/auth/login');
+console.log('Attempting to login to http://localhost:3501/api/auth/login');
 console.log(`Using credentials: ${loginData.email} / ${loginData.password}`);
 
 const data = JSON.stringify(loginData);
 
 const options = {
   hostname: 'localhost',
-  port: 3500,
+  port: 3501,
   path: '/api/auth/login',
   method: 'POST',
   headers: {

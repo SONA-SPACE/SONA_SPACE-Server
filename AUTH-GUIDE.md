@@ -9,7 +9,7 @@ Tài liệu này hướng dẫn cách thực hiện xác thực để truy cập
 Để lấy token xác thực, bạn cần gửi yêu cầu đăng nhập với thông tin tài khoản:
 
 ```bash
-curl -X POST http://localhost:3500/api/auth/login \
+curl -X POST http://localhost:3501/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email": "e.hoang@gmail.com", "password": "hashed_password_5"}'
 ```
@@ -40,7 +40,7 @@ node test-auth-login.js
 Sau khi có token, bạn cần thêm nó vào header `Authorization` với tiền tố `Bearer` cho mỗi yêu cầu API:
 
 ```bash
-curl -X GET http://localhost:3500/api/comments \
+curl -X GET http://localhost:3501/api/comments \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 ```
 
@@ -111,7 +111,7 @@ Các lỗi xác thực có thể gặp:
 ### Endpoint: `POST /api/auth/register`
 
 ```bash
-curl -X POST http://localhost:3500/api/auth/register \
+curl -X POST http://localhost:3501/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "email": "new.user@example.com",
@@ -127,21 +127,21 @@ curl -X POST http://localhost:3500/api/auth/register \
 ### Lấy Danh Sách Người Dùng
 
 ```bash
-curl -X GET http://localhost:3500/api/users \
+curl -X GET http://localhost:3501/api/users \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 ```
 
 ### Xem Chi Tiết Người Dùng
 
 ```bash
-curl -X GET http://localhost:3500/api/users/1 \
+curl -X GET http://localhost:3501/api/users/1 \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 ```
 
 ### Cập Nhật Thông Tin Người Dùng
 
 ```bash
-curl -X PUT http://localhost:3500/api/users/1 \
+curl -X PUT http://localhost:3501/api/users/1 \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
   -H "Content-Type: application/json" \
   -d '{
@@ -154,7 +154,7 @@ curl -X PUT http://localhost:3500/api/users/1 \
 ### Xóa Người Dùng (Chỉ Admin)
 
 ```bash
-curl -X DELETE http://localhost:3500/api/users/1 \
+curl -X DELETE http://localhost:3501/api/users/1 \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 ```
 
@@ -163,14 +163,14 @@ curl -X DELETE http://localhost:3500/api/users/1 \
 ### Lấy Danh Sách Yêu Thích Của Người Dùng Hiện Tại
 
 ```bash
-curl -X GET http://localhost:3500/api/wishlists \
+curl -X GET http://localhost:3501/api/wishlists \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 ```
 
 ### Thêm Sản Phẩm Vào Danh Sách Yêu Thích
 
 ```bash
-curl -X POST http://localhost:3500/api/wishlists \
+curl -X POST http://localhost:3501/api/wishlists \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
   -H "Content-Type: application/json" \
   -d '{"product_id": 131}'
@@ -179,21 +179,21 @@ curl -X POST http://localhost:3500/api/wishlists \
 ### Xóa Sản Phẩm Khỏi Danh Sách Yêu Thích
 
 ```bash
-curl -X DELETE http://localhost:3500/api/wishlists/1 \
+curl -X DELETE http://localhost:3501/api/wishlists/1 \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 ```
 
 ### Xóa Sản Phẩm Khỏi Danh Sách Yêu Thích Theo ID Sản Phẩm
 
 ```bash
-curl -X DELETE http://localhost:3500/api/wishlists/product/131 \
+curl -X DELETE http://localhost:3501/api/wishlists/product/131 \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 ```
 
 ### Kiểm Tra Sản Phẩm Có Trong Danh Sách Yêu Thích Không
 
 ```bash
-curl -X GET http://localhost:3500/api/wishlists/check/131 \
+curl -X GET http://localhost:3501/api/wishlists/check/131 \
   -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 ```
 

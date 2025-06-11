@@ -4,7 +4,7 @@
 
 echo "Checking for processes using important ports..."
 
-for PORT in 3500 3000 8081 8080; do
+for PORT in 3501 3000 8081 8080; do
   echo "Checking port $PORT..."
   
   # Check if port is in use

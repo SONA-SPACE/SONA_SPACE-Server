@@ -90,7 +90,34 @@ router.get('/', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch news' });
   }
 });
+router.get('/views', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
 
+    // Lấy danh sách tin theo view tăng dần, phân trang
+    const [news] = await db.query(`
+      SELECT n.*
+      FROM news n
+      ORDER BY n.news_view DESC
+      LIMIT ?, ?
+    `, [offset, limit]);
+
+    // Trả về dữ liệu có trong response
+    res.json({
+      news,
+      pagination: {
+        currentPage: page,
+        newsPerPage: limit
+        // Có thể thêm tổng số tin nếu cần
+      }
+    });
+  } catch (error) {
+    console.error('Lỗi lấy danh sách tin theo view:', error);
+    res.status(500).json({ error: 'Lấy danh sách tin thất bại' });
+  }
+});
 /**
  * @route   GET /api/news/:id
  * @desc    Lấy chi tiết bài viết

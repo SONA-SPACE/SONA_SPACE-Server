@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const db = require('../config/database');
-const { generateToken } = require('../middleware/auth');
+const { generateToken, verifyToken } = require('../middleware/auth');
 
 /**
  * @route   POST /api/auth/register
@@ -72,7 +72,7 @@ router.post('/login', async (req, res) => {
     
     // Tìm người dùng
     const [users] = await db.query(
-      'SELECT user_id, user_gmail, user_password, user_name, user_role FROM user WHERE user_gmail = ?',
+      'SELECT user_id, user_gmail, user_password, user_name, user_role, user_number, user_address FROM user WHERE user_gmail = ?',
       [email]
     );
     
@@ -114,7 +114,9 @@ router.post('/login', async (req, res) => {
         id: user.user_id,
         email: user.user_gmail,
         full_name: user.user_name,
-        role: user.user_role
+        role: user.user_role,
+        phone: user.user_number,
+        address: user.user_address
       }
     });
   } catch (error) {
@@ -128,7 +130,7 @@ router.post('/login', async (req, res) => {
  * @desc    Lấy thông tin người dùng hiện tại
  * @access  Private
  */
-router.get('/profile', async (req, res) => {
+router.get('/profile', verifyToken, async (req, res) => {
   try {
     // Middleware auth.verifyToken đã đính kèm thông tin người dùng vào req.user
     const [users] = await db.query(

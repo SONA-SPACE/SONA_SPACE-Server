@@ -17,7 +17,7 @@ router.get('/', async (req, res) => {
       FROM room r
       ORDER BY r.room_name ASC
     `);
-    
+
     res.json(rooms);
   } catch (error) {
     console.error('Error fetching rooms:', error);
@@ -26,29 +26,38 @@ router.get('/', async (req, res) => {
 });
 
 /**
- * @route   GET /api/rooms/:id
+ * @route   GET /api/rooms/:slug
  * @desc    Lấy thông tin một phòng
  * @access  Public
  */
-router.get('/:id', async (req, res) => {
+router.get('/:slug', async (req, res) => {
   try {
-    const id = Number(req.params.id);
-    if (isNaN(id)) {
-      return res.status(400).json({ error: 'Invalid room ID' });
+    const slug = req.params.slug;
+    if (!slug) {
+      return res.status(400).json({ error: 'Invalid room slug' });
     }
-    
+
     const [rooms] = await db.query(`
-      SELECT 
-        r.*, 
-        (SELECT COUNT(*) FROM room_product rp WHERE rp.room_id = r.room_id) as product_count
+       SELECT 
+        r.room_id,
+        r.room_name,
+        r.slug,
+        r.room_image,
+        r.room_description,
+        r.created_at,
+        r.updated_at,
+        r.deleted_at,
+        COUNT(rp.product_id) as product_count
       FROM room r
-      WHERE r.room_id = ?
-    `, [id]);
-    
+      LEFT JOIN room_product rp ON r.room_id = rp.room_id
+      WHERE r.slug = ?
+      GROUP BY r.room_id
+    `, [slug]);
+
     if (rooms.length === 0) {
       return res.status(404).json({ error: 'Room not found' });
     }
-    
+
     res.json(rooms[0]);
   } catch (error) {
     console.error('Error fetching room:', error);
@@ -63,26 +72,26 @@ router.get('/:id', async (req, res) => {
  */
 router.post('/', verifyToken, isAdmin, async (req, res) => {
   try {
-    const { name, description, image } = req.body;
-    
-    if (!name) {
-      return res.status(400).json({ error: 'Room name is required' });
+    const { name, description, image, slug } = req.body;
+
+    if (!name || !slug) {
+      return res.status(400).json({ error: 'Room name and slug are required' });
     }
-    
+
     // Kiểm tra tên phòng đã tồn tại chưa
-    const [existingRooms] = await db.query('SELECT room_id FROM room WHERE room_name = ?', [name]);
-    
+    const [existingRooms] = await db.query('SELECT room_id FROM room WHERE room_name = ? AND slug = ?', [name, slug]);
+
     if (existingRooms.length > 0) {
       return res.status(400).json({ error: 'Room name already exists' });
     }
-    
+
     const [result] = await db.query(
-      'INSERT INTO room (room_name, room_description, created_at) VALUES (?, ?, NOW())',
-      [name, description || null]
+      'INSERT INTO room (room_name, room_description, room_image, slug, created_at) VALUES (?, ?, ?, ?, NOW())',
+      [name, description || null, image || null, slug]
     );
-    
+
     const [newRoom] = await db.query('SELECT * FROM room WHERE room_id = ?', [result.insertId]);
-    
+
     res.status(201).json({
       message: 'Room created successfully',
       room: newRoom[0]
@@ -98,44 +107,45 @@ router.post('/', verifyToken, isAdmin, async (req, res) => {
  * @desc    Cập nhật thông tin phòng
  * @access  Private (Admin only)
  */
-router.put('/:id', verifyToken, isAdmin, async (req, res) => {
+// verifyToken, isAdmin,
+router.put('/:slug', verifyToken, isAdmin, async (req, res) => {
   try {
-    const id = Number(req.params.id);
-    if (isNaN(id)) {
-      return res.status(400).json({ error: 'Invalid room ID' });
+    const slug = req.params.slug;
+    if (!slug) {
+      return res.status(400).json({ error: 'Invalid room slug' });
     }
-    
+
     const { name, description } = req.body;
-    
+
     // Kiểm tra phòng tồn tại
-    const [existingRoom] = await db.query('SELECT room_id FROM room WHERE room_id = ?', [id]);
-    
+    const [existingRoom] = await db.query('SELECT room_id FROM room WHERE slug = ?', [slug]);
+
     if (existingRoom.length === 0) {
       return res.status(404).json({ error: 'Room not found' });
     }
-    
+
     // Kiểm tra tên mới có trùng với phòng khác không
     if (name) {
       const [duplicateName] = await db.query(
         'SELECT room_id FROM room WHERE room_name = ? AND room_id != ?',
-        [name, id]
+        [name, slug]
       );
-      
+
       if (duplicateName.length > 0) {
         return res.status(400).json({ error: 'Room name already exists' });
       }
     }
-    
+
     await db.query(`
       UPDATE room SET
         room_name = COALESCE(?, room_name),
         room_description = COALESCE(?, room_description),
         updated_at = NOW()
-      WHERE room_id = ?
-    `, [name || null, description || null, id]);
-    
-    const [updatedRoom] = await db.query('SELECT * FROM room WHERE room_id = ?', [id]);
-    
+      WHERE slug = ?
+    `, [name || null, description || null, slug]);
+
+    const [updatedRoom] = await db.query('SELECT * FROM room WHERE slug = ?', [slug]);
+
     res.json({
       message: 'Room updated successfully',
       room: updatedRoom[0]
@@ -147,30 +157,32 @@ router.put('/:id', verifyToken, isAdmin, async (req, res) => {
 });
 
 /**
- * @route   DELETE /api/rooms/:id
+ * @route   DELETE /api/rooms/:slug
  * @desc    Xóa phòng
  * @access  Private (Admin only)
  */
-router.delete('/:id', verifyToken, isAdmin, async (req, res) => {
+router.delete('/:slug', verifyToken, isAdmin, async (req, res) => {
   try {
-    const id = Number(req.params.id);
-    if (isNaN(id)) {
-      return res.status(400).json({ error: 'Invalid room ID' });
+    const slug = req.params.slug;
+    if (!slug) {
+      return res.status(400).json({ error: 'Invalid room slug' });
     }
-    
+
     // Kiểm tra phòng tồn tại
-    const [existingRoom] = await db.query('SELECT room_id FROM room WHERE room_id = ?', [id]);
-    
+    const [existingRoom] = await db.query('SELECT room_id FROM room WHERE slug = ?', [slug]);
+
     if (existingRoom.length === 0) {
       return res.status(404).json({ error: 'Room not found' });
     }
-    
+
+    const roomId = existingRoom[0].room_id;
+
     // Xóa các liên kết với sản phẩm
-    await db.query('DELETE FROM room_product WHERE room_id = ?', [id]);
-    
+    await db.query('DELETE FROM room_product WHERE room_id = ?', [roomId]);
+
     // Xóa phòng
-    await db.query('DELETE FROM room WHERE room_id = ?', [id]);
-    
+    await db.query('DELETE FROM room WHERE room_id = ?', [roomId]);
+
     res.json({ message: 'Room deleted successfully' });
   } catch (error) {
     console.error('Error deleting room:', error);
@@ -183,52 +195,61 @@ router.delete('/:id', verifyToken, isAdmin, async (req, res) => {
  * @desc    Lấy danh sách sản phẩm trong phòng
  * @access  Public
  */
-router.get('/:id/products', async (req, res) => {
+router.get('/:slug/products', async (req, res) => {
   try {
-    const id = Number(req.params.id);
-    if (isNaN(id)) {
-      return res.status(400).json({ error: 'Invalid room ID' });
+    const slug = req.params.slug;
+    if (!slug) {
+      return res.status(400).json({ error: 'Invalid room slug' });
     }
-    
+
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 8;
     const offset = (page - 1) * limit;
-    
-    // Kiểm tra phòng tồn tại
-    const [room] = await db.query('SELECT * FROM room WHERE room_id = ?', [id]);
-    
-    if (room.length === 0) {
+
+    // Kiểm tra phòng tồn tại và lấy room_id
+    const [roomRows] = await db.query('SELECT * FROM room WHERE slug = ?', [slug]);
+
+    if (roomRows.length === 0) {
       return res.status(404).json({ error: 'Room not found' });
     }
-    
-    // Đếm tổng số sản phẩm
-    const [countResult] = await db.query(`
-      SELECT COUNT(*) as total
-      FROM room_product rp
-      JOIN product p ON rp.product_id = p.product_id
-      WHERE rp.room_id = ?
-    `, [id]);
-    
+
+    const room = roomRows[0];
+    const roomId = room.room_id;
+
+    // Đếm tổng sản phẩm trong phòng
+    const [countResult] = await db.query(
+      `SELECT COUNT(*) as total
+       FROM room_product rp
+       JOIN product p ON rp.product_id = p.product_id
+       WHERE rp.room_id = ?`,
+      [roomId]
+    );
+
     const totalProducts = countResult[0].total;
     const totalPages = Math.ceil(totalProducts / limit);
-    
-    // Lấy sản phẩm trong phòng
-    const [products] = await db.query(`
-      SELECT 
-        p.*,
-        c.category_name,
-        (SELECT COUNT(*) FROM comment WHERE product_id = p.product_id) as comment_count,
-        (SELECT AVG(rating) FROM comment WHERE product_id = p.product_id) as average_rating
-      FROM room_product rp
-      JOIN product p ON rp.product_id = p.product_id
-      LEFT JOIN category c ON p.category_id = c.category_id
-      WHERE rp.room_id = ?
-      ORDER BY p.created_at DESC
-      LIMIT ?, ?
-    `, [id, offset, limit]);
-    
+
+    // Truy vấn danh sách sản phẩm
+    const [products] = await db.query(
+      `SELECT 
+          p.*,
+          cat.category_name,
+          (SELECT COUNT(*) FROM comment WHERE product_id = p.product_id) AS comment_count,
+          GROUP_CONCAT(DISTINCT col.color_id ORDER BY col.color_id ASC) AS color_ids,
+          GROUP_CONCAT(DISTINCT col.color_hex ORDER BY col.color_id ASC) AS color_hexs
+        FROM room_product rp
+        JOIN product p ON rp.product_id = p.product_id
+        LEFT JOIN variant_product vp ON p.product_id = vp.product_id
+        LEFT JOIN color col ON vp.color_id = col.color_id
+        LEFT JOIN category cat ON p.category_id = cat.category_id
+        WHERE rp.room_id = ?
+        GROUP BY p.product_id
+        ORDER BY p.created_at DESC
+        LIMIT ?, ?`,
+      [roomId, offset, limit]
+    );
+
     res.json({
-      room: room[0],
+      room,
       products,
       pagination: {
         currentPage: page,
@@ -239,69 +260,85 @@ router.get('/:id/products', async (req, res) => {
         hasPrevPage: page > 1
       }
     });
+
+    console.log('Returned products:', products.length);
   } catch (error) {
     console.error('Error fetching room products:', error);
     res.status(500).json({ error: 'Failed to fetch room products' });
   }
 });
 
+
 /**
  * @route   POST /api/rooms/:id/products
  * @desc    Thêm sản phẩm vào phòng
  * @access  Private (Admin only)
+ * Chưa làm trường hợp nếu sản phẩm đã tồn tại trong phòng thì không thêm vào
  */
-router.post('/:id/products', verifyToken, isAdmin, async (req, res) => {
+router.post('/:slug/products', verifyToken, isAdmin, async (req, res) => {
   try {
-    const roomId = Number(req.params.id);
+    const slug = req.params.slug;
     const { product_ids } = req.body;
-    
-    if (isNaN(roomId)) {
-      return res.status(400).json({ error: 'Invalid room ID' });
+
+    if (!slug) {
+      return res.status(400).json({ error: 'Invalid room slug' });
     }
-    
+
     if (!product_ids || !Array.isArray(product_ids) || product_ids.length === 0) {
       return res.status(400).json({ error: 'Product IDs array is required' });
     }
-    
-    // Kiểm tra phòng tồn tại
-    const [room] = await db.query('SELECT room_id FROM room WHERE room_id = ?', [roomId]);
-    
-    if (room.length === 0) {
+
+    // Lấy room_id từ slug
+    const [roomRows] = await db.query('SELECT room_id FROM room WHERE slug = ?', [slug]);
+
+    if (roomRows.length === 0) {
       return res.status(404).json({ error: 'Room not found' });
     }
-    
+
+    const roomId = roomRows[0].room_id;
+
     // Thêm từng sản phẩm vào phòng
     const addedProducts = [];
     const existingProducts = [];
-    
+    const invalidProducts = [];
+
     for (const productId of product_ids) {
       // Kiểm tra sản phẩm tồn tại
-      const [product] = await db.query('SELECT product_id FROM product WHERE product_id = ?', [productId]);
-      
-      if (product.length === 0) {
-        continue; // Bỏ qua sản phẩm không tồn tại
-      }
-      
-      // Kiểm tra liên kết đã tồn tại chưa
-      const [existing] = await db.query(
-        'SELECT * FROM room_product WHERE room_id = ? AND product_id = ?', 
-        [roomId, productId]
-      );
-      
-      if (existing.length > 0) {
-        existingProducts.push(productId);
+      const [productRows] = await db.query('SELECT product_id FROM product WHERE product_id = ?', [productId]);
+      if (productRows.length === 0) {
+        invalidProducts.push(productId);
         continue;
       }
-      
-      // Thêm liên kết
+
+      // Kiểm tra nếu đã tồn tại
+      const [existing] = await db.query(
+        'SELECT 1 FROM room_product WHERE room_id = ? AND product_id = ?',
+        [roomId, productId]
+      );
+
+      if (existing.length > 0) {
+        existingProducts.push(productId);
+        return res.status(400).json({ error: `Product ID ${productId} already exists in this room` });
+      }
+
+      // Thêm vào room_product
       await db.query(
         'INSERT INTO room_product (room_id, product_id) VALUES (?, ?)',
         [roomId, productId]
       );
-      
+
       addedProducts.push(productId);
     }
-    
+
+    if (
+      addedProducts.length === 0 &&
+      existingProducts.length === 0 &&
+      invalidProducts.length > 0
+    ) {
+      return res.status(400).json({ error: 'No products to add or existing or invalid', invalid_products: invalidProducts });
+    }
+
+
     res.json({
       message: 'Products added to room successfully',
       added_count: addedProducts.length,
@@ -314,36 +351,46 @@ router.post('/:id/products', verifyToken, isAdmin, async (req, res) => {
   }
 });
 
+
 /**
  * @route   DELETE /api/rooms/:roomId/products/:productId
  * @desc    Xóa sản phẩm khỏi phòng
  * @access  Private (Admin only)
  */
-router.delete('/:roomId/products/:productId', verifyToken, isAdmin, async (req, res) => {
+router.delete('/:slug/products/:productId', verifyToken, isAdmin, async (req, res) => {
   try {
-    const roomId = Number(req.params.roomId);
+    const slug = req.params.slug;
     const productId = Number(req.params.productId);
-    
-    if (isNaN(roomId) || isNaN(productId)) {
-      return res.status(400).json({ error: 'Invalid room ID or product ID' });
+
+    if (!slug || isNaN(productId)) {
+      return res.status(400).json({ error: 'Invalid room slug or product ID' });
     }
-    
+
+    // Lấy room_id từ slug
+    const [roomRows] = await db.query('SELECT room_id FROM room WHERE slug = ?', [slug]);
+
+    if (roomRows.length === 0) {
+      return res.status(404).json({ error: 'Room not found' });
+    }
+
+    const roomId = roomRows[0].room_id;
+
     // Kiểm tra liên kết tồn tại
     const [existing] = await db.query(
       'SELECT * FROM room_product WHERE room_id = ? AND product_id = ?',
       [roomId, productId]
     );
-    
+
     if (existing.length === 0) {
       return res.status(404).json({ error: 'Product not found in room' });
     }
-    
+
     // Xóa liên kết
     await db.query(
       'DELETE FROM room_product WHERE room_id = ? AND product_id = ?',
       [roomId, productId]
     );
-    
+
     res.json({ message: 'Product removed from room successfully' });
   } catch (error) {
     console.error('Error removing product from room:', error);

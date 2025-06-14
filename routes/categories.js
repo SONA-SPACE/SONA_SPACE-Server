@@ -11,7 +11,7 @@ const { verifyToken, isAdmin } = require("../middleware/auth");
 router.get("/", async (req, res) => {
   try {
     console.log("Fetching categories...");
-    
+
     const sql = `
       SELECT 
         c.*,
@@ -19,13 +19,13 @@ router.get("/", async (req, res) => {
       FROM category c
       ORDER BY c.category_name ASC
     `;
-    
+
     console.log("SQL Query:", sql);
-    
+
     try {
       const [categories] = await db.query(sql);
       console.log(`Found ${categories.length} categories`);
-      
+
       return res.json(categories);
     } catch (dbError) {
       console.error("Database error:", dbError);
@@ -34,7 +34,7 @@ router.get("/", async (req, res) => {
       console.error("SQL Error Message:", dbError.message);
       console.error("SQL Error State:", dbError.sqlState);
       console.error("SQL Error Stack:", dbError.stack);
-      
+
       throw new Error(`Database error: ${dbError.message}`);
     }
   } catch (error) {
@@ -48,23 +48,24 @@ router.get("/", async (req, res) => {
  * @desc    Lấy thông tin một danh mục theo ID
  * @access  Public
  */
-router.get("/:id", async (req, res) => {
-  let id = Number(req.params.id);
-  if (isNaN(id)) return res.status(400).json({ message: "ID phải là số" });
+router.get("/:slug", async (req, res) => {
+  let slug = req.params.slug;
+  if (!slug) return res.status(400).json({ message: "Slug is required" });
   try {
     const sql = `
       SELECT 
         c.*,
+        c.slug,
         (SELECT COUNT(*) FROM product WHERE category_id = c.category_id) as product_count
       FROM category c
-      WHERE c.category_id = ?
+      WHERE c.slug = ?
     `;
-    const [category] = await db.query(sql, [id]);
-    
+    const [category] = await db.query(sql, [slug]);
+
     if (!category || category.length === 0) {
       return res.status(404).json({ error: "Category not found" });
     }
-    
+
     res.json(category[0]);
   } catch (error) {
     console.error("Error fetching category:", error);
@@ -79,36 +80,34 @@ router.get("/:id", async (req, res) => {
  */
 router.post("/", verifyToken, isAdmin, async (req, res) => {
   try {
-    const { name, description, image } = req.body;
-    
-    if (!name) {
-      return res.status(400).json({ error: "Category name is required" });
+    const { name, description, image, slug } = req.body;
+
+    if (!name || !slug) {
+      return res.status(400).json({ error: "Category name and slug are required" });
     }
-    
+
     // Kiểm tra tên danh mục đã tồn tại chưa
     const [existingCategories] = await db.query(
-      'SELECT category_id FROM category WHERE category_name = ?',
-      [name]
+      'SELECT category_id FROM category WHERE slug = ?',
+      [slug]
     );
-    
+
     if (existingCategories.length > 0) {
-      return res.status(400).json({ error: "Category name already exists" });
+      return res.status(400).json({ error: "Category slug already exists" });
     }
-    
+
     // Tạo danh mục mới
-    const [result] = await db.query(
-      'INSERT INTO category (category_name, category_image, category_status, created_at) VALUES (?, ?, ?, NOW())',
-      [name, image || null, 1]
+    await db.query(
+      'INSERT INTO category (category_name, category_image, category_status, created_at, slug) VALUES (?, ?, ?, NOW(), ?)',
+      [name, image || null, 1, slug]
     );
-    
-    const categoryId = result.insertId;
-    
+
     // Lấy thông tin danh mục vừa tạo
     const [newCategory] = await db.query(
-      'SELECT * FROM category WHERE category_id = ?',
-      [categoryId]
+      'SELECT * FROM category WHERE slug = ?',
+      [slug]
     );
-    
+
     res.status(201).json({
       message: "Category created successfully",
       category: newCategory[0]
@@ -124,35 +123,35 @@ router.post("/", verifyToken, isAdmin, async (req, res) => {
  * @desc    Cập nhật thông tin danh mục
  * @access  Private (Admin only)
  */
-router.put("/:id", verifyToken, isAdmin, async (req, res) => {
-  const id = Number(req.params.id);
-  if (isNaN(id)) return res.status(400).json({ message: "ID phải là số" });
-  
+router.put("/:slug", verifyToken, isAdmin, async (req, res) => {
+  const slug = req.params.slug;
+  if (!slug) return res.status(400).json({ message: "Slug is required" });
+
   try {
     const { name, description, image } = req.body;
-    
+
     // Kiểm tra danh mục tồn tại
     const [existingCategory] = await db.query(
-      'SELECT category_id FROM category WHERE category_id = ?',
-      [id]
+      'SELECT category_id FROM category WHERE slug = ?',
+      [slug]
     );
-    
+
     if (!existingCategory.length) {
       return res.status(404).json({ error: "Category not found" });
     }
-    
+
     // Kiểm tra tên mới có trùng với danh mục khác không
     if (name) {
       const [duplicateName] = await db.query(
-        'SELECT category_id FROM category WHERE category_name = ? AND category_id != ?',
-        [name, id]
+        'SELECT category_id FROM category WHERE category_name = ? AND slug != ?',
+        [name, slug]
       );
-      
+
       if (duplicateName.length > 0) {
         return res.status(400).json({ error: "Category name already exists" });
       }
     }
-    
+
     // Cập nhật thông tin danh mục
     await db.query(`
       UPDATE category 
@@ -160,19 +159,19 @@ router.put("/:id", verifyToken, isAdmin, async (req, res) => {
         category_name = COALESCE(?, category_name),
         category_image = COALESCE(?, category_image),
         updated_at = NOW()
-      WHERE category_id = ?
+      WHERE slug = ?
     `, [
-      name || null, 
+      name || null,
       image || null,
-      id
+      slug
     ]);
-    
+
     // Lấy thông tin danh mục đã cập nhật
     const [updatedCategory] = await db.query(
-      'SELECT * FROM category WHERE category_id = ?',
-      [id]
+      'SELECT * FROM category WHERE slug = ?',
+      [slug]
     );
-    
+
     res.json({
       message: "Category updated successfully",
       category: updatedCategory[0]
@@ -188,36 +187,42 @@ router.put("/:id", verifyToken, isAdmin, async (req, res) => {
  * @desc    Xóa danh mục
  * @access  Private (Admin only)
  */
-router.delete("/:id", verifyToken, isAdmin, async (req, res) => {
-  const id = Number(req.params.id);
-  if (isNaN(id)) return res.status(400).json({ message: "ID phải là số" });
-  
+router.delete("/:slug", verifyToken, isAdmin, async (req, res) => {
+  const slug = req.params.slug;
+  if (!slug) return res.status(400).json({ message: "Slug is required" });
+
   try {
     // Kiểm tra danh mục tồn tại
     const [existingCategory] = await db.query(
-      'SELECT category_id FROM category WHERE category_id = ?',
-      [id]
+      'SELECT category_id FROM category WHERE slug = ?',
+      [slug]
     );
-    
+
     if (!existingCategory.length) {
       return res.status(404).json({ error: "Category not found" });
     }
-    
+
+    const categoryId = existingCategory[0].category_id;
+    console.log("Category ID:", categoryId);
+
     // Kiểm tra xem danh mục có sản phẩm nào không
     const [products] = await db.query(
-      'SELECT product_id FROM product WHERE category_id = ? LIMIT 1',
-      [id]
+      'SELECT product_id FROM product WHERE category_id = ? ',
+      [categoryId]
     );
-    
+
     if (products.length > 0) {
-      return res.status(400).json({ 
-        error: "Cannot delete category with products. Remove or reassign products first." 
+      const productIds = products.map(p => p.product_id).join(', ');
+      return res.status(400).json({
+        error: "Cannot delete category with products. Remove or reassign products first.",
+        totalProducts: products.length,
+        productIds: productIds
       });
     }
-    
+
     // Xóa danh mục
-    await db.query('DELETE FROM category WHERE category_id = ?', [id]);
-    
+    await db.query('DELETE FROM category WHERE slug = ?', [slug]);
+
     res.json({ message: "Category deleted successfully" });
   } catch (error) {
     console.error("Error deleting category:", error);
@@ -230,48 +235,55 @@ router.delete("/:id", verifyToken, isAdmin, async (req, res) => {
  * @desc    Lấy tất cả sản phẩm thuộc một danh mục
  * @access  Public
  */
-router.get("/:id/products", async (req, res) => {
-  const id = Number(req.params.id);
-  if (isNaN(id)) return res.status(400).json({ message: "ID phải là số" });
-  
+router.get("/:slug/products", async (req, res) => {
+  const slug = req.params.slug;
+  if (!slug) return res.status(400).json({ message: "Slug is required" });
+
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 8;
     const offset = (page - 1) * limit;
     const sort_by = req.query.sort_by || 'created_at';
     const sort_order = req.query.sort_order?.toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
-    
+
     // Kiểm tra danh mục tồn tại
     const [category] = await db.query(
-      'SELECT category_id, category_name FROM category WHERE category_id = ?',
-      [id]
+      'SELECT category_id, category_name FROM category WHERE slug = ?',
+      [slug]
     );
-    
+
+    const categoryId = category[0].category_id;
+
     if (!category.length) {
       return res.status(404).json({ error: "Category not found" });
     }
-    
+
     // Đếm tổng số sản phẩm trong danh mục
     const [countResult] = await db.query(
       'SELECT COUNT(*) as total FROM product WHERE category_id = ?',
-      [id]
+      [categoryId]
     );
-    
+
     const totalProducts = countResult[0].total;
     const totalPages = Math.ceil(totalProducts / limit);
-    
+
     // Lấy sản phẩm theo danh mục
     const [products] = await db.query(`
       SELECT 
         p.*,
+        cat.category_name,
         (SELECT COUNT(*) FROM comment WHERE product_id = p.product_id) as comment_count,
-        (SELECT AVG(rating) FROM comment WHERE product_id = p.product_id) as average_rating
+        GROUP_CONCAT(DISTINCT col.color_id ORDER BY col.color_id ASC) AS color_ids,
+        GROUP_CONCAT(DISTINCT col.color_hex ORDER BY col.color_id ASC) AS color_hexs
       FROM product p
+      LEFT JOIN category cat ON p.category_id = cat.category_id
+      LEFT JOIN variant_product vp ON p.product_id = vp.product_id
+      LEFT JOIN color col ON vp.color_id = col.color_id
       WHERE p.category_id = ?
-      ORDER BY ${sort_by} ${sort_order}
+      GROUP BY p.product_id
+      ORDER BY p.created_at DESC
       LIMIT ?, ?
-    `, [id, offset, limit]);
-    
+    `, [categoryId, offset, limit]);
     res.json({
       category: category[0],
       products,

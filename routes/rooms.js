@@ -70,7 +70,7 @@ router.get('/:slug', async (req, res) => {
  * @desc    Tạo phòng mới
  * @access  Private (Admin only)
  */
-router.post('/', async (req, res) => {
+router.post('/', verifyToken, isAdmin, async (req, res) => {
   try {
     const { name, description, image, slug } = req.body;
 
@@ -108,7 +108,7 @@ router.post('/', async (req, res) => {
  * @access  Private (Admin only)
  */
 // verifyToken, isAdmin,
-router.put('/:slug', async (req, res) => {
+router.put('/:slug', verifyToken, isAdmin, async (req, res) => {
   try {
     const slug = req.params.slug;
     if (!slug) {
@@ -161,7 +161,7 @@ router.put('/:slug', async (req, res) => {
  * @desc    Xóa phòng
  * @access  Private (Admin only)
  */
-router.delete('/:slug', async (req, res) => {
+router.delete('/:slug', verifyToken, isAdmin, async (req, res) => {
   try {
     const slug = req.params.slug;
     if (!slug) {
@@ -275,7 +275,7 @@ router.get('/:slug/products', async (req, res) => {
  * @access  Private (Admin only)
  * Chưa làm trường hợp nếu sản phẩm đã tồn tại trong phòng thì không thêm vào
  */
-router.post('/:slug/products', async (req, res) => {
+router.post('/:slug/products', verifyToken, isAdmin, async (req, res) => {
   try {
     const slug = req.params.slug;
     const { product_ids } = req.body;
@@ -357,7 +357,7 @@ router.post('/:slug/products', async (req, res) => {
  * @desc    Xóa sản phẩm khỏi phòng
  * @access  Private (Admin only)
  */
-router.delete('/:slug/products/:productId', async (req, res) => {
+router.delete('/:slug/products/:productId', verifyToken, isAdmin, async (req, res) => {
   try {
     const slug = req.params.slug;
     const productId = Number(req.params.productId);

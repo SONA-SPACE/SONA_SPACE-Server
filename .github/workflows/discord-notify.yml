@@ -1,0 +1,22 @@
+name: Notify Discord on Main Merge
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get latest commit message
+        id: get_commit
+        run: |
+          echo "COMMIT_MSG=$(git log -1 --pretty=format:'%s')" >> $GITHUB_ENV
+
+      - name: Notify Discord
+        run: |
+          curl -H "Content-Type: application/json" \
+               -X POST \
+               -d "{\"content\": \"🚀 Có một merge mới vào **main** trong repo: $GITHUB_REPOSITORY\n\n📝 Commit: **${{ env.COMMIT_MSG }}**\n🔗 Repo: https://github.com/${{ github.repository }}\"}" \
+               ${{ secrets.DISCORD_WEBHOOK }}

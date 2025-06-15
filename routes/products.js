@@ -169,82 +169,232 @@ router.get("/", async (req, res) => {
  * @desc    Lấy thông tin chi tiết một sản phẩm
  * @access  Public
  */
-router.get("/:id", async (req, res) => {
-  let id = Number(req.params.id);
-  if (isNaN(id)) return res.status(400).json({ message: "ID phải là số" });
+// router.get("/:slug", async (req, res) => {
+//   const slug = req.params.slug;
+//   if (!slug) return res.status(400).json({ message: "Slug không hợp lệ" });
+
+//   try {
+//     // Lấy sản phẩm chính + tên danh mục
+//     const [productRows] = await db.query(
+//       `
+//       SELECT
+//         p.*,
+//         c.category_name
+//       FROM product p
+//       LEFT JOIN category c ON p.category_id = c.category_id
+//       WHERE p.product_slug = ? AND p.product_status = 1
+//       `,
+//       [slug]
+//     );
+
+//     if (!productRows.length) {
+//       return res.status(404).json({ error: "Product not found" });
+//     }
+
+//     const product = productRows[0];
+
+//     // Lấy tất cả biến thể màu sắc (qua bảng color)
+//     // Truy vấn lấy biến thể
+//     const [variants] = await db.query(
+//       `
+//   SELECT
+//     c.color_id,
+//     c.color_name,
+//     c.color_hex,
+//     c.variant_product_price,
+//     c.variant_product_price_sale,
+//     c.variant_product_quantity,
+//     c.variant_product_slug,
+//     c.variant_product_list_image
+//   FROM variant_product vp
+//   JOIN color c ON vp.color_id = c.color_id
+//   WHERE vp.product_id = ?
+//   `,
+//       [product.product_id]
+//     );
+
+//     // Lấy sản phẩm liên quan
+//     const [relatedProducts] = await db.query(
+//       `
+//       SELECT
+//         p.product_id,
+//         p.product_name,
+//         p.product_slug
+//       FROM product p
+//       WHERE p.category_id = ? AND p.product_id != ? AND p.product_status = 1
+//       LIMIT 4
+//     `,
+//       [product.category_id, product.product_id]
+//     );
+
+//     // Trả về dữ liệu
+
+//     res.json({
+//       product: {
+//         id: product.product_id,
+//         name: product.product_name,
+//         description: product.product_description,
+//         slug: product.product_slug,
+//         // image: product.product_image,
+//         // price_sale: product.product_price_sale,
+//         sold: product.product_sold,
+//         view: product.product_view,
+//         rating: product.product_rating,
+//         materials: product.variant_materials,
+//         height: product.variant_height,
+//         width: product.variant_width,
+//         depth: product.variant_depth,
+//         seating_height: product.variant_seating_height,
+//         max_weight_load: product.variant_maximum_weight_load,
+//         status: product.product_status,
+//         category_id: product.category_id,
+//         category_name: product.category_name,
+//         created_at: product.created_at,
+//         updated_at: product.updated_at,
+//       },
+
+//       variants: variants.map((v) => ({
+//         color_id: v.color_id,
+//         color_name: v.color_name,
+//         color_hex: v.color_hex,
+//         price: v.variant_product_price,
+//         price_sale: v.variant_product_price_sale,
+//         quantity: v.variant_product_quantity,
+//         slug: v.variant_product_slug,
+//         list_image: v.variant_product_list_image,
+//       })),
+
+//       related_products: relatedProducts.map((rp) => ({
+//         id: rp.product_id,
+//         name: rp.product_name,
+//         // image: rp.product_image,
+//         // price: rp.product_price,
+//         // price_sale: rp.product_price_sale,
+//         slug: rp.product_slug,
+//       })),
+//     });
+//   } catch (error) {
+//     console.error("Error fetching product details:", error);
+//     res.status(500).json({ error: "Failed to fetch product details" });
+//   }
+// });
+router.get("/:slug", async (req, res) => {
+  const slug = req.params.slug;
+  if (!slug) return res.status(400).json({ message: "Slug không hợp lệ" });
 
   try {
-    // Lấy thông tin sản phẩm
-    const productQuery = `
+    // 1. Lấy sản phẩm chính + tên danh mục
+    const [productRows] = await db.query(
+      `
       SELECT 
         p.*,
-        c.category_name as category_name
+        c.category_name
       FROM product p
       LEFT JOIN category c ON p.category_id = c.category_id
-      WHERE p.product_id = ? AND p.product_status = 1
-    `;
-
-    const [productResult] = await db.query(productQuery, [id]);
-
-    if (!productResult.length) {
+      WHERE p.product_slug = ? AND p.product_status = 1
+      `,
+      [slug]
+    );
+    if (!productRows.length) {
       return res.status(404).json({ error: "Product not found" });
     }
+    const product = productRows[0];
 
-    const product = productResult[0];
+    // 2. Lấy tất cả biến thể màu sắc (có cả color_priority)
+    const [variants] = await db.query(
+      `
+     SELECT
+  vp.variant_id,
+  c.color_id,
+  c.color_name,
+  c.color_hex,
+  c.color_priority,
+  c.variant_product_price     AS price,
+  c.variant_product_price_sale AS price_sale,
+  c.variant_product_quantity  AS quantity,
+  c.variant_product_slug      AS slug,
+  c.variant_product_list_image AS list_image
+FROM variant_product vp
+JOIN color c ON vp.color_id = c.color_id
+WHERE vp.product_id = ?
+ORDER BY c.color_priority DESC
+      `,
+      [product.product_id]
+    );
 
-    // Transform product to standard format
-    const transformedProduct = {
-      id: product.product_id,
-      name: product.product_name,
-      description: product.product_description,
-      price: product.product_price,
-      price_sale: product.product_price_sale,
-      image: product.product_image,
-      list_image: product.product_list_image,
-      slug: product.product_slug,
-      category_id: product.category_id,
-      category_name: product.category_name,
-      status: product.product_status,
-      priority: product.product_priority,
-      view: product.product_view,
-      rating: product.product_rating,
-      created_at: product.created_at,
-      updated_at: product.updated_at,
-    };
+    // 3. Chọn biến thể mặc định: ưu tiên color_priority = 1
+    let defaultVariant = variants.find((v) => v.color_priority === 1);
+    if (!defaultVariant && variants.length > 0) {
+      defaultVariant = variants[0];
+    }
 
-    // Lấy sản phẩm liên quan (cùng danh mục)
+    // 4. Lấy sản phẩm liên quan
     const [relatedProducts] = await db.query(
       `
-      SELECT p.*
+      SELECT
+        p.product_id,
+        p.product_name,
+        p.product_slug
       FROM product p
       WHERE p.category_id = ? AND p.product_id != ? AND p.product_status = 1
       LIMIT 4
-    `,
-      [product.category_id, id]
+      `,
+      [product.category_id, product.product_id]
     );
 
-    // Transform related products
-    const transformedRelatedProducts = relatedProducts.map((relProduct) => {
-      return {
-        id: relProduct.product_id,
-        name: relProduct.product_name,
-        description: relProduct.product_description,
-        price: relProduct.product_price,
-        price_sale: relProduct.product_price_sale,
-        image: relProduct.product_image,
-        category_id: relProduct.category_id,
-        slug: relProduct.product_slug,
-        created_at: relProduct.created_at,
-      };
-    });
-
+    // 5. Trả về response
     res.json({
-      product: transformedProduct,
-      related_products: transformedRelatedProducts,
+      product: {
+        id: product.product_id,
+        name: product.product_name,
+        description: product.product_description,
+        slug: product.product_slug,
+        sold: product.product_sold,
+        view: product.product_view,
+        rating: product.product_rating,
+        materials: product.variant_materials,
+        height: product.variant_height,
+        width: product.variant_width,
+        depth: product.variant_depth,
+        seating_height: product.variant_seating_height,
+        max_weight_load: product.variant_maximum_weight_load,
+        status: product.product_status,
+        sold: product.product_sold, // trường mới bạn thêm
+        category_id: product.category_id,
+        category_name: product.category_name,
+        created_at: product.created_at,
+        updated_at: product.updated_at,
+        // giá và ảnh mặc định theo variant ưu tiên
+        // defaultPrice: defaultVariant?.price ?? null,
+        // defaultPriceSale: defaultVariant?.price_sale ?? null,
+        // defaultImage: defaultVariant?.list_image?.split(",")[0]?.trim() ?? null,
+        // defaultSlug: defaultVariant?.slug ?? null,
+        // // defaultColorId: defaultVariant?.color_id ?? null,
+        // defaultColorName: defaultVariant?.color_name ?? null,
+        // defaultColorHex: defaultVariant?.color_hex ?? null,
+        // defaultQuantity: defaultVariant?.quantity ?? null,
+      },
+      variants: variants.map((v) => ({
+        variantId: v.variant_id,
+        colorId: v.color_id,
+        colorName: v.color_name,
+        colorHex: v.color_hex,
+        colorPriority: v.color_priority,
+        price: v.price,
+        priceSale: v.price_sale,
+        quantity: v.quantity,
+        slug: v.slug,
+        listImage: v.list_image,
+      })),
+      related_products: relatedProducts.map((rp) => ({
+        id: rp.product_id,
+        name: rp.product_name,
+        slug: rp.product_slug,
+      })),
     });
   } catch (error) {
-    console.error("Error fetching product:", error);
-    res.status(500).json({ error: "Failed to fetch product" });
+    console.error("Error fetching product details:", error);
+    res.status(500).json({ error: "Failed to fetch product details" });
   }
 });
 

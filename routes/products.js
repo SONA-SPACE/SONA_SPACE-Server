@@ -12,6 +12,19 @@ const LIMIT_PER_PAGE = 8;
  */
 router.get("/", async (req, res) => {
   try {
+    // 1. Lấy tham số page và limit từ query, mặc định là 1 và 8
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 8;
+    const offset = (page - 1) * limit;
+
+    // 2. Truy vấn tổng số sản phẩm (để tính totalPages)
+    const [[{ totalProducts }]] = await db.query(`
+      SELECT COUNT(DISTINCT p.product_id) AS totalProducts
+      FROM product p
+      WHERE p.product_status = 1
+    `);
+
+    // 3. Truy vấn sản phẩm có phân trang
     const query = `
       SELECT 
         p.product_id AS id,
@@ -23,7 +36,6 @@ router.get("/", async (req, res) => {
         p.created_at,
         p.updated_at,
 
-        -- Giá mặc định từ màu có priority = 1
         (
           SELECT col.variant_product_price
           FROM variant_product vp2
@@ -40,7 +52,6 @@ router.get("/", async (req, res) => {
           LIMIT 1
         ) AS price_sale,
 
-        -- Mảng màu hex
         JSON_ARRAYAGG(DISTINCT col.color_hex) AS color_hex
 
       FROM product p
@@ -50,10 +61,12 @@ router.get("/", async (req, res) => {
       WHERE p.product_status = 1
       GROUP BY p.product_id
       ORDER BY p.created_at DESC
+      LIMIT ? OFFSET ?
     `;
 
-    const [products] = await db.query(query);
+    const [products] = await db.query(query, [limit, offset]);
 
+    // 4. Chuẩn hóa dữ liệu đầu ra
     const result = products.map((item) => ({
       id: item.id,
       name: item.name,
@@ -68,7 +81,16 @@ router.get("/", async (req, res) => {
       color_hex: JSON.parse(item.color_hex),
     }));
 
-    res.json({ products: result });
+    // 5. Phản hồi phân trang chuẩn REST
+    res.json({
+      products: result,
+      pagination: {
+        totalProducts,
+        currentPage: page,
+        productsPerPage: limit,
+        totalPages: Math.ceil(totalProducts / limit),
+      },
+    });
   } catch (error) {
     console.error("Error fetching products:", error);
     res.status(500).json({ error: "Failed to fetch products" });

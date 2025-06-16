@@ -12,152 +12,63 @@ const LIMIT_PER_PAGE = 8;
  */
 router.get("/", async (req, res) => {
   try {
-    // Lấy các tham số từ query
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || LIMIT_PER_PAGE;
-    const offset = (page - 1) * limit;
-    const category_id = req.query.category_id;
-    const min_price = req.query.min_price;
-    const max_price = req.query.max_price;
-    const sort_by = req.query.sort_by || "created_at";
-    const sort_order =
-      req.query.sort_order?.toUpperCase() === "ASC" ? "ASC" : "DESC";
-    const search = req.query.search;
+    const query = `
+      SELECT 
+        p.product_id AS id,
+        p.product_name AS name,
+        p.product_slug AS slug,
+        p.product_image AS image,
+        p.category_id,
+        c.category_name,
+        p.created_at,
+        p.updated_at,
 
-    // Xây dựng câu truy vấn SQL với điều kiện lọc
-    let conditions = [];
-    let params = [];
+        -- Giá mặc định từ màu có priority = 1
+        (
+          SELECT col.variant_product_price
+          FROM variant_product vp2
+          JOIN color col ON vp2.color_id = col.color_id
+          WHERE vp2.product_id = p.product_id AND col.color_priority = 1
+          LIMIT 1
+        ) AS price,
 
-    // Default condition: only show active products
-    conditions.push("p.product_status = 1");
+        (
+          SELECT col.variant_product_price_sale
+          FROM variant_product vp2
+          JOIN color col ON vp2.color_id = col.color_id
+          WHERE vp2.product_id = p.product_id AND col.color_priority = 1
+          LIMIT 1
+        ) AS price_sale,
 
-    if (category_id) {
-      conditions.push("p.category_id = ?");
-      params.push(category_id);
-    }
+        -- Mảng màu hex
+        JSON_ARRAYAGG(DISTINCT col.color_hex) AS color_hex
 
-    if (min_price) {
-      conditions.push("p.product_price >= ?");
-      params.push(min_price);
-    }
-
-    if (max_price) {
-      conditions.push("p.product_price <= ?");
-      params.push(max_price);
-    }
-
-    if (search) {
-      conditions.push(
-        "(p.product_name LIKE ? OR p.product_description LIKE ?)"
-      );
-      params.push(`%${search}%`, `%${search}%`);
-    }
-
-    const whereClause =
-      conditions.length > 0 ? "WHERE " + conditions.join(" AND ") : "";
-
-    // Đếm tổng số sản phẩm thỏa mãn điều kiện
-    const countQuery = `
-      SELECT COUNT(DISTINCT p.product_id) as total 
       FROM product p
-      ${whereClause}
+      LEFT JOIN category c ON p.category_id = c.category_id
+      LEFT JOIN variant_product vp ON p.product_id = vp.product_id
+      LEFT JOIN color col ON vp.color_id = col.color_id
+      WHERE p.product_status = 1
+      GROUP BY p.product_id
+      ORDER BY p.created_at DESC
     `;
 
-    try {
-      const [countResult] = await db.query(countQuery, params);
-      console.log("Count result:", countResult);
+    const [products] = await db.query(query);
 
-      const totalProducts = countResult[0].total;
-      const totalPages = Math.ceil(totalProducts / limit);
+    const result = products.map((item) => ({
+      id: item.id,
+      name: item.name,
+      slug: item.slug,
+      image: item.image,
+      category_id: item.category_id,
+      category_name: item.category_name,
+      created_at: item.created_at,
+      updated_at: item.updated_at,
+      price: item.price,
+      price_sale: item.price_sale,
+      color_hex: JSON.parse(item.color_hex),
+    }));
 
-      // Truy vấn sản phẩm với phân trang và sắp xếp
-      // const productQuery = `
-      //   SELECT
-      //     p.*,
-      //     c.category_name as category_name
-      //   FROM product p
-      //   LEFT JOIN category c ON p.category_id = c.category_id
-      //   ${whereClause}
-      //   ORDER BY p.${sort_by} ${sort_order}
-      //   LIMIT ?, ?
-      // `;
-      const productQuery = `
-     SELECT 
-  p.*,
-  c.category_name,
-  GROUP_CONCAT(
-    JSON_OBJECT(
-      'color_id', col.color_id,
-      'color_name', col.color_name,
-      'color_hex', col.color_hex,
-      'color_priority', col.color_priority,
-      'variant_id', vp.variant_id,
-      'variant_price', col.variant_product_price,
-      'variant_price_sale', col.variant_product_price_sale,
-      'variant_slug', col.variant_product_slug,
-      'variant_quantity', col.variant_product_quantity,
-      'variant_images', col.variant_product_list_image,
-      'variant_materials', p.variant_materials,
-      'variant_height', p.variant_height,
-      'variant_width', p.variant_width,
-      'variant_depth', p.variant_depth,
-      'variant_seating_height', p.variant_seating_height,
-      'variant_maximum_weight_load', p.variant_maximum_weight_load
-    )
-    ) AS variants
-    FROM product p
-    LEFT JOIN category c ON p.category_id = c.category_id
-    LEFT JOIN variant_product vp ON p.product_id = vp.product_id
-    LEFT JOIN color col ON vp.color_id = col.color_id
-   ${whereClause}
-  GROUP BY p.product_id
-  ORDER BY p.${sort_by} ${sort_order}
-  LIMIT ?, ?
-      `;
-
-      const [products] = await db.query(productQuery, [
-        ...params,
-        offset,
-        limit,
-      ]);
-      const transformedProducts = products.map((product) => {
-        return {
-          id: product.product_id,
-          name: product.product_name,
-          description: product.product_description,
-          image: product.product_image,
-          list_image: product.product_list_image,
-          slug: product.product_slug,
-          category_id: product.category_id,
-          category_name: product.category_name,
-          rating: product.product_rating,
-          view: product.product_view,
-          status: product.product_status,
-          priority: product.product_priority,
-          created_at: product.created_at,
-          updated_at: product.updated_at,
-          variants: product.variants ? JSON.parse(`[${product.variants}]`) : [],
-        };
-      });
-
-      // Trả về kết quả với metadata phân trang
-      res.json({
-        products: transformedProducts,
-        pagination: {
-          currentPage: page,
-          totalPages,
-          totalProducts,
-          productsPerPage: limit,
-          hasNextPage: page < totalPages,
-          hasPrevPage: page > 1,
-        },
-      });
-    } catch (innerError) {
-      console.error("Error in database query:", innerError);
-      res
-        .status(500)
-        .json({ error: "Database query failed", details: innerError.message });
-    }
+    res.json({ products: result });
   } catch (error) {
     console.error("Error fetching products:", error);
     res.status(500).json({ error: "Failed to fetch products" });
@@ -169,115 +80,7 @@ router.get("/", async (req, res) => {
  * @desc    Lấy thông tin chi tiết một sản phẩm
  * @access  Public
  */
-// router.get("/:slug", async (req, res) => {
-//   const slug = req.params.slug;
-//   if (!slug) return res.status(400).json({ message: "Slug không hợp lệ" });
 
-//   try {
-//     // Lấy sản phẩm chính + tên danh mục
-//     const [productRows] = await db.query(
-//       `
-//       SELECT
-//         p.*,
-//         c.category_name
-//       FROM product p
-//       LEFT JOIN category c ON p.category_id = c.category_id
-//       WHERE p.product_slug = ? AND p.product_status = 1
-//       `,
-//       [slug]
-//     );
-
-//     if (!productRows.length) {
-//       return res.status(404).json({ error: "Product not found" });
-//     }
-
-//     const product = productRows[0];
-
-//     // Lấy tất cả biến thể màu sắc (qua bảng color)
-//     // Truy vấn lấy biến thể
-//     const [variants] = await db.query(
-//       `
-//   SELECT
-//     c.color_id,
-//     c.color_name,
-//     c.color_hex,
-//     c.variant_product_price,
-//     c.variant_product_price_sale,
-//     c.variant_product_quantity,
-//     c.variant_product_slug,
-//     c.variant_product_list_image
-//   FROM variant_product vp
-//   JOIN color c ON vp.color_id = c.color_id
-//   WHERE vp.product_id = ?
-//   `,
-//       [product.product_id]
-//     );
-
-//     // Lấy sản phẩm liên quan
-//     const [relatedProducts] = await db.query(
-//       `
-//       SELECT
-//         p.product_id,
-//         p.product_name,
-//         p.product_slug
-//       FROM product p
-//       WHERE p.category_id = ? AND p.product_id != ? AND p.product_status = 1
-//       LIMIT 4
-//     `,
-//       [product.category_id, product.product_id]
-//     );
-
-//     // Trả về dữ liệu
-
-//     res.json({
-//       product: {
-//         id: product.product_id,
-//         name: product.product_name,
-//         description: product.product_description,
-//         slug: product.product_slug,
-//         // image: product.product_image,
-//         // price_sale: product.product_price_sale,
-//         sold: product.product_sold,
-//         view: product.product_view,
-//         rating: product.product_rating,
-//         materials: product.variant_materials,
-//         height: product.variant_height,
-//         width: product.variant_width,
-//         depth: product.variant_depth,
-//         seating_height: product.variant_seating_height,
-//         max_weight_load: product.variant_maximum_weight_load,
-//         status: product.product_status,
-//         category_id: product.category_id,
-//         category_name: product.category_name,
-//         created_at: product.created_at,
-//         updated_at: product.updated_at,
-//       },
-
-//       variants: variants.map((v) => ({
-//         color_id: v.color_id,
-//         color_name: v.color_name,
-//         color_hex: v.color_hex,
-//         price: v.variant_product_price,
-//         price_sale: v.variant_product_price_sale,
-//         quantity: v.variant_product_quantity,
-//         slug: v.variant_product_slug,
-//         list_image: v.variant_product_list_image,
-//       })),
-
-//       related_products: relatedProducts.map((rp) => ({
-//         id: rp.product_id,
-//         name: rp.product_name,
-//         // image: rp.product_image,
-//         // price: rp.product_price,
-//         // price_sale: rp.product_price_sale,
-//         slug: rp.product_slug,
-//       })),
-//     });
-//   } catch (error) {
-//     console.error("Error fetching product details:", error);
-//     res.status(500).json({ error: "Failed to fetch product details" });
-//   }
-// });
 router.get("/:slug", async (req, res) => {
   const slug = req.params.slug;
   if (!slug) return res.status(400).json({ message: "Slug không hợp lệ" });

@@ -108,52 +108,60 @@ router.get("/:slug", async (req, res) => {
   if (!slug) return res.status(400).json({ message: "Slug không hợp lệ" });
 
   try {
-    // 1. Lấy sản phẩm chính + tên danh mục
+    // 1. Lấy thông tin sản phẩm chính
     const [productRows] = await db.query(
       `
       SELECT 
-        p.*,
-        c.category_name
+        p.*, c.category_name
       FROM product p
       LEFT JOIN category c ON p.category_id = c.category_id
       WHERE p.product_slug = ? AND p.product_status = 1
       `,
       [slug]
     );
+
     if (!productRows.length) {
       return res.status(404).json({ error: "Product not found" });
     }
     const product = productRows[0];
 
-    // 2. Lấy tất cả biến thể màu sắc (có cả color_priority)
+    // 2. Lấy danh sách tất cả biến thể + màu sắc (để tìm biến thể mặc định và danh sách màu)
     const [variants] = await db.query(
       `
-     SELECT
-  vp.variant_id,
-  c.color_id,
-  c.color_name,
-  c.color_hex,
-  c.color_priority,
-  c.variant_product_price     AS price,
-  c.variant_product_price_sale AS price_sale,
-  c.variant_product_quantity  AS quantity,
-  c.variant_product_slug      AS slug,
-  c.variant_product_list_image AS list_image
-FROM variant_product vp
-JOIN color c ON vp.color_id = c.color_id
-WHERE vp.product_id = ?
-ORDER BY c.color_priority DESC
+      SELECT
+        vp.variant_id,
+        c.color_id,
+        c.color_name,
+        c.color_hex,
+        c.color_priority,
+        c.variant_product_price AS price,
+        c.variant_product_price_sale AS price_sale,
+        c.variant_product_quantity AS quantity,
+        c.variant_product_slug AS slug,
+        c.variant_product_list_image AS list_image
+      FROM variant_product vp
+      JOIN color c ON vp.color_id = c.color_id
+      WHERE vp.product_id = ?
+      ORDER BY c.color_priority DESC
       `,
       [product.product_id]
     );
 
-    // 3. Chọn biến thể mặc định: ưu tiên color_priority = 1
+    // 3. Tìm biến thể mặc định (ưu tiên color_priority = 1)
     let defaultVariant = variants.find((v) => v.color_priority === 1);
     if (!defaultVariant && variants.length > 0) {
       defaultVariant = variants[0];
     }
 
-    // 4. Lấy sản phẩm liên quan
+    // 4. Danh sách các màu sắc (nhẹ, không cần ảnh/giá)
+    const colors = variants.map((v) => ({
+      colorId: v.color_id,
+      colorName: v.color_name,
+      colorHex: v.color_hex,
+      slug: v.slug,
+    }));
+
+    // 5. Lấy sản phẩm liên quan
     const [relatedProducts] = await db.query(
       `
       SELECT
@@ -167,8 +175,7 @@ ORDER BY c.color_priority DESC
       [product.category_id, product.product_id]
     );
 
-    // 5. Trả về response
-    res.json({
+    return res.json({
       product: {
         id: product.product_id,
         name: product.product_name,
@@ -184,33 +191,21 @@ ORDER BY c.color_priority DESC
         seating_height: product.variant_seating_height,
         max_weight_load: product.variant_maximum_weight_load,
         status: product.product_status,
-        sold: product.product_sold, // trường mới bạn thêm
         category_id: product.category_id,
         category_name: product.category_name,
         created_at: product.created_at,
         updated_at: product.updated_at,
-        // giá và ảnh mặc định theo variant ưu tiên
-        // defaultPrice: defaultVariant?.price ?? null,
-        // defaultPriceSale: defaultVariant?.price_sale ?? null,
-        // defaultImage: defaultVariant?.list_image?.split(",")[0]?.trim() ?? null,
-        // defaultSlug: defaultVariant?.slug ?? null,
-        // // defaultColorId: defaultVariant?.color_id ?? null,
-        // defaultColorName: defaultVariant?.color_name ?? null,
-        // defaultColorHex: defaultVariant?.color_hex ?? null,
-        // defaultQuantity: defaultVariant?.quantity ?? null,
+        defaultPrice: defaultVariant?.price ?? null,
+        defaultPriceSale: defaultVariant?.price_sale ?? null,
+        defaultImages:
+          defaultVariant?.list_image?.split(",").map((img) => img.trim()) ?? [],
+
+        defaultSlug: defaultVariant?.slug ?? null,
+        defaultColorName: defaultVariant?.color_name ?? null,
+        defaultColorHex: defaultVariant?.color_hex ?? null,
+        defaultQuantity: defaultVariant?.quantity ?? null,
       },
-      variants: variants.map((v) => ({
-        variantId: v.variant_id,
-        colorId: v.color_id,
-        colorName: v.color_name,
-        colorHex: v.color_hex,
-        colorPriority: v.color_priority,
-        price: v.price,
-        priceSale: v.price_sale,
-        quantity: v.quantity,
-        slug: v.slug,
-        listImage: v.list_image,
-      })),
+      colors,
       related_products: relatedProducts.map((rp) => ({
         id: rp.product_id,
         name: rp.product_name,

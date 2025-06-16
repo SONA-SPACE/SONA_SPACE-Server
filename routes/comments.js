@@ -120,7 +120,7 @@ router.get("/product/:productId", async (req, res) => {
     }
 
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = parseInt(req.query.limit) || 5;
     const offset = (page - 1) * limit;
 
     // Kiểm tra sản phẩm tồn tại
@@ -128,80 +128,83 @@ router.get("/product/:productId", async (req, res) => {
       "SELECT product_id FROM product WHERE product_id = ?",
       [productId]
     );
-
     if (products.length === 0) {
       return res.status(404).json({ error: "Product not found" });
     }
 
-    // Đếm tổng số bình luận
-    const [countResult] = await db.query(
+    // Tổng số bình luận
+    const [[countResult]] = await db.query(
       "SELECT COUNT(*) as total FROM comment WHERE product_id = ?",
       [productId]
     );
 
-    const totalComments = countResult[0].total;
+    const totalComments = countResult.total;
     const totalPages = Math.ceil(totalComments / limit);
 
     // Lấy thông tin tổng hợp đánh giá
-    const [ratingStats] = await db.query(
+    const [[ratingStats]] = await db.query(
       `
-      SELECT 
-  AVG(comment_rating) as average_rating,
-  COUNT(*) as total_ratings,
-  SUM(CASE WHEN comment_rating = 5 THEN 1 ELSE 0 END) as five_star,
-  SUM(CASE WHEN comment_rating = 4 THEN 1 ELSE 0 END) as four_star,
-  SUM(CASE WHEN comment_rating = 3 THEN 1 ELSE 0 END) as three_star,
-  SUM(CASE WHEN comment_rating = 2 THEN 1 ELSE 0 END) as two_star,
-  SUM(CASE WHEN comment_rating = 1 THEN 1 ELSE 0 END) as one_star
-FROM comment
-WHERE product_id = ?
-
-    `,
+        SELECT 
+          ROUND(AVG(comment_rating), 1) as average_rating,
+          COUNT(*) as total_ratings,
+          SUM(CASE WHEN comment_rating = 5 THEN 1 ELSE 0 END) as five_star,
+          SUM(CASE WHEN comment_rating = 4 THEN 1 ELSE 0 END) as four_star,
+          SUM(CASE WHEN comment_rating = 3 THEN 1 ELSE 0 END) as three_star,
+          SUM(CASE WHEN comment_rating = 2 THEN 1 ELSE 0 END) as two_star,
+          SUM(CASE WHEN comment_rating = 1 THEN 1 ELSE 0 END) as one_star
+        FROM comment
+        WHERE product_id = ?
+        `,
       [productId]
     );
 
-    // Lấy danh sách bình luận - removed users table join
+    // Lấy danh sách bình luận kèm user
     const [comments] = await db.query(
       `
-   SELECT 
-  c.comment_id,
-  c.comment_description,
-  c.comment_rating,
-  c.created_at,
-  u.user_id,
-  u.user_name,
-  u.user_image
-FROM comment c
-JOIN user u ON c.user_id = u.user_id
-WHERE c.product_id = ?
-ORDER BY c.created_at DESC
-LIMIT ?, ?
-
-    `,
+        SELECT 
+          c.comment_id,
+          c.comment_title, 
+          c.comment_description,
+          c.comment_rating,
+          c.created_at,
+          u.user_id,
+          c.comment_reaction, 
+          u.user_name,
+          u.user_image
+        FROM comment c
+        JOIN user u ON c.user_id = u.user_id
+        WHERE c.product_id = ?
+        ORDER BY c.created_at DESC
+        LIMIT ?, ?
+        `,
       [productId, offset, limit]
     );
 
-    // Add placeholders for user data
-    const commentsWithPlaceholder = comments.map((comment) => ({
-      ...comment,
-      user_name: `User ${comment.user_id}`,
-      user_avatar: null,
-    }));
-
+    // Trả về JSON
     res.json({
       product_id: productId,
       stats: {
-        average_rating: ratingStats[0].average_rating || 0,
-        total_ratings: ratingStats[0].total_ratings || 0,
+        average_rating: ratingStats.average_rating || 0,
+        total_ratings: ratingStats.total_ratings || 0,
         rating_breakdown: {
-          five_star: ratingStats[0].five_star || 0,
-          four_star: ratingStats[0].four_star || 0,
-          three_star: ratingStats[0].three_star || 0,
-          two_star: ratingStats[0].two_star || 0,
-          one_star: ratingStats[0].one_star || 0,
+          five_star: ratingStats.five_star || 0,
+          four_star: ratingStats.four_star || 0,
+          three_star: ratingStats.three_star || 0,
+          two_star: ratingStats.two_star || 0,
+          one_star: ratingStats.one_star || 0,
         },
       },
-      comments: commentsWithPlaceholder,
+      comments: comments.map((comment) => ({
+        comment_id: comment.comment_id,
+        user_id: comment.user_id,
+        user_name: comment.user_name,
+        user_image: comment.user_image,
+        comment_title: comment.comment_title,
+        comment_description: comment.comment_description,
+        comment_rating: comment.comment_rating,
+        comment_reaction: comment.comment_reaction,
+        created_at: comment.created_at,
+      })),
       pagination: {
         currentPage: page,
         totalPages,

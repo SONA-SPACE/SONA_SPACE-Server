@@ -98,6 +98,37 @@ router.get("/", async (req, res) => {
 });
 
 /**
+ * @route   GET /api/products/newest
+ * @desc    Lấy danh sách sản phẩm mới nhất
+ * @access  Public
+ */
+router.get("/newest", async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 8;
+
+    const [products] = await db.query(
+      `
+      SELECT 
+        p.*, 
+        l.category_name,
+        (SELECT COUNT(*) FROM comment WHERE product_id = p.product_id) as comment_count
+      FROM product p
+      LEFT JOIN category l ON p.category_id = l.category_id
+      WHERE p.product_status = 1
+      ORDER BY p.created_at DESC
+      LIMIT ?
+    `,
+      [limit]
+    );
+
+    res.json(products);
+  } catch (error) {
+    console.error("Error fetching newest products:", error);
+    res.status(500).json({ error: "Failed to fetch newest products" });
+  }
+});
+
+/**
  * @route   GET /api/products/:id
  * @desc    Lấy thông tin chi tiết một sản phẩm
  * @access  Public
@@ -529,8 +560,7 @@ router.get("/featured/list", async (req, res) => {
       SELECT 
         p.*, 
         l.category_name,
-        (SELECT COUNT(*) FROM comment WHERE product_id = p.product_id) as comment_count,
-        (SELECT AVG(rating) FROM comment WHERE product_id = p.product_id) as average_rating
+        (SELECT COUNT(*) FROM comment WHERE product_id = p.product_id) as comment_count
       FROM product p
       LEFT JOIN category l ON p.category_id = l.category_id
       WHERE p.product_status = 1 AND p.product_priority = 1

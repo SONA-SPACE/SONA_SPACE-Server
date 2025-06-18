@@ -106,22 +106,102 @@ router.get("/newest", async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 8;
 
+    // Lấy danh sách sản phẩm mới nhất
     const [products] = await db.query(
       `
       SELECT 
-        p.*, 
+        p.product_id,
+        p.product_name,
+        p.product_description,
+        p.product_view,
+        p.product_status,
+        p.product_slug,
+        p.product_image,
+        p.created_at,
+        p.updated_at,
+        c.color_id,
+        c.color_hex,
+        c.color_name,
+        c.color_priority,
+        c.variant_product_price AS price,
+        c.variant_product_price_sale AS price_sale,
+        v.variant_id,
         l.category_name,
         (SELECT COUNT(*) FROM comment WHERE product_id = p.product_id) as comment_count
-      FROM product p
-      LEFT JOIN category l ON p.category_id = l.category_id
-      WHERE p.product_status = 1
-      ORDER BY p.created_at DESC
+      FROM 
+        product p
+      JOIN 
+        variant_product v ON p.product_id = v.product_id
+      JOIN 
+        color c ON v.color_id = c.color_id
+      LEFT JOIN 
+        category l ON p.category_id = l.category_id
+      WHERE 
+        p.product_status = 1
+      ORDER BY 
+        p.created_at DESC,
+        c.color_priority ASC
       LIMIT ?
     `,
-      [limit]
+      [limit * 5] // Lấy nhiều hơn để tránh giới hạn dòng khi 1 sản phẩm có nhiều màu
     );
 
-    res.json(products);
+    // Nhóm theo `product_id` để trả về mỗi sản phẩm với tất cả các màu
+    const grouped = {};
+    for (const row of products) {
+      const {
+        product_id,
+        product_name,
+        product_description,
+        product_view,
+        product_status,
+        product_slug,
+        product_image,
+        created_at,
+        updated_at,
+        category_name,
+        comment_count,
+        color_id,
+        color_hex,
+        color_name,
+        color_priority,
+        price,
+        price_sale,
+        variant_id,
+      } = row;
+
+      if (!grouped[product_id]) {
+        grouped[product_id] = {
+          product_id,
+          product_name,
+          product_description,
+          product_view,
+          product_status,
+          product_slug,
+          product_image,
+          created_at,
+          updated_at,
+          category_name,
+          comment_count,
+          variants: [],
+        };
+      }
+
+      grouped[product_id].variants.push({
+        color_id,
+        color_hex,
+        color_name,
+        color_priority,
+        price,
+        price_sale,
+        variant_id,
+      });
+    }
+
+    // Trả về giới hạn đúng số sản phẩm
+    const result = Object.values(grouped).slice(0, limit);
+
+    res.json(result);
   } catch (error) {
     console.error("Error fetching newest products:", error);
     res.status(500).json({ error: "Failed to fetch newest products" });

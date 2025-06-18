@@ -26,43 +26,45 @@ router.get("/", async (req, res) => {
 
     // 3. Truy vấn sản phẩm có phân trang
     const query = `
-      SELECT 
-        p.product_id AS id,
-        p.product_name AS name,
-        p.product_slug AS slug,
-        p.product_image AS image,
-        p.category_id,
-        c.category_name,
-        p.created_at,
-        p.updated_at,
+  SELECT 
+    p.product_id AS id,
+    p.product_name AS name,
+    p.product_slug AS slug,
+    p.product_image AS image,
+    p.category_id,
+    c.category_name,
+    p.created_at,
+    p.updated_at,
 
-        (
-          SELECT col.variant_product_price
-          FROM variant_product vp2
-          JOIN color col ON vp2.color_id = col.color_id
-          WHERE vp2.product_id = p.product_id AND col.color_priority = 1
-          LIMIT 1
-        ) AS price,
+    (
+  SELECT vp2.variant_product_price
+  FROM variant_product vp2
+  JOIN color c2 ON vp2.color_id = c2.color_id
+  WHERE vp2.product_id = p.product_id AND c2.color_priority = 1
+  LIMIT 1
+) AS price,
 
-        (
-          SELECT col.variant_product_price_sale
-          FROM variant_product vp2
-          JOIN color col ON vp2.color_id = col.color_id
-          WHERE vp2.product_id = p.product_id AND col.color_priority = 1
-          LIMIT 1
-        ) AS price_sale,
+(
+  SELECT vp2.variant_product_price_sale
+  FROM variant_product vp2
+  JOIN color c2 ON vp2.color_id = c2.color_id
+  WHERE vp2.product_id = p.product_id AND c2.color_priority = 1
+  LIMIT 1
+) AS price_sale,
 
-        JSON_ARRAYAGG(DISTINCT col.color_hex) AS color_hex
 
-      FROM product p
-      LEFT JOIN category c ON p.category_id = c.category_id
-      LEFT JOIN variant_product vp ON p.product_id = vp.product_id
-      LEFT JOIN color col ON vp.color_id = col.color_id
-      WHERE p.product_status = 1
-      GROUP BY p.product_id
-      ORDER BY p.created_at DESC
-      LIMIT ? OFFSET ?
-    `;
+    JSON_ARRAYAGG(DISTINCT col.color_hex) AS color_hex
+
+  FROM product p
+  LEFT JOIN category c ON p.category_id = c.category_id
+  LEFT JOIN variant_product vp ON p.product_id = vp.product_id
+  LEFT JOIN color col ON vp.color_id = col.color_id
+  WHERE p.product_status = 1
+  GROUP BY p.product_id
+  ORDER BY p.created_at DESC
+  LIMIT ? OFFSET ?
+`;
+
 
     const [products] = await db.query(query, [limit, offset]);
 
@@ -239,21 +241,22 @@ router.get("/:slug", async (req, res) => {
     // 2. Lấy danh sách tất cả biến thể + màu sắc (để tìm biến thể mặc định và danh sách màu)
     const [variants] = await db.query(
       `
-      SELECT
-        vp.variant_id,
-        c.color_id,
-        c.color_name,
-        c.color_hex,
-        c.color_priority,
-        c.variant_product_price AS price,
-        c.variant_product_price_sale AS price_sale,
-        c.variant_product_quantity AS quantity,
-        c.variant_product_slug AS slug,
-        c.variant_product_list_image AS list_image
-      FROM variant_product vp
-      JOIN color c ON vp.color_id = c.color_id
-      WHERE vp.product_id = ?
-      ORDER BY c.color_priority DESC
+     SELECT
+  vp.variant_id,
+  c.color_id,
+  c.color_name,
+  c.color_hex,
+  c.color_priority,
+  vp.variant_product_price AS price,
+  vp.variant_product_price_sale AS price_sale,
+  vp.variant_product_quantity AS quantity,
+  vp.variant_product_slug AS slug,
+  vp.variant_product_list_image AS list_image
+FROM variant_product vp
+JOIN color c ON vp.color_id = c.color_id
+WHERE vp.product_id = ?
+ORDER BY c.color_priority DESC
+
       `,
       [product.product_id]
     );

@@ -46,18 +46,19 @@ router.get("/:productSlug/:colorId", async (req, res) => {
     // Truy vấn variant và thông tin color theo product_slug và color_id
     const [rows] = await db.query(
       `
-      SELECT 
-        vp.variant_id,
-        vp.product_id,
-        c.color_id,
-        c.color_name,
-        c.color_hex,
-        c.color_priority,
-        c.variant_product_slug,
-        c.variant_product_quantity,
-        c.variant_product_price,
-        c.variant_product_price_sale,
-        c.variant_product_list_image
+     SELECT 
+  vp.variant_id,
+  vp.product_id,
+  c.color_id,
+  c.color_name,
+  c.color_hex,
+  c.color_priority,
+  vp.variant_product_slug,
+  vp.variant_product_quantity,
+  vp.variant_product_price,
+  vp.variant_product_price_sale,
+  vp.variant_product_list_image
+
       FROM variant_product vp
       JOIN color c ON vp.color_id = c.color_id
       JOIN product p ON vp.product_id = p.product_id

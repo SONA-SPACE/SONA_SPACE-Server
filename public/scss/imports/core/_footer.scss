@@ -1,0 +1,251 @@
+.footer {
+    background-color: #FAFAFA;
+    color: #fff;
+    padding: 60px 0 30px;
+
+    .design-tips {
+        margin-bottom: 60px;
+
+        .tips-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 64px;
+
+            .tips-grid-aside {
+                padding: 14px;
+                border: 1px solid #D9D9D9;
+                border-radius: 16px;
+                box-shadow: 0px 2px 12px 0px rgba(0, 0, 0, 0.12);
+                -webkit-box-shadow: 0px 2px 12px 0px rgba(0, 0, 0, 0.12);
+                -moz-box-shadow: 0px 2px 12px 0px rgba(0, 0, 0, 0.12);
+
+                .tip-item {
+                    display: flex;
+                    column-gap: 24px;
+
+                    .content {
+                        align-content: center;
+                        flex: 1;
+
+                        h3 {
+                            @include text(26px, Be-SB, auto, $dark-cl, null);
+                            margin-bottom: 12px;
+                        }
+
+                        p {
+                            margin: unset;
+                            @include text(16px, Be-L, auto, $dark-cl, null);
+                            text-align: left;
+                        }
+                    }
+                }
+            }
+
+            .tips-grid-bside {
+                display: flex;
+                column-gap: 60px;
+                padding: 14px;
+                border: 1px solid #D9D9D9;
+                border-radius: 16px;
+                box-shadow: 0px 2px 12px 0px rgba(0, 0, 0, 0.12);
+                -webkit-box-shadow: 0px 2px 12px 0px rgba(0, 0, 0, 0.12);
+                -moz-box-shadow: 0px 2px 12px 0px rgba(0, 0, 0, 0.12);
+
+                .tip-item {
+                    h3 {
+                        @include text(18px, Be-L, auto, $dark-cl, null);
+                    }
+                }
+            }
+        }
+    }
+
+    .footer-grid {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 30px;
+        margin-bottom: 50px;
+
+        .footer-column {
+            h3 {
+                @include text(14px, Be-L, auto, $dark-cl, null);
+                margin-bottom: 20px;
+            }
+
+            ul {
+                list-style: none;
+                padding: 0;
+                margin: 0;
+
+                li {
+                    margin-bottom: 10px;
+
+                    a,
+                    p {
+                        @include text(14px, Be-L, auto, $dark-cl, null);
+                        transition: color 0.3s ease;
+
+                        &:hover {
+                            color: #fff;
+                        }
+                    }
+                }
+            }
+
+            .payment-methods {
+                img {
+                    max-width: 100%;
+                }
+            }
+
+            .social-icons {
+                display: flex;
+                gap: 15px;
+                margin-bottom: 20px;
+
+                .social-icon {
+                    width: 36px;
+                    height: 36px;
+                    border-radius: 50%;
+                    background-color: #fff;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: transform 0.3s ease;
+
+                    &:hover {
+                        transform: translateY(-3px);
+                    }
+                }
+            }
+
+            .btn {
+                padding: 10px 50px;
+                border-radius: 8px;
+                @include text(14px, Be-M, auto, $dark-cl, null);
+                transition: all 0.3s ease;
+                display: inline;
+                box-shadow: 0px 2px 12px 0px rgba(0, 0, 0, 0.12);
+                -webkit-box-shadow: 0px 2px 12px 0px rgba(0, 0, 0, 0.12);
+                -moz-box-shadow: 0px 2px 12px 0px rgba(0, 0, 0, 0.12);
+
+                &.btn-primary {
+                    background-color: $white-cl;
+                    color: $dark-cl;
+                    box-shadow: 0px 2px 12px 0px rgba(0, 0, 0, 0.12);
+                    -webkit-box-shadow: 0px 2px 12px 0px rgba(0, 0, 0, 0.12);
+                    -moz-box-shadow: 0px 2px 12px 0px rgba(0, 0, 0, 0.12);
+                    border: 1px solid $yellow-cl;
+
+                    &:hover {
+                        background-color: $yellow-cl;
+                        color: $white-cl;
+                    }
+                }
+            }
+        }
+    }
+
+    .footer-bottom {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 30px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+
+        p {
+            @include text(14px, Be-L, auto, $dark-cl, null);
+
+            a {
+                @include text(14px, Be-L, auto, $dark-cl, null);
+                text-decoration: none;
+                transition: color 0.3s ease;
+                @include hover-line-animation($dark-cl, 1px, 0.3s);
+            }
+        }
+
+        .payment-icons {
+            img {
+                height: 24px;
+            }
+        }
+
+        .language {
+            &-icons {
+                display: flex;
+                align-items: center;
+                column-gap: 8px;
+
+                span {
+                    @include text(14px, Be-M, auto, $dark-cl, null);
+                }
+            }
+        }
+    }
+}
+
+@include lg {
+    .footer {
+        .footer-column {
+            &:last-child {
+                a.btn.btn-primary {
+                    padding: 10px 12px;
+                }
+            }
+        }
+    }
+}
+
+@include sm {
+    .footer {
+        .footer-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
+    }
+}
+
+@include xs {
+    .footer {
+        .design-tips {
+            .tips-grid {
+                grid-template-columns: 1fr;
+                grid-template-rows: repeat(2, 1fr);
+                row-gap: 16px;
+
+                &-aside {
+                    .tip-item {
+                        height: 100%;
+
+                        img {
+                            max-width: 40%;
+                            object-fit: cover;
+                        }
+                    }
+                }
+
+                &-bside {
+                    column-gap: 16px !important;
+                }
+            }
+        }
+
+        &-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+
+            .footer-column {
+                &:last-child {
+                    a {
+                        padding: 8px 16px !important;
+                    }
+                }
+            }
+        }
+
+        &-bottom {
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+
+        }
+    }
+}

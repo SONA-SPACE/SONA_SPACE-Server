@@ -1,0 +1,9 @@
+.section-1 {
+    background-color: black;
+}
+
+@include sm {
+    .section-1 {
+        background-color: red;
+    }
+}

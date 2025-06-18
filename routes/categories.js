@@ -291,14 +291,14 @@ router.get("/:slug/products", async (req, res) => {
         p.created_at,
         p.updated_at,
         (
-          SELECT col.variant_product_price
+          SELECT vp2.variant_product_price
           FROM variant_product vp2
           JOIN color col ON vp2.color_id = col.color_id
           WHERE vp2.product_id = p.product_id AND col.color_priority = 1
           LIMIT 1
         ) AS price,
         (
-          SELECT col.variant_product_price_sale
+          SELECT vp2.variant_product_price_sale
           FROM variant_product vp2
           JOIN color col ON vp2.color_id = col.color_id
           WHERE vp2.product_id = p.product_id AND col.color_priority = 1
@@ -332,8 +332,8 @@ router.get("/:slug/products", async (req, res) => {
         category_name: product.category_name,
         created_at: product.created_at,
         updated_at: product.updated_at,
-        price: product.price,
-        price_sale: product.price_sale,
+        price: product.price ?? "0.00",
+        price_sale: product.price_sale ?? "0.00",
         color_hex: colorHex,
       };
     });
@@ -353,6 +353,5 @@ router.get("/:slug/products", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch products by category" });
   }
 });
-
 
 module.exports = router;

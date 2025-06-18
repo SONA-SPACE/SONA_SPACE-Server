@@ -37,19 +37,19 @@ router.get("/", async (req, res) => {
     p.updated_at,
 
     (
-  SELECT vp2.variant_product_price
-  FROM variant_product vp2
-  JOIN color c2 ON vp2.color_id = c2.color_id
-  WHERE vp2.product_id = p.product_id AND c2.color_priority = 1
-  LIMIT 1
+      SELECT vp2.variant_product_price
+      FROM variant_product vp2
+      JOIN color col ON vp2.color_id = col.color_id
+      WHERE vp2.product_id = p.product_id AND col.color_priority = 1
+      LIMIT 1
 ) AS price,
 
 (
   SELECT vp2.variant_product_price_sale
   FROM variant_product vp2
-  JOIN color c2 ON vp2.color_id = c2.color_id
-  WHERE vp2.product_id = p.product_id AND c2.color_priority = 1
-  LIMIT 1
+      JOIN color col ON vp2.color_id = col.color_id
+      WHERE vp2.product_id = p.product_id AND col.color_priority = 1
+      LIMIT 1
 ) AS price_sale,
 
 
@@ -65,7 +65,6 @@ router.get("/", async (req, res) => {
   LIMIT ? OFFSET ?
 `;
 
-
     const [products] = await db.query(query, [limit, offset]);
 
     // 4. Chuẩn hóa dữ liệu đầu ra
@@ -78,8 +77,8 @@ router.get("/", async (req, res) => {
       category_name: item.category_name,
       created_at: item.created_at,
       updated_at: item.updated_at,
-      price: item.price,
-      price_sale: item.price_sale,
+      price: item.price ?? "0.00",
+      price_sale: item.price_sale ?? "0.00",
       color_hex: JSON.parse(item.color_hex),
     }));
 
@@ -112,96 +111,66 @@ router.get("/newest", async (req, res) => {
     const [products] = await db.query(
       `
       SELECT 
-        p.product_id,
-        p.product_name,
-        p.product_description,
-        p.product_view,
-        p.product_status,
-        p.product_slug,
-        p.product_image,
-        p.created_at,
-        p.updated_at,
-        c.color_id,
-        c.color_hex,
-        c.color_name,
-        c.color_priority,
-        c.variant_product_price AS price,
-        c.variant_product_price_sale AS price_sale,
-        v.variant_id,
-        l.category_name,
-        (SELECT COUNT(*) FROM comment WHERE product_id = p.product_id) as comment_count
-      FROM 
-        product p
-      JOIN 
-        variant_product v ON p.product_id = v.product_id
-      JOIN 
-        color c ON v.color_id = c.color_id
-      LEFT JOIN 
-        category l ON p.category_id = l.category_id
-      WHERE 
-        p.product_status = 1
-      ORDER BY 
-        p.created_at DESC,
-        c.color_priority ASC
-      LIMIT ?
+  p.product_id AS id,
+  p.product_name AS name,
+  p.product_slug AS slug,
+  p.product_image AS image,
+  p.category_id,
+  cat.category_name,
+  p.created_at,
+  p.updated_at,
+
+  (
+    SELECT vp2.variant_product_price
+    FROM variant_product vp2
+    JOIN color col ON vp2.color_id = col.color_id
+    WHERE vp2.product_id = p.product_id AND col.color_priority = 1
+    LIMIT 1
+  ) AS price,
+
+  (
+    SELECT vp2.variant_product_price_sale
+    FROM variant_product vp2
+    JOIN color col ON vp2.color_id = col.color_id
+    WHERE vp2.product_id = p.product_id AND col.color_priority = 1
+    LIMIT 1
+  ) AS price_sale,
+
+  IFNULL(JSON_ARRAYAGG(DISTINCT col.color_hex), JSON_ARRAY()) AS color_hex,
+
+  (
+    SELECT COUNT(*) FROM comment WHERE product_id = p.product_id
+  ) AS comment_count
+
+FROM product p
+LEFT JOIN category cat ON p.category_id = cat.category_id
+LEFT JOIN variant_product vp ON p.product_id = vp.product_id
+LEFT JOIN color col ON vp.color_id = col.color_id
+
+WHERE p.product_status = 1
+GROUP BY p.product_id
+ORDER BY p.created_at DESC
+LIMIT ?
+
     `,
-      [limit * 5] // Lấy nhiều hơn để tránh giới hạn dòng khi 1 sản phẩm có nhiều màu
+      [limit] // Lấy nhiều hơn để tránh giới hạn dòng khi 1 sản phẩm có nhiều màu
     );
 
     // Nhóm theo `product_id` để trả về mỗi sản phẩm với tất cả các màu
-    const grouped = {};
-    for (const row of products) {
-      const {
-        product_id,
-        product_name,
-        product_description,
-        product_view,
-        product_status,
-        product_slug,
-        product_image,
-        created_at,
-        updated_at,
-        category_name,
-        comment_count,
-        color_id,
-        color_hex,
-        color_name,
-        color_priority,
-        price,
-        price_sale,
-        variant_id,
-      } = row;
-
-      if (!grouped[product_id]) {
-        grouped[product_id] = {
-          product_id,
-          product_name,
-          product_description,
-          product_view,
-          product_status,
-          product_slug,
-          product_image,
-          created_at,
-          updated_at,
-          category_name,
-          comment_count,
-          variants: [],
-        };
-      }
-
-      grouped[product_id].variants.push({
-        color_id,
-        color_hex,
-        color_name,
-        color_priority,
-        price,
-        price_sale,
-        variant_id,
-      });
-    }
-
-    // Trả về giới hạn đúng số sản phẩm
-    const result = Object.values(grouped).slice(0, limit);
+    const result = products.map((item) => ({
+      id: item.id,
+      name: item.name,
+      slug: item.slug,
+      image: item.image,
+      category_id: item.category_id,
+      category_name: item.category_name,
+      created_at: item.created_at,
+      updated_at: item.updated_at,
+      price: item.price ?? "0.00",
+      price_sale: item.price_sale ?? "0.00",
+      color_hex: JSON.parse(item.color_hex || "[]"),
+      comment_count: item.comment_count ?? 0,
+    }));
 
     res.json(result);
   } catch (error) {

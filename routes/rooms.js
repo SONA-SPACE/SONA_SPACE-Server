@@ -255,21 +255,21 @@ router.get("/:slug/products", async (req, res) => {
         p.updated_at,
 
         (
-          SELECT col.variant_product_price
-          FROM variant_product vp2
-          JOIN color col ON vp2.color_id = col.color_id
-          WHERE vp2.product_id = p.product_id AND col.color_priority = 1
-          LIMIT 1
-        ) AS price,
+  SELECT vp2.variant_product_price
+  FROM variant_product vp2
+  JOIN color c2 ON vp2.color_id = c2.color_id
+  WHERE vp2.product_id = p.product_id AND c2.color_priority = 1
+  LIMIT 1
+) AS price,
 
-        (
-          SELECT col.variant_product_price_sale
-          FROM variant_product vp2
-          JOIN color col ON vp2.color_id = col.color_id
-          WHERE vp2.product_id = p.product_id AND col.color_priority = 1
-          LIMIT 1
-        ) AS price_sale,
-
+(
+  SELECT vp2.variant_product_price_sale
+  FROM variant_product vp2
+  JOIN color c2 ON vp2.color_id = c2.color_id
+  WHERE vp2.product_id = p.product_id AND c2.color_priority = 1
+  LIMIT 1
+) AS price_sale,
+ 
         JSON_ARRAYAGG(DISTINCT col.color_hex) AS color_hex
 
       FROM room_product rp
@@ -294,8 +294,8 @@ router.get("/:slug/products", async (req, res) => {
       category_name: product.category_name,
       created_at: product.created_at,
       updated_at: product.updated_at,
-      price: parseFloat(product.price),
-      price_sale: parseFloat(product.price_sale),
+      price: product.price ?? "0.00", // giữ nguyên định dạng chuỗi
+      price_sale: product.price_sale ?? "0.00",
       color_hex: JSON.parse(product.color_hex || "[]"),
     }));
 

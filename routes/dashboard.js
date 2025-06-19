@@ -18,7 +18,7 @@ const isAdmin = (req, res, next) => {
 // Dashboard home
 router.get('/', (req, res) => {
   res.render('dashboard/index', { 
-    title: 'Dashboard',
+    title: 'Sona Space - Dashboard',
     layout: 'layouts/dashboard'
   });
 });
@@ -34,7 +34,7 @@ router.get('/products', (req, res) => {
 // Categories management
 router.get('/categories', (req, res) => {
   res.render('dashboard/categories', { 
-    title: 'Categories Management',
+    title: 'Sona Space - Product Categories',
     layout: 'layouts/dashboard'
   });
 });

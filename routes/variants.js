@@ -47,17 +47,17 @@ router.get("/:productSlug/:colorId", async (req, res) => {
     const [rows] = await db.query(
       `
      SELECT 
-  vp.variant_id,
-  vp.product_id,
-  c.color_id,
-  c.color_name,
-  c.color_hex,
-  c.color_priority,
-  vp.variant_product_slug,
-  vp.variant_product_quantity,
-  vp.variant_product_price,
-  vp.variant_product_price_sale,
-  vp.variant_product_list_image
+      vp.variant_id,
+      vp.product_id,
+      c.color_id,
+      c.color_name,
+      c.color_hex,
+      c.color_priority,
+      vp.variant_product_slug,
+      vp.variant_product_quantity,
+      vp.variant_product_price,
+      vp.variant_product_price_sale,
+      vp.variant_product_list_image
 
       FROM variant_product vp
       JOIN color c ON vp.color_id = c.color_id

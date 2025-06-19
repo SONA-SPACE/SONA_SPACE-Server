@@ -17,57 +17,170 @@ router.get("/", async (req, res) => {
     const limit = parseInt(req.query.limit) || 8;
     const offset = (page - 1) * limit;
 
-    // 2. Truy vấn tổng số sản phẩm (để tính totalPages)
+    // 2. Lấy các tham số lọc từ query
+    const category = req.query.category;
+    const room = req.query.room;
+    const price = req.query.price;
+    const color = req.query.color;
+    const sort = req.query.sort;
+
+    // 3. Xây dựng câu query WHERE dựa trên các điều kiện lọc
+    let whereConditions = ['p.product_status = 1'];
+    let params = [];
+
+    if (category) {
+      whereConditions.push('c.category_name = ?');
+      params.push(category);
+    }
+
+    if (room) {
+      whereConditions.push('EXISTS (SELECT 1 FROM room_product rp JOIN room r ON rp.room_id = r.room_id WHERE rp.product_id = p.product_id AND r.room_name = ?)');
+      params.push(room);
+    }
+
+    if (price) {
+      switch(price) {
+        case 'Dưới 10 triệu':
+          whereConditions.push(`
+            (SELECT 
+              CASE 
+                WHEN MIN(vp2.variant_product_price_sale) > 0 THEN MIN(vp2.variant_product_price_sale)
+                ELSE MIN(vp2.variant_product_price)
+              END 
+            FROM variant_product vp2 
+            WHERE vp2.product_id = p.product_id) < 10000000
+          `);
+          break;
+        case '10 - 30 triệu':
+          whereConditions.push(`
+            (SELECT 
+              CASE 
+                WHEN MIN(vp2.variant_product_price_sale) > 0 THEN MIN(vp2.variant_product_price_sale)
+                ELSE MIN(vp2.variant_product_price)
+              END 
+            FROM variant_product vp2 
+            WHERE vp2.product_id = p.product_id) BETWEEN 10000000 AND 30000000
+          `);
+          break;
+        case 'Trên 30 triệu':
+          whereConditions.push(`
+            (SELECT 
+              CASE 
+                WHEN MIN(vp2.variant_product_price_sale) > 0 THEN MIN(vp2.variant_product_price_sale)
+                ELSE MIN(vp2.variant_product_price)
+              END 
+            FROM variant_product vp2 
+            WHERE vp2.product_id = p.product_id) > 30000000
+          `);
+          break;
+      }
+    }
+
+    if (color) {
+      whereConditions.push('col.color_name = ?');
+      params.push(color);
+    }
+
+    // 4. Xây dựng câu ORDER BY dựa trên tham số sort
+    let orderBy = 'p.created_at DESC';
+    if (sort) {
+      switch(sort) {
+        case 'Giá tăng dần':
+          orderBy = `
+            (SELECT 
+              CASE 
+                WHEN MIN(vp2.variant_product_price_sale) > 0 THEN MIN(vp2.variant_product_price_sale)
+                ELSE MIN(vp2.variant_product_price)
+              END 
+            FROM variant_product vp2 
+            WHERE vp2.product_id = p.product_id) ASC
+          `;
+          break;
+        case 'Giá giảm dần':
+          orderBy = `
+            (SELECT 
+              CASE 
+                WHEN MIN(vp2.variant_product_price_sale) > 0 THEN MIN(vp2.variant_product_price_sale)
+                ELSE MIN(vp2.variant_product_price)
+              END 
+            FROM variant_product vp2 
+            WHERE vp2.product_id = p.product_id) DESC
+          `;
+          break;
+        case 'Mới nhất':
+          orderBy = 'p.created_at DESC';
+          break;
+        case 'Giảm giá':
+          orderBy = `
+            (SELECT 
+              MAX(
+                CASE 
+                  WHEN vp2.variant_product_price_sale > 0 
+                  THEN ((vp2.variant_product_price - vp2.variant_product_price_sale) / vp2.variant_product_price * 100)
+                  ELSE 0 
+                END
+              ) 
+            FROM variant_product vp2 
+            WHERE vp2.product_id = p.product_id) DESC
+          `;
+          break;
+      }
+    }
+
+    // 5. Truy vấn tổng số sản phẩm với điều kiện lọc
     const [[{ totalProducts }]] = await db.query(`
       SELECT COUNT(DISTINCT p.product_id) AS totalProducts
       FROM product p
-      WHERE p.product_status = 1
-    `);
+      LEFT JOIN category c ON p.category_id = c.category_id
+      LEFT JOIN variant_product vp ON p.product_id = vp.product_id
+      LEFT JOIN color col ON vp.color_id = col.color_id
+      WHERE ${whereConditions.join(' AND ')}
+    `, params);
 
-    // 3. Truy vấn sản phẩm có phân trang
+    // 6. Truy vấn sản phẩm có phân trang và lọc
     const query = `
-  SELECT 
-    p.product_id AS id,
-    p.product_name AS name,
-    p.product_slug AS slug,
-    p.product_image AS image,
-    p.category_id,
-    c.category_name,
-    p.created_at,
-    p.updated_at,
+      SELECT 
+        p.product_id AS id,
+        p.product_name AS name,
+        p.product_slug AS slug,
+        p.product_image AS image,
+        p.category_id,
+        c.category_name,
+        p.created_at,
+        p.updated_at,
+        (
+          SELECT MIN(vp2.variant_product_price)
+          FROM variant_product vp2
+          WHERE vp2.product_id = p.product_id
+        ) AS price,
+        (
+          SELECT MIN(vp2.variant_product_price_sale)
+          FROM variant_product vp2
+          WHERE vp2.product_id = p.product_id AND vp2.variant_product_price_sale > 0
+        ) AS price_sale,
+        JSON_ARRAYAGG(DISTINCT col.color_hex) AS color_hex,
+        (
+          SELECT 
+            CASE 
+              WHEN MIN(vp2.variant_product_price_sale) > 0 THEN MIN(vp2.variant_product_price_sale)
+              ELSE MIN(vp2.variant_product_price)
+            END 
+          FROM variant_product vp2 
+          WHERE vp2.product_id = p.product_id
+        ) AS actual_price
+      FROM product p
+      LEFT JOIN category c ON p.category_id = c.category_id
+      LEFT JOIN variant_product vp ON p.product_id = vp.product_id
+      LEFT JOIN color col ON vp.color_id = col.color_id
+      WHERE ${whereConditions.join(' AND ')}
+      GROUP BY p.product_id
+      ORDER BY ${orderBy}
+      LIMIT ? OFFSET ?
+    `;
 
-    (
-      SELECT vp2.variant_product_price
-      FROM variant_product vp2
-      JOIN color col ON vp2.color_id = col.color_id
-      WHERE vp2.product_id = p.product_id AND col.color_priority = 1
-      LIMIT 1
-) AS price,
+    const [products] = await db.query(query, [...params, limit, offset]);
 
-(
-  SELECT vp2.variant_product_price_sale
-  FROM variant_product vp2
-      JOIN color col ON vp2.color_id = col.color_id
-      WHERE vp2.product_id = p.product_id AND col.color_priority = 1
-      LIMIT 1
-) AS price_sale,
-
-
-    JSON_ARRAYAGG(DISTINCT col.color_hex) AS color_hex
-
-  FROM product p
-  LEFT JOIN category c ON p.category_id = c.category_id
-  LEFT JOIN variant_product vp ON p.product_id = vp.product_id
-  LEFT JOIN color col ON vp.color_id = col.color_id
-  WHERE p.product_status = 1
-  GROUP BY p.product_id
-  ORDER BY p.created_at DESC
-  LIMIT ? OFFSET ?
-`;
-
-    const [products] = await db.query(query, [limit, offset]);
-
-    // 4. Chuẩn hóa dữ liệu đầu ra
+    // 7. Chuẩn hóa dữ liệu đầu ra
     const result = products.map((item) => ({
       id: item.id,
       name: item.name,
@@ -82,7 +195,7 @@ router.get("/", async (req, res) => {
       color_hex: JSON.parse(item.color_hex),
     }));
 
-    // 5. Phản hồi phân trang chuẩn REST
+    // 8. Phản hồi phân trang chuẩn REST
     res.json({
       products: result,
       pagination: {

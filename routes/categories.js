@@ -3,6 +3,24 @@ const router = express.Router();
 const db = require("../config/database");
 const { verifyToken, isAdmin } = require("../middleware/auth");
 
+
+
+
+
+/**
+ * @route   GET /filter/categories
+ * @desc    Lấy danh sách danh mục
+ * @access  Public
+ */
+router.get("/filter/", async (req, res) => {
+  const [rows] = await db.query(`
+    SELECT category_id, category_name, slug, category_icon
+    FROM category
+    WHERE category_status = 1
+    ORDER BY category_priority ASC
+  `);
+  res.json(rows);
+});
 /**
  * @route   GET /api/categories
  * @desc    Lấy tất cả danh mục sản phẩm
@@ -353,5 +371,8 @@ router.get("/:slug/products", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch products by category" });
   }
 });
+
+
+
 
 module.exports = router;

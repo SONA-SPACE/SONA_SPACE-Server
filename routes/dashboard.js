@@ -89,6 +89,14 @@ router.get('/news', (req, res) => {
   });
 });
 
+// News Categories management
+router.get('/news-categories', (req, res) => {
+  res.render('dashboard/news-categories', { 
+    title: 'Sona Space - Danh mục tin tức',
+    layout: 'layouts/dashboard'
+  });
+});
+
 // Settings
 router.get('/settings', (req, res) => {
   res.render('dashboard/settings', { 

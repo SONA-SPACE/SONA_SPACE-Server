@@ -1,0 +1,217 @@
+<!-- Trang Quản lý Danh mục Tin tức -->
+
+<!-- Tiêu đề và Thanh công cụ -->
+<div class="dashboard-header-row">
+    <h2 class="dashboard-title">Danh mục tin tức</h2>
+    <div class="action-buttons">
+        <button class="add-category-btn">
+            <i class="fas fa-plus"></i> Thêm danh mục
+        </button>
+    </div>
+</div>
+
+<!-- Bộ lọc và Tìm kiếm -->
+<div class="filter-row">
+    <div class="search-container">
+        <i class="fas fa-search search-icon"></i>
+        <input type="text" class="search-input" placeholder="Search">
+    </div>
+    <div class="date-range">
+        <i class="far fa-calendar-alt"></i>
+        <span>1/05/2025 - 31/5/2025</span>
+    </div>
+    <div class="results-info">
+        Hiển thị 1-5 trong tổng số 5 kết quả
+    </div>
+</div>
+
+<!-- Bảng Danh mục Tin tức -->
+<div class="category-table-container">
+    <table class="category-table" id="newsCategoriesTable">
+        <thead>
+            <tr>
+                <th data-sortable="true">Danh mục</th>
+                <th data-sortable="true">Số tin</th>
+                <th data-sortable="true">Trạng thái</th>
+                <th data-sortable="true">Thứ tự</th>
+                <th data-sortable="true">Ngày tạo</th>
+                <th data-sortable="true">Ngày cập nhật</th>
+                <th>Thao tác</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Danh mục 1 -->
+            <tr>
+                <td>
+                    <div class="category-info">
+                        <div class="category-image">
+                            <img src="/images/news-categories/promo.jpg" alt="Tin tức khuyến mãi">
+                        </div>
+                        <div class="category-name">Tin tức khuyến mãi</div>
+                    </div>
+                </td>
+                <td>3</td>
+                <td>
+                    <span class="status-indicator visible">
+                        <i class="fas fa-circle"></i> Hiển thị
+                    </span>
+                </td>
+                <td>20</td>
+                <td>30-10-2025</td>
+                <td>30-10-2025</td>
+                <td>
+                    <div class="action-cell">
+                        <button class="action-button edit" data-id="1" title="Chỉnh sửa">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-button visibility" data-id="1" data-status="visible" title="Ẩn danh mục">
+                            <i class="fas fa-eye-slash"></i>
+                        </button>
+                        <button class="action-button delete" data-id="1" data-name="Tin tức khuyến mãi" title="Xóa danh mục">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            
+            <!-- Danh mục 2 -->
+            <tr>
+                <td>
+                    <div class="category-info">
+                        <div class="category-image">
+                            <img src="/images/news-categories/trend.jpg" alt="Xu hướng nội thất">
+                        </div>
+                        <div class="category-name">Xu hướng nội thất</div>
+                    </div>
+                </td>
+                <td>5</td>
+                <td>
+                    <span class="status-indicator visible">
+                        <i class="fas fa-circle"></i> Hiển thị
+                    </span>
+                </td>
+                <td>10</td>
+                <td>28-10-2025</td>
+                <td>29-10-2025</td>
+                <td>
+                    <div class="action-cell">
+                        <button class="action-button edit" data-id="2" title="Chỉnh sửa">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-button visibility" data-id="2" data-status="visible" title="Ẩn danh mục">
+                            <i class="fas fa-eye-slash"></i>
+                        </button>
+                        <button class="action-button delete" data-id="2" data-name="Xu hướng nội thất" title="Xóa danh mục">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            
+            <!-- Danh mục 3 -->
+            <tr>
+                <td>
+                    <div class="category-info">
+                        <div class="category-image">
+                            <img src="/images/news-categories/tips.jpg" alt="Mẹo vặt trang trí">
+                        </div>
+                        <div class="category-name">Mẹo vặt trang trí</div>
+                    </div>
+                </td>
+                <td>8</td>
+                <td>
+                    <span class="status-indicator visible">
+                        <i class="fas fa-circle"></i> Hiển thị
+                    </span>
+                </td>
+                <td>15</td>
+                <td>25-10-2025</td>
+                <td>28-10-2025</td>
+                <td>
+                    <div class="action-cell">
+                        <button class="action-button edit" data-id="3" title="Chỉnh sửa">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-button visibility" data-id="3" data-status="visible" title="Ẩn danh mục">
+                            <i class="fas fa-eye-slash"></i>
+                        </button>
+                        <button class="action-button delete" data-id="3" data-name="Mẹo vặt trang trí" title="Xóa danh mục">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            
+            <!-- Danh mục 4 -->
+            <tr>
+                <td>
+                    <div class="category-info">
+                        <div class="category-image">
+                            <img src="/images/news-categories/design.jpg" alt="Thiết kế nội thất">
+                        </div>
+                        <div class="category-name">Thiết kế nội thất</div>
+                    </div>
+                </td>
+                <td>4</td>
+                <td>
+                    <span class="status-indicator hidden">
+                        <i class="fas fa-circle"></i> Ẩn
+                    </span>
+                </td>
+                <td>25</td>
+                <td>20-10-2025</td>
+                <td>27-10-2025</td>
+                <td>
+                    <div class="action-cell">
+                        <button class="action-button edit" data-id="4" title="Chỉnh sửa">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-button visibility" data-id="4" data-status="hidden" title="Hiển thị danh mục">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="action-button delete" data-id="4" data-name="Thiết kế nội thất" title="Xóa danh mục">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            
+            <!-- Danh mục 5 -->
+            <tr>
+                <td>
+                    <div class="category-info">
+                        <div class="category-image">
+                            <img src="/images/news-categories/lifestyle.jpg" alt="Phong cách sống">
+                        </div>
+                        <div class="category-name">Phong cách sống</div>
+                    </div>
+                </td>
+                <td>6</td>
+                <td>
+                    <span class="status-indicator visible">
+                        <i class="fas fa-circle"></i> Hiển thị
+                    </span>
+                </td>
+                <td>30</td>
+                <td>18-10-2025</td>
+                <td>26-10-2025</td>
+                <td>
+                    <div class="action-cell">
+                        <button class="action-button edit" data-id="5" title="Chỉnh sửa">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-button visibility" data-id="5" data-status="visible" title="Ẩn danh mục">
+                            <i class="fas fa-eye-slash"></i>
+                        </button>
+                        <button class="action-button delete" data-id="5" data-name="Phong cách sống" title="Xóa danh mục">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- Load News Categories JS -->
+<script src="/javascripts/news-categories.js"></script> 

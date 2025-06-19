@@ -42,6 +42,7 @@ var newsCategoriesRouter = require("./routes/newsCategories");
 var authRouter = require("./routes/auth");
 var debugRouter = require("./routes/debug");
 var colorRouter = require("./routes/color");
+var dashboardRouter = require("./routes/dashboard");
 
 var app = express();
 
@@ -49,8 +50,16 @@ var app = express();
 app.locals.version = require('./package.json').version || '1.0.0';
 app.locals.startTime = new Date();
 
+// Set up view engine
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "ejs");
+
+// Configure express-ejs-layouts
+const expressLayouts = require('express-ejs-layouts');
+app.use(expressLayouts);
+app.set('layout', 'layouts/main');
+app.set("layout extractScripts", true);
+app.set("layout extractStyles", true);
 
 app.use(logger("dev"));
 app.use(express.json());
@@ -72,6 +81,7 @@ app.get('/health', function(req, res) {
 // Base routes
 app.use("/", indexRouter);
 app.use("/api/auth", authRouter);
+app.use("/dashboard", dashboardRouter);
 
 // API routes - public
 app.use("/api/products", productsRouter);

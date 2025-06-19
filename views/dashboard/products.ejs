@@ -1,0 +1,411 @@
+<!-- Trang Quản lý Sản phẩm -->
+
+<!-- Tiêu đề và Thanh công cụ -->
+<div class="dashboard-header-row">
+    <h2 class="dashboard-title">Sản phẩm</h2>
+    <div class="action-buttons">
+        <button class="add-product-btn">
+            <i class="fas fa-plus"></i> Thêm sản phẩm
+        </button>
+    </div>
+</div>
+
+<!-- Bộ lọc và Tìm kiếm -->
+<div class="filter-row">
+    <div class="search-container">
+        <i class="fas fa-search search-icon"></i>
+        <input type="text" class="search-input" placeholder="Search">
+    </div>
+    <div class="date-range">
+        <i class="far fa-calendar-alt"></i>
+        <span>1/05/2025 - 31/5/2025</span>
+    </div>
+    <div class="results-info">
+        Hiển thị 1-6 trong tổng số 500
+    </div>
+</div>
+
+<!-- Bảng và Checkbox -->
+<div class="product-controls">
+    <label class="select-all">
+        <input type="checkbox" id="selectAll">
+        <span>Sản phẩm</span>
+    </label>
+
+    <div class="product-filters">
+        <div class="filter-dropdown">
+            <button class="filter-btn">
+                Danh mục <i class="fas fa-chevron-down"></i>
+            </button>
+        </div>
+        <div class="filter-dropdown">
+            <button class="filter-btn">
+                Giá <i class="fas fa-chevron-down"></i>
+            </button>
+        </div>
+        <div class="filter-dropdown">
+            <button class="filter-btn">
+                Số lượng <i class="fas fa-chevron-down"></i>
+            </button>
+        </div>
+        <div class="filter-dropdown">
+            <button class="filter-btn">
+                Đã bán <i class="fas fa-chevron-down"></i>
+            </button>
+        </div>
+        <div class="filter-dropdown">
+            <button class="filter-btn">
+                Đánh giá <i class="fas fa-chevron-down"></i>
+            </button>
+        </div>
+        <div class="filter-dropdown">
+            <button class="filter-btn">
+                Lượt xem <i class="fas fa-chevron-down"></i>
+            </button>
+        </div>
+        <div class="filter-dropdown">
+            <button class="filter-btn">
+                Trạng thái <i class="fas fa-chevron-down"></i>
+            </button>
+        </div>
+        <div class="filter-dropdown">
+            <button class="filter-btn">
+                Ngày tạo <i class="fas fa-chevron-down"></i>
+            </button>
+        </div>
+        <div class="filter-dropdown">
+            <button class="filter-btn">
+                Ngày cập nhật <i class="fas fa-chevron-down"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Bảng Sản phẩm -->
+<div class="product-table-container">
+    <table class="product-table" id="productsTable">
+        <thead>
+            <tr>
+                <th class="checkbox-cell">
+                    <input type="checkbox">
+                </th>
+                <th data-sortable="true">Sản phẩm</th>
+                <th data-sortable="true">Danh mục</th>
+                <th data-sortable="true">Giá</th>
+                <th data-sortable="true">Số lượng</th>
+                <th data-sortable="true">Đã bán</th>
+                <th data-sortable="true">Đánh giá</th>
+                <th data-sortable="true">Lượt xem</th>
+                <th data-sortable="true">Trạng thái</th>
+                <th data-sortable="true">Thứ tự</th>
+                <th data-sortable="true">Ngày tạo</th>
+                <th data-sortable="true">Ngày cập nhật</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Sản phẩm 1 -->
+            <tr>
+                <td class="checkbox-cell">
+                    <input type="checkbox">
+                </td>
+                <td>
+                    <div class="product-info">
+                        <div class="product-image">
+                            <img src="/images/products/modena-armchair.jpg" alt="Modena armchair">
+                        </div>
+                        <div class="product-name">
+                            <a href="#">Modena armchair</a>
+                        </div>
+                    </div>
+                </td>
+                <td>Sofas</td>
+                <td>
+                    <div class="product-price">
+                        <div class="original-price">15.500.000</div>
+                        <div class="sale-price">15.000.000</div>
+                    </div>
+                </td>
+                <td>20</td>
+                <td>10</td>
+                <td>3 lượt</td>
+                <td>20</td>
+                <td>
+                    <span class="status-indicator visible">
+                        <i class="fas fa-circle"></i> Hiển thị
+                    </span>
+                </td>
+                <td>20</td>
+                <td>30-10-2025</td>
+                <td>30-10-2025</td>
+                <td>
+                    <div class="action-cell">
+                        <button class="action-button edit" data-id="1" title="Chỉnh sửa">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-button visibility" data-id="1" data-status="visible" title="Ẩn sản phẩm">
+                            <i class="fas fa-eye-slash"></i>
+                        </button>
+                        <button class="action-button delete" data-id="1" data-name="Modena armchair"
+                            title="Xóa sản phẩm">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+
+            <!-- Sản phẩm 2 -->
+            <tr>
+                <td class="checkbox-cell">
+                    <input type="checkbox">
+                </td>
+                <td>
+                    <div class="product-info">
+                        <div class="product-image">
+                            <img src="/images/products/modena-armchair.jpg" alt="Modena armchair">
+                        </div>
+                        <div class="product-name">
+                            <a href="#">Modena armchair</a>
+                        </div>
+                    </div>
+                </td>
+                <td>Sofas</td>
+                <td>
+                    <div class="product-price">
+                        <div class="original-price">15.500.000</div>
+                        <div class="sale-price">15.000.000</div>
+                    </div>
+                </td>
+                <td>20</td>
+                <td>10</td>
+                <td>3 lượt</td>
+                <td>20</td>
+                <td>
+                    <span class="status-indicator visible">
+                        <i class="fas fa-circle"></i> Hiển thị
+                    </span>
+                </td>
+                <td>20</td>
+                <td>30-10-2025</td>
+                <td>30-10-2025</td>
+                <td>
+                    <div class="action-cell">
+                        <button class="action-button edit" data-id="2" title="Chỉnh sửa">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-button visibility" data-id="2" data-status="visible" title="Ẩn sản phẩm">
+                            <i class="fas fa-eye-slash"></i>
+                        </button>
+                        <button class="action-button delete" data-id="2" data-name="Modena armchair"
+                            title="Xóa sản phẩm">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+
+            <!-- Sản phẩm 3 -->
+            <tr>
+                <td class="checkbox-cell">
+                    <input type="checkbox">
+                </td>
+                <td>
+                    <div class="product-info">
+                        <div class="product-image">
+                            <img src="/images/products/modena-armchair.jpg" alt="Modena armchair">
+                        </div>
+                        <div class="product-name">
+                            <a href="#">Modena armchair</a>
+                        </div>
+                    </div>
+                </td>
+                <td>Sofas</td>
+                <td>
+                    <div class="product-price">
+                        <div class="original-price">15.500.000</div>
+                        <div class="sale-price">15.000.000</div>
+                    </div>
+                </td>
+                <td>20</td>
+                <td>10</td>
+                <td>3 lượt</td>
+                <td>20</td>
+                <td>
+                    <span class="status-indicator visible">
+                        <i class="fas fa-circle"></i> Hiển thị
+                    </span>
+                </td>
+                <td>20</td>
+                <td>30-10-2025</td>
+                <td>30-10-2025</td>
+                <td>
+                    <div class="action-cell">
+                        <button class="action-button edit" data-id="3" title="Chỉnh sửa">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-button visibility" data-id="3" data-status="visible" title="Ẩn sản phẩm">
+                            <i class="fas fa-eye-slash"></i>
+                        </button>
+                        <button class="action-button delete" data-id="3" data-name="Modena armchair"
+                            title="Xóa sản phẩm">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+
+            <!-- Sản phẩm 4 -->
+            <tr>
+                <td class="checkbox-cell">
+                    <input type="checkbox">
+                </td>
+                <td>
+                    <div class="product-info">
+                        <div class="product-image">
+                            <img src="/images/products/modena-armchair.jpg" alt="Modena armchair">
+                        </div>
+                        <div class="product-name">
+                            <a href="#">Modena armchair</a>
+                        </div>
+                    </div>
+                </td>
+                <td>Sofas</td>
+                <td>
+                    <div class="product-price">
+                        <div class="original-price">15.500.000</div>
+                        <div class="sale-price">15.000.000</div>
+                    </div>
+                </td>
+                <td>20</td>
+                <td>10</td>
+                <td>3 lượt</td>
+                <td>20</td>
+                <td>
+                    <span class="status-indicator visible">
+                        <i class="fas fa-circle"></i> Hiển thị
+                    </span>
+                </td>
+                <td>20</td>
+                <td>30-10-2025</td>
+                <td>30-10-2025</td>
+                <td>
+                    <div class="action-cell">
+                        <button class="action-button edit" data-id="4" title="Chỉnh sửa">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-button visibility" data-id="4" data-status="visible" title="Ẩn sản phẩm">
+                            <i class="fas fa-eye-slash"></i>
+                        </button>
+                        <button class="action-button delete" data-id="4" data-name="Modena armchair"
+                            title="Xóa sản phẩm">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+
+            <!-- Sản phẩm 5 -->
+            <tr>
+                <td class="checkbox-cell">
+                    <input type="checkbox">
+                </td>
+                <td>
+                    <div class="product-info">
+                        <div class="product-image">
+                            <img src="/images/products/modena-armchair.jpg" alt="Modena armchair">
+                        </div>
+                        <div class="product-name">
+                            <a href="#">Modena armchair</a>
+                        </div>
+                    </div>
+                </td>
+                <td>Sofas</td>
+                <td>
+                    <div class="product-price">
+                        <div class="original-price">15.500.000</div>
+                        <div class="sale-price">15.000.000</div>
+                    </div>
+                </td>
+                <td>20</td>
+                <td>10</td>
+                <td>3 lượt</td>
+                <td>20</td>
+                <td>
+                    <span class="status-indicator visible">
+                        <i class="fas fa-circle"></i> Hiển thị
+                    </span>
+                </td>
+                <td>20</td>
+                <td>30-10-2025</td>
+                <td>30-10-2025</td>
+                <td>
+                    <div class="action-cell">
+                        <button class="action-button edit" data-id="5" title="Chỉnh sửa">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-button visibility" data-id="5" data-status="visible" title="Ẩn sản phẩm">
+                            <i class="fas fa-eye-slash"></i>
+                        </button>
+                        <button class="action-button delete" data-id="5" data-name="Modena armchair"
+                            title="Xóa sản phẩm">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+
+            <!-- Sản phẩm 6 -->
+            <tr>
+                <td class="checkbox-cell">
+                    <input type="checkbox">
+                </td>
+                <td>
+                    <div class="product-info">
+                        <div class="product-image">
+                            <img src="/images/products/modena-armchair.jpg" alt="Modena armchair">
+                        </div>
+                        <div class="product-name">
+                            <a href="#">Modena armchair</a>
+                        </div>
+                    </div>
+                </td>
+                <td>Sofas</td>
+                <td>
+                    <div class="product-price">
+                        <div class="original-price">15.500.000</div>
+                        <div class="sale-price">15.000.000</div>
+                    </div>
+                </td>
+                <td>20</td>
+                <td>10</td>
+                <td>3 lượt</td>
+                <td>20</td>
+                <td>
+                    <span class="status-indicator visible">
+                        <i class="fas fa-circle"></i> Hiển thị
+                    </span>
+                </td>
+                <td>20</td>
+                <td>30-10-2025</td>
+                <td>30-10-2025</td>
+                <td>
+                    <div class="action-cell">
+                        <button class="action-button edit" data-id="6" title="Chỉnh sửa">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-button visibility" data-id="6" data-status="visible" title="Ẩn sản phẩm">
+                            <i class="fas fa-eye-slash"></i>
+                        </button>
+                        <button class="action-button delete" data-id="6" data-name="Modena armchair"
+                            title="Xóa sản phẩm">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- Load Products JS -->
+<script src="/javascripts/products.js"></script>

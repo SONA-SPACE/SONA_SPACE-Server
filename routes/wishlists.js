@@ -43,34 +43,34 @@ router.post('/', async (req, res) => {
   try {
     const { product_id } = req.body;
     const userId = req.user.id;
-    
+
     if (!product_id) {
       return res.status(400).json({ error: 'Product ID is required' });
     }
-    
+
     // Kiểm tra sản phẩm tồn tại
     const [product] = await db.query('SELECT product_id FROM product WHERE product_id = ?', [product_id]);
-    
+
     if (!product.length) {
       return res.status(404).json({ error: 'Product not found' });
     }
-    
-    // Kiểm tra sản phẩm đã có trong wishlist chưa
+
+    // Kiểm tra sản phẩm đã có trong wishlist chưa (chỉ kiểm tra status = 1)
     const [existingItem] = await db.query(
-      'SELECT wishlist_id FROM wishlist WHERE user_id = ? AND product_id = ?',
+      'SELECT wishlist_id FROM wishlist WHERE user_id = ? AND product_id = ? AND status = 1',
       [userId, product_id]
     );
-    
+
     if (existingItem.length > 0) {
       return res.status(400).json({ error: 'Product already in wishlist' });
     }
-    
-    // Thêm vào wishlist
+
+    // Thêm vào wishlist với status = 1
     const [result] = await db.query(
-      'INSERT INTO wishlist (user_id, product_id, created_at) VALUES (?, ?, NOW())',
+      'INSERT INTO wishlist (user_id, product_id, status, created_at) VALUES (?, ?, 1, NOW())',
       [userId, product_id]
     );
-    
+
     // Lấy thông tin wishlist item vừa tạo
     const [wishlistItem] = await db.query(`
       SELECT 
@@ -83,7 +83,7 @@ router.post('/', async (req, res) => {
       JOIN product p ON w.product_id = p.product_id
       WHERE w.wishlist_id = ?
     `, [result.insertId]);
-    
+
     res.status(201).json({
       message: 'Product added to wishlist successfully',
       wishlistItem: wishlistItem[0]

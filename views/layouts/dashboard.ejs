@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sona Space - Dashboard</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/stylesheets/dashboard.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="brand-container">
+                <div class="brand">sona space</div>
+            </div>
+            <div class="sidebar-menu">
+                <div class="menu-section">
+                    <div class="menu-section-title">Quản lý</div>
+                    <ul class="nav-menu">
+                        <li class="nav-item active">
+                            <a href="/dashboard">
+                                <i class="fas fa-chart-line"></i>
+                                <span>Tổng quan</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="/dashboard/thu">
+                                <i class="fas fa-money-bill-wave"></i>
+                                <span>Tổng thu</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="/dashboard/orders">
+                                <i class="fas fa-shopping-bag"></i>
+                                <span>Đơn hàng</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="menu-section">
+                    <div class="menu-section-title">Liên hệ</div>
+                    <ul class="nav-menu">
+                        <li class="nav-item">
+                            <a href="/dashboard/thietke">
+                                <i class="fas fa-pencil-ruler"></i>
+                                <span>Hỗ trợ thiết kế</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="/dashboard/users">
+                                <i class="fas fa-user"></i>
+                                <span>Hỗ trợ người dùng</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="menu-section">
+                    <div class="menu-section-title">Sản phẩm</div>
+                    <ul class="nav-menu">
+                        <li class="nav-item">
+                            <a href="/dashboard/products">
+                                <i class="fas fa-box"></i>
+                                <span>Sản phẩm</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="/dashboard/danh-muc">
+                                <i class="fas fa-list"></i>
+                                <span>Danh mục</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="/dashboard/khong-gian">
+                                <i class="fas fa-home"></i>
+                                <span>Không gian</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="/dashboard/binhluan">
+                                <i class="fas fa-comments"></i>
+                                <span>Bình luận</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="menu-section">
+                    <div class="menu-section-title">Tin tức</div>
+                    <ul class="nav-menu">
+                        <li class="nav-item">
+                            <a href="/dashboard/tintuc">
+                                <i class="fas fa-newspaper"></i>
+                                <span>Tin tức</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="/dashboard/danhmuc-tin">
+                                <i class="fas fa-folder"></i>
+                                <span>Danh mục tin</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="menu-section">
+                    <div class="menu-section-title">Người dùng</div>
+                    <ul class="nav-menu">
+                        <li class="nav-item">
+                            <a href="/dashboard/accounts">
+                                <i class="fas fa-user-circle"></i>
+                                <span>Tài khoản</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="/dashboard/staff">
+                                <i class="fas fa-users"></i>
+                                <span>Nhân viên</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <header class="dashboard-header">
+                <div class="header-left">
+                    <div class="page-tabs">
+                        <i class="fas fa-table-columns"></i>
+                        <span>Dashboards</span>
+                    </div>
+                    <div class="current-tab">
+                        Default
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="theme-toggle">
+                        <i class="fas fa-sun"></i>
+                    </div>
+                    <div class="history-button">
+                        <i class="fas fa-clock-rotate-left"></i>
+                    </div>
+                    <div class="notifications">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                    <div class="user-profile">
+                        <div class="avatar">
+                            <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="User Avatar">
+                        </div>
+                        <div class="user-info">
+                            <div class="user-name">Thomas Annee</div>
+                            <div class="user-role">UX Designer</div>
+                        </div>
+                        <div class="dropdown-arrow">
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Content Container -->
+            <div class="content-container">
+                <%- body %>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom JavaScript -->
+    <script src="/javascripts/dashboard.js"></script>
+</body>
+</html> 

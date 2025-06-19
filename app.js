@@ -41,6 +41,7 @@ var newsRouter = require("./routes/news");
 var newsCategoriesRouter = require("./routes/newsCategories");
 var authRouter = require("./routes/auth");
 var debugRouter = require("./routes/debug");
+var colorRouter = require("./routes/color");
 var dashboardRouter = require("./routes/dashboard");
 
 var app = express();
@@ -100,6 +101,7 @@ app.use("/api/orders", authMiddleware.verifyToken, ordersRouter);
 app.use("/api/order-status", authMiddleware.verifyToken, orderStatusRouter);
 app.use("/api/payments", authMiddleware.verifyToken, paymentsRouter);
 app.use("/api/couponcodes", authMiddleware.verifyToken, couponcodesRouter);
+app.use("/api/color",colorRouter)
 
 app.use(function (req, res, next) {
   next(createError(404));

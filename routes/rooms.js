@@ -26,6 +26,19 @@ router.get("/", async (req, res) => {
 });
 
 /**
+ * @route   GET /filter/rooms
+ * @desc    Lấy danh sách phòng
+ * @access  Public
+ */
+router.get("/filter/", async (req, res) => {
+  const [rows] = await db.query(`
+    SELECT room_id, room_name, slug
+    FROM room
+    WHERE deleted_at IS NULL
+  `);
+  res.json(rows);
+});
+/**
  * @route   GET /api/rooms/:slug
  * @desc    Lấy thông tin một phòng
  * @access  Public
@@ -466,5 +479,9 @@ router.delete(
     }
   }
 );
+
+
+
+
 
 module.exports = router;

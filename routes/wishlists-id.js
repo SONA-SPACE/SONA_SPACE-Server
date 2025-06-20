@@ -23,6 +23,7 @@ router.get('/:userId', async (req, res) => {
         wl.created_at,
         vp.variant_id,
         vp.product_id,
+        p.product_name,
         vp.variant_product_price,
         vp.variant_product_price_sale,
         vp.variant_product_list_image,
@@ -33,6 +34,7 @@ router.get('/:userId', async (req, res) => {
       FROM wishlist wl
       JOIN user u ON wl.user_id = u.user_id
       JOIN variant_product vp ON wl.variant_id = vp.variant_id
+      JOIN product p ON vp.product_id = p.product_id
       WHERE wl.user_id = ? AND wl.deleted_at IS NULL
       ORDER BY wl.created_at DESC
     `, [userId]);

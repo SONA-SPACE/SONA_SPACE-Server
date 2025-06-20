@@ -43,8 +43,8 @@ var authRouter = require("./routes/auth");
 var debugRouter = require("./routes/debug");
 var colorRouter = require("./routes/color");
 var dashboardRouter = require("./routes/dashboard");
+var ordersIdRouter = require("./routes/orders-id");
 var uploadRouter = require("./routes/upload");
-
 var app = express();
 
 // App version and startup time for health checks
@@ -93,7 +93,7 @@ app.use("/api/news-categories", newsCategoriesRouter);
 app.use("/api/contact-forms", contactFormsRouter);
 app.use("/api/comments", commentsRouter);
 app.use("/api/debug", debugRouter);
-
+app.use("/api/orders-id/", ordersIdRouter);
 // API routes - protected
 app.use("/api/users", authMiddleware.verifyToken, usersRouter);
 app.use("/api/wishlists", authMiddleware.verifyToken, wishlistsRouter);
@@ -101,7 +101,7 @@ app.use("/api/orders", authMiddleware.verifyToken, ordersRouter);
 app.use("/api/order-status", authMiddleware.verifyToken, orderStatusRouter);
 app.use("/api/payments", authMiddleware.verifyToken, paymentsRouter);
 app.use("/api/couponcodes", authMiddleware.verifyToken, couponcodesRouter);
-app.use("/api/color", colorRouter);
+app.use("/api/color",  colorRouter);;
 app.use("/api/upload", uploadRouter);
 
 app.use(function (req, res, next) {

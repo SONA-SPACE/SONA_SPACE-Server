@@ -333,39 +333,44 @@ router.get("/:slug/products", async (req, res) => {
     // Query sản phẩm
     const [products] = await db.query(
       `
-      SELECT 
-        p.product_id AS id,
-        p.product_name AS name,
-        p.product_slug AS slug,
-        p.product_image AS image,
-        p.category_id,
-        c.category_id,
-        c.category_name,
-        p.created_at,
-        p.updated_at,
-        (
-          SELECT vp2.variant_product_price
-          FROM variant_product vp2
-          JOIN color col ON vp2.color_id = col.color_id
-          WHERE vp2.product_id = p.product_id AND col.color_priority = 1
-          LIMIT 1
-        ) AS price,
-        (
-          SELECT vp2.variant_product_price_sale
-          FROM variant_product vp2
-          JOIN color col ON vp2.color_id = col.color_id
-          WHERE vp2.product_id = p.product_id AND col.color_priority = 1
-          LIMIT 1
-        ) AS price_sale,
-        JSON_ARRAYAGG(DISTINCT col.color_hex) AS color_hex
-      FROM product p
-      LEFT JOIN category c ON p.category_id = c.category_id
-      LEFT JOIN variant_product vp ON p.product_id = vp.product_id
-      LEFT JOIN color col ON vp.color_id = col.color_id
-      WHERE p.category_id = ?
-      GROUP BY p.product_id 
-      ORDER BY p.${sort_by} ${sort_order}
-      LIMIT ?, ?
+       SELECT 
+  p.product_id AS id,
+  p.product_name AS name,
+  p.product_slug AS slug,
+  p.product_image AS image,
+  p.category_id,
+  c.category_id,
+  c.category_name,
+  p.created_at,
+  p.updated_at,
+
+  
+ (
+  SELECT vp2.variant_product_price
+  FROM variant_product vp2
+  WHERE vp2.product_id = p.product_id
+  ORDER BY vp2.variant_id ASC
+  LIMIT 1
+) AS price,
+(
+  SELECT vp2.variant_product_price_sale
+  FROM variant_product vp2
+  WHERE vp2.product_id = p.product_id
+  ORDER BY vp2.variant_id ASC
+  LIMIT 1
+) AS price_sale,
+
+
+  JSON_ARRAYAGG(DISTINCT col.color_hex) AS color_hex
+
+        FROM product p
+        LEFT JOIN category c ON p.category_id = c.category_id
+        LEFT JOIN variant_product vp ON p.product_id = vp.product_id
+        LEFT JOIN color col ON vp.color_id = col.color_id
+        WHERE p.category_id = ?
+        GROUP BY p.product_id 
+        ORDER BY p.${sort_by} ${sort_order}
+        LIMIT ?, ?
     `,
       [categoryId, offset, limit]
     );

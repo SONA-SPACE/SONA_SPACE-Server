@@ -1,12 +1,12 @@
 // Dashboard JavaScript
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // Initialize revenue chart
     initializeRevenueChart();
-    
+
     // Set active navigation based on current page
     setActiveNavigation();
-    
+
     // Initialize tooltips if Bootstrap is available
     if (typeof bootstrap !== 'undefined') {
         var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
@@ -29,9 +29,9 @@ document.addEventListener('DOMContentLoaded', function() {
 function setActiveNavigation() {
     const currentPath = window.location.pathname;
     const navLinks = document.querySelectorAll('.nav-item a');
-    
+
     navLinks.forEach(link => {
-        if (currentPath === link.getAttribute('href') || 
+        if (currentPath === link.getAttribute('href') ||
             (link.getAttribute('href') !== '/dashboard' && currentPath.startsWith(link.getAttribute('href')))) {
             link.parentElement.classList.add('active');
         } else {
@@ -44,11 +44,11 @@ function setActiveNavigation() {
 function initializeRevenueChart() {
     const chartElement = document.getElementById('revenueChart');
     if (!chartElement) return;
-    
+
     // Define chart data
     const labels = ['01 Apr', '02 Apr', '03 Apr', '04 Apr', '05 Apr', '06 Apr', '07 Apr'];
     const data = [240, 280, 200, 220, 260, 230, 300];
-    
+
     // Define chart options
     const options = {
         responsive: true,
@@ -73,7 +73,7 @@ function initializeRevenueChart() {
                 boxPadding: 4,
                 usePointStyle: true,
                 callbacks: {
-                    label: function(context) {
+                    label: function (context) {
                         return `Sales: ${context.raw}k`;
                     }
                 }
@@ -96,7 +96,7 @@ function initializeRevenueChart() {
                 },
                 ticks: {
                     color: '#6c757d',
-                    callback: function(value) {
+                    callback: function (value) {
                         return value + 'k';
                     }
                 }
@@ -120,7 +120,7 @@ function initializeRevenueChart() {
             }
         }
     };
-    
+
     // Create the chart
     const revenueChart = new Chart(chartElement, {
         type: 'line',
@@ -140,7 +140,7 @@ function initializeRevenueChart() {
         },
         options: options
     });
-    
+
     // Add a tooltip annotation for 2 Apr (79k)
     const tooltipIndicator = document.createElement('div');
     tooltipIndicator.className = 'tooltip-indicator';
@@ -151,12 +151,12 @@ function initializeRevenueChart() {
             <div class="tooltip-value">Sales: $79k</div>
         </div>
     `;
-    
+
     // Position the tooltip at the second data point (index 1)
     const chartWrapper = document.querySelector('.chart-wrapper');
     if (chartWrapper) {
         chartWrapper.appendChild(tooltipIndicator);
-        
+
         // Style the tooltip indicator
         const style = document.createElement('style');
         style.textContent = `
@@ -292,48 +292,48 @@ function initializeCharts() {
 function sortTable(tableId, columnIndex) {
     const table = document.getElementById(tableId);
     if (!table) return;
-    
+
     const tbody = table.querySelector('tbody');
     const rows = Array.from(tbody.querySelectorAll('tr'));
-    
+
     // Get the current sort direction
     const th = table.querySelectorAll('th')[columnIndex];
     const currentDir = th.getAttribute('data-sort') === 'asc' ? 'desc' : 'asc';
-    
+
     // Update all headers to remove sort indicators
     table.querySelectorAll('th').forEach(header => {
         header.setAttribute('data-sort', '');
         header.querySelector('i.sort-indicator')?.remove();
     });
-    
+
     // Update current header with sort direction and indicator
     th.setAttribute('data-sort', currentDir);
-    
+
     const icon = document.createElement('i');
-    icon.className = currentDir === 'asc' 
-        ? 'fas fa-sort-up sort-indicator ms-1' 
+    icon.className = currentDir === 'asc'
+        ? 'fas fa-sort-up sort-indicator ms-1'
         : 'fas fa-sort-down sort-indicator ms-1';
     th.appendChild(icon);
-    
+
     // Sort the rows
     rows.sort((a, b) => {
         const aValue = a.cells[columnIndex].textContent.trim();
         const bValue = b.cells[columnIndex].textContent.trim();
-        
+
         // Check if values are numbers
         const aNum = parseFloat(aValue.replace(/[^\d.-]/g, ''));
         const bNum = parseFloat(bValue.replace(/[^\d.-]/g, ''));
-        
+
         if (!isNaN(aNum) && !isNaN(bNum)) {
             return currentDir === 'asc' ? aNum - bNum : bNum - aNum;
         }
-        
+
         // Otherwise sort as strings
-        return currentDir === 'asc' 
+        return currentDir === 'asc'
             ? aValue.localeCompare(bValue)
             : bValue.localeCompare(aValue);
     });
-    
+
     // Reattach sorted rows to the table
     rows.forEach(row => tbody.appendChild(row));
 }
@@ -354,13 +354,13 @@ function showToast(message, type = 'success') {
         container.style.zIndex = '1050';
         document.body.appendChild(container);
     }
-    
+
     const toast = document.createElement('div');
     toast.className = `toast align-items-center text-white bg-${type} border-0`;
     toast.setAttribute('role', 'alert');
     toast.setAttribute('aria-live', 'assertive');
     toast.setAttribute('aria-atomic', 'true');
-    
+
     toast.innerHTML = `
         <div class="d-flex">
             <div class="toast-body">
@@ -369,17 +369,17 @@ function showToast(message, type = 'success') {
             <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
         </div>
     `;
-    
+
     document.getElementById('toastContainer').appendChild(toast);
-    
+
     const bsToast = new bootstrap.Toast(toast, {
         delay: 5000
     });
-    
+
     bsToast.show();
-    
+
     // Remove the toast after it's hidden
-    toast.addEventListener('hidden.bs.toast', function() {
+    toast.addEventListener('hidden.bs.toast', function () {
         toast.remove();
     });
 } 

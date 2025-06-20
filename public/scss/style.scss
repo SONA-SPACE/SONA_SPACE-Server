@@ -9,6 +9,14 @@
 @import "imports/core/bootstrap_mini"; // Nếu không Responsive bằng BooTstrap 4 Grid thì không cần import vào.
 
 /* Navigation, header, footer*/
-@import "imports/core/header";
+@import "imports/core/dashboard";
+
 
 /* Components */
+@import "imports/components/toasts";
+
+/* Pages */
+@import "imports/pages/index";
+@import "imports/pages/products";
+@import "imports/pages/categories";
+@import "imports/pages/addEditproduct";

@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const db = require("../config/database");
 const { verifyToken, isAdmin } = require("../middleware/auth");
-
+const cloudinary = require("cloudinary").v2;
 /**
  * @route   GET /api/rooms
  * @desc    Lấy danh sách phòng
@@ -79,12 +79,17 @@ router.get("/:slug", async (req, res) => {
  * @desc    Tạo phòng mới
  * @access  Private (Admin only)
  */
-router.post("/", verifyToken, isAdmin, async (req, res) => {
+// verifyToken, isAdmin,
+router.post("/", async (req, res) => {
   try {
-    const { name, description, image, slug } = req.body;
+    const { name, description, banner, image, slug, status } = req.body;
 
     if (!name || !slug) {
       return res.status(400).json({ error: "Room name and slug are required" });
+    }
+
+    if (!banner && !image) {
+      return res.status(400).json({ error: "Không thể upload phòng không có hình ảnh" });
     }
 
     // Kiểm tra tên phòng đã tồn tại chưa
@@ -98,8 +103,8 @@ router.post("/", verifyToken, isAdmin, async (req, res) => {
     }
 
     const [result] = await db.query(
-      "INSERT INTO room (room_name, room_description, room_image, slug, created_at) VALUES (?, ?, ?, ?, NOW())",
-      [name, description || null, image || null, slug]
+      "INSERT INTO room (room_name, room_description, room_image, room_banner, status, slug, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())",
+      [name, description || null, image || null, banner || null, status ?? 0, slug]
     );
 
     const [newRoom] = await db.query("SELECT * FROM room WHERE room_id = ?", [
@@ -121,51 +126,74 @@ router.post("/", verifyToken, isAdmin, async (req, res) => {
  * @desc    Cập nhật thông tin phòng
  * @access  Private (Admin only)
  */
-router.put("/:slug", verifyToken, isAdmin, async (req, res) => {
+// verifyToken, isAdmin,
+router.put("/:slug", async (req, res) => {
+  const slug = req.params.slug;
+  if (!slug) return res.status(400).json({ message: "Slug is required" });
+
   try {
-    const slug = req.params.slug;
-    if (!slug) {
-      return res.status(400).json({ error: "Invalid room slug" });
-    }
+    const { name, image, banner, priority, status } = req.body;
 
-    const { name, description } = req.body;
-
-    // Kiểm tra phòng tồn tại
-    const [existingRoom] = await db.query(
-      "SELECT room_id FROM room WHERE slug = ?",
+    // 1. Kiểm tra room tồn tại
+    const [oldData] = await db.query(
+      "SELECT room_id, room_image, room_banner FROM room WHERE slug = ?",
       [slug]
     );
-
-    if (existingRoom.length === 0) {
+    if (!oldData.length) {
       return res.status(404).json({ error: "Room not found" });
     }
 
-    // Kiểm tra tên mới có trùng với phòng khác không
+    const roomId = oldData[0].room_id;
+    const oldImage = oldData[0].room_image;
+    const oldBanner = oldData[0].room_banner;
+
+    // 2. Kiểm tra tên mới có trùng không
     if (name) {
       const [duplicateName] = await db.query(
-        "SELECT room_id FROM room WHERE room_name = ? AND room_id != ?",
+        "SELECT room_id FROM room WHERE room_name = ? AND slug != ?",
         [name, slug]
       );
-
       if (duplicateName.length > 0) {
         return res.status(400).json({ error: "Room name already exists" });
       }
     }
 
+    // 3. Hàm xóa ảnh cũ nếu cần
+    const deleteFromCloudinary = async (url) => {
+      if (!url) return;
+      const publicId = url
+        .split("/")
+        .slice(7)
+        .join("/")
+        .replace(/\.(jpg|jpeg|png|webp)$/i, "");
+      await cloudinary.uploader.destroy(publicId);
+    };
+
+    if (image && image !== oldImage) {
+      await deleteFromCloudinary(oldImage);
+    }
+
+    if (banner && banner !== oldBanner) {
+      await deleteFromCloudinary(oldBanner);
+    }
+
+    // 4. Cập nhật room
     await db.query(
       `
-      UPDATE room SET
+      UPDATE room 
+      SET 
         room_name = COALESCE(?, room_name),
-        room_description = COALESCE(?, room_description),
+        room_image = COALESCE(?, room_image),
+        room_banner = COALESCE(?, room_banner),
+        room_priority = COALESCE(?, room_priority),
+        status = COALESCE(?, status),
         updated_at = NOW()
       WHERE slug = ?
-    `,
-      [name || null, description || null, slug]
+      `,
+      [name || null, image || null, banner || null, priority || 0, status ?? 1, slug]
     );
 
-    const [updatedRoom] = await db.query("SELECT * FROM room WHERE slug = ?", [
-      slug,
-    ]);
+    const [updatedRoom] = await db.query("SELECT * FROM room WHERE slug = ?", [slug]);
 
     res.json({
       message: "Room updated successfully",
@@ -177,35 +205,51 @@ router.put("/:slug", verifyToken, isAdmin, async (req, res) => {
   }
 });
 
+
 /**
  * @route   DELETE /api/rooms/:slug
  * @desc    Xóa phòng
  * @access  Private (Admin only)
  */
-router.delete("/:slug", verifyToken, isAdmin, async (req, res) => {
+// verifyToken, isAdmin,
+router.delete("/:slug", async (req, res) => {
+  const slug = req.params.slug;
+  // Kiểm tra phòng tồn tại
+  if (!slug) {
+    return res.status(400).json({ error: "Invalid room slug" });
+  }
   try {
-    const slug = req.params.slug;
-    if (!slug) {
-      return res.status(400).json({ error: "Invalid room slug" });
-    }
-
-    // Kiểm tra phòng tồn tại
-    const [existingRoom] = await db.query(
-      "SELECT room_id FROM room WHERE slug = ?",
+    const [roomData] = await db.query(
+      "SELECT room_id, room_image, room_banner FROM room WHERE slug = ?",
       [slug]
     );
 
-    if (existingRoom.length === 0) {
+    if (!roomData.length) {
       return res.status(404).json({ error: "Room not found" });
     }
 
-    const roomId = existingRoom[0].room_id;
+    const { room_id, room_image, room_banner } = roomData[0];
+
+    const deleteFromCloudinary = async (url) => {
+      if (!url) return;
+      const publicId = url
+        .split("/")
+        .slice(7)
+        .join("/")
+        .replace(/\.(jpg|jpeg|png|webp)$/i, "");
+      await cloudinary.uploader.destroy(publicId);
+    };
+
+    // Xóa ảnh phòng từ Cloudinary
+    await deleteFromCloudinary(room_image);
+    await deleteFromCloudinary(room_banner);
 
     // Xóa các liên kết với sản phẩm
-    await db.query("DELETE FROM room_product WHERE room_id = ?", [roomId]);
+    await db.query("DELETE FROM room_product WHERE room_id = ?", [room_id]);
 
     // Xóa phòng
-    await db.query("DELETE FROM room WHERE room_id = ?", [roomId]);
+    await db.query("DELETE FROM room WHERE room_id = ?", [room_id]);
+
 
     res.json({ message: "Room deleted successfully" });
   } catch (error) {
@@ -268,21 +312,21 @@ router.get("/:slug/products", async (req, res) => {
         p.updated_at,
 
         (
-  SELECT vp2.variant_product_price
-  FROM variant_product vp2
-  JOIN color c2 ON vp2.color_id = c2.color_id
-  WHERE vp2.product_id = p.product_id AND c2.color_priority = 1
-  LIMIT 1
-) AS price,
+          SELECT vp2.variant_product_price
+          FROM variant_product vp2
+          WHERE vp2.product_id = p.product_id
+          ORDER BY vp2.variant_id ASC
+          LIMIT 1
+        ) AS price,
 
-(
-  SELECT vp2.variant_product_price_sale
-  FROM variant_product vp2
-  JOIN color c2 ON vp2.color_id = c2.color_id
-  WHERE vp2.product_id = p.product_id AND c2.color_priority = 1
-  LIMIT 1
-) AS price_sale,
- 
+        (
+          SELECT vp2.variant_product_price_sale
+          FROM variant_product vp2
+          WHERE vp2.product_id = p.product_id
+          ORDER BY vp2.variant_id ASC
+          LIMIT 1
+        ) AS price_sale,
+
         JSON_ARRAYAGG(DISTINCT col.color_hex) AS color_hex
 
       FROM room_product rp
@@ -298,6 +342,7 @@ router.get("/:slug/products", async (req, res) => {
       `,
       [roomId, offset, limit]
     );
+
     const transformedProducts = products.map((product) => ({
       id: product.id,
       name: product.name,

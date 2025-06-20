@@ -39,7 +39,7 @@ router.get("/", async (req, res) => {
     }
 
     if (price) {
-      switch(price) {
+      switch (price) {
         case 'Dưới 10 triệu':
           whereConditions.push(`
             (SELECT 
@@ -84,7 +84,7 @@ router.get("/", async (req, res) => {
     // 4. Xây dựng câu ORDER BY dựa trên tham số sort
     let orderBy = 'p.created_at DESC';
     if (sort) {
-      switch(sort) {
+      switch (sort) {
         case 'Giá tăng dần':
           orderBy = `
             (SELECT 
@@ -234,20 +234,20 @@ router.get("/newest", async (req, res) => {
   p.updated_at,
 
   (
-    SELECT vp2.variant_product_price
-    FROM variant_product vp2
-    JOIN color col ON vp2.color_id = col.color_id
-    WHERE vp2.product_id = p.product_id AND col.color_priority = 1
-    LIMIT 1
-  ) AS price,
+  SELECT vp2.variant_product_price
+  FROM variant_product vp2
+  WHERE vp2.product_id = p.product_id
+  ORDER BY vp2.variant_id ASC
+  LIMIT 1
+) AS price,
 
-  (
-    SELECT vp2.variant_product_price_sale
-    FROM variant_product vp2
-    JOIN color col ON vp2.color_id = col.color_id
-    WHERE vp2.product_id = p.product_id AND col.color_priority = 1
-    LIMIT 1
-  ) AS price_sale,
+(
+  SELECT vp2.variant_product_price_sale
+  FROM variant_product vp2
+  WHERE vp2.product_id = p.product_id
+  ORDER BY vp2.variant_id ASC
+  LIMIT 1
+) AS price_sale,
 
   IFNULL(JSON_ARRAYAGG(DISTINCT col.color_hex), JSON_ARRAY()) AS color_hex,
 

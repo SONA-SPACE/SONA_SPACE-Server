@@ -45,6 +45,8 @@ var colorRouter = require("./routes/color");
 var dashboardRouter = require("./routes/dashboard");
 var ordersIdRouter = require("./routes/orders-id");
 var wishlistsIdRouter = require("./routes/wishlists-id");
+var uploadRouter = require("./routes/upload");
+
 var app = express();
 
 // App version and startup time for health checks
@@ -60,7 +62,6 @@ const expressLayouts = require("express-ejs-layouts");
 app.use(expressLayouts);
 app.set("layout", "layouts/main");
 app.set("layout extractScripts", true);
-app.set("layout extractStyles", true);
 
 app.use(logger("dev"));
 app.use(express.json());
@@ -104,6 +105,7 @@ app.use("/api/order-status", authMiddleware.verifyToken, orderStatusRouter);
 app.use("/api/payments", authMiddleware.verifyToken, paymentsRouter);
 app.use("/api/couponcodes", authMiddleware.verifyToken, couponcodesRouter);
 app.use("/api/color", colorRouter);
+app.use("/api/upload", uploadRouter);
 
 app.use(function (req, res, next) {
   next(createError(404));

@@ -21,12 +21,12 @@ var cookieParser = require("cookie-parser");
 var logger = require("morgan");
 
 // Authentication middleware
-const authMiddleware = require('./middleware/auth');
+const authMiddleware = require("./middleware/auth");
 
 // Import all route files
 var indexRouter = require("./routes/index");
 var usersRouter = require("./routes/users");
-var productsRouter = require("./routes/products"); 
+var productsRouter = require("./routes/products");
 var categoriesRouter = require("./routes/categories");
 var variantsRouter = require("./routes/variants");
 var roomsRouter = require("./routes/rooms");
@@ -43,11 +43,12 @@ var authRouter = require("./routes/auth");
 var debugRouter = require("./routes/debug");
 var colorRouter = require("./routes/color");
 var dashboardRouter = require("./routes/dashboard");
+var uploadRouter = require("./routes/upload");
 
 var app = express();
 
 // App version and startup time for health checks
-app.locals.version = require('./package.json').version || '1.0.0';
+app.locals.version = require("./package.json").version || "1.0.0";
 app.locals.startTime = new Date();
 
 // Set up view engine
@@ -55,9 +56,9 @@ app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "ejs");
 
 // Configure express-ejs-layouts
-const expressLayouts = require('express-ejs-layouts');
+const expressLayouts = require("express-ejs-layouts");
 app.use(expressLayouts);
-app.set('layout', 'layouts/main');
+app.set("layout", "layouts/main");
 app.set("layout extractScripts", true);
 
 app.use(logger("dev"));
@@ -68,12 +69,12 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use(cors());
 
 // Add a health check endpoint
-app.get('/health', function(req, res) {
+app.get("/health", function (req, res) {
   res.json({
-    status: 'ok',
+    status: "ok",
     uptime: Math.floor((new Date() - app.locals.startTime) / 1000),
     version: app.locals.version,
-    env: process.env.NODE_ENV
+    env: process.env.NODE_ENV,
   });
 });
 
@@ -100,7 +101,8 @@ app.use("/api/orders", authMiddleware.verifyToken, ordersRouter);
 app.use("/api/order-status", authMiddleware.verifyToken, orderStatusRouter);
 app.use("/api/payments", authMiddleware.verifyToken, paymentsRouter);
 app.use("/api/couponcodes", authMiddleware.verifyToken, couponcodesRouter);
-app.use("/api/color",colorRouter)
+app.use("/api/color", colorRouter);
+app.use("/api/upload", uploadRouter);
 
 app.use(function (req, res, next) {
   next(createError(404));
@@ -109,17 +111,17 @@ app.use(function (req, res, next) {
 app.use(function (err, req, res, next) {
   // Log the error for server-side debugging
   console.error(err);
-  
+
   // Return JSON error response for API requests
-  if (req.path.startsWith('/api/')) {
+  if (req.path.startsWith("/api/")) {
     return res.status(err.status || 500).json({
       error: {
         message: err.message,
-        status: err.status || 500
-      }
+        status: err.status || 500,
+      },
     });
   }
-  
+
   // Render error page for web requests
   res.locals.message = err.message;
   res.locals.error = req.app.get("env") === "development" ? err : {};

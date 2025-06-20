@@ -1,0 +1,193 @@
+<!-- Tiêu đề và Thanh công cụ -->
+<div class="dashboard-header-row">
+  <h2 class="dashboard-title">Danh mục sản phẩm</h2>
+  <div class="action-buttons">
+    <button class="add-category-btn" onclick="window.location.href='/dashboard/addcategories'">
+      <i class="fas fa-plus"></i> Thêm danh mục
+    </button>
+  </div>
+</div>
+
+<!-- Bộ lọc và Tìm kiếm -->
+<div class="filter-row">
+  <div class="search-container">
+    <i class="fas fa-search search-icon"></i>
+    <input type="text" class="search-input" placeholder="Tìm kiếm danh mục..." />
+  </div>
+  <div class="date-range">
+    <i class="far fa-calendar-alt"></i>
+    <span>01/04/2023 - 30/04/2023</span>
+  </div>
+  <div class="results-info">Đang tải dữ liệu...</div>
+</div>
+
+<!-- Bảng Danh mục -->
+<div class="category-table-container">
+  <table class="category-table" id="categoriesTable">
+    <thead>
+      <tr>
+        <th>Danh mục</th>
+        <th>Sản phẩm</th>
+        <th>Trạng thái</th>
+        <th>Vị trí</th>
+        <th>Ngày tạo</th>
+        <th>Ngày cập nhật</th>
+        <th>Slug</th>
+        <th>Thao tác</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Dữ liệu sẽ được JS đổ vào -->
+    </tbody>
+  </table>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Initialize table sorting
+    const URL_API = "http://localhost:3501/api";
+
+    function getCategories() {
+      fetch(URL_API + "/categories")
+        .then((response) => response.json())
+        .then((data) => {
+          renderCategories(data);
+        })
+        .catch((error) => {
+          console.error("Lỗi khi tải danh mục:", error);
+          document.querySelector(".results-info").textContent =
+            "Không thể tải dữ liệu.";
+        });
+    }
+
+    function renderCategories(categories) {
+      const tableBody = document.querySelector("#categoriesTable tbody");
+      tableBody.innerHTML = "";
+
+      categories.forEach((category) => {
+        const row = document.createElement("tr");
+
+        // Gán mặc định nếu không có status
+        const status = category.category_status === 1 ? "visible" : "hidden";
+
+        row.innerHTML = `
+          <td>
+            <div class="category-info">
+              <div class="category-image">
+                <img src="${category.category_image || "/images/default.jpg"
+          }" alt="${category.category_name}">
+              </div>
+              <div class="category-name">${category.category_name}</div>
+            </div>
+          </td>
+          <td>${category.product_count || 0}</td>
+          <td>
+            <span class="status-indicator ${status === "visible" ? "visible" : "hidden"
+          }">
+              <i class="fas ${status === "visible" ? "fa-eye" : "fa-eye-slash"
+          }"></i>
+              ${status === "visible" ? "Hiển thị" : "Ẩn"}
+            </span>
+          </td>
+          <td>${category.position || "-"}</td>
+          <td>${formatDate(category.created_at)}</td>
+          <td>${formatDate(category.updated_at)}</td>
+          <td>${category.slug || "-"}</td>
+          <td>
+            <div class="action-cell">
+              <button class="action-button edit" data-id="${category.slug}" onclick="window.location.href='/dashboard/editcategories/${category.slug}'" title="Chỉnh sửa">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="action-button visibility" data-id="${category.slug
+          }" data-status="${status}" title="${status === "visible" ? "Ẩn danh mục" : "Hiển thị danh mục"
+          }">
+                <i class="fas ${status === "visible" ? "fa-eye-slash" : "fa-eye"
+          }"></i>
+              </button>
+              <button class="action-button delete" data-id="${category.slug
+          }" data-name="${category.category_name
+          }" title="Xóa danh mục" data-id="${category.category_id}">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </td>
+        `;
+
+        tableBody.appendChild(row);
+      });
+
+      document.querySelectorAll(".action-button.delete").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const categoryId = btn.getAttribute("data-id");
+          const categoryName = btn.getAttribute("data-name");
+          deleteCategory(categoryId, categoryName);
+        });
+      });
+
+      document.querySelector(
+        ".results-info"
+      ).textContent = `Hiển thị ${categories.length} kết quả`;
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return "-";
+      return new Date(dateStr).toLocaleDateString("vi-VN");
+    }
+
+    function deleteCategory(categoryId, categoryName) {
+      if (!confirm(`Bạn có chắc chắn muốn xóa danh mục "${categoryName}"?`)) {
+        return;
+      }
+
+      fetch(`/api/categories/${categoryId}`, {
+        method: "DELETE",
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.error) {
+            showToast(data.error, "danger");
+          } else {
+            showToast("Xóa danh mục thành công", "success");
+            setTimeout(() => location.reload(), 1000);
+          }
+        })
+        .catch((err) => {
+          console.error("Lỗi khi xóa:", err);
+          showToast("Xảy ra lỗi khi xóa danh mục", "danger");
+        });
+    }
+
+    function showToast(message, type = "success") {
+      let toastContainer = document.getElementById("toastContainer");
+      if (!toastContainer) {
+        toastContainer = document.createElement("div");
+        toastContainer.id = "toastContainer";
+        toastContainer.className = "position-fixed top-0 end-0 p-3";
+        toastContainer.style.zIndex = "1050";
+        document.body.appendChild(toastContainer);
+      }
+
+      const toast = document.createElement("div");
+      toast.className = `toast align-items-center text-white bg-${type} border-0`;
+      toast.setAttribute("role", "alert");
+      toast.setAttribute("aria-live", "assertive");
+      toast.setAttribute("aria-atomic", "true");
+
+      toast.innerHTML = `
+    <div class="d-flex">
+      <div class="toast-body">${message}</div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  `;
+
+      toastContainer.appendChild(toast);
+      const bsToast = new bootstrap.Toast(toast, { delay: 3000 });
+      bsToast.show();
+
+      toast.addEventListener("hidden.bs.toast", () => toast.remove());
+    }
+
+
+    getCategories();
+  });
+</script>

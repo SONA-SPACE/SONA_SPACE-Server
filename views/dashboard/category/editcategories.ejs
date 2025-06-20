@@ -1,0 +1,217 @@
+<!-- Tiêu đề -->
+<div class="dashboard-header-row">
+    <h2 class="dashboard-title">Thêm danh mục sản phẩm</h2>
+</div>
+
+<!-- Layout -->
+<div class="add-product-container">
+    <!-- Form -->
+    <div class="product-form-column">
+        <div class="form-section">
+            <h3 class="section-title">Thông tin danh mục</h3>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="categoryName">Tên danh mục</label>
+                    <input type="text" id="categoryName" class="form-control" placeholder="Nhập tên danh mục" />
+                </div>
+                <div class="form-group">
+                    <label for="categorySlug">Slug</label>
+                    <input type="text" id="categorySlug" class="form-control" placeholder="ví dụ: ban, ghe, tu-ke" />
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="categoryPriority">Mức ưu tiên</label>
+                    <input type="number" id="categoryPriority" class="form-control" placeholder="Thứ tự ưu tiên (số)" />
+                </div>
+                <div class="form-group">
+                    <label for="categoryStatus">Trạng thái</label>
+                    <div class="select-wrapper">
+                        <select id="categoryStatus" class="form-control">
+                            <option value="1">Hiển thị</option>
+                            <option value="0">Ẩn</option>
+                        </select>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Nút -->
+        <div class="form-actions">
+            <button type="button" class="btn btn-cancel">Hủy</button>
+            <button type="button" class="btn btn-save">Lưu</button>
+        </div>
+    </div>
+
+    <!-- Cột phải: Upload ảnh -->
+    <div class="image-upload-column">
+        <div class="image-upload-container">
+            <div class="upload-title">Ảnh đại diện</div>
+            <div class="main-upload-area">
+                <div class="upload-placeholder" id="avatarDropArea">
+                    <i class="far fa-image"></i>
+                    <p>Drop avatar image here, or browse</p>
+                    <p class="upload-hint">jpeg, png - kích thước vuông</p>
+                </div>
+            </div>
+
+            <div class="upload-title">Ảnh banner</div>
+            <div class="main-upload-area">
+                <div class="upload-placeholder" id="bannerDropArea">
+                    <i class="far fa-image"></i>
+                    <p>Drop banner image here, or browse</p>
+                    <p class="upload-hint">jpeg, png - kích thước ngang</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JS xử lý -->
+<script>
+    let uploadedAvatarURL = null;
+    let uploadedBannerURL = null;
+    let avatarFile = null;
+    let bannerFile = null;
+
+    const slug = window.location.pathname.split("/").pop();
+
+    document.addEventListener("DOMContentLoaded", () => {
+        fetch(`/api/categories/${slug}`)
+            .then((res) => res.json())
+            .then((data) => {
+                if (data.error) {
+                    showToast(data.error, "danger");
+                } else {
+                    document.getElementById("categoryName").value = data.category_name;
+                    document.getElementById("categoryPriority").value = data.category_priority || 0;
+                    document.getElementById("categoryStatus").value = data.category_status;
+                    document.getElementById("categorySlug").value = slug;
+
+                    uploadedAvatarURL = data.category_image;
+                    uploadedBannerURL = data.category_banner;
+
+                    if (uploadedAvatarURL) {
+                        document.querySelector("#avatarDropArea").innerHTML =
+                            `<img src="${uploadedAvatarURL}" style="width:100%; border-radius:6px;">`;
+                    }
+                    if (uploadedBannerURL) {
+                        document.querySelector("#bannerDropArea").innerHTML =
+                            `<img src="${uploadedBannerURL}" style="width:100%; border-radius:6px;">`;
+                    }
+                }
+            });
+
+        bindUpload("#avatarDropArea", (file) => (avatarFile = file));
+        bindUpload("#bannerDropArea", (file) => (bannerFile = file));
+        document.querySelector(".btn-save").addEventListener("click", handleUpdate);
+    });
+
+    function bindUpload(selector, setter) {
+        const dropArea = document.querySelector(selector);
+        dropArea.addEventListener("click", () => {
+            const input = document.createElement("input");
+            input.type = "file";
+            input.accept = "image/*";
+            input.click();
+            input.onchange = () => {
+                const file = input.files[0];
+                if (file) {
+                    setter(file);
+                    dropArea.innerHTML = `<img src="${URL.createObjectURL(file)}" style="width:100%; border-radius:6px;">`;
+                }
+            };
+        });
+    }
+
+    async function uploadImage(file, folder = "", subfolder = "") {
+        if (!file) return null;
+        const formData = new FormData();
+        formData.append("image", file);
+        formData.append("folder", folder);
+        if (subfolder) formData.append("subfolder", subfolder);
+
+        const res = await fetch("/api/upload/category", {
+            method: "POST",
+            body: formData,
+        });
+        const data = await res.json();
+        return data.url || null;
+    }
+
+    async function handleUpdate() {
+        const saveBtn = document.querySelector(".btn-save");
+        saveBtn.disabled = true;
+        saveBtn.innerText = "Đang lưu...";
+
+        const name = document.getElementById("categoryName").value.trim();
+        const slug = document.getElementById("categorySlug").value.trim();
+        const priority = parseInt(document.getElementById("categoryPriority").value) || 0;
+        const status = parseInt(document.getElementById("categoryStatus").value);
+
+        try {
+            // Nếu có file mới, thì upload, ngược lại giữ URL cũ
+            const image = avatarFile
+                ? await uploadImage(avatarFile, "SonaSpace/Category")
+                : uploadedAvatarURL;
+
+            const banner = bannerFile
+                ? await uploadImage(bannerFile, "SonaSpace/Category", "banner")
+                : uploadedBannerURL;
+
+            const payload = { name, slug, image, banner, priority, status };
+
+            const res = await fetch(`/api/categories/${slug}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+
+            const data = await res.json();
+
+            if (data.error) {
+                showToast(data.error, "danger");
+            } else {
+                showToast("Cập nhật thành công", "success");
+                setTimeout(() => (window.location.href = "/dashboard/categories"), 1500);
+            }
+        } catch (err) {
+            console.error("Update error", err);
+            showToast("Lỗi khi cập nhật", "danger");
+        } finally {
+            saveBtn.disabled = false;
+            saveBtn.innerText = "Lưu";
+        }
+    }
+
+    function showToast(message, type = "success") {
+        let toastContainer = document.getElementById("toastContainer");
+        if (!toastContainer) {
+            toastContainer = document.createElement("div");
+            toastContainer.id = "toastContainer";
+            toastContainer.className = "position-fixed top-0 end-0 p-3";
+            toastContainer.style.zIndex = "1050";
+            document.body.appendChild(toastContainer);
+        }
+
+        const toast = document.createElement("div");
+        toast.className = `toast align-items-center text-white bg-${type} border-0`;
+        toast.setAttribute("role", "alert");
+        toast.setAttribute("aria-live", "assertive");
+        toast.setAttribute("aria-atomic", "true");
+
+        toast.innerHTML = `
+      <div class="d-flex">
+        <div class="toast-body">${message}</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>`;
+
+        toastContainer.appendChild(toast);
+        const bsToast = new bootstrap.Toast(toast, { delay: 4000 });
+        bsToast.show();
+        toast.addEventListener("hidden.bs.toast", () => toast.remove());
+    }
+</script>

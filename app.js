@@ -44,7 +44,9 @@ var debugRouter = require("./routes/debug");
 var colorRouter = require("./routes/color");
 var dashboardRouter = require("./routes/dashboard");
 var ordersIdRouter = require("./routes/orders-id");
+var wishlistsIdRouter = require("./routes/wishlists-id");
 var uploadRouter = require("./routes/upload");
+
 var app = express();
 
 // App version and startup time for health checks
@@ -94,6 +96,7 @@ app.use("/api/contact-forms", contactFormsRouter);
 app.use("/api/comments", commentsRouter);
 app.use("/api/debug", debugRouter);
 app.use("/api/orders-id/", ordersIdRouter);
+app.use("/api/wishlists-id/", wishlistsIdRouter);
 // API routes - protected
 app.use("/api/users", authMiddleware.verifyToken, usersRouter);
 app.use("/api/wishlists", authMiddleware.verifyToken, wishlistsRouter);

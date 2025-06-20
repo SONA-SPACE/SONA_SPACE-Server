@@ -1,240 +1,142 @@
-<!-- Trang Quản lý Danh mục Sản phẩm -->
-
 <!-- Tiêu đề và Thanh công cụ -->
 <div class="dashboard-header-row">
-    <h2 class="dashboard-title">Danh mục sản phẩm</h2>
-    <div class="action-buttons">
-        <button class="add-category-btn">
-            <i class="fas fa-plus"></i> Thêm danh mục
-        </button>
-    </div>
+  <h2 class="dashboard-title">Danh mục sản phẩm</h2>
+  <div class="action-buttons">
+    <button class="add-category-btn">
+      <i class="fas fa-plus"></i> Thêm danh mục
+    </button>
+  </div>
 </div>
 
 <!-- Bộ lọc và Tìm kiếm -->
 <div class="filter-row">
-    <div class="search-container">
-        <i class="fas fa-search search-icon"></i>
-        <input type="text" class="search-input" placeholder="Tìm kiếm danh mục...">
-    </div>
-    <div class="date-range">
-        <i class="far fa-calendar-alt"></i>
-        <span>01/04/2023 - 30/04/2023</span>
-    </div>
-    <div class="results-info">
-        Hiển thị 1-6 trong tổng số 6 kết quả
-    </div>
+  <div class="search-container">
+    <i class="fas fa-search search-icon"></i>
+    <input
+      type="text"
+      class="search-input"
+      placeholder="Tìm kiếm danh mục..."
+    />
+  </div>
+  <div class="date-range">
+    <i class="far fa-calendar-alt"></i>
+    <span>01/04/2023 - 30/04/2023</span>
+  </div>
+  <div class="results-info">Đang tải dữ liệu...</div>
 </div>
 
 <!-- Bảng Danh mục -->
 <div class="category-table-container">
-    <table class="category-table" id="categoriesTable">
-        <thead>
-            <tr>
-                <th data-sortable="true">Danh mục</th>
-                <th data-sortable="true">Sản phẩm</th>
-                <th data-sortable="true">Trạng thái</th>
-                <th data-sortable="true">Đơn hàng</th>
-                <th data-sortable="true">Ngày tạo</th>
-                <th data-sortable="true">Cập nhật</th>
-                <th>Thao tác</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>
-                    <div class="category-info">
-                        <div class="category-image">
-                            <img src="/images/categories/sofa.jpg" alt="Sofa">
-                        </div>
-                        <div class="category-name">Sofa</div>
-                    </div>
-                </td>
-                <td>42</td>
-                <td>
-                    <span class="status-indicator visible">
-                        <i class="fas fa-eye"></i> Hiển thị
-                    </span>
-                </td>
-                <td>130</td>
-                <td>20/03/2023</td>
-                <td>28/04/2023</td>
-                <td>
-                    <div class="action-cell">
-                        <button class="action-button edit" data-id="1" title="Chỉnh sửa">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="action-button visibility" data-id="1" data-status="visible" title="Ẩn danh mục">
-                            <i class="fas fa-eye-slash"></i>
-                        </button>
-                        <button class="action-button delete" data-id="1" data-name="Sofa" title="Xóa danh mục">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td>
-                    <div class="category-info">
-                        <div class="category-image">
-                            <img src="/images/categories/chair.jpg" alt="Chair">
-                        </div>
-                        <div class="category-name">Ghế</div>
-                    </div>
-                </td>
-                <td>38</td>
-                <td>
-                    <span class="status-indicator visible">
-                        <i class="fas fa-eye"></i> Hiển thị
-                    </span>
-                </td>
-                <td>95</td>
-                <td>22/03/2023</td>
-                <td>25/04/2023</td>
-                <td>
-                    <div class="action-cell">
-                        <button class="action-button edit" data-id="2" title="Chỉnh sửa">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="action-button visibility" data-id="2" data-status="visible" title="Ẩn danh mục">
-                            <i class="fas fa-eye-slash"></i>
-                        </button>
-                        <button class="action-button delete" data-id="2" data-name="Ghế" title="Xóa danh mục">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td>
-                    <div class="category-info">
-                        <div class="category-image">
-                            <img src="/images/categories/table.jpg" alt="Table">
-                        </div>
-                        <div class="category-name">Bàn</div>
-                    </div>
-                </td>
-                <td>25</td>
-                <td>
-                    <span class="status-indicator visible">
-                        <i class="fas fa-eye"></i> Hiển thị
-                    </span>
-                </td>
-                <td>82</td>
-                <td>15/03/2023</td>
-                <td>22/04/2023</td>
-                <td>
-                    <div class="action-cell">
-                        <button class="action-button edit" data-id="3" title="Chỉnh sửa">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="action-button visibility" data-id="3" data-status="visible" title="Ẩn danh mục">
-                            <i class="fas fa-eye-slash"></i>
-                        </button>
-                        <button class="action-button delete" data-id="3" data-name="Bàn" title="Xóa danh mục">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td>
-                    <div class="category-info">
-                        <div class="category-image">
-                            <img src="/images/categories/storage.jpg" alt="Storage">
-                        </div>
-                        <div class="category-name">Tủ & Kệ</div>
-                    </div>
-                </td>
-                <td>30</td>
-                <td>
-                    <span class="status-indicator hidden">
-                        <i class="fas fa-eye-slash"></i> Ẩn
-                    </span>
-                </td>
-                <td>65</td>
-                <td>10/03/2023</td>
-                <td>20/04/2023</td>
-                <td>
-                    <div class="action-cell">
-                        <button class="action-button edit" data-id="4" title="Chỉnh sửa">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="action-button visibility" data-id="4" data-status="hidden" title="Hiển thị danh mục">
-                            <i class="fas fa-eye"></i>
-                        </button>
-                        <button class="action-button delete" data-id="4" data-name="Tủ & Kệ" title="Xóa danh mục">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td>
-                    <div class="category-info">
-                        <div class="category-image">
-                            <img src="/images/categories/bed.jpg" alt="Bed">
-                        </div>
-                        <div class="category-name">Giường</div>
-                    </div>
-                </td>
-                <td>15</td>
-                <td>
-                    <span class="status-indicator visible">
-                        <i class="fas fa-eye"></i> Hiển thị
-                    </span>
-                </td>
-                <td>45</td>
-                <td>05/03/2023</td>
-                <td>18/04/2023</td>
-                <td>
-                    <div class="action-cell">
-                        <button class="action-button edit" data-id="5" title="Chỉnh sửa">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="action-button visibility" data-id="5" data-status="visible" title="Ẩn danh mục">
-                            <i class="fas fa-eye-slash"></i>
-                        </button>
-                        <button class="action-button delete" data-id="5" data-name="Giường" title="Xóa danh mục">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td>
-                    <div class="category-info">
-                        <div class="category-image">
-                            <img src="/images/categories/lamp.jpg" alt="Lamp">
-                        </div>
-                        <div class="category-name">Đèn</div>
-                    </div>
-                </td>
-                <td>20</td>
-                <td>
-                    <span class="status-indicator visible">
-                        <i class="fas fa-eye"></i> Hiển thị
-                    </span>
-                </td>
-                <td>38</td>
-                <td>01/03/2023</td>
-                <td>15/04/2023</td>
-                <td>
-                    <div class="action-cell">
-                        <button class="action-button edit" data-id="6" title="Chỉnh sửa">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="action-button visibility" data-id="6" data-status="visible" title="Ẩn danh mục">
-                            <i class="fas fa-eye-slash"></i>
-                        </button>
-                        <button class="action-button delete" data-id="6" data-name="Đèn" title="Xóa danh mục">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-        </tbody>
-    </table>
+  <table class="category-table" id="categoriesTable">
+    <thead>
+      <tr>
+        <th>Danh mục</th>
+        <th>Sản phẩm</th>
+        <th>Trạng thái</th>
+        <th>Vị trí</th>
+        <th>Ngày tạo</th>
+        <th>Ngày cập nhật</th>
+        <th>Slug</th>
+        <th>Thao tác</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Dữ liệu sẽ được JS đổ vào -->
+    </tbody>
+  </table>
 </div>
 
-<!-- Load Categories JS -->
-<script src="/javascripts/categories.js"></script> 
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const URL_API = "http://localhost:3501/api";
+
+    function getCategories() {
+      fetch(URL_API + "/categories")
+        .then((response) => response.json())
+        .then((data) => {
+          renderCategories(data);
+        })
+        .catch((error) => {
+          console.error("Lỗi khi tải danh mục:", error);
+          document.querySelector(".results-info").textContent =
+            "Không thể tải dữ liệu.";
+        });
+    }
+
+    function renderCategories(categories) {
+      const tableBody = document.querySelector("#categoriesTable tbody");
+      tableBody.innerHTML = "";
+
+      categories.forEach((category) => {
+        const row = document.createElement("tr");
+
+        // Gán mặc định nếu không có status
+        const status = category.status || "visible";
+
+        row.innerHTML = `
+          <td>
+            <div class="category-info">
+              <div class="category-image">
+                <img src="${
+                  category.category_image || "/images/default.jpg"
+                }" alt="${category.category_name}">
+              </div>
+              <div class="category-name">${category.category_name}</div>
+            </div>
+          </td>
+          <td>${category.product_count || 0}</td>
+          <td>
+            <span class="status-indicator ${
+              status === "visible" ? "visible" : "hidden"
+            }">
+              <i class="fas ${
+                status === "visible" ? "fa-eye" : "fa-eye-slash"
+              }"></i>
+              ${status === "visible" ? "Hiển thị" : "Ẩn"}
+            </span>
+          </td>
+          <td>${category.position || "-"}</td>
+          <td>${formatDate(category.created_at)}</td>
+          <td>${formatDate(category.updated_at)}</td>
+          <td>${category.slug || "-"}</td>
+          <td>
+            <div class="action-cell">
+              <button class="action-button edit" data-id="${
+                category.category_id
+              }" title="Chỉnh sửa">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="action-button visibility" data-id="${
+                category.category_id
+              }" data-status="${status}" title="${
+          status === "visible" ? "Ẩn danh mục" : "Hiển thị danh mục"
+        }">
+                <i class="fas ${
+                  status === "visible" ? "fa-eye-slash" : "fa-eye"
+                }"></i>
+              </button>
+              <button class="action-button delete" data-id="${
+                category.category_id
+              }" data-name="${category.category_name}" title="Xóa danh mục">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </td>
+        `;
+
+        tableBody.appendChild(row);
+      });
+
+      document.querySelector(
+        ".results-info"
+      ).textContent = `Hiển thị ${categories.length} kết quả`;
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return "-";
+      return new Date(dateStr).toLocaleDateString("vi-VN");
+    }
+
+    getCategories();
+  });
+</script>

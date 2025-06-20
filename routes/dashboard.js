@@ -56,6 +56,14 @@ router.get('/categories', (req, res) => {
   });
 });
 
+// Room management
+router.get('/room', (req, res) => {
+  res.render('dashboard/room', { 
+    title: 'Sona Space - Quản lý Phòng',
+    layout: 'layouts/dashboard'
+  });
+});
+
 // Orders management
 router.get('/orders', (req, res) => {
   res.render('dashboard/orders', { 

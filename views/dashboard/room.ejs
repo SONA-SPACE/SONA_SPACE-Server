@@ -1,0 +1,137 @@
+<!-- Tiêu đề và Thanh công cụ -->
+<div class="dashboard-header-row">
+  <h2 class="dashboard-title">Không gian</h2>
+  <div class="action-buttons">
+    <button class="add-room-btn">
+      <i class="fas fa-plus"></i> Thêm không gian
+    </button>
+  </div>
+</div>
+
+<!-- Bộ lọc và Tìm kiếm -->
+<div class="filter-row">
+  <div class="search-container">
+    <i class="fas fa-search search-icon"></i>
+    <input
+      type="text"
+      class="search-input"
+      placeholder="Tìm kiếm không gian..."
+    />
+  </div>
+  <div class="date-range">
+    <i class="far fa-calendar-alt"></i>
+    <span>01/04/2023 - 30/04/2023</span>
+  </div>
+  <div class="results-info">Đang tải dữ liệu...</div>
+</div>
+
+<!-- Bảng Không gian -->
+<div class="category-table-container">
+  <table class="category-table" id="roomsTable">
+    <thead>
+      <tr>
+        <th>Không gian</th>
+        <th>Sản phẩm</th>
+        <th>Trạng thái</th>
+        <th>Ngày tạo</th>
+        <th>Ngày cập nhật</th>
+        <th>Slug</th>
+        <th>Thao tác</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Dữ liệu sẽ được JS đổ vào -->
+    </tbody>
+  </table>
+</div>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const URL_API = "http://localhost:3501/api";
+
+    function getRooms() {
+      fetch(URL_API + "/rooms")
+        .then((response) => response.json())
+        .then((data) => {
+          renderRooms(data);
+        })
+        .catch((error) => {
+          console.error("Lỗi khi tải danh sách không gian:", error);
+          document.querySelector(".results-info").textContent =
+            "Không thể tải dữ liệu.";
+        });
+    }
+
+    function renderRooms(rooms) {
+      const tableBody = document.querySelector("#roomsTable tbody");
+      tableBody.innerHTML = "";
+
+      rooms.forEach((room) => {
+        const status = room.status || "visible";
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+            <td>
+              <div class="category-info">
+                <div class="category-image">
+                  <img src="${room.room_image || "/images/default.jpg"}" alt="${
+          room.room_name
+        }">
+                </div>
+                <div class="category-name">${room.room_name}</div>
+              </div>
+            </td>
+            <td>${room.product_count || 0}</td>
+            <td>
+              <span class="status-indicator ${
+                status === "visible" ? "visible" : "hidden"
+              }">
+                <i class="fas ${
+                  status === "visible" ? "fa-eye" : "fa-eye-slash"
+                }"></i>
+                ${status === "visible" ? "Hiển thị" : "Ẩn"}
+              </span>
+            </td>
+            <td>${formatDate(room.created_at)}</td>
+            <td>${formatDate(room.updated_at)}</td>
+            <td>${room.slug || "-"}</td>
+            <td>
+              <div class="action-cell">
+                <button class="action-button edit" data-id="${
+                  room.room_id
+                }" title="Chỉnh sửa">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="action-button visibility" data-id="${
+                  room.room_id
+                }" data-status="${status}" title="${
+          status === "visible" ? "Ẩn không gian" : "Hiển thị không gian"
+        }">
+                  <i class="fas ${
+                    status === "visible" ? "fa-eye-slash" : "fa-eye"
+                  }"></i>
+                </button>
+                <button class="action-button delete" data-id="${
+                  room.room_id
+                }" data-name="${room.room_name}" title="Xóa không gian">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </td>
+          `;
+
+        tableBody.appendChild(row);
+      });
+
+      document.querySelector(
+        ".results-info"
+      ).textContent = `Hiển thị ${rooms.length} kết quả`;
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return "-";
+      return new Date(dateStr).toLocaleDateString("vi-VN");
+    }
+
+    getRooms();
+  });
+</script>

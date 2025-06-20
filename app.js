@@ -59,7 +59,6 @@ const expressLayouts = require('express-ejs-layouts');
 app.use(expressLayouts);
 app.set('layout', 'layouts/main');
 app.set("layout extractScripts", true);
-app.set("layout extractStyles", true);
 
 app.use(logger("dev"));
 app.use(express.json());

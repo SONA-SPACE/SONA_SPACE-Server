@@ -268,21 +268,21 @@ router.get("/:slug/products", async (req, res) => {
         p.updated_at,
 
         (
-  SELECT vp2.variant_product_price
-  FROM variant_product vp2
-  JOIN color c2 ON vp2.color_id = c2.color_id
-  WHERE vp2.product_id = p.product_id AND c2.color_priority = 1
-  LIMIT 1
-) AS price,
+          SELECT vp2.variant_product_price
+          FROM variant_product vp2
+          WHERE vp2.product_id = p.product_id
+          ORDER BY vp2.variant_id ASC
+          LIMIT 1
+        ) AS price,
 
-(
-  SELECT vp2.variant_product_price_sale
-  FROM variant_product vp2
-  JOIN color c2 ON vp2.color_id = c2.color_id
-  WHERE vp2.product_id = p.product_id AND c2.color_priority = 1
-  LIMIT 1
-) AS price_sale,
- 
+        (
+          SELECT vp2.variant_product_price_sale
+          FROM variant_product vp2
+          WHERE vp2.product_id = p.product_id
+          ORDER BY vp2.variant_id ASC
+          LIMIT 1
+        ) AS price_sale,
+
         JSON_ARRAYAGG(DISTINCT col.color_hex) AS color_hex
 
       FROM room_product rp
@@ -298,6 +298,7 @@ router.get("/:slug/products", async (req, res) => {
       `,
       [roomId, offset, limit]
     );
+
     const transformedProducts = products.map((product) => ({
       id: product.id,
       name: product.name,

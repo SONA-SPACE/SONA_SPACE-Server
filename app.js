@@ -101,7 +101,7 @@ app.use("/api/orders", authMiddleware.verifyToken, ordersRouter);
 app.use("/api/order-status", authMiddleware.verifyToken, orderStatusRouter);
 app.use("/api/payments", authMiddleware.verifyToken, paymentsRouter);
 app.use("/api/couponcodes", authMiddleware.verifyToken, couponcodesRouter);
-app.use("/api/color",  colorRouter);;
+app.use("/api/color", colorRouter);;
 app.use("/api/upload", uploadRouter);
 
 app.use(function (req, res, next) {

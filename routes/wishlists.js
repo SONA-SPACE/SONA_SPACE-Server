@@ -1,132 +1,256 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
-
+const { verifyToken } = require("../middleware/auth")
 /**
  * @route   GET /api/wishlists
  * @desc    Lấy danh sách wishlist của người dùng hiện tại
  * @access  Private
  */
-router.get('/', async (req, res) => {
+// GET /api/wishlists?status=0 or 1
+router.get("/", verifyToken, async (req, res) => {
+  const userId = req.user.id;
+  const status = parseInt(req.query.status);
+
+  if (![0, 1].includes(status)) {
+    return res.status(400).json({ error: "Trạng thái không hợp lệ (phải là 0 hoặc 1)" });
+  }
+
   try {
-    const userId = req.user.id;
-    
-    // Lấy danh sách wishlist với thông tin sản phẩm
-    const [wishlist] = await db.query(`
+    const [items] = await db.query(
+      `
       SELECT 
         w.wishlist_id,
+        w.quantity,
+        w.status,
         w.created_at,
-        p.*,
-        c.category_name,
-        (SELECT COUNT(*) FROM comment WHERE product_id = p.product_id) as comment_count,
-        (SELECT AVG(comment_rating) FROM comment WHERE product_id = p.product_id) as average_rating
+        v.variant_id,
+        v.variant_product_price AS price,
+        v.variant_product_price_sale AS price_sale,
+        v.variant_product_list_image AS image,
+        c.color_name,
+        c.color_hex,
+        p.product_id,
+        p.product_name,
+        p.product_image AS product_image,
+        cat.category_name AS category,
+        (SELECT COUNT(*) FROM comment WHERE product_id = p.product_id) AS comment_count,
+        (SELECT AVG(comment_rating) FROM comment WHERE product_id = p.product_id) AS average_rating
       FROM wishlist w
-      JOIN product p ON w.product_id = p.product_id
-      LEFT JOIN category c ON p.category_id = c.category_id
-      WHERE w.user_id = ?
+      JOIN variant_product v ON w.variant_id = v.variant_id
+      JOIN product p ON v.product_id = p.product_id
+      LEFT JOIN color c ON v.color_id = c.color_id
+      LEFT JOIN category cat ON p.category_id = cat.category_id
+      WHERE w.user_id = ? AND w.status = ?
       ORDER BY w.created_at DESC
-    `, [userId]);
-    
-    res.json(wishlist);
-  } catch (error) {
-    console.error('Error fetching wishlist:', error);
-    res.status(500).json({ error: 'Failed to fetch wishlist' });
+      `,
+      [userId, status]
+    );
+
+    res.status(200).json(items);
+  } catch (err) {
+    console.error("Error fetching wishlist/cart:", err);
+    res.status(500).json({ error: "Lỗi khi lấy dữ liệu giỏ hàng/wishlist" });
   }
 });
+
 
 /**
  * @route   POST /api/wishlists
  * @desc    Thêm sản phẩm vào wishlist
  * @access  Private
  */
-router.post('/', async (req, res) => {
+router.post('/', verifyToken, async (req, res) => {
   try {
-    const { product_id } = req.body;
+    const { variant_id, status, quantity = 1 } = req.body;
     const userId = req.user.id;
 
-    if (!product_id) {
-      return res.status(400).json({ error: 'Product ID is required' });
+    if (!variant_id || (status === 0 && quantity < 1)) {
+      return res.status(400).json({ error: 'Variant ID and valid quantity are required' });
     }
 
-    // Kiểm tra sản phẩm tồn tại
-    const [product] = await db.query('SELECT product_id FROM product WHERE product_id = ?', [product_id]);
-
-    if (!product.length) {
-      return res.status(404).json({ error: 'Product not found' });
+    if (status !== 0 && status !== 1) {
+      return res.status(400).json({ error: 'Invalid status: must be 0 (cart) or 1 (wishlist)' });
     }
 
-    // Kiểm tra sản phẩm đã có trong wishlist chưa (chỉ kiểm tra status = 1)
+    // Kiểm tra variant có tồn tại
+    const [variant] = await db.query(
+      'SELECT variant_id FROM variant_product WHERE variant_id = ?',
+      [variant_id]
+    );
+    if (!variant.length) {
+      return res.status(404).json({ error: 'Variant not found' });
+    }
+
+    // Kiểm tra sản phẩm đã có trong wishlist/cart chưa
     const [existingItem] = await db.query(
-      'SELECT wishlist_id FROM wishlist WHERE user_id = ? AND product_id = ? AND status = 1',
-      [userId, product_id]
+      'SELECT wishlist_id, quantity FROM wishlist WHERE user_id = ? AND variant_id = ? AND status = ?',
+      [userId, variant_id, status]
     );
 
-    if (existingItem.length > 0) {
-      return res.status(400).json({ error: 'Product already in wishlist' });
+    if (status === 1) {
+      // Wishlist logic
+      if (existingItem.length > 0) {
+        return res.status(400).json({ error: 'Variant already in wishlist' });
+      }
+
+      const [result] = await db.query(
+        'INSERT INTO wishlist (user_id, variant_id, status, created_at) VALUES (?, ?, 1, NOW())',
+        [userId, variant_id]
+      );
+
+      const [wishlistItem] = await db.query(`
+        SELECT 
+          w.wishlist_id,
+          w.created_at,
+          v.*,
+          p.name,
+          p.image,
+          (SELECT COUNT(*) FROM comment WHERE product_id = p.product_id) as comment_count,
+          (SELECT AVG(comment_rating) FROM comment WHERE product_id = p.product_id) as average_rating
+        FROM wishlist w
+        JOIN variant_product v ON w.variant_id = v.variant_id
+        JOIN product p ON v.product_id = p.product_id
+        WHERE w.wishlist_id = ?
+      `, [result.insertId]);
+
+      return res.status(201).json({
+        message: 'Variant added to wishlist successfully',
+        wishlistItem: wishlistItem[0]
+      });
+
+    } else {
+      // Cart logic (status === 0)
+      if (existingItem.length > 0) {
+        const newQuantity = existingItem[0].quantity + quantity;
+
+        await db.query(
+          'UPDATE wishlist SET quantity = ? WHERE wishlist_id = ?',
+          [newQuantity, existingItem[0].wishlist_id]
+        );
+
+        return res.status(200).json({ message: 'Cart item updated successfully' });
+      }
+
+
+      const [result] = await db.query(
+        'INSERT INTO wishlist (user_id, variant_id, quantity, status, created_at) VALUES (?, ?, ?, 0, NOW())',
+        [userId, variant_id, quantity]
+      );
+
+      const [cartItem] = await db.query(`
+        SELECT 
+          w.wishlist_id,
+          w.quantity,
+          w.created_at,
+          v.*,
+          (SELECT COUNT(*) FROM comment WHERE product_id = p.product_id) as comment_count,
+          (SELECT AVG(comment_rating) FROM comment WHERE product_id = p.product_id) as average_rating
+        FROM wishlist w
+        JOIN variant_product v ON w.variant_id = v.variant_id
+        JOIN product p ON v.product_id = p.product_id
+        WHERE w.wishlist_id = ?
+      `, [result.insertId]);
+
+      return res.status(201).json({
+        message: 'Variant added to cart successfully',
+        cartItem: cartItem[0]
+      });
     }
 
-    // Thêm vào wishlist với status = 1
-    const [result] = await db.query(
-      'INSERT INTO wishlist (user_id, product_id, status, created_at) VALUES (?, ?, 1, NOW())',
-      [userId, product_id]
-    );
-
-    // Lấy thông tin wishlist item vừa tạo
-    const [wishlistItem] = await db.query(`
-      SELECT 
-        w.wishlist_id,
-        w.created_at,
-        p.*,
-        (SELECT COUNT(*) FROM comment WHERE product_id = p.product_id) as comment_count,
-        (SELECT AVG(comment_rating) FROM comment WHERE product_id = p.product_id) as average_rating
-      FROM wishlist w
-      JOIN product p ON w.product_id = p.product_id
-      WHERE w.wishlist_id = ?
-    `, [result.insertId]);
-
-    res.status(201).json({
-      message: 'Product added to wishlist successfully',
-      wishlistItem: wishlistItem[0]
-    });
   } catch (error) {
-    console.error('Error adding to wishlist:', error);
-    res.status(500).json({ error: 'Failed to add product to wishlist' });
+    console.error('Error processing wishlist/cart:', error);
+    res.status(500).json({ error: 'Failed to process request' });
   }
 });
+
+/**
+ * @route   update /api/wishlists/:id
+ * @desc    Xóa sản phẩm khỏi wishlist
+ * @access  Private
+ */
+router.put('/:id', verifyToken, async (req, res) => {
+  try {
+    const wishlistId = Number(req.params.id);
+    const { quantity } = req.body;
+    const userId = req.user.id;
+
+    if (isNaN(wishlistId) || !Number.isInteger(quantity) || quantity < 1) {
+      return res.status(400).json({ error: 'Dữ liệu không hợp lệ' });
+    }
+
+    // Kiểm tra item tồn tại và thuộc user
+    const [existingItem] = await db.query(
+      'SELECT * FROM wishlist WHERE wishlist_id = ? AND user_id = ? AND status = 0',
+      [wishlistId, userId]
+    );
+
+    if (!existingItem.length) {
+      return res.status(404).json({ error: 'Không tìm thấy sản phẩm trong giỏ hàng' });
+    }
+
+    // Cập nhật số lượng
+    await db.query(
+      'UPDATE wishlist SET quantity = ?, updated_at = NOW() WHERE wishlist_id = ?',
+      [quantity, wishlistId]
+    );
+
+    return res.status(200).json({ message: 'Cập nhật số lượng thành công' });
+  } catch (error) {
+    console.error('Lỗi khi cập nhật số lượng:', error);
+    res.status(500).json({ error: 'Cập nhật số lượng thất bại' });
+  }
+});
+
 
 /**
  * @route   DELETE /api/wishlists/:id
  * @desc    Xóa sản phẩm khỏi wishlist
  * @access  Private
  */
-router.delete('/:id', async (req, res) => {
+router.delete('/clear', verifyToken, async (req, res) => {
+  const userId = req.user.id; // lấy từ middleware authenticate
+  console.log("Xóa giỏ hàng cho user:", userId); // DEBUG
+  
+  try {
+    await db.query("DELETE FROM wishlist WHERE user_id = ? AND status = 0", [userId]);
+    res.status(200).json({ message: 'Đã xóa toàn bộ giỏ hàng' });
+  } catch (err) {
+    console.error("Lỗi khi xóa toàn bộ giỏ hàng:", err);
+    res.status(500).json({ success: false, message: "Lỗi server" });
+  }
+})
+// routes/wishlist.js
+router.delete('/:id', verifyToken, async (req, res) => {
   try {
     const wishlistId = Number(req.params.id);
     const userId = req.user.id;
-    
+
     if (isNaN(wishlistId)) {
       return res.status(400).json({ error: 'Invalid wishlist ID' });
     }
-    
-    // Kiểm tra wishlist item tồn tại và thuộc về người dùng hiện tại
-    const [wishlistItem] = await db.query(
+
+    // Kiểm tra item có tồn tại và thuộc về người dùng
+    const [result] = await db.query(
       'SELECT wishlist_id FROM wishlist WHERE wishlist_id = ? AND user_id = ?',
       [wishlistId, userId]
     );
-    
-    if (!wishlistItem.length) {
+
+    if (!result.length) {
       return res.status(404).json({ error: 'Wishlist item not found or not owned by user' });
     }
-    
-    // Xóa khỏi wishlist
+
+    // Xóa item
     await db.query('DELETE FROM wishlist WHERE wishlist_id = ?', [wishlistId]);
-    
-    res.json({ message: 'Product removed from wishlist successfully' });
+
+    res.status(200).json({ message: 'Xóa sản phẩm thành công' });
   } catch (error) {
     console.error('Error removing from wishlist:', error);
-    res.status(500).json({ error: 'Failed to remove product from wishlist' });
+    res.status(500).json({ error: 'Đã xảy ra lỗi khi xóa sản phẩm' });
   }
 });
+
+
 
 /**
  * @route   DELETE /api/wishlists/product/:productId
@@ -137,27 +261,27 @@ router.delete('/product/:productId', async (req, res) => {
   try {
     const productId = Number(req.params.productId);
     const userId = req.user.id;
-    
+
     if (isNaN(productId)) {
       return res.status(400).json({ error: 'Invalid product ID' });
     }
-    
+
     // Kiểm tra sản phẩm có trong wishlist không
     const [wishlistItem] = await db.query(
       'SELECT wishlist_id FROM wishlist WHERE product_id = ? AND user_id = ?',
       [productId, userId]
     );
-    
+
     if (!wishlistItem.length) {
       return res.status(404).json({ error: 'Product not found in wishlist' });
     }
-    
+
     // Xóa khỏi wishlist
     await db.query(
-      'DELETE FROM wishlist WHERE product_id = ? AND user_id = ?', 
+      'DELETE FROM wishlist WHERE product_id = ? AND user_id = ?',
       [productId, userId]
     );
-    
+
     res.json({ message: 'Product removed from wishlist successfully' });
   } catch (error) {
     console.error('Error removing from wishlist:', error);
@@ -174,17 +298,17 @@ router.get('/check/:productId', async (req, res) => {
   try {
     const productId = Number(req.params.productId);
     const userId = req.user.id;
-    
+
     if (isNaN(productId)) {
       return res.status(400).json({ error: 'Invalid product ID' });
     }
-    
+
     // Kiểm tra sản phẩm có trong wishlist không
     const [wishlistItem] = await db.query(
       'SELECT wishlist_id FROM wishlist WHERE product_id = ? AND user_id = ?',
       [productId, userId]
     );
-    
+
     res.json({
       in_wishlist: wishlistItem.length > 0,
       wishlist_id: wishlistItem.length > 0 ? wishlistItem[0].wishlist_id : null

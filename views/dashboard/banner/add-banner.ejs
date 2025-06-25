@@ -1,0 +1,164 @@
+<%- contentFor('body') %>
+
+<div class="content-wrapper">
+  <div class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h1 class="m-0">Thêm Banner mới</h1>
+        </div>
+        <div class="col-sm-6">
+          <ol class="breadcrumb float-sm-right">
+            <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="/dashboard/banners">Quản lý Banner</a></li>
+            <li class="breadcrumb-item active">Thêm Banner mới</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="content">
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-md-12">
+          <div class="card card-primary">
+            <div class="card-header">
+              <h3 class="card-title">Thông tin Banner</h3>
+            </div>
+            <form id="add-banner-form" enctype="multipart/form-data">
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-8">
+                    <div class="form-group">
+                      <label for="title">Tiêu đề <span class="text-danger">*</span></label>
+                      <input type="text" class="form-control" id="title" name="title" placeholder="Nhập tiêu đề banner" required>
+                    </div>
+                    
+                    <div class="form-group">
+                      <label for="subtitle">Phụ đề</label>
+                      <input type="text" class="form-control" id="subtitle" name="subtitle" placeholder="Nhập phụ đề banner (nếu có)">
+                    </div>
+                    
+                    <div class="form-group">
+                      <label for="link_url">Liên kết</label>
+                      <input type="text" class="form-control" id="link_url" name="link_url" placeholder="Nhập liên kết (URL) khi click vào banner">
+                    </div>
+                    
+                    <div class="row">
+                      <div class="col-md-6">
+                        <div class="form-group">
+                          <label for="position">Vị trí</label>
+                          <input type="number" class="form-control" id="position" name="position" value="0" min="0">
+                          <small class="form-text text-muted">Số thấp hơn sẽ hiển thị trước</small>
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="form-group">
+                          <label for="status">Trạng thái</label>
+                          <select class="form-control" id="status" name="status">
+                            <option value="active">Hiển thị</option>
+                            <option value="inactive">Ẩn</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="col-md-4">
+                    <div class="form-group">
+                      <label for="image">Hình ảnh Banner <span class="text-danger">*</span></label>
+                      <div class="input-group">
+                        <div class="custom-file">
+                          <input type="file" class="custom-file-input" id="image" name="image" accept="image/*" required>
+                          <label class="custom-file-label" for="image">Chọn file</label>
+                        </div>
+                      </div>
+                      <small class="form-text text-muted">Hỗ trợ: JPG, JPEG, PNG, GIF, WEBP. Tối đa 5MB.</small>
+                    </div>
+                    
+                    <div class="form-group">
+                      <label>Xem trước</label>
+                      <div class="image-preview-container">
+                        <img id="image-preview" src="/images/no-image.png" alt="Preview" class="img-fluid img-thumbnail">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="card-footer">
+                <button type="submit" class="btn btn-primary">
+                  <i class="fas fa-save mr-1"></i> Lưu Banner
+                </button>
+                <a href="/dashboard/banners" class="btn btn-secondary ml-2">
+                  <i class="fas fa-times mr-1"></i> Hủy
+                </a>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Xem trước hình ảnh khi chọn file
+    document.getElementById('image').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        document.getElementById('image-preview').src = e.target.result;
+      }
+      reader.readAsDataURL(file);
+      
+      // Hiển thị tên file đã chọn
+      document.querySelector('.custom-file-label').textContent = file.name;
+    });
+    
+    // Xử lý form submit
+    document.getElementById('add-banner-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      // Kiểm tra token
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('Bạn cần đăng nhập để thực hiện thao tác này');
+        return;
+      }
+      
+      // Tạo FormData từ form
+      const formData = new FormData(this);
+      
+      try {
+        const response = await fetch('/api/banners', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Không thể tạo banner');
+        }
+        
+        const result = await response.json();
+        
+        // Hiển thị thông báo thành công
+        alert('Thêm banner thành công');
+        
+        // Chuyển hướng về trang danh sách banner
+        window.location.href = '/dashboard/banners';
+      } catch (error) {
+        console.error('Error creating banner:', error);
+        alert('Đã xảy ra lỗi: ' + error.message);
+      }
+    });
+  });
+</script> 

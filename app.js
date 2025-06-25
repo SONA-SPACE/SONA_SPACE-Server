@@ -46,7 +46,7 @@ var dashboardRouter = require("./routes/dashboard");
 var ordersIdRouter = require("./routes/orders-id");
 var wishlistsIdRouter = require("./routes/wishlists-id");
 var uploadRouter = require("./routes/upload");
-
+var bannersRouter = require("./routes/banners");
 var app = express();
 
 // App version and startup time for health checks
@@ -106,6 +106,7 @@ app.use("/api/payments", authMiddleware.verifyToken, paymentsRouter);
 app.use("/api/couponcodes", authMiddleware.verifyToken, couponcodesRouter);
 app.use("/api/color", colorRouter);
 app.use("/api/upload", uploadRouter);
+app.use("/api/banners", bannersRouter);
 
 app.use(function (req, res, next) {
   console.warn("Route not found:", req.method, req.originalUrl);

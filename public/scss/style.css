@@ -3987,4 +3987,251 @@ textarea.form-control {
 .add-room-container .image-upload-column {
   width: 40%;
   min-width: 400px;
+}
+
+.container-fluid {
+  display: flex;
+  width: 100%;
+  height: 100dvh;
+  background-color: #fff;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.left-panel {
+  width: 70%;
+  background-color: #F0A00A;
+  color: white;
+  padding: 60px 40px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.brand-name {
+  font-size: 42px;
+  font-family: M-B;
+  line-height: auto;
+  color: #fff;
+  margin-bottom: 10px;
+}
+
+.brand-slogan {
+  font-size: 18px;
+  font-family: M-SB;
+  line-height: auto;
+  color: #fff;
+  margin-bottom: 30px;
+}
+
+.read-more-btn {
+  display: inline-block;
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 12px 30px;
+  border-radius: 30px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  width: -moz-fit-content;
+  width: fit-content;
+  font-size: 16px;
+  font-family: M-SB;
+  line-height: auto;
+  color: #fff;
+}
+
+.read-more-btn:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.wave-bg {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 200px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%230055b3' fill-opacity='0.3' d='M0,224L60,213.3C120,203,240,181,360,181.3C480,181,600,203,720,208C840,213,960,203,1080,181.3C1200,160,1320,128,1380,112L1440,96L1440,320L1380,320C1320,320,1200,320,1080,320C960,320,840,320,720,320C600,320,480,320,360,320C240,320,120,320,60,320L0,320Z'%3E%3C/path%3E%3C/svg%3E");
+  background-size: cover;
+  background-position: center;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.right-panel {
+  width: 50%;
+  padding: 60px 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.welcome-text {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.welcome-text h2 {
+  font-size: 28px;
+  font-family: M-SB;
+  line-height: auto;
+  color: #000;
+  margin-bottom: 5px;
+}
+
+.welcome-text p {
+  font-size: 16px;
+  font-family: M-SB;
+  line-height: auto;
+  color: #000;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 350px;
+  margin: 0 auto;
+}
+.login-form .form-group {
+  min-height: 82px;
+}
+
+.input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.form-control.is-invalid {
+  border-color: #D83B01;
+  background-color: rgba(220, 53, 69, 0.05);
+}
+
+.form-control.is-valid {
+  border-color: #3AA655;
+  background-color: rgba(40, 167, 69, 0.05);
+}
+
+.error-message {
+  color: #D83B01;
+  font-size: 12px;
+  font-family: M-SB;
+  line-height: auto;
+  color: #D83B01;
+  margin-top: 5px;
+  min-height: 18px;
+  font-weight: 500;
+  cursor: default;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+          user-select: none;
+  caret-color: transparent;
+  pointer-events: none;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #666;
+  z-index: 10;
+}
+
+.password-toggle:hover {
+  color: #0066cc;
+}
+
+.password-strength {
+  height: 5px;
+  margin-top: 5px;
+  border-radius: 3px;
+  transition: all 0.3s ease;
+}
+
+.password-strength.weak {
+  background-color: #D83B01;
+  width: 25%;
+}
+
+.password-strength.medium {
+  background-color: #F5B400;
+  width: 50%;
+}
+
+.password-strength.strong {
+  background-color: #3AA655;
+  width: 100%;
+}
+
+.form-control {
+  width: 100%;
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 16px;
+  font-family: M-SB;
+  line-height: auto;
+  color: #000;
+  outline: none;
+  transition: border-color 0.3s;
+}
+
+.form-control:focus {
+  border-color: #0066cc;
+}
+
+.login-btn {
+  background-color: #0066cc;
+  color: white;
+  border: none;
+  border-radius: 30px;
+  padding: 15px;
+  font-size: 16px;
+  font-family: M-SB;
+  line-height: auto;
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  margin-top: 10px;
+}
+
+.login-btn:hover {
+  background-color: #0055b3;
+}
+
+.forgot-password {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.forgot-password a {
+  font-size: 14px;
+  font-family: M-SB;
+  line-height: auto;
+  color: #000;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.forgot-password a:hover {
+  color: #0066cc;
+  transition: all 0.3s ease;
+}
+
+@media (max-width: 768px) {
+  .login-container {
+    flex-direction: column;
+    height: auto;
+  }
+  .left-panel,
+  .right-panel {
+    width: 100%;
+    padding: 40px 20px;
+  }
+  .left-panel {
+    padding-bottom: 100px;
+  }
 }/*# sourceMappingURL=style.css.map */

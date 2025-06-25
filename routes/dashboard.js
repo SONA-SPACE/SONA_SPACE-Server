@@ -35,8 +35,8 @@ router.get("/products", (req, res) => {
 });
 
 // Add product
-router.get("dashboard/products/add", (req, res) => {
-  res.render("dashboard/products-add", {
+router.get("/products/add", (req, res) => {
+  res.render("dashboard/products/products-add", {
     title: "Sona Space - Thêm Sản phẩm mới",
     layout: "layouts/dashboard",
   });

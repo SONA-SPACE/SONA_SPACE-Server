@@ -95,8 +95,8 @@ app.use("/api/news-categories", newsCategoriesRouter);
 app.use("/api/contact-forms", contactFormsRouter);
 app.use("/api/comments", commentsRouter);
 app.use("/api/debug", debugRouter);
-app.use("/api/orders-id/", ordersIdRouter);
-app.use("/api/wishlists-id/", wishlistsIdRouter);
+app.use("/api/orders-id", ordersIdRouter);
+app.use("/api/wishlists-id", wishlistsIdRouter);
 // API routes - protected
 app.use("/api/users", authMiddleware.verifyToken, usersRouter);
 app.use("/api/wishlists", authMiddleware.verifyToken, wishlistsRouter);
@@ -108,6 +108,7 @@ app.use("/api/color", colorRouter);
 app.use("/api/upload", uploadRouter);
 
 app.use(function (req, res, next) {
+  console.warn("Route not found:", req.method, req.originalUrl);
   next(createError(404));
 });
 

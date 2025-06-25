@@ -1,25 +1,64 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>Admin Dashboard</title>
-    <!-- <link rel="stylesheet" href="/scss/style.css" /> -->
-  </head>
-  <body>
-    <div class="header">
-      <div class="container">
-        <div class="header-wrapper">
-          <div class="logo">
-            <a href="/">
-              <img src="/images/logo.png" alt="Logo" />
-            </a>
-          </div>
-          <div class="header-actions">
-            <a href="/sign-in" class="btn sign-in">Sign In</a>
-            <a href="/sign-up" class="btn sign-up">Sign Up</a>
-            <a href="/sign-up" class="btn sign-up">Sign Up</a>
+
+<head>
+  <title>Furniture - Login</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel='stylesheet' href='/scss/style.css' />
+  <link rel="stylesheet" href="/fonts/stylesheet.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<body>
+  <div class="container-fluid">
+    <div class="left-panel">
+      <h1 class="brand-name">FURNITURE - SONA SPACE</h1>
+      <p class="brand-slogan">Quản lý Dashboard</p>
+      <a href="#" class="read-more-btn">Read More</a>
+      <div class="wave-bg"></div>
+    </div>
+    <div class="right-panel">
+      <div class="welcome-text">
+        <h2>Xin chào!</h2>
+        <p>Đây là trang Quản lý Dashboard SONA SPACE</p>
+      </div>
+      <form class="login-form" id="loginForm" novalidate>
+        <div class="form-group">
+          <div class="input-wrapper">
+            <input 
+              type="email" 
+              id="email" 
+              name="email" 
+              class="form-control" 
+              placeholder="Email Address" 
+              required
+            >
+            <div class="error-message" id="email-error"></div>
           </div>
         </div>
-      </div>
+        <div class="form-group">
+          <div class="input-wrapper">
+            <input 
+              type="password" 
+              id="password" 
+              name="password" 
+              class="form-control" 
+              placeholder="Password" 
+              required
+            >
+            <div class="error-message" id="password-error"></div>
+          </div>
+        </div>
+        <button type="submit" class="login-btn">Login</button>
+        <div class="forgot-password">
+          <a href="#">Forgot Password</a>
+        </div>
+      </form>
     </div>
-  </body>
+  </div>
+  <script src="/javascripts/login.js"></script>
+</body>
+
 </html>

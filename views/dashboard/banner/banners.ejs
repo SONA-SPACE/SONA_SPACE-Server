@@ -1,0 +1,292 @@
+<!-- Tiêu đề và Thanh công cụ -->
+<div class="dashboard-header-row">
+  <h2 class="dashboard-title">Quản lý Banner</h2>
+  <div class="action-buttons">
+    <button class="add-category-btn" onclick="window.location.href='/dashboard/banners/add'">
+      <i class="fas fa-plus"></i> Thêm banner mới
+    </button>
+  </div>
+</div>
+
+<!-- Bộ lọc và Tìm kiếm -->
+<div class="filter-row">
+  <div class="search-container">
+    <i class="fas fa-search search-icon"></i>
+    <input type="text" class="search-input" placeholder="Tìm kiếm banner..." id="searchInput" />
+  </div>
+  <div class="date-range">
+    <i class="far fa-calendar-alt"></i>
+    <span>01/04/2023 - 30/04/2023</span>
+  </div>
+  <div class="results-info">Đang tải dữ liệu...</div>
+</div>
+
+<!-- Bảng Banner -->
+<div class="category-table-container">
+  <table class="category-table" id="bannersTable">
+    <thead>
+      <tr>
+        <th style="width: 50px">ID</th>
+        <th style="width: 100px">Hình ảnh</th>
+        <th>Tiêu đề</th>
+        <th>Phụ đề</th>
+        <th>Liên kết</th>
+        <th style="width: 80px">Vị trí</th>
+        <th style="width: 100px">Trạng thái</th>
+        <th style="width: 150px">Thao tác</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Dữ liệu sẽ được JS đổ vào -->
+    </tbody>
+  </table>
+</div>
+
+<!-- Modal xác nhận xóa -->
+<div class="modal fade" id="delete-banner-modal" tabindex="-1" role="dialog" aria-labelledby="delete-banner-modal-label"
+  aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="delete-banner-modal-label">Xác nhận xóa</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        Bạn có chắc chắn muốn xóa banner này?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Hủy</button>
+        <button type="button" class="btn btn-danger" id="confirm-delete-banner">Xóa</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Khởi tạo biến lưu ID banner cần xóa
+    let bannerIdToDelete = null;
+
+    // Hàm để lấy danh sách banner từ API
+    function getBanners() {
+      fetch("/api/banners")
+        .then((response) => response.json())
+        .then((data) => {
+          renderBanners(data);
+        })
+        .catch((error) => {
+          console.error("Lỗi khi tải banner:", error);
+          document.querySelector(".results-info").textContent =
+            "Không thể tải dữ liệu.";
+        });
+    }
+
+    // Hàm để hiển thị danh sách banner
+    function renderBanners(banners) {
+      const tableBody = document.querySelector("#bannersTable tbody");
+      tableBody.innerHTML = "";
+
+      if (banners.length === 0) {
+        tableBody.innerHTML = `
+          <tr>
+            <td colspan="8" class="text-center">
+              Chưa có banner nào. <a href="/dashboard/banners/add">Thêm banner mới</a>
+            </td>
+          </tr>
+        `;
+        document.querySelector(".results-info").textContent = "Hiển thị 0 kết quả";
+        return;
+      }
+
+      banners.forEach((banner) => {
+        const row = document.createElement("tr");
+
+        // Gán mặc định nếu không có status
+        const status = banner.status === 'active' ? "visible" : "hidden";
+
+        row.innerHTML = `
+          <td>${banner.id}</td>
+          <td>
+            <div class="category-image">
+              <img src="${banner.image_url || "/images/no-image.png"}" alt="${banner.title}" style="max-height: 80px;">
+            </div>
+          </td>
+          <td>${banner.title}</td>
+          <td>${banner.subtitle || "-"}</td>
+          <td>${banner.link_url || "-"}</td>
+          <td>${banner.position || 0}</td>
+          <td>
+            <span class="status-indicator ${status === "visible" ? "visible" : "hidden"}">
+              <i class="fas ${status === "visible" ? "fa-eye" : "fa-eye-slash"}"></i>
+              ${status === "visible" ? "Hiển thị" : "Ẩn"}
+            </span>
+          </td>
+          <td>
+            <div class="action-cell">
+              <button class="action-button edit" onclick="window.location.href='/dashboard/banners/edit/${banner.id}'" title="Chỉnh sửa">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="action-button visibility" data-id="${banner.id}" data-status="${status}" title="${status === "visible" ? "Ẩn banner" : "Hiển thị banner"}">
+                <i class="fas ${status === "visible" ? "fa-eye-slash" : "fa-eye"}"></i>
+              </button>
+              <button class="action-button delete" data-id="${banner.id}" data-title="${banner.title}" title="Xóa banner">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </td>
+        `;
+
+        tableBody.appendChild(row);
+      });
+
+      // Thêm event listeners cho các nút xóa
+      document.querySelectorAll(".action-button.delete").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          bannerIdToDelete = btn.getAttribute("data-id");
+          const bannerTitle = btn.getAttribute("data-title");
+          document.querySelector(".modal-body").textContent = `Bạn có chắc chắn muốn xóa banner "${bannerTitle}"?`;
+          $("#delete-banner-modal").modal("show");
+        });
+      });
+
+      // Thêm event listeners cho các nút thay đổi trạng thái hiển thị
+      document.querySelectorAll(".action-button.visibility").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const bannerId = btn.getAttribute("data-id");
+          const currentStatus = btn.getAttribute("data-status");
+          const newStatus = currentStatus === "visible" ? "inactive" : "active";
+
+          updateBannerStatus(bannerId, newStatus);
+        });
+      });
+
+      document.querySelector(".results-info").textContent = `Hiển thị ${banners.length} kết quả`;
+    }
+
+    // Hàm cập nhật trạng thái banner
+    async function updateBannerStatus(bannerId, newStatus) {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          alert("Bạn cần đăng nhập để thực hiện thao tác này");
+          return;
+        }
+
+        const response = await fetch(`/api/banners/${bannerId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({ status: newStatus })
+        });
+
+        if (!response.ok) {
+          throw new Error("Không thể cập nhật trạng thái banner");
+        }
+
+        // Tải lại danh sách banner
+        getBanners();
+
+        // Hiển thị thông báo thành công
+        showToast("Cập nhật trạng thái thành công", "success");
+      } catch (error) {
+        console.error("Error updating banner status:", error);
+        showToast("Đã xảy ra lỗi khi cập nhật trạng thái", "danger");
+      }
+    }
+
+    // Xử lý xóa banner
+    document.getElementById("confirm-delete-banner").addEventListener("click", async () => {
+      if (!bannerIdToDelete) return;
+
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          alert("Bạn cần đăng nhập để thực hiện thao tác này");
+          return;
+        }
+
+        const response = await fetch(`/api/banners/${bannerIdToDelete}`, {
+          method: "DELETE",
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error("Không thể xóa banner");
+        }
+
+        $("#delete-banner-modal").modal("hide");
+
+        // Tải lại danh sách banner
+        getBanners();
+
+        // Hiển thị thông báo thành công
+        showToast("Xóa banner thành công", "success");
+      } catch (error) {
+        console.error("Error deleting banner:", error);
+        showToast("Đã xảy ra lỗi khi xóa banner", "danger");
+      }
+    });
+
+    // Hàm tìm kiếm banner
+    document.getElementById("searchInput").addEventListener("input", function () {
+      const searchTerm = this.value.toLowerCase();
+      const rows = document.querySelectorAll("#bannersTable tbody tr");
+
+      let visibleCount = 0;
+
+      rows.forEach(row => {
+        const title = row.cells[2].textContent.toLowerCase();
+        const subtitle = row.cells[3].textContent.toLowerCase();
+
+        if (title.includes(searchTerm) || subtitle.includes(searchTerm)) {
+          row.style.display = "";
+          visibleCount++;
+        } else {
+          row.style.display = "none";
+        }
+      });
+
+      document.querySelector(".results-info").textContent = `Hiển thị ${visibleCount} kết quả`;
+    });
+
+    // Hàm hiển thị thông báo
+    function showToast(message, type = "success") {
+      let toastContainer = document.getElementById("toastContainer");
+      if (!toastContainer) {
+        toastContainer = document.createElement("div");
+        toastContainer.id = "toastContainer";
+        toastContainer.className = "position-fixed top-0 end-0 p-3";
+        toastContainer.style.zIndex = "1050";
+        document.body.appendChild(toastContainer);
+      }
+
+      const toast = document.createElement("div");
+      toast.className = `toast align-items-center text-white bg-${type} border-0`;
+      toast.setAttribute("role", "alert");
+      toast.setAttribute("aria-live", "assertive");
+      toast.setAttribute("aria-atomic", "true");
+
+      toast.innerHTML = `
+        <div class="d-flex">
+          <div class="toast-body">${message}</div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+      `;
+
+      toastContainer.appendChild(toast);
+      const bsToast = new bootstrap.Toast(toast, { delay: 3000 });
+      bsToast.show();
+
+      toast.addEventListener("hidden.bs.toast", () => toast.remove());
+    }
+
+    // Tải danh sách banner khi trang được tải
+    getBanners();
+  });
+</script>

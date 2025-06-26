@@ -81,7 +81,13 @@ app.get("/health", function (req, res) {
 });
 
 // Base routes
-app.use("/", indexRouter);
+app.get("/", (req, res) => {
+  res.render("main", {
+    title: "Sona Space - Admin Login"
+  });
+});
+
+// API routes
 app.use("/api/auth", authRouter);
 app.use("/dashboard", dashboardRouter);
 

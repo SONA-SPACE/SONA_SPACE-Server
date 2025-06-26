@@ -102,10 +102,9 @@ router.post('/', verifyToken, async (req, res) => {
       const [wishlistItem] = await db.query(`
         SELECT 
           w.wishlist_id,
+          w.quantity,
           w.created_at,
           v.*,
-          p.name,
-          p.image,
           (SELECT COUNT(*) FROM comment WHERE product_id = p.product_id) as comment_count,
           (SELECT AVG(comment_rating) FROM comment WHERE product_id = p.product_id) as average_rating
         FROM wishlist w
@@ -257,6 +256,24 @@ router.delete('/:id', verifyToken, async (req, res) => {
  * @desc    Xóa sản phẩm khỏi wishlist dựa vào product_id
  * @access  Private
  */
+// Xóa khỏi wishlist theo variant_id
+router.delete('/variant/:variantId', verifyToken, async (req, res) => {
+  try {
+    const variantId = Number(req.params.variantId);
+    const userId = req.user.id;
+
+    const [result] = await db.query(
+      'DELETE FROM wishlist WHERE variant_id = ? AND user_id = ? AND status = 1',
+      [variantId, userId]
+    );
+
+    res.status(200).json({ success: true, message: 'Xoá wishlist thành công' });
+  } catch (error) {
+    console.error('Error deleting from wishlist by variant_id:', error);
+    res.status(500).json({ success: false, message: 'Lỗi server khi xoá' });
+  }
+});
+
 router.delete('/product/:productId', async (req, res) => {
   try {
     const productId = Number(req.params.productId);

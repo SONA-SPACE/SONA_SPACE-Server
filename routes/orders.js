@@ -4,9 +4,18 @@ const db = require('../config/database');
 const { verifyToken, isAdmin } = require('../middleware/auth');
 const crypto = require("crypto");
 const axios = require("axios");
-const {VNPay, ignoreLogger, dateFormat} = require('vnpay')
+const { VNPay, ignoreLogger, dateFormat } = require('vnpay')
 // Áp dụng middleware xác thực cho tất cả các route
 router.use(verifyToken);
+function formatDateVNPay(date) {
+  const yyyy = date.getFullYear().toString();
+  const MM = (date.getMonth() + 1).toString().padStart(2, '0');
+  const dd = date.getDate().toString().padStart(2, '0');
+  const HH = date.getHours().toString().padStart(2, '0');
+  const mm = date.getMinutes().toString().padStart(2, '0');
+  const ss = date.getSeconds().toString().padStart(2, '0');
+  return `${yyyy}${MM}${dd}${HH}${mm}${ss}`;
+}
 
 
 /**
@@ -377,55 +386,55 @@ router.post('/', verifyToken, async (req, res) => {
       });
     }
     // xử lý thanh toán VNPAY
-   if (method === 'VNPAY') {
-  const [[orderRow]] = await db.query('SELECT order_id FROM orders WHERE order_hash = ?', [order_id]);
-  if (!orderRow) {
-    return res.status(500).json({ error: 'Không tìm thấy order_id sau khi tạo đơn hàng' });
-  }
+    if (method === 'VNPAY') {
+      const [[orderRow]] = await db.query('SELECT order_id FROM orders WHERE order_hash = ?', [order_id]);
+      if (!orderRow) {
+        return res.status(500).json({ error: 'Không tìm thấy order_id sau khi tạo đơn hàng' });
+      }
 
-  // Tạo mã giao dịch riêng
-  const transactionCode = `VNP${Date.now()}${Math.floor(Math.random() * 1000)}`;
+      // Tạo mã giao dịch riêng
+      const transactionCode = `VNP${Date.now()}${Math.floor(Math.random() * 1000)}`;
 
-  // Khởi tạo đối tượng VNPAY
-  const vnpay = new VNPay({
-    tmnCode: 'DHF21S3V',
-    secureSecret: 'NXM2DJWRF8RLC4R5VBK85OJZS1UE9KI6F',
-    vnpayHost: 'https://sandbox.vnpayment.vn',
-    testMode: true,
-    hashAlgorithm: 'SHA512',
-    loggerFn: ignoreLogger,
-  });
+      // Khởi tạo đối tượng VNPAY
+      const vnpay = new VNPay({
+        tmnCode: 'DHF21S3V',
+        secureSecret: 'NXM2DJWRF8RLC4R5VBK85OJZS1UE9KI6F',
+        vnpayHost: 'https://sandbox.vnpayment.vn',
+        testMode: true,
+        hashAlgorithm: 'SHA512',
+        loggerFn: ignoreLogger,
+      });
 
-  // Ngày hết hạn thanh toán
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
+      // Ngày hết hạn thanh toán
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
 
-  // Tạo URL thanh toán
-  const paymentUrl = vnpay.buildPaymentUrl({
-    vnp_Amount: amount * 100, // VNPAY yêu cầu nhân 100
-    vnp_IpAddr: 'http://localhost:5173/thanh-toan',
-    vnp_TxnRef: transactionCode,
-    vnp_OrderInfo: `Thanh toán đơn hàng #${order_id}`,
-    vnp_OrderType: 'other',
-    vnp_ReturnUrl: 'http://localhost:3501/api/orders',
-    vnp_Locale: 'vn',
-    vnp_CreateDate: dateFormat(new Date(), "yyyymmddHHMMss"),
-    vnp_ExpireDate: dateFormat(tomorrow, "yyyymmddHHMMss"),
-  });
+      // Tạo URL thanh toán
+      const paymentUrl = vnpay.buildPaymentUrl({
+        vnp_Amount: amount * 100, // VNPAY yêu cầu nhân 100
+        vnp_IpAddr: 'http://localhost:5173/thanh-toan',
+        vnp_TxnRef: transactionCode,
+        vnp_OrderInfo: `Thanh toán đơn hàng #${order_id}`,
+        vnp_OrderType: 'other',
+        vnp_ReturnUrl: 'http://localhost:3501/api/orders',
+        vnp_Locale: 'vn',
+        vnp_CreateDate: formatDateVNPay(new Date()),
+        vnp_ExpireDate: formatDateVNPay(tomorrow),
+      });
 
-  // Lưu giao dịch thanh toán
-  await db.query(`
+      // Lưu giao dịch thanh toán
+      await db.query(`
     INSERT INTO payments (order_id, method, amount, status, transaction_code, created_at)
     VALUES (?, ?, ?, 'PENDING', ?, NOW())
   `, [orderRow.order_id, method, amount, transactionCode]);
 
-  // Gửi URL thanh toán cho client
-  return res.status(200).json({
-    message: "Order and VNPAY payment created",
-    payUrl: paymentUrl,
-    order_id
-  });
-}
+      // Gửi URL thanh toán cho client
+      return res.status(200).json({
+        message: "Order and VNPAY payment created",
+        payUrl: paymentUrl,
+        order_id
+      });
+    }
 
 
 

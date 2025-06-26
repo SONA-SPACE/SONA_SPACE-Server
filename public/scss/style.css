@@ -4550,4 +4550,242 @@ textarea.form-control {
 .orders-page .orders-table .table-footer .pagination .page-item.disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.order-detail-page {
+  background-color: #f8f9fa;
+  padding: 20px 0;
+}
+.order-detail-page .order-card {
+  background-color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 30px;
+  margin-bottom: 30px;
+}
+.order-detail-page .order-card .row {
+  -moz-column-gap: 30px;
+       column-gap: 30px;
+}
+.order-detail-page .order-card .row .col-md-8 {
+  padding: 15px;
+  /* From https://css.glass */
+  background: rgba(0, 0, 0, 0.01);
+  border-radius: 16px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
+  border: 1px solid rgba(0, 0, 0, 0.01);
+}
+.order-detail-page .order-card .row .col-md-3 {
+  padding: 15px;
+  max-width: 100%;
+  flex: 1;
+  /* From https://css.glass */
+  background: rgba(0, 0, 0, 0.01);
+  border-radius: 16px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
+  border: 1px solid rgba(0, 0, 0, 0.01);
+}
+.order-detail-page .order-header {
+  margin-bottom: 30px;
+}
+.order-detail-page .order-header h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.order-detail-page .order-header .order-date {
+  color: #6c757d;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+.order-detail-page .order-header .order-status {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.order-detail-page .order-header .order-status .status-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.order-detail-page .order-header .order-status .status-item .status-label {
+  font-size: 14px;
+  color: #333;
+}
+.order-detail-page .order-header .order-status .status-item .status-value {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 500;
+}
+.order-detail-page .order-header .order-status .status-item .status-value.paid {
+  color: #00D078;
+}
+.order-detail-page .order-header .order-status .status-item .status-value.paid::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #00D078;
+}
+.order-detail-page .order-header .order-status .status-item .status-value.shipping {
+  color: #FF9500;
+}
+.order-detail-page .order-header .order-status .status-item .status-value.shipping::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #FF9500;
+}
+.order-detail-page .order-header .order-status .status-item .status-value .dropdown-toggle {
+  cursor: pointer;
+  color: #FF9500;
+}
+.order-detail-page .order-header .order-status .status-item .status-value .dropdown-toggle i {
+  font-size: 12px;
+  margin-left: 5px;
+}
+.order-detail-page .section-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+.order-detail-page .product-section {
+  margin-bottom: 30px;
+}
+.order-detail-page .product-section .product-item {
+  display: flex;
+  margin-bottom: 30px;
+}
+.order-detail-page .product-section .product-item .product-image {
+  width: 65%;
+  height: 200px;
+  border-radius: 5px;
+  overflow: hidden;
+  margin-right: 20px;
+}
+.order-detail-page .product-section .product-item .product-image img {
+  width: 100%;
+  height: 100%;
+  -o-object-fit: contain;
+     object-fit: contain;
+}
+.order-detail-page .product-section .product-item .product-details {
+  flex: 1;
+}
+.order-detail-page .product-section .product-item .product-details .product-name {
+  font-size: 16px;
+  font-weight: 500;
+  margin-bottom: 5px;
+}
+.order-detail-page .product-section .product-item .product-details .product-type {
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+.order-detail-page .product-section .product-item .product-details .wrapper {
+  display: flex;
+  align-items: center;
+  -moz-column-gap: 16px;
+       column-gap: 16px;
+}
+.order-detail-page .product-section .product-item .product-details .wrapper .price-row:first-child .price-value {
+  height: 22px;
+  align-content: center;
+}
+.order-detail-page .product-section .product-item .product-details .price-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+  -moz-column-gap: 5px;
+       column-gap: 5px;
+}
+.order-detail-page .product-section .product-item .product-details .price-row .price-label {
+  color: #6c757d;
+  font-size: 14px;
+}
+.order-detail-page .product-section .product-item .product-details .price-row .price-value {
+  font-weight: 500;
+  align-content: center;
+}
+.order-detail-page .product-section .product-item .product-details .price-row .color-dot {
+  display: inline-block;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background-color: #8B6E4E;
+  margin-left: 5px;
+}
+.order-detail-page .customer-info {
+  margin-bottom: 30px;
+}
+.order-detail-page .customer-info .info-row {
+  margin-bottom: 15px;
+}
+.order-detail-page .customer-info .info-row .info-label {
+  color: #6c757d;
+  font-size: 14px;
+  margin-bottom: 5px;
+}
+.order-detail-page .customer-info .info-row .info-value {
+  padding: 10px;
+  border: 1px solid #e0e0e0;
+  border-radius: 5px;
+  background-color: #f8f9fa;
+  font-size: 14px;
+}
+.order-detail-page .customer-info .info-row textarea.info-value {
+  min-height: 100px;
+  width: 100%;
+  resize: none;
+}
+.order-detail-page .order-summary {
+  margin-top: 20px;
+}
+.order-detail-page .order-summary .summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid #e0e0e0;
+}
+.order-detail-page .order-summary .summary-row:last-child {
+  border-bottom: none;
+  font-weight: 600;
+  font-size: 16px;
+}
+.order-detail-page .order-summary .summary-row .summary-label {
+  color: #6c757d;
+}
+.order-detail-page .order-summary .summary-row .summary-value {
+  font-weight: 500;
+}
+.order-detail-page .order-summary .summary-row .discount {
+  color: #FF3B30;
+}
+.order-detail-page .action-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+.order-detail-page .action-buttons .btn {
+  padding: 10px 20px;
+  border-radius: 5px;
+  font-weight: 500;
+}
+.order-detail-page .action-buttons .btn.btn-cancel {
+  background-color: #f8f9fa;
+  border: 1px solid #e0e0e0;
+  color: #333;
+}
+.order-detail-page .action-buttons .btn.btn-save {
+  background-color: #00D078;
+  border: none;
+  color: #fff;
 }/*# sourceMappingURL=style.css.map */

@@ -1,0 +1,440 @@
+<!-- Trang chi tiết đơn hàng -->
+<div class="content-wrapper">
+  <div class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h1 class="m-0">Chi tiết đơn hàng #<span id="order-id"><%= orderId %></span></h1>
+        </div>
+        <div class="col-sm-6">
+          <ol class="breadcrumb float-sm-right">
+            <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="/dashboard/orders">Đơn hàng</a></li>
+            <li class="breadcrumb-item active">Chi tiết đơn hàng</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Thông tin đơn hàng</h3>
+            </div>
+            <div class="card-body">
+              <div id="order-info-loading">Đang tải thông tin đơn hàng...</div>
+              <div id="order-info" style="display: none;">
+                <table class="table table-bordered">
+                  <tr>
+                    <th style="width: 40%">Mã đơn hàng</th>
+                    <td id="order-code"></td>
+                  </tr>
+                  <tr>
+                    <th>Ngày đặt</th>
+                    <td id="order-date"></td>
+                  </tr>
+                  <tr>
+                    <th>Trạng thái</th>
+                    <td>
+                      <div class="d-flex align-items-center">
+                        <span id="order-status-badge" class="badge mr-2"></span>
+                        <select id="order-status-select" class="form-control form-control-sm" style="width: auto;">
+                          <option value="pending">Chờ xử lý</option>
+                          <option value="processing">Đang xử lý</option>
+                          <option value="shipped">Đang giao hàng</option>
+                          <option value="delivered">Đã giao hàng</option>
+                          <option value="cancelled">Đã hủy</option>
+                        </select>
+                        <button id="update-status-btn" class="btn btn-sm btn-primary ml-2">Cập nhật</button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th>Thanh toán</th>
+                    <td id="payment-status"></td>
+                  </tr>
+                  <tr>
+                    <th>Phương thức thanh toán</th>
+                    <td id="payment-method"></td>
+                  </tr>
+                  <tr>
+                    <th>Tổng tiền</th>
+                    <td id="total-amount"></td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Thông tin khách hàng</h3>
+            </div>
+            <div class="card-body">
+              <div id="customer-info-loading">Đang tải thông tin khách hàng...</div>
+              <div id="customer-info" style="display: none;">
+                <table class="table table-bordered">
+                  <tr>
+                    <th style="width: 40%">Họ tên</th>
+                    <td id="customer-name"></td>
+                  </tr>
+                  <tr>
+                    <th>Email</th>
+                    <td id="customer-email"></td>
+                  </tr>
+                  <tr>
+                    <th>Số điện thoại</th>
+                    <td id="customer-phone"></td>
+                  </tr>
+                  <tr>
+                    <th>Địa chỉ giao hàng</th>
+                    <td id="shipping-address"></td>
+                  </tr>
+                  <tr>
+                    <th>Ghi chú</th>
+                    <td id="order-note"></td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-12">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Sản phẩm trong đơn hàng</h3>
+            </div>
+            <div class="card-body table-responsive p-0">
+              <div id="order-items-loading">Đang tải danh sách sản phẩm...</div>
+              <table class="table table-hover text-nowrap" id="order-items-table" style="display: none;">
+                <thead>
+                  <tr>
+                    <th>Sản phẩm</th>
+                    <th>Biến thể</th>
+                    <th>Giá</th>
+                    <th>Số lượng</th>
+                    <th>Thành tiền</th>
+                  </tr>
+                </thead>
+                <tbody id="order-items">
+                  <!-- Danh sách sản phẩm sẽ được thêm vào đây bằng JavaScript -->
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colspan="4" class="text-right"><strong>Tổng tiền sản phẩm:</strong></td>
+                    <td id="subtotal"></td>
+                  </tr>
+                  <tr>
+                    <td colspan="4" class="text-right"><strong>Phí vận chuyển:</strong></td>
+                    <td id="shipping-fee"></td>
+                  </tr>
+                  <tr>
+                    <td colspan="4" class="text-right"><strong>Giảm giá:</strong></td>
+                    <td id="discount"></td>
+                  </tr>
+                  <tr>
+                    <td colspan="4" class="text-right"><strong>Tổng thanh toán:</strong></td>
+                    <td id="grand-total"></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-12 mb-4">
+          <a href="/dashboard/orders" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Quay lại danh sách
+          </a>
+          <button id="print-order-btn" class="btn btn-info">
+            <i class="fas fa-print"></i> In đơn hàng
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const orderId = document.getElementById('order-id').textContent;
+  
+  // Hàm tải thông tin chi tiết đơn hàng
+  async function loadOrderDetails() {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('Không tìm thấy token xác thực');
+        return;
+      }
+      
+      // Gọi API lấy chi tiết đơn hàng
+      const response = await fetch(`/api/orders/${orderId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Không thể tải thông tin đơn hàng');
+      }
+      
+      const orderData = await response.json();
+      
+      // Hiển thị thông tin đơn hàng
+      displayOrderInfo(orderData);
+      
+      // Hiển thị thông tin khách hàng
+      displayCustomerInfo(orderData);
+      
+      // Hiển thị danh sách sản phẩm
+      displayOrderItems(orderData.items || []);
+      
+    } catch (error) {
+      console.error('Lỗi khi tải thông tin đơn hàng:', error);
+      alert('Đã xảy ra lỗi khi tải thông tin đơn hàng. Vui lòng thử lại sau.');
+    }
+  }
+  
+  // Hàm hiển thị thông tin đơn hàng
+  function displayOrderInfo(order) {
+    document.getElementById('order-info-loading').style.display = 'none';
+    document.getElementById('order-info').style.display = 'block';
+    
+    document.getElementById('order-code').textContent = order.order_code || order.order_id;
+    
+    // Định dạng ngày tháng
+    const orderDate = new Date(order.created_at).toLocaleString('vi-VN');
+    document.getElementById('order-date').textContent = orderDate;
+    
+    // Hiển thị trạng thái đơn hàng
+    const orderStatus = order.status || 'pending';
+    const statusSelect = document.getElementById('order-status-select');
+    statusSelect.value = orderStatus;
+    
+    // Xác định màu sắc cho trạng thái
+    const statusBadge = document.getElementById('order-status-badge');
+    let statusText = '';
+    let statusClass = '';
+    
+    switch (orderStatus.toLowerCase()) {
+      case 'pending':
+        statusText = 'Chờ xử lý';
+        statusClass = 'badge-warning';
+        break;
+      case 'processing':
+        statusText = 'Đang xử lý';
+        statusClass = 'badge-info';
+        break;
+      case 'shipped':
+        statusText = 'Đang giao hàng';
+        statusClass = 'badge-primary';
+        break;
+      case 'delivered':
+        statusText = 'Đã giao hàng';
+        statusClass = 'badge-success';
+        break;
+      case 'cancelled':
+        statusText = 'Đã hủy';
+        statusClass = 'badge-danger';
+        break;
+      default:
+        statusText = orderStatus;
+        statusClass = 'badge-secondary';
+    }
+    
+    statusBadge.textContent = statusText;
+    statusBadge.className = `badge ${statusClass}`;
+    
+    // Hiển thị trạng thái thanh toán
+    const paymentStatus = order.payment_status || 'unpaid';
+    const paymentStatusEl = document.getElementById('payment-status');
+    
+    if (paymentStatus === 'paid') {
+      paymentStatusEl.innerHTML = '<span class="badge badge-success">Đã thanh toán</span>';
+    } else {
+      paymentStatusEl.innerHTML = '<span class="badge badge-danger">Chưa thanh toán</span>';
+    }
+    
+    // Hiển thị phương thức thanh toán
+    document.getElementById('payment-method').textContent = order.payment_method || 'Không có thông tin';
+    
+    // Định dạng tiền tệ
+    const totalAmount = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(order.total_amount);
+    document.getElementById('total-amount').textContent = totalAmount;
+    
+    // Sự kiện cập nhật trạng thái
+    document.getElementById('update-status-btn').addEventListener('click', async function() {
+      const newStatus = statusSelect.value;
+      
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`/api/orders/${orderId}/status`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ status: newStatus })
+        });
+        
+        if (!response.ok) {
+          throw new Error('Không thể cập nhật trạng thái đơn hàng');
+        }
+        
+        // Cập nhật lại giao diện
+        const result = await response.json();
+        alert('Cập nhật trạng thái đơn hàng thành công!');
+        
+        // Cập nhật badge trạng thái
+        let newStatusText = '';
+        let newStatusClass = '';
+        
+        switch (newStatus.toLowerCase()) {
+          case 'pending':
+            newStatusText = 'Chờ xử lý';
+            newStatusClass = 'badge-warning';
+            break;
+          case 'processing':
+            newStatusText = 'Đang xử lý';
+            newStatusClass = 'badge-info';
+            break;
+          case 'shipped':
+            newStatusText = 'Đang giao hàng';
+            newStatusClass = 'badge-primary';
+            break;
+          case 'delivered':
+            newStatusText = 'Đã giao hàng';
+            newStatusClass = 'badge-success';
+            break;
+          case 'cancelled':
+            newStatusText = 'Đã hủy';
+            newStatusClass = 'badge-danger';
+            break;
+          default:
+            newStatusText = newStatus;
+            newStatusClass = 'badge-secondary';
+        }
+        
+        statusBadge.textContent = newStatusText;
+        statusBadge.className = `badge ${newStatusClass}`;
+        
+      } catch (error) {
+        console.error('Lỗi khi cập nhật trạng thái đơn hàng:', error);
+        alert('Đã xảy ra lỗi khi cập nhật trạng thái đơn hàng. Vui lòng thử lại sau.');
+      }
+    });
+  }
+  
+  // Hàm hiển thị thông tin khách hàng
+  function displayCustomerInfo(order) {
+    document.getElementById('customer-info-loading').style.display = 'none';
+    document.getElementById('customer-info').style.display = 'block';
+    
+    document.getElementById('customer-name').textContent = order.customer_name || 'Không có thông tin';
+    document.getElementById('customer-email').textContent = order.customer_email || 'Không có thông tin';
+    document.getElementById('customer-phone').textContent = order.customer_phone || 'Không có thông tin';
+    document.getElementById('shipping-address').textContent = order.shipping_address || 'Không có thông tin';
+    document.getElementById('order-note').textContent = order.note || 'Không có ghi chú';
+  }
+  
+  // Hàm hiển thị danh sách sản phẩm
+  function displayOrderItems(items) {
+    document.getElementById('order-items-loading').style.display = 'none';
+    document.getElementById('order-items-table').style.display = 'table';
+    
+    const orderItemsEl = document.getElementById('order-items');
+    
+    if (!items || items.length === 0) {
+      orderItemsEl.innerHTML = '<tr><td colspan="5" class="text-center">Không có sản phẩm nào</td></tr>';
+      return;
+    }
+    
+    let html = '';
+    let subtotal = 0;
+    
+    items.forEach(item => {
+      // Tính thành tiền
+      const itemTotal = item.price * item.quantity;
+      subtotal += itemTotal;
+      
+      // Định dạng tiền tệ
+      const formattedPrice = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(item.price);
+      const formattedTotal = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(itemTotal);
+      
+      html += `
+        <tr>
+          <td>
+            <div class="d-flex align-items-center">
+              <img src="${item.product_image || '/images/no-image.jpg'}" alt="${item.product_name}" class="img-thumbnail mr-2" style="width: 50px; height: 50px; object-fit: cover;">
+              <span>${item.product_name}</span>
+            </div>
+          </td>
+          <td>${item.variant_name || 'Mặc định'}</td>
+          <td>${formattedPrice}</td>
+          <td>${item.quantity}</td>
+          <td>${formattedTotal}</td>
+        </tr>
+      `;
+    });
+    
+    orderItemsEl.innerHTML = html;
+    
+    // Hiển thị tổng tiền
+    const formattedSubtotal = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(subtotal);
+    document.getElementById('subtotal').textContent = formattedSubtotal;
+    
+    // Phí vận chuyển
+    const shippingFee = parseFloat(items[0]?.shipping_fee || 0);
+    const formattedShippingFee = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(shippingFee);
+    document.getElementById('shipping-fee').textContent = formattedShippingFee;
+    
+    // Giảm giá
+    const discount = parseFloat(items[0]?.discount || 0);
+    const formattedDiscount = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(discount);
+    document.getElementById('discount').textContent = formattedDiscount;
+    
+    // Tổng thanh toán
+    const grandTotal = subtotal + shippingFee - discount;
+    const formattedGrandTotal = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(grandTotal);
+    document.getElementById('grand-total').textContent = formattedGrandTotal;
+  }
+  
+  // Sự kiện in đơn hàng
+  document.getElementById('print-order-btn').addEventListener('click', function() {
+    window.print();
+  });
+  
+  // Tải thông tin đơn hàng khi trang được tải
+  loadOrderDetails();
+});
+</script>
+
+<style>
+@media print {
+  .sidebar, .dashboard-header, .breadcrumb, #update-status-btn, #print-order-btn {
+    display: none !important;
+  }
+  
+  .content-wrapper {
+    margin-left: 0 !important;
+    padding: 0 !important;
+  }
+  
+  .card {
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+  }
+}
+</style> 

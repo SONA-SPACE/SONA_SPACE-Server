@@ -1,0 +1,368 @@
+<link rel="stylesheet" href="/scss/style.css">
+<!-- Trang quản lý đơn hàng -->
+<div class="orders-page">
+  <div class="content-wrapper">
+    <div class="content-header">
+      <div class="container-fluid">
+        <div class="page-header">
+          <h1>Đơn hàng</h1>
+          <div class="actions">
+            <button class="btn btn-primary">
+              <i class="fas fa-plus"></i> Thêm đơn hàng mới
+            </button>
+          </div>
+        </div>
+        
+        <div class="search-bar">
+          <div class="search-input">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" placeholder="Tìm kiếm đơn hàng..." id="search-orders">
+          </div>
+          
+          <div class="date-range">
+            <i class="far fa-calendar-alt calendar-icon"></i>
+            <span>1/05/2025 - 31/5/2025</span>
+          </div>
+          
+          <div class="filter-btn">
+            <span>Hiển thị 6 trên tổng số 500</span>
+          </div>
+        </div>
+        
+        <div class="orders-summary">
+          <div class="summary-card">
+            <div class="card-title">Tổng đơn hàng</div>
+            <div class="card-value">20</div>
+          </div>
+          
+          <div class="summary-card">
+            <div class="card-title">Đơn hàng</div>
+            <div class="card-subtitle">Đơn hàng đang chờ xử lý</div>
+            <div class="card-value">20</div>
+          </div>
+          
+          <div class="summary-card">
+            <div class="card-title">Đang vận chuyển</div>
+            <div class="card-subtitle">Tổng đơn hàng đang vận chuyển</div>
+            <div class="card-value">2</div>
+          </div>
+          
+          <div class="summary-card">
+            <div class="card-title">Hoàn trả đơn hàng</div>
+            <div class="card-subtitle">Đơn hàng được yêu cầu trả hàng</div>
+            <div class="card-value">0</div>
+          </div>
+          
+          <div class="summary-card">
+            <div class="card-title">Hủy đơn hàng</div>
+            <div class="card-subtitle">Đơn hàng được yêu cầu hủy</div>
+            <div class="card-value">0</div>
+          </div>
+        </div>
+        
+        <div class="orders-table">
+          <div class="table-header">
+            <div class="bulk-actions">
+              <input type="checkbox" class="checkbox">
+              <div class="dropdown">
+                <button class="dropdown-toggle">Mã đơn <i class="fas fa-chevron-down"></i></button>
+              </div>
+            </div>
+            
+            <div class="table-filters">
+              <div class="filter">
+                <button class="filter-toggle">Ngày đặt đơn</button>
+              </div>
+              <div class="filter">
+                <button class="filter-toggle">Khách hàng</button>
+              </div>
+              <div class="filter">
+                <button class="filter-toggle">Thanh toán</button>
+              </div>
+              <div class="filter">
+                <button class="filter-toggle">Sản phẩm</button>
+              </div>
+              <div class="filter">
+                <button class="filter-toggle">Tổng tiền</button>
+              </div>
+              <div class="filter">
+                <button class="filter-toggle">Vận chuyển</button>
+              </div>
+              <div class="filter">
+                <button class="filter-toggle">Trạng thái đơn hàng</button>
+              </div>
+              <div class="filter">
+                <button class="filter-toggle">Ngày cập nhật</button>
+              </div>
+            </div>
+          </div>
+          
+          <table>
+            <tbody id="orders-list">
+              <!-- Dữ liệu đơn hàng mẫu -->
+              <tr>
+                <td><input type="checkbox" class="checkbox"></td>
+                <td class="order-id">ORD-10586</td>
+                <td>16:08:55 8-05-2025</td>
+                <td>Nguyễn X</td>
+                <td><span class="status paid">Đã thanh toán</span></td>
+                <td>2 sản phẩm</td>
+                <td>15.050.000 đ</td>
+                <td>-</td>
+                <td><span class="status processing">Yêu cầu hủy</span></td>
+                <td>16:08:55 8-05-2025</td>
+                <td>
+                  <div class="actions">
+                    <button class="action-btn"><i class="fas fa-pencil-alt"></i></button>
+                    <button class="action-btn"><i class="fas fa-trash-alt"></i></button>
+                  </div>
+                </td>
+              </tr>
+              
+              <tr>
+                <td><input type="checkbox" class="checkbox"></td>
+                <td class="order-id">ORD-10586</td>
+                <td>16:08:55 8-05-2025</td>
+                <td>Nguyễn X</td>
+                <td><span class="status paid">Đã thanh toán</span></td>
+                <td>2 sản phẩm</td>
+                <td>15.050.000 đ</td>
+                <td>-</td>
+                <td><span class="status processing">Chờ xác nhận</span></td>
+                <td>16:08:55 8-05-2025</td>
+                <td>
+                  <div class="actions">
+                    <button class="action-btn"><i class="fas fa-pencil-alt"></i></button>
+                    <button class="action-btn"><i class="fas fa-trash-alt"></i></button>
+                  </div>
+                </td>
+              </tr>
+              
+              <tr>
+                <td><input type="checkbox" class="checkbox"></td>
+                <td class="order-id">ORD-10586</td>
+                <td>16:08:55 8-05-2025</td>
+                <td>Nguyễn X</td>
+                <td><span class="status paid">Đã thanh toán</span></td>
+                <td>2 sản phẩm</td>
+                <td>15.050.000 đ</td>
+                <td>-</td>
+                <td><span class="status processing">Yêu cầu hủy</span></td>
+                <td>16:08:55 8-05-2025</td>
+                <td>
+                  <div class="actions">
+                    <button class="action-btn"><i class="fas fa-pencil-alt"></i></button>
+                    <button class="action-btn"><i class="fas fa-trash-alt"></i></button>
+                  </div>
+                </td>
+              </tr>
+              
+              <tr>
+                <td><input type="checkbox" class="checkbox"></td>
+                <td class="order-id">ORD-10586</td>
+                <td>16:08:55 8-05-2025</td>
+                <td>Nguyễn X</td>
+                <td><span class="status paid">Đã thanh toán</span></td>
+                <td>2 sản phẩm</td>
+                <td>15.050.000 đ</td>
+                <td>-</td>
+                <td><span class="status delivered">Đã hủy</span></td>
+                <td>16:08:55 8-05-2025</td>
+                <td>
+                  <div class="actions">
+                    <button class="action-btn"><i class="fas fa-pencil-alt"></i></button>
+                    <button class="action-btn"><i class="fas fa-trash-alt"></i></button>
+                  </div>
+                </td>
+              </tr>
+              
+              <tr>
+                <td><input type="checkbox" class="checkbox"></td>
+                <td class="order-id">ORD-10586</td>
+                <td>16:08:55 8-05-2025</td>
+                <td>Nguyễn X</td>
+                <td><span class="status paid">Đã thanh toán</span></td>
+                <td>2 sản phẩm</td>
+                <td>15.050.000 đ</td>
+                <td>-</td>
+                <td><span class="status shipped">Đang giao</span></td>
+                <td>16:08:55 8-05-2025</td>
+                <td>
+                  <div class="actions">
+                    <button class="action-btn"><i class="fas fa-pencil-alt"></i></button>
+                    <button class="action-btn"><i class="fas fa-trash-alt"></i></button>
+                  </div>
+                </td>
+              </tr>
+              
+              <tr>
+                <td><input type="checkbox" class="checkbox"></td>
+                <td class="order-id">ORD-10586</td>
+                <td>16:08:55 8-05-2025</td>
+                <td>Nguyễn X</td>
+                <td><span class="status paid">Đã thanh toán</span></td>
+                <td>2 sản phẩm</td>
+                <td>15.050.000 đ</td>
+                <td>-</td>
+                <td><span class="status processing">Yêu cầu trả hàng</span></td>
+                <td>16:08:55 8-05-2025</td>
+                <td>
+                  <div class="actions">
+                    <button class="action-btn"><i class="fas fa-pencil-alt"></i></button>
+                    <button class="action-btn"><i class="fas fa-trash-alt"></i></button>
+                  </div>
+                </td>
+              </tr>
+              
+              <tr>
+                <td><input type="checkbox" class="checkbox"></td>
+                <td class="order-id">ORD-10586</td>
+                <td>16:08:55 8-05-2025</td>
+                <td>Nguyễn X</td>
+                <td><span class="status paid">Đã thanh toán</span></td>
+                <td>2 sản phẩm</td>
+                <td>15.050.000 đ</td>
+                <td>-</td>
+                <td><span class="status delivered">Trả hàng</span></td>
+                <td>16:08:55 8-05-2025</td>
+                <td>
+                  <div class="actions">
+                    <button class="action-btn"><i class="fas fa-pencil-alt"></i></button>
+                    <button class="action-btn"><i class="fas fa-trash-alt"></i></button>
+                  </div>
+                </td>
+              </tr>
+              
+              <tr>
+                <td><input type="checkbox" class="checkbox"></td>
+                <td class="order-id">ORD-10586</td>
+                <td>16:08:55 8-05-2025</td>
+                <td>Nguyễn X</td>
+                <td><span class="status paid">Đã thanh toán</span></td>
+                <td>2 sản phẩm</td>
+                <td>15.050.000 đ</td>
+                <td>-</td>
+                <td><span class="status delivered">Giao hàng thành công</span></td>
+                <td>16:08:55 8-05-2025</td>
+                <td>
+                  <div class="actions">
+                    <button class="action-btn"><i class="fas fa-pencil-alt"></i></button>
+                    <button class="action-btn"><i class="fas fa-trash-alt"></i></button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          
+          <div class="table-footer">
+            <div class="showing-info">Hiển thị 1-8 trên tổng số 20 đơn hàng</div>
+            <div class="pagination">
+              <button class="page-item disabled"><i class="fas fa-chevron-left"></i></button>
+              <button class="page-item active">1</button>
+              <button class="page-item">2</button>
+              <button class="page-item">3</button>
+              <button class="page-item"><i class="fas fa-chevron-right"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal xem chi tiết đơn hàng -->
+<div class="modal fade" id="order-detail-modal" tabindex="-1" role="dialog" aria-labelledby="orderDetailModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="orderDetailModalLabel">Chi tiết đơn hàng #<span id="order-id"></span></h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" id="order-detail-content">
+        <!-- Chi tiết đơn hàng sẽ được thêm vào đây bằng JavaScript -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
+        <button type="button" class="btn btn-primary" id="update-status-btn">Cập nhật trạng thái</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Xử lý sự kiện chọn tất cả checkbox
+  const selectAllCheckbox = document.querySelector('.table-header .checkbox');
+  const rowCheckboxes = document.querySelectorAll('tbody .checkbox');
+  
+  if (selectAllCheckbox) {
+    selectAllCheckbox.addEventListener('change', function() {
+      const isChecked = this.checked;
+      rowCheckboxes.forEach(checkbox => {
+        checkbox.checked = isChecked;
+      });
+    });
+  }
+  
+  // Xử lý sự kiện khi click vào dropdown filters
+  const filterToggles = document.querySelectorAll('.filter-toggle');
+  
+  filterToggles.forEach(toggle => {
+    toggle.addEventListener('click', function() {
+      // Đây là nơi để thêm logic hiển thị dropdown filter
+      console.log('Filter clicked:', this.textContent.trim());
+    });
+  });
+  
+  // Xử lý sự kiện khi click vào nút chỉnh sửa
+  const editButtons = document.querySelectorAll('.action-btn.edit');
+  
+  editButtons.forEach(button => {
+    button.addEventListener('click', function() {
+      const row = this.closest('tr');
+      const orderId = row.querySelector('.order-id').textContent;
+      console.log('Edit order:', orderId);
+      // Chuyển hướng đến trang chỉnh sửa đơn hàng
+      // window.location.href = `/dashboard/orders/edit/${orderId}`;
+    });
+  });
+  
+  // Xử lý sự kiện khi click vào nút xóa
+  const deleteButtons = document.querySelectorAll('.action-btn.delete');
+  
+  deleteButtons.forEach(button => {
+    button.addEventListener('click', function() {
+      const row = this.closest('tr');
+      const orderId = row.querySelector('.order-id').textContent;
+      
+      if (confirm(`Bạn có chắc chắn muốn xóa đơn hàng ${orderId}?`)) {
+        console.log('Delete order:', orderId);
+        // Gọi API xóa đơn hàng
+        // fetch(`/api/orders/${orderId}`, { method: 'DELETE' })
+        //   .then(response => response.json())
+        //   .then(data => {
+        //     if (data.success) {
+        //       row.remove();
+        //     }
+        //   });
+      }
+    });
+  });
+  
+  // Xử lý sự kiện tìm kiếm
+  const searchInput = document.getElementById('search-orders');
+  
+  if (searchInput) {
+    searchInput.addEventListener('keyup', function(e) {
+      if (e.key === 'Enter') {
+        const searchTerm = this.value.trim();
+        console.log('Search term:', searchTerm);
+        // Thực hiện tìm kiếm
+        // loadOrders(1, searchTerm);
+      }
+    });
+  }
+});
+</script> 

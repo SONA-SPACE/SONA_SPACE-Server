@@ -128,7 +128,7 @@ router.get("/editroom/:slug", (req, res) => {
 
 // Orders management
 router.get("/orders", (req, res) => {
-  res.render("dashboard/orders", {
+  res.render("dashboard/orders/orders", {
     title: "Orders Management",
     layout: "layouts/dashboard",
   });
@@ -136,7 +136,7 @@ router.get("/orders", (req, res) => {
 
 // View specific order
 router.get("/orders/view/:id", (req, res) => {
-  res.render("dashboard/order-detail", {
+  res.render("dashboard/orders/order-detail", {
     title: "Order Details",
     layout: "layouts/dashboard",
     orderId: req.params.id,

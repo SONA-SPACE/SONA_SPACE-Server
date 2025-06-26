@@ -8,15 +8,36 @@ const isAdmin = (req, res, next) => {
   if (req.user && req.user.role === "admin") {
     next();
   } else {
-    res
-      .status(403)
-      .json({ error: "Access denied. Admin privileges required." });
+    // Chuyển hướng về trang đăng nhập nếu không phải admin
+    res.redirect('/');
+  }
+};
+
+// Middleware để kiểm tra xác thực cho dashboard
+const checkAuth = (req, res, next) => {
+  // Lấy token từ cookie hoặc header Authorization
+  const token = req.cookies.token || (req.headers.authorization && req.headers.authorization.split(' ')[1]);
+  
+  if (!token) {
+    return res.redirect('/');
+  }
+  
+  try {
+    // Xác thực token và gọi middleware tiếp theo
+    authMiddleware.verifyToken(req, res, (err) => {
+      if (err) {
+        return res.redirect('/');
+      }
+      isAdmin(req, res, next);
+    });
+  } catch (error) {
+    console.error('Authentication error:', error);
+    return res.redirect('/');
   }
 };
 
 // Apply authentication middleware to all dashboard routes
-// Tạm thời comment các middleware xác thực trong giai đoạn phát triển layout
-// router.use(authMiddleware.verifyToken, isAdmin);
+router.use(checkAuth);
 
 // Dashboard home
 router.get("/", (req, res) => {

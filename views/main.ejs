@@ -182,6 +182,22 @@
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
         
+        // Kiểm tra token đã được lưu trong database
+        try {
+          const tokenCheckResponse = await fetch('/api/auth/check-token', {
+            headers: {
+              'Authorization': `Bearer ${data.token}`
+            }
+          });
+          
+          if (tokenCheckResponse.ok) {
+            console.log('Token đã được lưu vào database thành công');
+          }
+        } catch (tokenCheckError) {
+          console.error('Lỗi khi kiểm tra token:', tokenCheckError);
+          // Tiếp tục xử lý đăng nhập ngay cả khi không thể kiểm tra token
+        }
+        
         // Redirect to dashboard
         window.location.href = '/dashboard';
         

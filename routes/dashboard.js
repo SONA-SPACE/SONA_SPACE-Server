@@ -43,8 +43,8 @@ router.get("/products", (req, res) => {
 });
 
 // Add product
-router.get("dashboard/products/add", (req, res) => {
-  res.render("dashboard/products-add", {
+router.get("/products/add", (req, res) => {
+  res.render("dashboard/products/products-add", {
     title: "Sona Space - Thêm Sản phẩm mới",
     layout: "layouts/dashboard",
   });
@@ -159,6 +159,31 @@ router.get("/profile", (req, res) => {
   res.render("dashboard/profile", {
     title: "Admin Profile",
     layout: "layouts/dashboard",
+  });
+});
+
+// Banner management
+router.get("/banners", (req, res) => {
+  res.render("dashboard/banner/banners", {
+    title: "Sona Space - Quản lý Banner",
+    layout: "layouts/dashboard",
+  });
+});
+
+// Add banner
+router.get("/banners/add", (req, res) => {
+  res.render("dashboard/banner/add-banner", {
+    title: "Sona Space - Thêm Banner mới",
+    layout: "layouts/dashboard",
+  });
+});
+
+// Edit banner
+router.get("/banners/edit/:id", (req, res) => {
+  res.render("dashboard/banner/edit-banner", {
+    title: "Sona Space - Chỉnh sửa Banner",
+    layout: "layouts/dashboard",
+    bannerId: req.params.id,
   });
 });
 

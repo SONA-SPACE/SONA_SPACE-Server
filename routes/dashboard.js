@@ -153,8 +153,15 @@ router.get("/users", (req, res) => {
 
 // News management
 router.get("/news", (req, res) => {
-  res.render("dashboard/news", {
+  res.render("dashboard/news/news", {
     title: "News Management",
+    layout: "layouts/dashboard",
+  });
+});
+
+router.get("/addnews", (req, res) => {
+  res.render("dashboard/news/addnews", {
+    title: "Sona Space - Quản lý tin tức",
     layout: "layouts/dashboard",
   });
 });

@@ -13,67 +13,66 @@ router.get('/', async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
-    
-    // Xây dựng điều kiện lọc
+
     const conditions = [];
     const queryParams = [];
-    
+
     // Lọc theo danh mục
     if (req.query.category_id) {
       conditions.push('n.news_category_id = ?');
       queryParams.push(Number(req.query.category_id));
     }
-    
+
     // Lọc theo từ khóa
     if (req.query.keyword) {
       conditions.push('(n.news_title LIKE ? OR n.news_content LIKE ?)');
       const keyword = `%${req.query.keyword}%`;
       queryParams.push(keyword, keyword);
     }
-    
-    // Lọc theo trạng thái (chỉ Admin mới có thể xem bài viết chưa công khai)
+
+    // Lọc theo trạng thái
     if (req.user && req.user.isAdmin) {
       if (req.query.status) {
         conditions.push('n.news_status = ?');
         queryParams.push(req.query.status);
       }
     } else {
-      conditions.push('n.news_status = 1'); // Assuming 1 means published
+      conditions.push('n.news_status = 1');
     }
-    
+
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    
+
     // Đếm tổng số bài viết
     const [countResult] = await db.query(`
-      SELECT COUNT(*) as total 
+      SELECT COUNT(*) as total
       FROM news n
+      LEFT JOIN news_category c ON n.news_category_id = c.news_category_id
       ${whereClause}
     `, queryParams);
-    
+
     const totalNews = countResult[0].total;
     const totalPages = Math.ceil(totalNews / limit);
-    
-    // Lấy danh sách bài viết
+
+    // Lấy danh sách bài viết kèm tên danh mục
     const paginationParams = [...queryParams, offset, limit];
     const [news] = await db.query(`
       SELECT 
-        n.*
+        n.*,
+        c.news_category_name AS category_name
       FROM news n
+      LEFT JOIN news_category c ON n.news_category_id = c.news_category_id
       ${whereClause}
       ORDER BY n.created_at DESC
       LIMIT ?, ?
     `, paginationParams);
-    
-    // Xử lý dữ liệu trước khi trả về
+
     const processedNews = news.map(item => {
-      // Tạo excerpt từ nội dung
       if (item.news_content && !item.news_description) {
         item.news_description = item.news_content.substring(0, 150) + '...';
       }
-      
       return item;
     });
-    
+
     res.json({
       news: processedNews,
       pagination: {
@@ -90,6 +89,8 @@ router.get('/', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch news' });
   }
 });
+
+
 router.get('/views', async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
@@ -126,13 +127,13 @@ router.get('/views', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const id = req.params.id;
-    
+
     // Hỗ trợ tìm theo ID hoặc slug
     const isNumeric = /^\d+$/.test(id);
-    
+
     let query;
     let params;
-    
+
     if (isNumeric) {
       query = 'n.news_id = ?';
       params = [Number(id)];
@@ -140,7 +141,7 @@ router.get('/:id', async (req, res) => {
       query = 'n.news_slug = ?';
       params = [id];
     }
-    
+
     // Lấy thông tin bài viết
     const [news] = await db.query(`
       SELECT 
@@ -154,21 +155,21 @@ router.get('/:id', async (req, res) => {
       WHERE n.news_id = ?
       GROUP BY n.news_id
     `, [id]);
-    
+
     if (news.length === 0) {
       return res.status(404).json({ error: 'News article not found' });
     }
-    
+
     const newsItem = news[0];
-    
+
     // Kiểm tra quyền truy cập với bài viết chưa công khai
     if (newsItem.news_status !== 1 && (!req.user || !req.user.isAdmin)) {
       return res.status(403).json({ error: 'You do not have permission to access this article' });
     }
-    
+
     // Tăng lượt xem
     await db.query('UPDATE news SET news_view = news_view + 1 WHERE news_id = ?', [newsItem.news_id]);
-    
+
     // Lấy bài viết liên quan
     const [relatedNews] = await db.query(`
       SELECT 
@@ -181,7 +182,7 @@ router.get('/:id', async (req, res) => {
       ORDER BY n.created_at DESC
       LIMIT 5
     `, [newsItem.news_category_id, newsItem.news_id]);
-    
+
     res.json({
       ...newsItem,
       related_news: relatedNews
@@ -200,26 +201,26 @@ router.get('/:id', async (req, res) => {
 router.get('/category/:categoryId', async (req, res) => {
   try {
     const categoryId = Number(req.params.categoryId);
-    
+
     if (isNaN(categoryId)) {
       return res.status(400).json({ error: 'Invalid category ID' });
     }
-    
+
     // Phân trang
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
-    
+
     // Đếm tổng số bài viết trong danh mục
     const [countResult] = await db.query(`
       SELECT COUNT(*) as total 
       FROM news n
       WHERE n.news_category_id = ? AND n.news_status = 1
     `, [categoryId]);
-    
+
     const totalNews = countResult[0].total;
     const totalPages = Math.ceil(totalNews / limit);
-    
+
     // Lấy danh sách bài viết
     const [news] = await db.query(`
       SELECT n.*
@@ -228,7 +229,7 @@ router.get('/category/:categoryId', async (req, res) => {
       ORDER BY n.created_at DESC
       LIMIT ?, ?
     `, [categoryId, offset, limit]);
-    
+
     res.json({
       news,
       pagination: {
@@ -265,12 +266,12 @@ router.post('/', verifyToken, isAdmin, async (req, res) => {
       meta_title,
       meta_description
     } = req.body;
-    
+
     // Kiểm tra các trường bắt buộc
     if (!title || !content) {
       return res.status(400).json({ error: 'Title and content are required' });
     }
-    
+
     // Tạo slug từ tiêu đề nếu không được cung cấp
     let newsSlug = slug;
     if (!newsSlug) {
@@ -280,15 +281,15 @@ router.post('/', verifyToken, isAdmin, async (req, res) => {
         .replace(/[\s_-]+/g, '-')
         .replace(/^-+|-+$/g, '');
     }
-    
+
     // Kiểm tra slug đã tồn tại chưa
     const [existingSlugs] = await db.query('SELECT id FROM news WHERE slug = ?', [newsSlug]);
-    
+
     if (existingSlugs.length > 0) {
       // Thêm timestamp vào slug để đảm bảo tính duy nhất
       newsSlug = `${newsSlug}-${Date.now().toString().slice(-6)}`;
     }
-    
+
     // Xử lý tags
     let tagString = null;
     if (tags) {
@@ -305,23 +306,22 @@ router.post('/', verifyToken, isAdmin, async (req, res) => {
         }
       }
     }
-    
+
     // Tạo bài viết mới
     const [result] = await db.query(`
-      INSERT INTO news (
-        title, 
-        slug, 
-        content, 
-        excerpt, 
-        thumbnail, 
-        news_category_id, 
-        author_id, 
-        tags, 
-        news_status, 
-        meta_title, 
-        meta_description, 
-        created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+INSERT INTO news (
+  news_title,
+  news_slug,
+  news_content,
+  news_description,
+  news_image,
+  news_category_id,
+  news_author,
+  news_comment,
+  news_status,
+  updated_at,
+  created_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP())
     `, [
       title,
       newsSlug,
@@ -330,26 +330,23 @@ router.post('/', verifyToken, isAdmin, async (req, res) => {
       thumbnail || null,
       category_id || null,
       req.user.id,
-      tagString,
-      status || 'draft',
-      meta_title || title,
-      meta_description || excerpt || (content ? content.substring(0, 160) : null)
+      status || 1
     ]);
-    
+
     // Lấy thông tin bài viết vừa tạo
     const [newNews] = await db.query(`
-      SELECT 
-        n.*,
-        u.name as author_name,
-        c.name as category_name
-      FROM news n
-      LEFT JOIN user u ON n.author_id = u.user_id
-      LEFT JOIN news_categories c ON n.news_category_id = c.id
-      WHERE n.id = ?
+SELECT 
+  n.*, 
+  u.name AS author_name, 
+  c.name AS category_name
+FROM news n
+LEFT JOIN user u ON n.news_author = u.user_id
+LEFT JOIN news_category c ON n.news_category_id = c.id
+WHERE n.news_id = ?
     `, [result.insertId]);
-    
+
     const newsItem = newNews[0];
-    
+
     // Chuyển đổi tags từ chuỗi JSON thành mảng
     if (newsItem.tags && typeof newsItem.tags === 'string') {
       try {
@@ -358,7 +355,7 @@ router.post('/', verifyToken, isAdmin, async (req, res) => {
         newsItem.tags = [];
       }
     }
-    
+
     res.status(201).json({
       message: 'News article created successfully',
       news: newsItem
@@ -380,7 +377,7 @@ router.put('/:id', verifyToken, isAdmin, async (req, res) => {
     if (isNaN(id)) {
       return res.status(400).json({ error: 'Invalid news ID' });
     }
-    
+
     const {
       title,
       slug,
@@ -393,28 +390,28 @@ router.put('/:id', verifyToken, isAdmin, async (req, res) => {
       meta_title,
       meta_description
     } = req.body;
-    
+
     // Kiểm tra bài viết tồn tại
     const [existingNews] = await db.query('SELECT * FROM news WHERE id = ?', [id]);
-    
+
     if (existingNews.length === 0) {
       return res.status(404).json({ error: 'News article not found' });
     }
-    
+
     const newsItem = existingNews[0];
-    
+
     // Kiểm tra slug
     let newsSlug = slug;
     if (newsSlug && newsSlug !== newsItem.slug) {
       // Kiểm tra slug mới có trùng không
       const [existingSlugs] = await db.query('SELECT id FROM news WHERE slug = ? AND id != ?', [newsSlug, id]);
-      
+
       if (existingSlugs.length > 0) {
         // Thêm timestamp vào slug để đảm bảo tính duy nhất
         newsSlug = `${newsSlug}-${Date.now().toString().slice(-6)}`;
       }
     }
-    
+
     // Xử lý tags
     let tagString = newsItem.tags;
     if (tags !== undefined) {
@@ -433,74 +430,74 @@ router.put('/:id', verifyToken, isAdmin, async (req, res) => {
         }
       }
     }
-    
+
     // Cập nhật bài viết
     const updates = [];
     const values = [];
-    
+
     if (title !== undefined) {
       updates.push('title = ?');
       values.push(title);
     }
-    
+
     if (newsSlug !== undefined) {
       updates.push('slug = ?');
       values.push(newsSlug);
     }
-    
+
     if (content !== undefined) {
       updates.push('content = ?');
       values.push(content);
     }
-    
+
     if (excerpt !== undefined) {
       updates.push('excerpt = ?');
       values.push(excerpt || null);
     }
-    
+
     if (thumbnail !== undefined) {
       updates.push('thumbnail = ?');
       values.push(thumbnail || null);
     }
-    
+
     if (category_id !== undefined) {
       updates.push('news_category_id = ?');
       values.push(category_id || null);
     }
-    
+
     if (tags !== undefined) {
       updates.push('tags = ?');
       values.push(tagString);
     }
-    
+
     if (status !== undefined) {
       updates.push('news_status = ?');
       values.push(status);
     }
-    
+
     if (meta_title !== undefined) {
       updates.push('meta_title = ?');
       values.push(meta_title || null);
     }
-    
+
     if (meta_description !== undefined) {
       updates.push('meta_description = ?');
       values.push(meta_description || null);
     }
-    
+
     updates.push('updated_at = NOW()');
-    
+
     if (updates.length === 1 && updates[0] === 'updated_at = NOW()') {
       return res.status(400).json({ error: 'No update data provided' });
     }
-    
+
     values.push(id);
-    
+
     await db.query(
       `UPDATE news SET ${updates.join(', ')} WHERE id = ?`,
       values
     );
-    
+
     // Lấy thông tin bài viết đã cập nhật
     const [updatedNews] = await db.query(`
       SELECT 
@@ -512,9 +509,9 @@ router.put('/:id', verifyToken, isAdmin, async (req, res) => {
       LEFT JOIN news_categories c ON n.news_category_id = c.id
       WHERE n.id = ?
     `, [id]);
-    
+
     const updatedNewsItem = updatedNews[0];
-    
+
     // Chuyển đổi tags từ chuỗi JSON thành mảng
     if (updatedNewsItem.tags && typeof updatedNewsItem.tags === 'string') {
       try {
@@ -523,7 +520,7 @@ router.put('/:id', verifyToken, isAdmin, async (req, res) => {
         updatedNewsItem.tags = [];
       }
     }
-    
+
     res.json({
       message: 'News article updated successfully',
       news: updatedNewsItem
@@ -545,17 +542,17 @@ router.delete('/:id', verifyToken, isAdmin, async (req, res) => {
     if (isNaN(id)) {
       return res.status(400).json({ error: 'Invalid news ID' });
     }
-    
+
     // Kiểm tra bài viết tồn tại
     const [existingNews] = await db.query('SELECT * FROM news WHERE id = ?', [id]);
-    
+
     if (existingNews.length === 0) {
       return res.status(404).json({ error: 'News article not found' });
     }
-    
+
     // Xóa bài viết
     await db.query('DELETE FROM news WHERE id = ?', [id]);
-    
+
     res.json({ message: 'News article deleted successfully' });
   } catch (error) {
     console.error('Error deleting news article:', error);

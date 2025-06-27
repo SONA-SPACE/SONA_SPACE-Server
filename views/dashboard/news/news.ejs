@@ -1,0 +1,166 @@
+<!-- Trang Quản lý tin tức -->
+<!-- Tiêu đề và Thanh công cụ -->
+<div class="room_page">
+    <div class="dashboard-header-row">
+        <h2 class="dashboard-title">Tin tức</h2>
+        <div class="action-buttons">
+            <button class="add-product-btn"  onclick="window.location.href='/dashboard/addnews'">
+                <i class="fas fa-plus"></i> Thêm tin tức
+            </button>
+        </div>
+    </div>
+
+    <!-- Bộ lọc và Tìm kiếm -->
+    <div class="filter-row">
+        <div class="search-container">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" class="search-input" placeholder="Search">
+        </div>
+        <div class="date-range">
+            <i class="far fa-calendar-alt"></i>
+            <span>1/05/2025 - 31/5/2025</span>
+        </div>
+        <div class="results-info">
+            Hiển thị 1-6 trong tổng số 500
+        </div>
+    </div>
+
+    <div class="room-table-container">
+        <table class="room-table" id="roomTable">
+            <thead>
+                <tr>
+                    <th>Tin tức</th>
+                    <th>Danh mục</th>
+                    <th>Lượt xem</th>
+                    <th>Trạng thái</th>
+                    <th>Ngày tạo</th>
+                    <th>Ngày cập nhật</th>
+                    <th>Slug</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Dữ liệu sẽ được JS đổ vào -->
+            </tbody>
+        </table>
+    </div>
+</div>
+</div>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const URL_API = "http://localhost:3501/api";
+
+        function getNews() {
+            fetch(URL_API + "/news")
+                .then((response) => response.json())
+                .then((data) => {
+                    renderNews(data.news); // data.news từ API backend
+                    console.log("Danh sách bài viết:", data.news);
+                })
+                .catch((error) => {
+                    console.error("Lỗi khi tải danh sách bài viết:", error);
+                    document.querySelector(".results-info").textContent =
+                        "Không thể tải dữ liệu.";
+                });
+        }
+
+        function renderNews(newsList) {
+            const tableBody = document.querySelector("#roomTable tbody");
+            tableBody.innerHTML = "";
+
+            newsList.forEach((news) => {
+                const row = document.createElement("tr");
+
+                const status = news.news_status === 1 ? "visible" : "hidden";
+                let imageUrl = "/images/default.jpg";
+                try {
+                    const images = JSON.parse(news.news_image);
+                    if (Array.isArray(images) && images.length > 0) {
+                        imageUrl = images[0];
+                    }
+                } catch (e) {
+                    console.warn("Không thể parse ảnh:", news.news_image);
+                }
+                row.innerHTML = `
+  <td>
+    <div class="room-info">
+      <div class="room-image">
+        <img src="${imageUrl}" >
+      </div>
+    </div>
+  </td>
+  <td>${news.category_name || "-"}</td>
+  <td>${news.news_view || 0}</td>
+            <td>
+              <span class="status-indicator ${status === "visible" ? "visible" : "hidden"
+                    }">
+                <i class="fas ${status === "visible" ? "fa-eye" : "fa-eye-slash"
+                    }"></i>
+                ${status === "visible" ? "Hiển thị" : "Ẩn"}
+              </span>
+            </td>
+  <td>${formatDate(news.created_at)}</td>
+  <td>${formatDate(news.updated_at)}</td>
+  <td>${news.news_slug || "-"}</td>
+  <td>
+              <div class="action-cell">
+                <button class="action-button edit"  title="Chỉnh sửa">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="action-button visibility" data-id="${news.news_id
+                    }" data-status="${status}" title="${status === "visible" ? "Ẩn không gian" : "Hiển thị không gian"
+                    }">
+                  <i class="fas ${status === "visible" ? "fa-eye-slash" : "fa-eye"
+                    }"></i>
+                </button>
+                <button class="action-button delete"  title="Xóa không gian">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </td>
+`;
+
+                tableBody.appendChild(row);
+            });
+
+            // Gán sự kiện xóa
+            document.querySelectorAll(".action-button.delete").forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    const newsId = btn.getAttribute("data-id");
+                    const newsTitle = btn.getAttribute("data-title");
+                    deleteNews(newsId, newsTitle);
+                });
+            });
+
+            document.querySelector(".results-info").textContent = `Hiển thị ${newsList.length} kết quả`;
+        }
+
+        function deleteNews(newsId, newsTitle) {
+            if (!confirm(`Bạn có chắc chắn muốn xóa bài viết "${newsTitle}"?`)) return;
+
+            fetch(`${URL_API}/news/${newsId}`, {
+                method: "DELETE",
+            })
+                .then((res) => res.json())
+                .then((data) => {
+                    if (data.error) {
+                        showToast(data.error, "danger");
+                    } else {
+                        showToast("Xóa bài viết thành công", "success");
+                        setTimeout(() => location.reload(), 1000);
+                    }
+                })
+                .catch((err) => {
+                    console.error("Lỗi khi xóa:", err);
+                    showToast("Xảy ra lỗi khi xóa bài viết", "danger");
+                });
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return "-";
+            return new Date(dateStr).toLocaleDateString("vi-VN");
+        }
+
+        getNews();
+    });
+</script>

@@ -527,6 +527,25 @@ router.delete(
 
 
 
-
-
+/**
+ * @route   GET /api/rooms/by-product/:slug
+ * @desc    Lấy danh sách phòng theo sản phẩm
+ * @access  Public
+ */
+router.get('/by-product/:slug', async (req, res) => {
+  const slug = req.params.slug;
+  if (!slug) return res.status(400).json({ error: "Missing product slug" });
+  try {
+    const [rows] = await db.query(`
+      SELECT DISTINCT r.room_id, r.room_name, r.slug
+FROM room r
+JOIN room_product rp ON r.room_id = rp.room_id
+JOIN product p ON rp.product_id = p.product_id
+WHERE p.product_slug = ?
+    `, [slug]);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch rooms by product" });
+  }
+});
 module.exports = router;

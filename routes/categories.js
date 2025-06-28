@@ -412,4 +412,33 @@ router.get("/:slug/products", async (req, res) => {
   }
 });
 
+/**
+ * @route   GET /api/categories/by-product/:slug
+ * @desc    Lấy danh sách danh mục theo sản phẩm
+ * @access  Public
+ */
+router.get("/by-product/:slug", async (req, res) => {
+  const slug = req.params.slug;
+  if (!slug) return res.status(400).json({ message: "Slug is required" });
+
+  try {
+    const [rows] = await db.query(`
+      SELECT c.category_id, c.category_name, c.slug
+      FROM category c
+      JOIN product p ON c.category_id = p.category_id
+      WHERE p.product_slug = ?
+    `, [slug]);
+
+
+    if (!rows.length) {
+      return res.status(404).json({ error: "Category not found" });
+    }
+
+    res.json(rows);
+  } catch (error) {
+    console.error("Error fetching categories by product:", error);
+    res.status(500).json({ error: "Failed to fetch categories by product" });
+  }
+});
+      
 module.exports = router;

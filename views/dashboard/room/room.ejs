@@ -1,45 +1,53 @@
 <!-- Tiêu đề và Thanh công cụ -->
-<div class="dashboard-header-row">
-  <h2 class="dashboard-title">Không gian</h2>
-  <div class="action-buttons">
-    <button class="add-category-btn" onclick="window.location.href='/dashboard/addroom'">
-      <i class="fas fa-plus"></i> Thêm không gian mới
-    </button>
+<div class="room_page">
+  <div class="dashboard-header-row">
+    <h2 class="dashboard-title">Không gian</h2>
+    <div class="action-buttons">
+      <button
+        class="add-room-btn"
+        onclick="window.location.href='/dashboard/addroom'"
+      >
+        <i class="fas fa-plus"></i> Thêm không gian mới
+      </button>
+    </div>
   </div>
-</div>
 
-<!-- Bộ lọc và Tìm kiếm -->
-<div class="filter-row">
-  <div class="search-container">
-    <i class="fas fa-search search-icon"></i>
-    <input type="text" class="search-input" placeholder="Tìm kiếm không gian..." />
+  <!-- Bộ lọc và Tìm kiếm -->
+  <div class="filter-row">
+    <div class="search-container">
+      <i class="fas fa-search search-icon"></i>
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Tìm kiếm không gian..."
+      />
+    </div>
+    <div class="date-range">
+      <i class="far fa-calendar-alt"></i>
+      <span>01/04/2023 - 30/04/2023</span>
+    </div>
+    <div class="results-info">Đang tải dữ liệu...</div>
   </div>
-  <div class="date-range">
-    <i class="far fa-calendar-alt"></i>
-    <span>01/04/2023 - 30/04/2023</span>
+
+  <!-- Bảng Không gian -->
+  <div class="room-table-container">
+    <table class="room-table" id="roomsTable">
+      <thead>
+        <tr>
+          <th>Không gian</th>
+          <th>Sản phẩm</th>
+          <th>Trạng thái</th>
+          <th>Ngày tạo</th>
+          <th>Ngày cập nhật</th>
+          <th>Slug</th>
+          <th>Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Dữ liệu sẽ được JS đổ vào -->
+      </tbody>
+    </table>
   </div>
-  <div class="results-info">Đang tải dữ liệu...</div>
-
-</div>
-
-<!-- Bảng Không gian -->
-<div class="category-table-container">
-  <table class="category-table" id="roomsTable">
-    <thead>
-      <tr>
-        <th>Không gian</th>
-        <th>Sản phẩm</th>
-        <th>Trạng thái</th>
-        <th>Ngày tạo</th>
-        <th>Ngày cập nhật</th>
-        <th>Slug</th>
-        <th>Thao tác</th>
-      </tr>
-    </thead>
-    <tbody>
-      <!-- Dữ liệu sẽ được JS đổ vào -->
-    </tbody>
-  </table>
 </div>
 <script>
   document.addEventListener("DOMContentLoaded", function () {
@@ -64,7 +72,6 @@
       tableBody.innerHTML = "";
 
       rooms.forEach((room) => {
-
         const row = document.createElement("tr");
 
         // Gán mặc định nếu không có status
@@ -72,20 +79,23 @@
 
         row.innerHTML = `
             <td>
-              <div class="category-info">
-                <div class="category-image">
-                  <img src="${room.room_image || "/images/default.jpg"}" alt="${room.room_name
-          }">
+              <div class="room-info">
+                <div class="room-image">
+                  <img src="${room.room_image || "/images/default.jpg"}" alt="${
+          room.room_name
+        }">
                 </div>
-                <div class="category-name">${room.room_name}</div>
+                <div class="room-name">${room.room_name}</div>
               </div>
             </td>
             <td>${room.product_count || 0}</td>
             <td>
-              <span class="status-indicator ${status === "visible" ? "visible" : "hidden"
-          }">
-                <i class="fas ${status === "visible" ? "fa-eye" : "fa-eye-slash"
-          }"></i>
+              <span class="status-indicator ${
+                status === "visible" ? "visible" : "hidden"
+              }">
+                <i class="fas ${
+                  status === "visible" ? "fa-eye" : "fa-eye-slash"
+                }"></i>
                 ${status === "visible" ? "Hiển thị" : "Ẩn"}
               </span>
             </td>
@@ -94,18 +104,25 @@
             <td>${room.slug || "-"}</td>
             <td>
               <div class="action-cell">
-                <button class="action-button edit" data-id="${room.slug
-          }" onclick="window.location.href='/dashboard/editroom/${room.slug}'" title="Chỉnh sửa">
+                <button class="action-button edit" data-id="${
+                  room.slug
+                }" onclick="window.location.href='/dashboard/editroom/${
+          room.slug
+        }'" title="Chỉnh sửa">
                   <i class="fas fa-edit"></i>
                 </button>
-                <button class="action-button visibility" data-id="${room.room_id
-          }" data-status="${status}" title="${status === "visible" ? "Ẩn không gian" : "Hiển thị không gian"
-          }">
-                  <i class="fas ${status === "visible" ? "fa-eye-slash" : "fa-eye"
-          }"></i>
+                <button class="action-button visibility" data-id="${
+                  room.room_id
+                }" data-status="${status}" title="${
+          status === "visible" ? "Ẩn không gian" : "Hiển thị không gian"
+        }">
+                  <i class="fas ${
+                    status === "visible" ? "fa-eye-slash" : "fa-eye"
+                  }"></i>
                 </button>
-                <button class="action-button delete" data-id="${room.slug
-          }" data-name="${room.room_name}" title="Xóa không gian">
+                <button class="action-button delete" data-id="${
+                  room.slug
+                }" data-name="${room.room_name}" title="Xóa không gian">
                   <i class="fas fa-trash"></i>
                 </button>
               </div>
@@ -119,7 +136,7 @@
         btn.addEventListener("click", () => {
           const roomSlug = btn.getAttribute("data-id");
           const roomName = btn.getAttribute("data-name");
-          deleteCategory(roomSlug, roomName);
+          deleteRoom(roomSlug, roomName);
         });
       });
 
@@ -128,9 +145,8 @@
       ).textContent = `Hiển thị ${rooms.length} kết quả`;
     }
 
-
-    function deleteCategory(roomSlug, roomName) {
-      if (!confirm(`Bạn có chắc chắn muốn xóa danh mục "${roomName}"?`)) {
+    function deleteRoom(roomSlug, roomName) {
+      if (!confirm(`Bạn có chắc chắn muốn xóa không gian "${roomName}"?`)) {
         return;
       }
 
@@ -142,13 +158,13 @@
           if (data.error) {
             showToast(data.error, "danger");
           } else {
-            showToast("Xóa danh mục thành công", "success");
+            showToast("Xóa không gian thành công", "success");
             setTimeout(() => location.reload(), 1000);
           }
         })
         .catch((err) => {
           console.error("Lỗi khi xóa:", err);
-          showToast("Xảy ra lỗi khi xóa danh mục", "danger");
+          showToast("Xảy ra lỗi khi xóa không gian", "danger");
         });
     }
 

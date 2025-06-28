@@ -1,25 +1,234 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>Admin Dashboard</title>
-    <!-- <link rel="stylesheet" href="/scss/style.css" /> -->
-  </head>
-  <body>
-    <div class="header">
-      <div class="container">
-        <div class="header-wrapper">
-          <div class="logo">
-            <a href="/">
-              <img src="/images/logo.png" alt="Logo" />
-            </a>
-          </div>
-          <div class="header-actions">
-            <a href="/sign-in" class="btn sign-in">Sign In</a>
-            <a href="/sign-up" class="btn sign-up">Sign Up</a>
-            <a href="/sign-up" class="btn sign-up">Sign Up</a>
+
+<head>
+  <title>Furniture - Login</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel='stylesheet' href='/scss/style.css' />
+  <link rel="stylesheet" href="/fonts/stylesheet.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<body>
+  <div class="container-fluid">
+    <div class="left-panel">
+      <h1 class="brand-name">FURNITURE - SONA SPACE</h1>
+      <p class="brand-slogan">Quản lý Dashboard</p>
+      <div class="wave-bg"></div>
+    </div>
+    <div class="right-panel">
+      <div class="welcome-text">
+        <h2>Đăng nhập quản trị</h2>
+        <p>Vui lòng đăng nhập để truy cập vào trang quản trị</p>
+      </div>
+      <form class="login-form" id="adminLoginForm" novalidate>
+        <div class="form-group">
+          <div class="input-wrapper">
+            <input 
+              type="email" 
+              id="email" 
+              name="email" 
+              class="form-control" 
+              placeholder="Email Address" 
+              required
+            >
+            <div class="error-message" id="email-error"></div>
           </div>
         </div>
-      </div>
+        <div class="form-group">
+          <div class="input-wrapper">
+            <input 
+              type="password" 
+              id="password" 
+              name="password" 
+              class="form-control" 
+              placeholder="Password" 
+              required
+            >
+            <span class="password-toggle" id="togglePassword">
+              <i class="far fa-eye"></i>
+            </span>
+            <div class="error-message" id="password-error"></div>
+          </div>
+        </div>
+        <div class="alert alert-danger d-none" id="login-error"></div>
+        <button type="submit" class="login-btn">Đăng nhập</button>
+      </form>
     </div>
-  </body>
+  </div>
+
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const adminLoginForm = document.getElementById('adminLoginForm');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const emailError = document.getElementById('email-error');
+    const passwordError = document.getElementById('password-error');
+    const loginError = document.getElementById('login-error');
+    const togglePassword = document.getElementById('togglePassword');
+    
+    // Xử lý hiển thị/ẩn mật khẩu
+    if (togglePassword) {
+      togglePassword.addEventListener('click', function() {
+        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', type);
+        
+        // Toggle icon
+        this.querySelector('i').classList.toggle('fa-eye');
+        this.querySelector('i').classList.toggle('fa-eye-slash');
+      });
+    }
+    
+    // Validate email
+    function validateEmail() {
+      const email = emailInput.value.trim();
+      emailInput.classList.remove('is-valid', 'is-invalid');
+      emailError.textContent = '';
+      
+      if (!email) {
+        emailInput.classList.add('is-invalid');
+        emailError.textContent = 'Vui lòng nhập địa chỉ email';
+        return false;
+      }
+      
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(email)) {
+        emailInput.classList.add('is-invalid');
+        emailError.textContent = 'Email không hợp lệ';
+        return false;
+      }
+      
+      emailInput.classList.add('is-valid');
+      return true;
+    }
+    
+    // Validate password
+    function validatePassword() {
+      const password = passwordInput.value;
+      passwordInput.classList.remove('is-valid', 'is-invalid');
+      passwordError.textContent = '';
+      
+      if (!password) {
+        passwordInput.classList.add('is-invalid');
+        passwordError.textContent = 'Vui lòng nhập mật khẩu';
+        return false;
+      }
+      
+      passwordInput.classList.add('is-valid');
+      return true;
+    }
+    
+    // Event listeners for real-time validation
+    emailInput.addEventListener('input', validateEmail);
+    passwordInput.addEventListener('input', validatePassword);
+    
+    // Form submission
+    adminLoginForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      // Validate form
+      const isEmailValid = validateEmail();
+      const isPasswordValid = validatePassword();
+      
+      if (!isEmailValid || !isPasswordValid) {
+        return;
+      }
+      
+      // Hide previous error messages
+      if (loginError) {
+        loginError.classList.add('d-none');
+      }
+      
+      // Disable submit button and show loading state
+      const submitBtn = this.querySelector('button[type="submit"]');
+      const originalBtnText = submitBtn.innerHTML;
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang xử lý...';
+      
+      try {
+        // Send login request
+        const response = await fetch('/api/auth/admin-login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            email: emailInput.value.trim(),
+            password: passwordInput.value
+          })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          // Show error message
+          if (loginError) {
+            loginError.textContent = data.error || 'Đăng nhập thất bại. Vui lòng thử lại.';
+            loginError.classList.remove('d-none');
+          } else {
+            alert(data.error || 'Đăng nhập thất bại. Vui lòng thử lại.');
+          }
+          
+          // Reset form state
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalBtnText;
+          return;
+        }
+        
+        // Login successful
+        // Store token in localStorage
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        
+        // Redirect to dashboard
+        window.location.href = '/dashboard';
+        
+      } catch (error) {
+        console.error('Login error:', error);
+        if (loginError) {
+          loginError.textContent = 'Đã xảy ra lỗi. Vui lòng thử lại sau.';
+          loginError.classList.remove('d-none');
+        } else {
+          alert('Đã xảy ra lỗi. Vui lòng thử lại sau.');
+        }
+        
+        // Reset form state
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnText;
+      }
+    });
+  });
+  </script>
+
+  <style>
+  .alert {
+    margin-top: 15px;
+    padding: 10px 15px;
+    border-radius: 5px;
+  }
+  .alert-danger {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+  }
+  .spinner-border {
+    margin-right: 5px;
+  }
+  .d-none {
+    display: none;
+  }
+  .password-toggle {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #666;
+    z-index: 10;
+  }
+  </style>
+</body>
+
 </html>

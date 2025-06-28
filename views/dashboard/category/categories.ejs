@@ -2,7 +2,10 @@
 <div class="dashboard-header-row">
   <h2 class="dashboard-title">Danh mục sản phẩm</h2>
   <div class="action-buttons">
-    <button class="add-category-btn" onclick="window.location.href='/dashboard/addcategories'">
+    <button
+      class="add-category-btn"
+      onclick="window.location.href='/dashboard/addcategories'"
+    >
       <i class="fas fa-plus"></i> Thêm danh mục
     </button>
   </div>
@@ -12,7 +15,11 @@
 <div class="filter-row">
   <div class="search-container">
     <i class="fas fa-search search-icon"></i>
-    <input type="text" class="search-input" placeholder="Tìm kiếm danh mục..." />
+    <input
+      type="text"
+      class="search-input"
+      placeholder="Tìm kiếm danh mục..."
+    />
   </div>
   <div class="date-range">
     <i class="far fa-calendar-alt"></i>
@@ -74,18 +81,21 @@
           <td>
             <div class="category-info">
               <div class="category-image">
-                <img src="${category.category_image || "/images/default.jpg"
-          }" alt="${category.category_name}">
+                <img src="${
+                  category.category_image || "/images/default.jpg"
+                }" alt="${category.category_name}">
               </div>
               <div class="category-name">${category.category_name}</div>
             </div>
           </td>
           <td>${category.product_count || 0}</td>
           <td>
-            <span class="status-indicator ${status === "visible" ? "visible" : "hidden"
-          }">
-              <i class="fas ${status === "visible" ? "fa-eye" : "fa-eye-slash"
-          }"></i>
+            <span class="status-indicator ${
+              status === "visible" ? "visible" : "hidden"
+            }">
+              <i class="fas ${
+                status === "visible" ? "fa-eye" : "fa-eye-slash"
+              }"></i>
               ${status === "visible" ? "Hiển thị" : "Ẩn"}
             </span>
           </td>
@@ -95,18 +105,27 @@
           <td>${category.slug || "-"}</td>
           <td>
             <div class="action-cell">
-              <button class="action-button edit" data-id="${category.slug}" onclick="window.location.href='/dashboard/editcategories/${category.slug}'" title="Chỉnh sửa">
+              <button class="action-button edit" data-id="${
+                category.slug
+              }" onclick="window.location.href='/dashboard/editcategories/${
+          category.slug
+        }'" title="Chỉnh sửa">
                 <i class="fas fa-edit"></i>
               </button>
-              <button class="action-button visibility" data-id="${category.slug
-          }" data-status="${status}" title="${status === "visible" ? "Ẩn danh mục" : "Hiển thị danh mục"
-          }">
-                <i class="fas ${status === "visible" ? "fa-eye-slash" : "fa-eye"
-          }"></i>
+              <button class="action-button visibility" data-id="${
+                category.slug
+              }" data-status="${status}" title="${
+          status === "visible" ? "Ẩn danh mục" : "Hiển thị danh mục"
+        }">
+                <i class="fas ${
+                  status === "visible" ? "fa-eye-slash" : "fa-eye"
+                }"></i>
               </button>
-              <button class="action-button delete" data-id="${category.slug
-          }" data-name="${category.category_name
-          }" title="Xóa danh mục" data-id="${category.category_id}">
+              <button class="action-button delete" data-id="${
+                category.slug
+              }" data-name="${
+          category.category_name
+        }" title="Xóa danh mục" data-id="${category.category_id}">
                 <i class="fas fa-trash"></i>
               </button>
             </div>
@@ -186,7 +205,6 @@
 
       toast.addEventListener("hidden.bs.toast", () => toast.remove());
     }
-
 
     getCategories();
   });

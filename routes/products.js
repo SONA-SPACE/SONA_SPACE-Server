@@ -10,7 +10,7 @@ const LIMIT_PER_PAGE = 8;
  * @desc    Lấy danh sách sản phẩm với phân trang, lọc và sắp xếp
  * @access  Public
  */
-router.get("/", async (req, res) => {
+router.get("/", verifyToken, async (req, res) => {
   try {
     // 1. Lấy tham số page và limit từ query, mặc định là 1 và 8
     const page = parseInt(req.query.page) || 1;
@@ -139,61 +139,95 @@ router.get("/", async (req, res) => {
 
     // 6. Truy vấn sản phẩm có phân trang và lọc
     const query = `
-      SELECT 
-        p.product_id AS id,
-        p.product_name AS name,
-        p.product_slug AS slug,
-        p.product_image AS image,
-        p.category_id,
-        c.category_name,
-        p.created_at,
-        p.updated_at,
-        (
-          SELECT MIN(vp2.variant_product_price)
-          FROM variant_product vp2
-          WHERE vp2.product_id = p.product_id
-        ) AS price,
-        (
-          SELECT MIN(vp2.variant_product_price_sale)
-          FROM variant_product vp2
-          WHERE vp2.product_id = p.product_id AND vp2.variant_product_price_sale > 0
-        ) AS price_sale,
-        JSON_ARRAYAGG(DISTINCT col.color_hex) AS color_hex,
-        (
-          SELECT 
-            CASE 
-              WHEN MIN(vp2.variant_product_price_sale) > 0 THEN MIN(vp2.variant_product_price_sale)
-              ELSE MIN(vp2.variant_product_price)
-            END 
-          FROM variant_product vp2 
-          WHERE vp2.product_id = p.product_id
-        ) AS actual_price
-      FROM product p
-      LEFT JOIN category c ON p.category_id = c.category_id
-      LEFT JOIN variant_product vp ON p.product_id = vp.product_id
-      LEFT JOIN color col ON vp.color_id = col.color_id
-      WHERE ${whereConditions.join(' AND ')}
-      GROUP BY p.product_id
-      ORDER BY ${orderBy}
-      LIMIT ? OFFSET ?
-    `;
+  SELECT 
+    p.product_id AS id,
+    p.product_name AS name,
+    p.product_slug AS slug,
+    p.product_image AS image,
+    p.category_id,
+    c.category_name,
+    p.created_at,
+    p.updated_at,
+    (
+      SELECT MIN(vp2.variant_product_price)
+      FROM variant_product vp2
+      WHERE vp2.product_id = p.product_id
+    ) AS price,
+    (
+      SELECT MIN(vp2.variant_product_price_sale)
+      FROM variant_product vp2
+      WHERE vp2.product_id = p.product_id AND vp2.variant_product_price_sale > 0
+    ) AS price_sale,
+    JSON_ARRAYAGG(DISTINCT col.color_hex) AS color_hex,
 
-    const [products] = await db.query(query, [...params, limit, offset]);
+    (
+      SELECT 
+        CASE 
+          WHEN MIN(vp2.variant_product_price_sale) > 0 THEN MIN(vp2.variant_product_price_sale)
+          ELSE MIN(vp2.variant_product_price)
+        END 
+      FROM variant_product vp2 
+      WHERE vp2.product_id = p.product_id
+    ) AS actual_price,
+
+    (
+      SELECT vp2.variant_id
+      FROM variant_product vp2
+      JOIN color c2 ON vp2.color_id = c2.color_id
+      WHERE vp2.product_id = p.product_id
+      ORDER BY c2.color_priority = 1 DESC, c2.color_priority ASC, vp2.variant_id ASC
+      LIMIT 1
+    ) AS variant_id,
+
+    (
+  SELECT EXISTS (
+    SELECT 1
+    FROM wishlist w
+    WHERE w.variant_id = (
+      SELECT vp2.variant_id
+      FROM variant_product vp2
+      JOIN color c2 ON vp2.color_id = c2.color_id
+      WHERE vp2.product_id = p.product_id
+      ORDER BY c2.color_priority = 1 DESC, c2.color_priority ASC, vp2.variant_id ASC
+      LIMIT 1
+    )
+    AND w.user_id = ?
+    AND w.status = 1
+  )
+) AS isWishlist
+
+  FROM product p
+  LEFT JOIN category c ON p.category_id = c.category_id
+  LEFT JOIN variant_product vp ON p.product_id = vp.product_id
+  LEFT JOIN color col ON vp.color_id = col.color_id
+  WHERE ${whereConditions.join(' AND ')}
+  GROUP BY p.product_id
+  ORDER BY ${orderBy}
+  LIMIT ? OFFSET ?
+`;
+
+const userId = req.user?.id || 0;
+const [products] = await db.query(query, [...params, userId, limit, offset]);
+
 
     // 7. Chuẩn hóa dữ liệu đầu ra
-    const result = products.map((item) => ({
-      id: item.id,
-      name: item.name,
-      slug: item.slug,
-      image: item.image,
-      category_id: item.category_id,
-      category_name: item.category_name,
-      created_at: item.created_at,
-      updated_at: item.updated_at,
-      price: item.price ?? "0.00",
-      price_sale: item.price_sale ?? "0.00",
-      color_hex: JSON.parse(item.color_hex),
-    }));
+const result = products.map((item) => ({
+  id: item.id,
+  name: item.name,
+  slug: item.slug,
+  image: item.image,
+  category_id: item.category_id,
+  category_name: item.category_name,
+  created_at: item.created_at,
+  updated_at: item.updated_at,
+  price: item.price ?? "0.00",
+  price_sale: item.price_sale ?? "0.00",
+  color_hex: JSON.parse(item.color_hex),
+  variant_id: item.variant_id,
+  isWishlist: item.isWishlist ===1
+}));
+
+
 
     // 8. Phản hồi phân trang chuẩn REST
     res.json({

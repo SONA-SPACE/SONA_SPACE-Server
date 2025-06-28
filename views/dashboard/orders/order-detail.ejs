@@ -1,0 +1,247 @@
+<!-- Trang chi tiết đơn hàng -->
+<div class="order-detail-page">
+  <div class="container">
+    <div class="order-card">
+      <div class="order-header">
+        <h2>Mã đơn hàng: ORD-<%= orderId %>
+        </h2>
+        <div class="order-date">Ngày đặt đơn: 26/01/2025 lúc 08:50</div>
+        <div class="order-status">
+          <div class="status-item">
+            <div class="status-label">Trạng thái thanh toán:</div>
+            <div class="status-value paid">Đã thanh toán</div>
+          </div>
+          <div class="status-item">
+            <div class="status-label">Trạng thái đơn hàng:</div>
+            <div class="status-value shipping">
+              Đang giao
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <h3 class="section-title">Sản phẩm</h3>
+
+        <div class="col-md-8">
+          <div class="product-section">
+            <div class="product-item">
+              <div class="product-image">
+                <img src="/images/products/wardrobe.png" alt="Sofa Modena">
+              </div>
+              <div class="product-details">
+                <div class="product-name">Sofa Modena 2,5 seater</div>
+                <div class="product-type">Sofa</div>
+                <div class="price-row">
+                  <div class="price-label">Thành tiền:</div>
+                  <div class="price-value">15.190.000đ</div>
+                </div>
+                <div class="wrapper">
+                  <div class="price-row">
+                    <div class="price-label">Màu</div>
+                    <div class="price-value">
+                      <span class="color-dot"></span>
+                    </div>
+                  </div>
+                  <div class="price-row">
+                    <div class="price-label">Số lượng:</div>
+                    <div class="price-value">1</div>
+                  </div>
+                </div>
+                <div class="price-row">
+                  <a href="#" class="price-label">Xem chi tiết</a>
+                </div>
+              </div>
+            </div>
+
+            <div class="product-item">
+              <div class="product-image">
+                <img src="/images/products/sofa.png" alt="Sofa Modena">
+              </div>
+              <div class="product-details">
+                <div class="product-name">Sofa Modena 2,5 seater</div>
+                <div class="product-type">Bàn</div>
+                <div class="price-row">
+                  <div class="price-label">Thành tiền:</div>
+                  <div class="price-value">15.190.000đ</div>
+                </div>
+                <div class="wrapper">
+                  <div class="price-row">
+                    <div class="price-label">Màu</div>
+                    <div class="price-value">
+                      <span class="color-dot"></span>
+                    </div>
+                  </div>
+                  <div class="price-row">
+                    <div class="price-label">Số lượng:</div>
+                    <div class="price-value">1</div>
+                  </div>
+                </div>
+                <div class="price-row">
+                  <a href="#" class="price-label">Xem chi tiết</a>
+                </div>
+              </div>
+            </div>
+
+            <div class="product-item">
+              <div class="product-image">
+                <img src="/images/products/table.png" alt="Sofa Modena">
+              </div>
+              <div class="product-details">
+                <div class="product-name">Sofa Modena 2,5 seater</div>
+                <div class="product-type">Tủ</div>
+                <div class="price-row">
+                  <div class="price-label">Thành tiền:</div>
+                  <div class="price-value">15.190.000đ</div>
+                </div>
+                <div class="wrapper">
+                  <div class="price-row">
+                    <div class="price-label">Màu</div>
+                    <div class="price-value">
+                      <span class="color-dot"></span>
+                    </div>
+                  </div>
+                  <div class="price-row">
+                    <div class="price-label">Số lượng:</div>
+                    <div class="price-value">1</div>
+                  </div>
+                </div>
+                <div class="price-row">
+                  <a href="#" class="price-label">Xem chi tiết</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <div class="customer-info">
+            <h3 class="section-title">Thông tin khách hàng</h3>
+
+            <div class="info-row">
+              <div class="info-label">Tên khách hàng</div>
+              <div class="info-value">Nguyễn Văn A</div>
+            </div>
+
+            <div class="info-row">
+              <div class="info-label">Số điện thoại</div>
+              <div class="info-value">084444000</div>
+            </div>
+
+            <div class="info-row">
+              <div class="info-label">Email</div>
+              <div class="info-value">a.nguyen@gmail.com</div>
+            </div>
+
+            <div class="info-row">
+              <div class="info-label">Địa chỉ giao hàng</div>
+              <div class="info-value">50 D. Hồ Tùng Mậu, Bến Nghé, Quận 1, Hồ Chí Minh</div>
+            </div>
+
+            <div class="info-row">
+              <div class="info-label">Phương thức thanh toán</div>
+              <div class="info-value">Thanh toán khi nhận hàng</div>
+            </div>
+
+            <div class="info-row">
+              <div class="info-label">Ghi chú</div>
+              <textarea class="info-value" readonly>Giao nhanh dùm</textarea>
+            </div>
+          </div>
+
+          <div class="order-summary">
+            <h3 class="section-title">Tóm tắt đơn hàng</h3>
+
+            <div class="summary-row">
+              <div class="summary-label">Thành tiền</div>
+              <div class="summary-value">500.000</div>
+            </div>
+
+            <div class="summary-row">
+              <div class="summary-label">Vận chuyển</div>
+              <div class="summary-value">30.000</div>
+            </div>
+
+            <div class="summary-row">
+              <div class="summary-label">Giảm giá</div>
+              <div class="summary-value discount">-10%</div>
+            </div>
+
+            <div class="summary-row">
+              <div class="summary-label">Mã giảm giá</div>
+              <div class="summary-value">NEW10</div>
+            </div>
+
+            <div class="summary-row">
+              <div class="summary-label">Tổng cộng</div>
+              <div class="summary-value">500.000</div>
+            </div>
+          </div>
+
+          <div class="action-buttons">
+            <button class="btn btn-cancel">Hủy</button>
+            <button class="btn btn-save">Lưu</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    // Xử lý sự kiện khi click vào dropdown trạng thái
+    const statusDropdown = document.querySelector('.dropdown-toggle');
+    if (statusDropdown) {
+      statusDropdown.addEventListener('click', function () {
+        // Hiển thị dropdown menu với các trạng thái đơn hàng
+        console.log('Status dropdown clicked');
+        // Đây là nơi để thêm code hiển thị dropdown menu
+      });
+    }
+
+    // Xử lý sự kiện khi click vào nút Hủy
+    const cancelButton = document.querySelector('.btn-cancel');
+    if (cancelButton) {
+      cancelButton.addEventListener('click', function () {
+        // Quay lại trang danh sách đơn hàng
+        window.location.href = '/dashboard/orders';
+      });
+    }
+
+    // Xử lý sự kiện khi click vào nút Lưu
+    const saveButton = document.querySelector('.btn-save');
+    if (saveButton) {
+      saveButton.addEventListener('click', function () {
+        // Lưu thay đổi và quay lại trang danh sách đơn hàng
+        console.log('Save changes');
+        // Đây là nơi để thêm code lưu thay đổi
+        // Sau khi lưu thành công, chuyển hướng về trang danh sách đơn hàng
+        // window.location.href = '/dashboard/orders';
+      });
+    }
+  });
+</script>
+
+<style>
+  @media print {
+
+    .sidebar,
+    .dashboard-header,
+    .breadcrumb,
+    #update-status-btn,
+    #print-order-btn {
+      display: none !important;
+    }
+
+    .content-wrapper {
+      margin-left: 0 !important;
+      padding: 0 !important;
+    }
+
+    .card {
+      box-shadow: none !important;
+      border: 1px solid #ddd !important;
+    }
+  }
+</style>

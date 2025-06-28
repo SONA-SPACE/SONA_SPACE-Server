@@ -10,14 +10,33 @@ const JWT_SECRET = process.env.JWT_SECRET || 'furnitown-secret-key';
  */
 exports.verifyToken = async (req, res, next) => {
   try {
-    // Lấy token từ header Authorization
-    const authHeader = req.headers.authorization;
+    // Lấy token từ header Authorization hoặc cookie
+    let token;
     
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'Unauthorized - No token provided' });
+    // Thử lấy từ header Authorization
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
     }
     
-    const token = authHeader.split(' ')[1];
+    // Nếu không có trong header, thử lấy từ cookie
+    if (!token && req.cookies && req.cookies.token) {
+      token = req.cookies.token;
+    }
+    
+    // Nếu không tìm thấy token
+    if (!token) {
+      // Nếu là API request, trả về JSON error
+      if (req.path.startsWith('/api/')) {
+        return res.status(401).json({ error: 'Unauthorized - No token provided' });
+      }
+      // Nếu là web request, chuyển hướng về trang đăng nhập
+      if (typeof next === 'function') {
+        return next(new Error('No token provided'));
+      } else {
+        return res.redirect('/');
+      }
+    }
     
     // Xác minh token
     const decoded = jwt.verify(token, JWT_SECRET);
@@ -27,19 +46,30 @@ exports.verifyToken = async (req, res, next) => {
     
     // Nếu token có role, lưu lại
     const tokenRole = decoded.role;
-    console.log('Token decoded:', decoded);
-    console.log('User ID from token:', userId);
-    console.log('Role from token:', tokenRole);
     
     if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized - Invalid token format' });
+      if (req.path.startsWith('/api/')) {
+        return res.status(401).json({ error: 'Unauthorized - Invalid token format' });
+      }
+      if (typeof next === 'function') {
+        return next(new Error('Invalid token format'));
+      } else {
+        return res.redirect('/');
+      }
     }
     
     // Kiểm tra xem user có tồn tại trong database
     const [users] = await db.query('SELECT user_id, user_gmail, user_role FROM user WHERE user_id = ?', [userId]);
     
     if (!users.length) {
-      return res.status(401).json({ error: 'Unauthorized - User not found' });
+      if (req.path.startsWith('/api/')) {
+        return res.status(401).json({ error: 'Unauthorized - User not found' });
+      }
+      if (typeof next === 'function') {
+        return next(new Error('User not found'));
+      } else {
+        return res.redirect('/');
+      }
     }
     
     // Lưu thông tin người dùng vào request object
@@ -52,11 +82,26 @@ exports.verifyToken = async (req, res, next) => {
     next();
   } catch (error) {
     if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
-      return res.status(401).json({ error: 'Unauthorized - Invalid token' });
+      if (req.path.startsWith('/api/')) {
+        return res.status(401).json({ error: 'Unauthorized - Invalid token' });
+      }
+      if (typeof next === 'function') {
+        return next(new Error('Invalid token'));
+      } else {
+        return res.redirect('/');
+      }
     }
     
     console.error('Authentication error:', error);
-    return res.status(500).json({ error: 'Internal server error during authentication' });
+    
+    if (req.path.startsWith('/api/')) {
+      return res.status(500).json({ error: 'Internal server error during authentication' });
+    }
+    if (typeof next === 'function') {
+      return next(error);
+    } else {
+      return res.redirect('/');
+    }
   }
 };
 

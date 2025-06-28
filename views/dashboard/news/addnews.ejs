@@ -1,6 +1,6 @@
 <!-- Tiêu đề -->
 <div class="dashboard-header-row">
-  <h2 class="dashboard-title">Thêm phòng</h2>
+  <h2 class="dashboard-title">Thêm tin tức</h2>
 </div>
 
 <!-- Layout -->
@@ -8,49 +8,53 @@
   <!-- Form -->
   <div class="room-form-column">
     <div class="form-section">
-      <h3 class="section-title">Thông tin phòng</h3>
+      <h3 class="section-title">Thông tin tin tức</h3>
 
       <div class="form-row">
         <div class="form-group">
-          <label for="roomName">Tên phòng</label>
-          <input
-            type="text"
-            id="roomName"
-            class="form-control"
-            placeholder="Nhập tên phòng"
-          />
+          <label for="roomName">Tên tin tức</label>
+          <input type="text" id="newsTitle" class="form-control" placeholder="Nhập tên tin tức" />
+
         </div>
         <div class="form-group">
           <label for="roomSlug">Slug</label>
-          <input
-            type="text"
-            id="roomSlug"
-            class="form-control"
-            placeholder="ví dụ: phong-khach, phong-ngu"
-          />
+          <input type="text" id="newsSlug" class="form-control" placeholder="nhập slug cho tin tức..." />
         </div>
       </div>
 
       <div class="form-row">
         <div class="form-group">
-          <label for="roomPriority">Mức ưu tiên</label>
-          <input
-            type="number"
-            id="roomPriority"
-            class="form-control"
-            placeholder="Thứ tự ưu tiên (số)"
-          />
+          <label for="newsCategory">Danh mục</label>
+          <div class="select-wrapper">
+            <select id="newsCategory" class="form-control">
+              <option value="">Chọn danh mục</option>
+              <option value="sofas">Sofas</option>
+              <option value="chairs">Ghế</option>
+              <option value="tables">Bàn</option>
+              <option value="storage">Tủ & Kệ</option>
+              <option value="beds">Giường</option>
+              <option value="lamps">Đèn</option>
+            </select>
+            <i class="fas fa-chevron-down"></i>
+          </div>
         </div>
         <div class="form-group">
           <label for="roomStatus">Trạng thái</label>
           <div class="select-wrapper">
-            <select id="roomStatus" class="form-control">
+            <select id="newsStatus" class="form-control">
               <option value="1">Hiển thị</option>
               <option value="0">Ẩn</option>
             </select>
             <i class="fas fa-chevron-down"></i>
           </div>
         </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group full-width">
+          <label for="newsDescription">Mô tả ngắn</label>
+          <textarea id="newsDescription" class="form-control" placeholder="Mô tả ngắn về tin tức"></textarea>
+        </div>
+
       </div>
     </div>
 
@@ -64,21 +68,34 @@
   <!-- Cột phải: Upload ảnh -->
   <div class="image-upload-column">
     <div class="image-upload-container">
-      <div class="upload-title">Ảnh đại diện</div>
       <div class="main-upload-area">
-        <div class="upload-placeholder" id="avatarDropArea">
+        <div class="upload-placeholder1" id="avatarDropArea">
           <i class="far fa-image"></i>
-          <p>Drop avatar image here, or browse</p>
-          <p class="upload-hint">jpeg, png - kích thước vuông</p>
+          <p>Drop your image here, or browse</p>
+          <p class="upload-hint">jpeg, png are allowed</p>
         </div>
       </div>
 
-      <div class="upload-title">Ảnh banner</div>
-      <div class="main-upload-area">
-        <div class="upload-placeholder" id="bannerDropArea">
-          <i class="far fa-image"></i>
-          <p>Drop banner image here, or browse</p>
-          <p class="upload-hint">jpeg, png - kích thước ngang</p>
+      <div class="thumbnail-upload-grid">
+        <div class="thumbnail-upload-item">
+          <div class="upload-placeholder1" id="thumb1">
+            <i class="far fa-image"></i>
+          </div>
+        </div>
+        <div class="thumbnail-upload-item">
+          <div class="upload-placeholder1" id="thumb2">
+            <i class="far fa-image"></i>
+          </div>
+        </div>
+        <div class="thumbnail-upload-item">
+          <div class="upload-placeholder1" id="thumb3">
+            <i class="far fa-image"></i>
+          </div>
+        </div>
+        <div class="thumbnail-upload-item">
+          <div class="upload-placeholder1" id="thumb4">
+            <i class="far fa-image"></i>
+          </div>
         </div>
       </div>
     </div>
@@ -90,13 +107,19 @@
   let avatarFile = null;
   let bannerFile = null;
 
+  let thumbnailFiles = [null, null, null, null];
+
   document.addEventListener("DOMContentLoaded", () => {
     bindUpload("#avatarDropArea", (file) => (avatarFile = file));
-    bindUpload("#bannerDropArea", (file) => (bannerFile = file));
-    document
-      .querySelector(".btn-save")
-      .addEventListener("click", handleSaveRoom);
+
+    bindUpload("#thumb1", (file) => (thumbnailFiles[0] = file));
+    bindUpload("#thumb2", (file) => (thumbnailFiles[1] = file));
+    bindUpload("#thumb3", (file) => (thumbnailFiles[2] = file));
+    bindUpload("#thumb4", (file) => (thumbnailFiles[3] = file));
+
+    document.querySelector(".btn-save").addEventListener("click", handleSaveNews);
   });
+
 
   function bindUpload(selector, setter) {
     const dropArea = document.querySelector(selector);
@@ -124,7 +147,7 @@
     formData.append("folder", folder);
     if (subfolder) formData.append("subfolder", subfolder);
 
-    const res = await fetch("/api/upload/room", {
+    const res = await fetch("/api/upload/news", {
       method: "POST",
       body: formData,
     });
@@ -132,61 +155,67 @@
     return data.url || null;
   }
 
-  async function handleSaveRoom() {
-    const name = document.getElementById("roomName").value.trim();
-    const slug = document.getElementById("roomSlug").value.trim();
-    const priority =
-      parseInt(document.getElementById("roomPriority").value) || 0;
-    const status = parseInt(document.getElementById("roomStatus").value);
+  async function handleSaveNews() {
+    const title = document.getElementById("newsTitle").value.trim();
+    const slug = document.getElementById("newsSlug").value.trim();
+    const excerpt = document.getElementById("newsDescription").value.trim();
+    const content = document.getElementById("newsContent").value.trim();
+    const status = parseInt(document.getElementById("newsStatus").value);
+    const category_id = parseInt(document.getElementById("newsCategory").value);
+
     const saveBtn = document.querySelector(".btn-save");
     saveBtn.disabled = true;
     saveBtn.innerText = "Đang lưu...";
 
-    if (!name || !slug) {
-      showToast("Vui lòng nhập đầy đủ tên phòng và slug", "danger");
+    if (!title || !excerpt) {
+      showToast("Vui lòng nhập tiêu đề và nội dung", "danger");
       saveBtn.disabled = false;
       saveBtn.innerText = "Lưu";
       return;
     }
 
     try {
-      const image = await uploadImage(avatarFile, "SonaSpace/Rooms");
-      const banner = await uploadImage(bannerFile, "SonaSpace/Rooms", "banner");
+      const thumbnail = await uploadImage(avatarFile, "SonaSpace/News");
 
-      const payload = {
-        name,
-        slug,
-        image,
-        banner,
-        priority,
-        status,
-      };
+  const payload = {
+  title,
+  slug,
+  excerpt,
+  content, 
+  status,
+  category_id,
+  thumbnail
+};
 
-      const res = await fetch("/api/rooms", {
+
+      const token = sessionStorage.getItem("authToken");
+
+      const res = await fetch("/api/news", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}` // cần token xác thực
+        },
+        body: JSON.stringify(payload)
       });
 
       const data = await res.json();
 
       if (data.error) {
         showToast(data.error, "danger");
-        saveBtn.disabled = false;
-        saveBtn.innerText = "Lưu";
       } else {
-        showToast("Tạo phòng thành công", "success");
-        setTimeout(() => {
-          window.location.href = "/dashboard/room";
-        }, 1500);
+        showToast("Tạo tin tức thành công", "success");
+        setTimeout(() => (window.location.href = "/dashboard/news"), 1000);
       }
     } catch (err) {
       console.error("Error:", err);
-      showToast("Có lỗi khi tạo phòng", "danger");
-      saveBtn.disabled = false;
-      saveBtn.innerText = "Lưu";
+      showToast("Có lỗi khi tạo tin tức", "danger");
     }
+
+    saveBtn.disabled = false;
+    saveBtn.innerText = "Lưu";
   }
+
 
   function showToast(message, type = "success") {
     let toastContainer = document.getElementById("toastContainer");

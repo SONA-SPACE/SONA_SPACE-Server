@@ -34,7 +34,7 @@ var wishlistsRouter = require("./routes/wishlists");
 var ordersRouter = require("./routes/orders");
 var orderStatusRouter = require("./routes/orderStatus");
 var paymentsRouter = require("./routes/payments");
-var contactFormsRouter = require("./routes/contactForms");
+var contactFormsRouter = require("./routes/contactFormsDesign");
 var couponcodesRouter = require("./routes/couponcodes");
 var commentsRouter = require("./routes/comments");
 var newsRouter = require("./routes/news");
@@ -46,7 +46,7 @@ var dashboardRouter = require("./routes/dashboard");
 var ordersIdRouter = require("./routes/orders-id");
 var wishlistsIdRouter = require("./routes/wishlists-id");
 var uploadRouter = require("./routes/upload");
-
+var bannersRouter = require("./routes/banners");
 var app = express();
 
 // App version and startup time for health checks
@@ -81,7 +81,13 @@ app.get("/health", function (req, res) {
 });
 
 // Base routes
-app.use("/", indexRouter);
+app.get("/", (req, res) => {
+  res.render("main", {
+    title: "Sona Space - Admin Login"
+  });
+});
+
+// API routes
 app.use("/api/auth", authRouter);
 app.use("/dashboard", dashboardRouter);
 
@@ -92,11 +98,11 @@ app.use("/api/variants", variantsRouter);
 app.use("/api/rooms", roomsRouter);
 app.use("/api/news", newsRouter);
 app.use("/api/news-categories", newsCategoriesRouter);
-app.use("/api/contact-forms", contactFormsRouter);
+app.use("/api/contact-forms-design", contactFormsRouter);
 app.use("/api/comments", commentsRouter);
 app.use("/api/debug", debugRouter);
-app.use("/api/orders-id/", ordersIdRouter);
-app.use("/api/wishlists-id/", wishlistsIdRouter);
+app.use("/api/orders-id", ordersIdRouter);
+app.use("/api/wishlists-id", wishlistsIdRouter);
 // API routes - protected
 app.use("/api/users", authMiddleware.verifyToken, usersRouter);
 app.use("/api/wishlists", authMiddleware.verifyToken, wishlistsRouter);
@@ -106,8 +112,10 @@ app.use("/api/payments", authMiddleware.verifyToken, paymentsRouter);
 app.use("/api/couponcodes", authMiddleware.verifyToken, couponcodesRouter);
 app.use("/api/color", colorRouter);
 app.use("/api/upload", uploadRouter);
+app.use("/api/banners", bannersRouter);
 
 app.use(function (req, res, next) {
+  console.warn("Route not found:", req.method, req.originalUrl);
   next(createError(404));
 });
 

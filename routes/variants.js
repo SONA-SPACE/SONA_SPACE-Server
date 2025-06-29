@@ -258,4 +258,25 @@ router.delete("/:id", verifyToken, isAdmin, async (req, res) => {
   }
 });
 
+/**
+ * @route   GET /api/variants/by-product/:slug
+ * @desc    Lấy danh sách biến thể theo sản phẩm
+ * @access  Public
+ */
+// GET /api/variants/by-product/:slug
+router.get('/by-product/:slug', async (req, res) => {
+  const slug = req.params.slug;
+  if (!slug) return res.status(400).json({ error: "Missing product slug" });
+  try {
+    const [rows] = await db.query(`
+      SELECT vp.*
+      FROM variant_product vp
+      JOIN product p ON vp.product_id = p.product_id
+      WHERE p.product_slug = ?
+    `, [slug]);
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch variants by product" });
+  }
+});
 module.exports = router;

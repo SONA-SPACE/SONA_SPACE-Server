@@ -142,3 +142,49 @@ exports.generateToken = (userId) => {
   // Cập nhật để sử dụng định dạng mới
   return jwt.sign({ id: userId, role: 'user' }, JWT_SECRET, { expiresIn: '24h' });
 };
+
+
+
+exports.optionalAuth = async (req, res, next) => {
+  try {
+    let token;
+
+    // Lấy token từ header Authorization nếu có
+    const authHeader = req.headers.authorization;
+    if (authHeader?.startsWith("Bearer ")) {
+      token = authHeader.split(" ")[1];
+    }
+
+    // Nếu không có trong header, thử lấy từ cookie (nếu bạn dùng cookie)
+    if (!token && req.cookies?.token) {
+      token = req.cookies.token;
+    }
+
+    // Nếu không có token, tiếp tục như khách (guest)
+    if (!token) return next();
+
+    // Giải mã token
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const userId = decoded.id || decoded.userId;
+    if (!userId) return next();
+
+    // Kiểm tra user trong database
+    const [[user]] = await db.query(
+      "SELECT user_id, user_gmail, user_role FROM user WHERE user_id = ?",
+      [userId]
+    );
+
+    if (user) {
+      req.user = {
+        id: user.user_id,
+        email: user.user_gmail,
+        role: user.user_role || decoded.role || "user",
+      };
+    }
+
+    next();
+  } catch (err) {
+    console.warn("optionalAuth: token invalid hoặc hết hạn – xử lý như guest");
+    next(); // tiếp tục cho dù token lỗi
+  }
+};

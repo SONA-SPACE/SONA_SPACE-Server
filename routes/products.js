@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const db = require("../config/database");
+
 const { verifyToken, isAdmin } = require("../middleware/auth");
 
 const LIMIT_PER_PAGE = 8;
@@ -25,22 +26,24 @@ router.get("/", verifyToken, async (req, res) => {
     const sort = req.query.sort;
 
     // 3. Xây dựng câu query WHERE dựa trên các điều kiện lọc
-    let whereConditions = ['p.product_status = 1'];
+    let whereConditions = ["p.product_status = 1"];
     let params = [];
 
     if (category) {
-      whereConditions.push('c.category_name = ?');
+      whereConditions.push("c.category_name = ?");
       params.push(category);
     }
 
     if (room) {
-      whereConditions.push('EXISTS (SELECT 1 FROM room_product rp JOIN room r ON rp.room_id = r.room_id WHERE rp.product_id = p.product_id AND r.room_name = ?)');
+      whereConditions.push(
+        "EXISTS (SELECT 1 FROM room_product rp JOIN room r ON rp.room_id = r.room_id WHERE rp.product_id = p.product_id AND r.room_name = ?)"
+      );
       params.push(room);
     }
 
     if (price) {
       switch (price) {
-        case 'Dưới 10 triệu':
+        case "Dưới 10 triệu":
           whereConditions.push(`
             (SELECT 
               CASE 
@@ -51,7 +54,7 @@ router.get("/", verifyToken, async (req, res) => {
             WHERE vp2.product_id = p.product_id) < 10000000
           `);
           break;
-        case '10 - 30 triệu':
+        case "10 - 30 triệu":
           whereConditions.push(`
             (SELECT 
               CASE 
@@ -62,7 +65,7 @@ router.get("/", verifyToken, async (req, res) => {
             WHERE vp2.product_id = p.product_id) BETWEEN 10000000 AND 30000000
           `);
           break;
-        case 'Trên 30 triệu':
+        case "Trên 30 triệu":
           whereConditions.push(`
             (SELECT 
               CASE 
@@ -77,15 +80,15 @@ router.get("/", verifyToken, async (req, res) => {
     }
 
     if (color) {
-      whereConditions.push('col.color_name = ?');
+      whereConditions.push("col.color_name = ?");
       params.push(color);
     }
 
     // 4. Xây dựng câu ORDER BY dựa trên tham số sort
-    let orderBy = 'p.created_at DESC';
+    let orderBy = "p.created_at DESC";
     if (sort) {
       switch (sort) {
-        case 'Giá tăng dần':
+        case "Giá tăng dần":
           orderBy = `
             (SELECT 
               CASE 
@@ -96,7 +99,7 @@ router.get("/", verifyToken, async (req, res) => {
             WHERE vp2.product_id = p.product_id) ASC
           `;
           break;
-        case 'Giá giảm dần':
+        case "Giá giảm dần":
           orderBy = `
             (SELECT 
               CASE 
@@ -107,10 +110,10 @@ router.get("/", verifyToken, async (req, res) => {
             WHERE vp2.product_id = p.product_id) DESC
           `;
           break;
-        case 'Mới nhất':
-          orderBy = 'p.created_at DESC';
+        case "Mới nhất":
+          orderBy = "p.created_at DESC";
           break;
-        case 'Giảm giá':
+        case "Giảm giá":
           orderBy = `
             (SELECT 
               MAX(
@@ -128,14 +131,17 @@ router.get("/", verifyToken, async (req, res) => {
     }
 
     // 5. Truy vấn tổng số sản phẩm với điều kiện lọc
-    const [[{ totalProducts }]] = await db.query(`
+    const [[{ totalProducts }]] = await db.query(
+      `
       SELECT COUNT(DISTINCT p.product_id) AS totalProducts
       FROM product p
       LEFT JOIN category c ON p.category_id = c.category_id
       LEFT JOIN variant_product vp ON p.product_id = vp.product_id
       LEFT JOIN color col ON vp.color_id = col.color_id
-      WHERE ${whereConditions.join(' AND ')}
-    `, params);
+      WHERE ${whereConditions.join(" AND ")}
+    `,
+      params
+    );
 
     // 6. Truy vấn sản phẩm có phân trang và lọc
     const query = `
@@ -200,34 +206,36 @@ router.get("/", verifyToken, async (req, res) => {
   LEFT JOIN category c ON p.category_id = c.category_id
   LEFT JOIN variant_product vp ON p.product_id = vp.product_id
   LEFT JOIN color col ON vp.color_id = col.color_id
-  WHERE ${whereConditions.join(' AND ')}
+  WHERE ${whereConditions.join(" AND ")}
   GROUP BY p.product_id
   ORDER BY ${orderBy}
   LIMIT ? OFFSET ?
 `;
 
-const userId = req.user?.id || 0;
-const [products] = await db.query(query, [...params, userId, limit, offset]);
-
+    const userId = req.user?.id || 0;
+    const [products] = await db.query(query, [
+      ...params,
+      userId,
+      limit,
+      offset,
+    ]);
 
     // 7. Chuẩn hóa dữ liệu đầu ra
-const result = products.map((item) => ({
-  id: item.id,
-  name: item.name,
-  slug: item.slug,
-  image: item.image,
-  category_id: item.category_id,
-  category_name: item.category_name,
-  created_at: item.created_at,
-  updated_at: item.updated_at,
-  price: item.price ?? "0.00",
-  price_sale: item.price_sale ?? "0.00",
-  color_hex: JSON.parse(item.color_hex),
-  variant_id: item.variant_id,
-  isWishlist: item.isWishlist ===1
-}));
-
-
+    const result = products.map((item) => ({
+      id: item.id,
+      name: item.name,
+      slug: item.slug,
+      image: item.image,
+      category_id: item.category_id,
+      category_name: item.category_name,
+      created_at: item.created_at,
+      updated_at: item.updated_at,
+      price: item.price ?? "0.00",
+      price_sale: item.price_sale ?? "0.00",
+      color_hex: JSON.parse(item.color_hex),
+      variant_id: item.variant_id,
+      isWishlist: item.isWishlist === 1,
+    }));
 
     // 8. Phản hồi phân trang chuẩn REST
     res.json({
@@ -244,7 +252,78 @@ const result = products.map((item) => ({
     res.status(500).json({ error: "Failed to fetch products" });
   }
 });
+router.get("/admin", async (req, res) => {
+  try {
+    const [products] = await db.query(`
+      SELECT 
+        p.product_id,
+        p.product_name,
+        p.product_image,
+        c.category_name,
+        p.product_sold,
+        p.product_view,
+        p.product_status,
+        p.product_priority,
+        p.created_at,
+        p.updated_at,
+        p.product_slug,
+        -- Lấy giá gốc của variant đầu tiên
+        (
+          SELECT vp.variant_product_price
+          FROM variant_product vp
+          WHERE vp.product_id = p.product_id
+          ORDER BY vp.variant_id ASC
+          LIMIT 1
+        ) AS price,
 
+        -- Lấy giá sale của variant đầu tiên nếu có
+        (
+          SELECT 
+            CASE 
+              WHEN vp.variant_product_price_sale > 0 THEN vp.variant_product_price_sale 
+              ELSE NULL 
+            END
+          FROM variant_product vp
+          WHERE vp.product_id = p.product_id
+          ORDER BY vp.variant_id ASC
+          LIMIT 1
+        ) AS price_sale,
+
+        -- Tổng số lượng từ tất cả variants
+        (
+          SELECT SUM(vp.variant_product_quantity)
+          FROM variant_product vp
+          WHERE vp.product_id = p.product_id
+        ) AS total_quantity,
+
+        -- Số lượng đánh giá
+        (
+          SELECT COUNT(*) 
+          FROM comment cm 
+          WHERE cm.product_id = p.product_id
+            AND cm.deleted_at IS NULL
+        ) AS comment_count
+
+      FROM product p
+      LEFT JOIN category c ON p.category_id = c.category_id
+      ORDER BY p.created_at DESC
+    `);
+
+    // Xử lý và format dữ liệu trước khi trả về
+    const formattedProducts = products.map((product) => ({
+      ...product,
+      price: product.price || 0,
+      price_sale: product.price_sale || null, // Giữ null nếu không có giá sale
+      total_quantity: product.total_quantity || 0,
+      comment_count: product.comment_count || 0,
+    }));
+
+    res.json(formattedProducts);
+  } catch (error) {
+    console.error("Error fetching admin products:", error);
+    res.status(500).json({ error: "Failed to fetch admin product list" });
+  }
+});
 /**
  * @route   GET /api/products/newest
  * @desc    Lấy danh sách sản phẩm mới nhất
@@ -376,6 +455,22 @@ ORDER BY c.color_priority DESC
       `,
       [product.product_id]
     );
+    const variantsFull = variants.map((v) => ({
+      variant_id: v.variant_id,
+      product_id: v.product_id,
+      color_id: v.color_id,
+      color_name: v.color_name,
+      color_hex: v.color_hex,
+      quantity: v.quantity,
+      price: v.price,
+      price_sale: v.price_sale,
+      slug: v.slug,
+      list_image: v.list_image
+        ? v.list_image
+            .split(",")
+            .map((img) => img.trim().replace(/^['\"]+|['\"]+$/g, ""))
+        : [],
+    }));
 
     // 3. Tìm biến thể mặc định (ưu tiên color_priority = 1)
     let defaultVariant = variants.find((v) => v.color_priority === 1);
@@ -428,12 +523,17 @@ ORDER BY c.color_priority DESC
         defaultPrice: defaultVariant?.price ?? null,
         defaultPriceSale: defaultVariant?.price_sale ?? null,
         defaultImages:
-          defaultVariant?.list_image?.split(",").map((img) => img.trim()) ?? [],
-
+          defaultVariant?.list_image
+            ?.split(",")
+            .map((img) => img.trim().replace(/^['\"]+|['\"]+$/g, "")) ?? [],
+        main_image: product.product_image
+          ? product.product_image.trim().replace(/^['\"]+|['\"]+$/g, "")
+          : "",
         defaultSlug: defaultVariant?.slug ?? null,
         defaultColorName: defaultVariant?.color_name ?? null,
         defaultColorHex: defaultVariant?.color_hex ?? null,
         defaultQuantity: defaultVariant?.quantity ?? null,
+        variants: variantsFull,
       },
       colors,
       related_products: relatedProducts.map((rp) => ({
@@ -699,33 +799,37 @@ router.put("/:id", verifyToken, isAdmin, async (req, res) => {
  * @desc    Xóa sản phẩm
  * @access  Private (Admin only)
  */
-router.delete("/:id", verifyToken, isAdmin, async (req, res) => {
-  const id = Number(req.params.id);
-  if (isNaN(id)) return res.status(400).json({ message: "ID phải là số" });
+router.delete("/:slug", async (req, res) => {
+  const slug = req.params.slug;
+  if (!slug) return res.status(400).json({ message: "Slug không hợp lệ" });
 
   try {
-    // Kiểm tra sản phẩm tồn tại
+    // Lấy product_id từ slug
     const [existingProduct] = await db.query(
-      "SELECT product_id FROM product WHERE product_id = ?",
-      [id]
+      "SELECT product_id FROM product WHERE product_slug = ?",
+      [slug]
     );
-
     if (!existingProduct.length) {
       return res.status(404).json({ error: "Product not found" });
     }
+    const id = existingProduct[0].product_id;
 
-    // Xóa các bản ghi liên quan
-    await db.query("DELETE FROM variant_product WHERE product_id = ?", [id]);
-    await db.query("DELETE FROM room_product WHERE product_id = ?", [id]);
-    await db.query("DELETE FROM wishlist WHERE product_id = ?", [id]);
-    await db.query("DELETE FROM comment WHERE product_id = ?", [id]);
-
-    // Kiểm tra sản phẩm có trong order_items không
-    const [orderItems] = await db.query(
-      "SELECT id FROM order_items WHERE product_id = ? LIMIT 1",
+    // Lấy tất cả variant_id của sản phẩm
+    const [variants] = await db.query(
+      "SELECT variant_id FROM variant_product WHERE product_id = ?",
       [id]
     );
-
+    const variantIds = variants.map((v) => v.variant_id);
+    let orderItems = [];
+    if (variantIds.length > 0) {
+      const [orderItemsResult] = await db.query(
+        `SELECT order_item_id FROM order_items WHERE variant_id IN (${variantIds
+          .map(() => "?")
+          .join(",")}) LIMIT 1`,
+        variantIds
+      );
+      orderItems = orderItemsResult;
+    }
     if (orderItems.length > 0) {
       // Nếu có trong order, đánh dấu là đã xóa nhưng không xóa thực sự
       await db.query(
@@ -735,10 +839,24 @@ router.delete("/:id", verifyToken, isAdmin, async (req, res) => {
       return res.json({ message: "Product marked as deleted" });
     }
 
+    // Xóa tất cả variant thuộc product này trước
+    await db.query("DELETE FROM variant_product WHERE product_id = ?", [id]);
+    // Xóa các bản ghi liên quan khác nếu cần
+    await db.query("DELETE FROM room_product WHERE product_id = ?", [id]);
+    if (variantIds.length > 0) {
+      await db.query(
+        `DELETE FROM wishlist WHERE variant_id IN (${variantIds
+          .map(() => "?")
+          .join(",")})`,
+        variantIds
+      );
+    }
+    await db.query("DELETE FROM comment WHERE product_id = ?", [id]);
+
     // Xóa sản phẩm
     await db.query("DELETE FROM product WHERE product_id = ?", [id]);
 
-    res.json({ message: "Product deleted successfully" });
+    res.json({ message: "Product and all its variants deleted successfully" });
   } catch (error) {
     console.error("Error deleting product:", error);
     res.status(500).json({ error: "Failed to delete product" });
@@ -851,6 +969,348 @@ router.get("/by-category/:categoryId", async (req, res) => {
   } catch (error) {
     console.error("Error fetching products by category:", error);
     res.status(500).json({ error: "Failed to fetch products by category" });
+  }
+});
+
+// Đặt route này TRƯỚC bất kỳ route động nào như "/:slug"
+
+router.post("/add", async (req, res) => {
+  try {
+    const {
+      name,
+      description,
+      slug,
+      category_id,
+      status,
+      materials,
+      height,
+      width,
+      depth,
+      seating_height,
+      max_weight_load,
+      main_image,
+      room_ids,
+      variants,
+    } = req.body;
+
+    // Validate required fields
+    if (!name || !slug || !category_id || !variants || !variants.length) {
+      return res.status(400).json({
+        error: "Missing required fields",
+        required: "name, slug, category_id, variants",
+      });
+    }
+
+    // Start transaction
+    const connection = await db.getConnection();
+    await connection.beginTransaction();
+
+    try {
+      // 1. Insert product
+      const [productResult] = await connection.query(
+        `INSERT INTO product (
+          product_name,
+          product_description,
+          product_slug,
+          category_id,
+          product_status,
+          variant_materials,
+          variant_height,
+          variant_width,
+          variant_depth,
+          variant_seating_height,
+          variant_maximum_weight_load,
+          product_image
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          name,
+          description || null,
+          slug,
+          category_id,
+          status || 1,
+          materials || null,
+          height || null,
+          width || null,
+          depth || null,
+          seating_height || null,
+          max_weight_load || null,
+          main_image || null,
+        ]
+      );
+
+      const productId = productResult.insertId;
+
+      // 2. Insert variants
+      for (const variant of variants) {
+        const {
+          color_id,
+          price,
+          price_sale,
+          quantity,
+          list_image,
+          variant_slug,
+        } = variant;
+
+        if (!color_id || !price || !quantity || !list_image || !variant_slug) {
+          throw new Error("Missing required variant fields");
+        }
+
+        await connection.query(
+          `INSERT INTO variant_product (
+            product_id,
+            color_id,
+            variant_product_price,
+            variant_product_price_sale,
+            variant_product_quantity,
+            variant_product_list_image,
+            variant_product_slug
+          ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [
+            productId,
+            color_id,
+            price,
+            price_sale || null,
+            quantity,
+            list_image.join(","),
+            variant_slug,
+          ]
+        );
+      }
+
+      // 3. Insert room associations if provided
+      if (room_ids && room_ids.length > 0) {
+        const roomValues = room_ids.map((roomId) => [productId, roomId]);
+        await connection.query(
+          `INSERT INTO room_product (product_id, room_id) VALUES ?`,
+          [roomValues]
+        );
+      }
+
+      // Commit transaction
+      await connection.commit();
+
+      // Get the created product with variants
+      const [product] = await db.query(
+        `SELECT 
+          p.*,
+          c.category_name,
+          JSON_ARRAYAGG(
+            JSON_OBJECT(
+              'variant_id', vp.variant_id,
+              'color_id', vp.color_id,
+              'color_name', col.color_name,
+              'color_hex', col.color_hex,
+              'price', vp.variant_product_price,
+              'price_sale', vp.variant_product_price_sale,
+              'quantity', vp.variant_product_quantity,
+              'list_image', vp.variant_product_list_image,
+              'slug', vp.variant_product_slug
+            )
+          ) as variants
+        FROM product p
+        LEFT JOIN category c ON p.category_id = c.category_id
+        LEFT JOIN variant_product vp ON p.product_id = vp.product_id
+        LEFT JOIN color col ON vp.color_id = col.color_id
+        WHERE p.product_id = ?
+        GROUP BY p.product_id`,
+        [productId]
+      );
+
+      res.status(201).json({
+        message: "Product created successfully",
+        product: {
+          ...product[0],
+          variants: JSON.parse(product[0].variants),
+        },
+      });
+    } catch (error) {
+      // Rollback on error
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  } catch (error) {
+    console.error("Error creating product:", error);
+    res.status(500).json({
+      error: "Failed to create product",
+      details: error.message,
+    });
+  }
+});
+router.put("/admin/:slug", async (req, res) => {
+  const { slug } = req.params;
+  const {
+    name,
+    description,
+    category_id,
+    status,
+    materials,
+    height,
+    width,
+    depth,
+    seating_height,
+    max_weight_load,
+    main_image,
+    room_ids,
+    variants,
+  } = req.body;
+
+  // Validate
+  if (!name || !slug || !category_id || !variants || !variants.length) {
+    return res.status(400).json({
+      error: "Missing required fields",
+      required: "name, slug, category_id, variants",
+    });
+  }
+
+  // Start transaction
+  const connection = await db.getConnection();
+  await connection.beginTransaction();
+
+  try {
+    // 1. Lấy product_id từ slug
+    const [productRows] = await connection.query(
+      `SELECT product_id FROM product WHERE product_slug = ?`,
+      [slug]
+    );
+    if (!productRows.length) {
+      await connection.rollback();
+      return res.status(404).json({ error: "Product not found" });
+    }
+    const productId = productRows[0].product_id;
+
+    // 2. Update product
+    await connection.query(
+      `UPDATE product SET
+        product_name = ?,
+        product_description = ?,
+        category_id = ?,
+        product_status = ?,
+        variant_materials = ?,
+        variant_height = ?,
+        variant_width = ?,
+        variant_depth = ?,
+        variant_seating_height = ?,
+        variant_maximum_weight_load = ?,
+        product_image = ?
+      WHERE product_id = ?`,
+      [
+        name,
+        description || null,
+        category_id,
+        status || 1,
+        materials || null,
+        height || null,
+        width || null,
+        depth || null,
+        seating_height || null,
+        max_weight_load || null,
+        main_image || null,
+        productId,
+      ]
+    );
+
+    // 3. Xóa variants cũ
+    await connection.query(`DELETE FROM variant_product WHERE product_id = ?`, [
+      productId,
+    ]);
+
+    // 4. Thêm variants mới
+    for (const variant of variants) {
+      const {
+        color_id,
+        price,
+        price_sale,
+        quantity,
+        list_image,
+        variant_slug,
+      } = variant;
+
+      if (!color_id || !price || !quantity || !list_image || !variant_slug) {
+        throw new Error("Missing required variant fields");
+      }
+
+      await connection.query(
+        `INSERT INTO variant_product (
+          product_id,
+          color_id,
+          variant_product_price,
+          variant_product_price_sale,
+          variant_product_quantity,
+          variant_product_list_image,
+          variant_product_slug
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [
+          productId,
+          color_id,
+          price,
+          price_sale || null,
+          quantity,
+          list_image.join(","),
+          variant_slug,
+        ]
+      );
+    }
+
+    // 5. Cập nhật liên kết phòng
+    await connection.query(`DELETE FROM room_product WHERE product_id = ?`, [
+      productId,
+    ]);
+    if (room_ids && room_ids.length > 0) {
+      const roomValues = room_ids.map((roomId) => [productId, roomId]);
+      await connection.query(
+        `INSERT INTO room_product (product_id, room_id) VALUES ?`,
+        [roomValues]
+      );
+    }
+
+    // Commit transaction
+    await connection.commit();
+
+    // Lấy lại sản phẩm đã cập nhật kèm variants
+    const [product] = await db.query(
+      `SELECT 
+        p.*,
+        c.category_name,
+        JSON_ARRAYAGG(
+          JSON_OBJECT(
+            'variant_id', vp.variant_id,
+            'color_id', vp.color_id,
+            'color_name', col.color_name,
+            'color_hex', col.color_hex,
+            'price', vp.variant_product_price,
+            'price_sale', vp.variant_product_price_sale,
+            'quantity', vp.variant_product_quantity,
+            'list_image', vp.variant_product_list_image,
+            'slug', vp.variant_product_slug
+          )
+        ) as variants
+      FROM product p
+      LEFT JOIN category c ON p.category_id = c.category_id
+      LEFT JOIN variant_product vp ON p.product_id = vp.product_id
+      LEFT JOIN color col ON vp.color_id = col.color_id
+      WHERE p.product_id = ?
+      GROUP BY p.product_id`,
+      [productId]
+    );
+
+    res.json({
+      message: "Product updated successfully",
+      product: {
+        ...product[0],
+        variants: JSON.parse(product[0].variants),
+      },
+    });
+  } catch (error) {
+    await connection.rollback();
+    console.error("Error updating product:", error);
+    res.status(500).json({
+      error: "Failed to update product",
+      details: error.message,
+    });
+  } finally {
+    connection.release();
   }
 });
 

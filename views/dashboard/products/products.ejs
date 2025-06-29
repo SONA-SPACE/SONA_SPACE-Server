@@ -2,410 +2,481 @@
 
 <!-- Tiêu đề và Thanh công cụ -->
 <div class="dashboard-header-row">
-    <h2 class="dashboard-title">Sản phẩm</h2>
-    <div class="action-buttons">
-        <button class="add-product-btn">
-            <i class="fas fa-plus"></i> Thêm sản phẩm
-        </button>
-    </div>
+  <h2 class="dashboard-title">Sản phẩm</h2>
+  <div class="action-buttons">
+    <button class="add-product-btn" onclick="window.location.href='/dashboard/products/add'">
+      <i class="fas fa-plus"></i> Thêm sản phẩm
+    </button>
+  </div>
 </div>
 
 <!-- Bộ lọc và Tìm kiếm -->
 <div class="filter-row">
-    <div class="search-container">
-        <i class="fas fa-search search-icon"></i>
-        <input type="text" class="search-input" placeholder="Search">
-    </div>
-    <div class="date-range">
-        <i class="far fa-calendar-alt"></i>
-        <span>1/05/2025 - 31/5/2025</span>
-    </div>
-    <div class="results-info">
-        Hiển thị 1-6 trong tổng số 500
-    </div>
+  <div class="search-container">
+    <i class="fas fa-search search-icon"></i>
+    <input type="text" class="search-input" placeholder="Search" />
+  </div>
+  <div class="date-range">
+    <i class="far fa-calendar-alt"></i>
+    <span>1/05/2025 - 31/5/2025</span>
+  </div>
+  <div class="results-info">Hiển thị 1-6 trong tổng số 500</div>
 </div>
 
 <!-- Bảng và Checkbox -->
 <div class="product-controls">
-    <label class="select-all">
-        <input type="checkbox" id="selectAll">
-        <span>Sản phẩm</span>
-    </label>
+  <label class="select-all">
+    <input type="checkbox" id="selectAll" />
+    <span>Sản phẩm</span>
+  </label>
 
-    <div class="product-filters">
-        <div class="filter-dropdown">
-            <button class="filter-btn">
-                Danh mục <i class="fas fa-chevron-down"></i>
-            </button>
-        </div>
-        <div class="filter-dropdown">
-            <button class="filter-btn">
-                Giá <i class="fas fa-chevron-down"></i>
-            </button>
-        </div>
-        <div class="filter-dropdown">
-            <button class="filter-btn">
-                Số lượng <i class="fas fa-chevron-down"></i>
-            </button>
-        </div>
-        <div class="filter-dropdown">
-            <button class="filter-btn">
-                Đã bán <i class="fas fa-chevron-down"></i>
-            </button>
-        </div>
-        <div class="filter-dropdown">
-            <button class="filter-btn">
-                Đánh giá <i class="fas fa-chevron-down"></i>
-            </button>
-        </div>
-        <div class="filter-dropdown">
-            <button class="filter-btn">
-                Lượt xem <i class="fas fa-chevron-down"></i>
-            </button>
-        </div>
-        <div class="filter-dropdown">
-            <button class="filter-btn">
-                Trạng thái <i class="fas fa-chevron-down"></i>
-            </button>
-        </div>
-        <div class="filter-dropdown">
-            <button class="filter-btn">
-                Ngày tạo <i class="fas fa-chevron-down"></i>
-            </button>
-        </div>
-        <div class="filter-dropdown">
-            <button class="filter-btn">
-                Ngày cập nhật <i class="fas fa-chevron-down"></i>
-            </button>
-        </div>
+  <div class="product-filters">
+    <div class="filter-dropdown">
+      <button class="filter-btn">
+        Danh mục <i class="fas fa-chevron-down"></i>
+      </button>
     </div>
+    <div class="filter-dropdown">
+      <button class="filter-btn">
+        Giá <i class="fas fa-chevron-down"></i>
+      </button>
+    </div>
+    <div class="filter-dropdown">
+      <button class="filter-btn">
+        Số lượng <i class="fas fa-chevron-down"></i>
+      </button>
+    </div>
+    <div class="filter-dropdown">
+      <button class="filter-btn">
+        Đã bán <i class="fas fa-chevron-down"></i>
+      </button>
+    </div>
+    <div class="filter-dropdown">
+      <button class="filter-btn">
+        Đánh giá <i class="fas fa-chevron-down"></i>
+      </button>
+    </div>
+    <div class="filter-dropdown">
+      <button class="filter-btn">
+        Lượt xem <i class="fas fa-chevron-down"></i>
+      </button>
+    </div>
+    <div class="filter-dropdown">
+      <button class="filter-btn">
+        Trạng thái <i class="fas fa-chevron-down"></i>
+      </button>
+    </div>
+    <div class="filter-dropdown">
+      <button class="filter-btn">
+        Ngày tạo <i class="fas fa-chevron-down"></i>
+      </button>
+    </div>
+    <div class="filter-dropdown">
+      <button class="filter-btn">
+        Ngày cập nhật <i class="fas fa-chevron-down"></i>
+      </button>
+    </div>
+  </div>
 </div>
 
 <!-- Bảng Sản phẩm -->
 <div class="product-table-container">
-    <table class="product-table" id="productsTable">
-        <thead>
-            <tr>
-                <th class="checkbox-cell">
-                    <input type="checkbox">
-                </th>
-                <th data-sortable="true">Sản phẩm</th>
-                <th data-sortable="true">Danh mục</th>
-                <th data-sortable="true">Giá</th>
-                <th data-sortable="true">Số lượng</th>
-                <th data-sortable="true">Đã bán</th>
-                <th data-sortable="true">Đánh giá</th>
-                <th data-sortable="true">Lượt xem</th>
-                <th data-sortable="true">Trạng thái</th>
-                <th data-sortable="true">Thứ tự</th>
-                <th data-sortable="true">Ngày tạo</th>
-                <th data-sortable="true">Ngày cập nhật</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            <!-- Sản phẩm 1 -->
-            <tr>
-                <td class="checkbox-cell">
-                    <input type="checkbox">
-                </td>
-                <td>
-                    <div class="product-info">
-                        <div class="product-image">
-                            <img src="/images/products/modena-armchair.jpg" alt="Modena armchair">
-                        </div>
-                        <div class="product-name">
-                            <a href="#">Modena armchair</a>
-                        </div>
-                    </div>
-                </td>
-                <td>Sofas</td>
-                <td>
-                    <div class="product-price">
-                        <div class="original-price">15.500.000</div>
-                        <div class="sale-price">15.000.000</div>
-                    </div>
-                </td>
-                <td>20</td>
-                <td>10</td>
-                <td>3 lượt</td>
-                <td>20</td>
-                <td>
-                    <span class="status-indicator visible">
-                        <i class="fas fa-circle"></i> Hiển thị
-                    </span>
-                </td>
-                <td>20</td>
-                <td>30-10-2025</td>
-                <td>30-10-2025</td>
-                <td>
-                    <div class="action-cell">
-                        <button class="action-button edit" data-id="1" title="Chỉnh sửa">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="action-button visibility" data-id="1" data-status="visible" title="Ẩn sản phẩm">
-                            <i class="fas fa-eye-slash"></i>
-                        </button>
-                        <button class="action-button delete" data-id="1" data-name="Modena armchair"
-                            title="Xóa sản phẩm">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
+  <table class="product-table" id="productsTable">
+    <thead>
+      <tr>
+        <th class="checkbox-cell">
+          <input type="checkbox" />
+        </th>
+        <th data-sortable="true">Sản phẩm</th>
+        <th data-sortable="true">Danh mục</th>
+        <th data-sortable="true">Giá</th>
+        <th data-sortable="true">Số lượng</th>
+        <th data-sortable="true">Đã bán</th>
+        <th data-sortable="true">Đánh giá</th>
+        <th data-sortable="true">Lượt xem</th>
+        <th data-sortable="true">Trạng thái</th>
+        <th data-sortable="true">Thứ tự</th>
+        <th data-sortable="true">Ngày tạo</th>
+        <th data-sortable="true">Ngày cập nhật</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Sản phẩm 1 -->
+      <tr>
+        <td class="checkbox-cell">
+          <input type="checkbox" />
+        </td>
+        <td>
+          <div class="product-info">
+            <div class="product-image">
+              <img src="/images/products/modena-armchair.jpg" alt="Modena armchair" />
+            </div>
+            <div class="product-name">
+              <a href="#">Modena armchair</a>
+            </div>
+          </div>
+        </td>
+        <td>Sofas</td>
+        <td>
+          <div class="product-price">
+            <div class="original-price">15.500.000</div>
+            <div class="sale-price">15.000.000</div>
+          </div>
+        </td>
+        <td>20</td>
+        <td>10</td>
+        <td>3 lượt</td>
+        <td>20</td>
+        <td>
+          <span class="status-indicator visible">
+            <i class="fas fa-circle"></i> Hiển thị
+          </span>
+        </td>
+        <td>20</td>
+        <td>30-10-2025</td>
+        <td>30-10-2025</td>
+        <td>
+          <div class="action-cell">
+            <button class="action-button edit" data-id="1" title="Chỉnh sửa">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="action-button visibility" data-id="1" data-status="visible" title="Ẩn sản phẩm">
+              <i class="fas fa-eye-slash"></i>
+            </button>
+            <button class="action-button delete" data-id="1" data-name="Modena armchair" title="Xóa sản phẩm">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
 
-            <!-- Sản phẩm 2 -->
-            <tr>
-                <td class="checkbox-cell">
-                    <input type="checkbox">
-                </td>
-                <td>
-                    <div class="product-info">
-                        <div class="product-image">
-                            <img src="/images/products/modena-armchair.jpg" alt="Modena armchair">
-                        </div>
-                        <div class="product-name">
-                            <a href="#">Modena armchair</a>
-                        </div>
-                    </div>
-                </td>
-                <td>Sofas</td>
-                <td>
-                    <div class="product-price">
-                        <div class="original-price">15.500.000</div>
-                        <div class="sale-price">15.000.000</div>
-                    </div>
-                </td>
-                <td>20</td>
-                <td>10</td>
-                <td>3 lượt</td>
-                <td>20</td>
-                <td>
-                    <span class="status-indicator visible">
-                        <i class="fas fa-circle"></i> Hiển thị
-                    </span>
-                </td>
-                <td>20</td>
-                <td>30-10-2025</td>
-                <td>30-10-2025</td>
-                <td>
-                    <div class="action-cell">
-                        <button class="action-button edit" data-id="2" title="Chỉnh sửa">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="action-button visibility" data-id="2" data-status="visible" title="Ẩn sản phẩm">
-                            <i class="fas fa-eye-slash"></i>
-                        </button>
-                        <button class="action-button delete" data-id="2" data-name="Modena armchair"
-                            title="Xóa sản phẩm">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-
-            <!-- Sản phẩm 3 -->
-            <tr>
-                <td class="checkbox-cell">
-                    <input type="checkbox">
-                </td>
-                <td>
-                    <div class="product-info">
-                        <div class="product-image">
-                            <img src="/images/products/modena-armchair.jpg" alt="Modena armchair">
-                        </div>
-                        <div class="product-name">
-                            <a href="#">Modena armchair</a>
-                        </div>
-                    </div>
-                </td>
-                <td>Sofas</td>
-                <td>
-                    <div class="product-price">
-                        <div class="original-price">15.500.000</div>
-                        <div class="sale-price">15.000.000</div>
-                    </div>
-                </td>
-                <td>20</td>
-                <td>10</td>
-                <td>3 lượt</td>
-                <td>20</td>
-                <td>
-                    <span class="status-indicator visible">
-                        <i class="fas fa-circle"></i> Hiển thị
-                    </span>
-                </td>
-                <td>20</td>
-                <td>30-10-2025</td>
-                <td>30-10-2025</td>
-                <td>
-                    <div class="action-cell">
-                        <button class="action-button edit" data-id="3" title="Chỉnh sửa">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="action-button visibility" data-id="3" data-status="visible" title="Ẩn sản phẩm">
-                            <i class="fas fa-eye-slash"></i>
-                        </button>
-                        <button class="action-button delete" data-id="3" data-name="Modena armchair"
-                            title="Xóa sản phẩm">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-
-            <!-- Sản phẩm 4 -->
-            <tr>
-                <td class="checkbox-cell">
-                    <input type="checkbox">
-                </td>
-                <td>
-                    <div class="product-info">
-                        <div class="product-image">
-                            <img src="/images/products/modena-armchair.jpg" alt="Modena armchair">
-                        </div>
-                        <div class="product-name">
-                            <a href="#">Modena armchair</a>
-                        </div>
-                    </div>
-                </td>
-                <td>Sofas</td>
-                <td>
-                    <div class="product-price">
-                        <div class="original-price">15.500.000</div>
-                        <div class="sale-price">15.000.000</div>
-                    </div>
-                </td>
-                <td>20</td>
-                <td>10</td>
-                <td>3 lượt</td>
-                <td>20</td>
-                <td>
-                    <span class="status-indicator visible">
-                        <i class="fas fa-circle"></i> Hiển thị
-                    </span>
-                </td>
-                <td>20</td>
-                <td>30-10-2025</td>
-                <td>30-10-2025</td>
-                <td>
-                    <div class="action-cell">
-                        <button class="action-button edit" data-id="4" title="Chỉnh sửa">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="action-button visibility" data-id="4" data-status="visible" title="Ẩn sản phẩm">
-                            <i class="fas fa-eye-slash"></i>
-                        </button>
-                        <button class="action-button delete" data-id="4" data-name="Modena armchair"
-                            title="Xóa sản phẩm">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-
-            <!-- Sản phẩm 5 -->
-            <tr>
-                <td class="checkbox-cell">
-                    <input type="checkbox">
-                </td>
-                <td>
-                    <div class="product-info">
-                        <div class="product-image">
-                            <img src="/images/products/modena-armchair.jpg" alt="Modena armchair">
-                        </div>
-                        <div class="product-name">
-                            <a href="#">Modena armchair</a>
-                        </div>
-                    </div>
-                </td>
-                <td>Sofas</td>
-                <td>
-                    <div class="product-price">
-                        <div class="original-price">15.500.000</div>
-                        <div class="sale-price">15.000.000</div>
-                    </div>
-                </td>
-                <td>20</td>
-                <td>10</td>
-                <td>3 lượt</td>
-                <td>20</td>
-                <td>
-                    <span class="status-indicator visible">
-                        <i class="fas fa-circle"></i> Hiển thị
-                    </span>
-                </td>
-                <td>20</td>
-                <td>30-10-2025</td>
-                <td>30-10-2025</td>
-                <td>
-                    <div class="action-cell">
-                        <button class="action-button edit" data-id="5" title="Chỉnh sửa">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="action-button visibility" data-id="5" data-status="visible" title="Ẩn sản phẩm">
-                            <i class="fas fa-eye-slash"></i>
-                        </button>
-                        <button class="action-button delete" data-id="5" data-name="Modena armchair"
-                            title="Xóa sản phẩm">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-
-            <!-- Sản phẩm 6 -->
-            <tr>
-                <td class="checkbox-cell">
-                    <input type="checkbox">
-                </td>
-                <td>
-                    <div class="product-info">
-                        <div class="product-image">
-                            <img src="/images/products/modena-armchair.jpg" alt="Modena armchair">
-                        </div>
-                        <div class="product-name">
-                            <a href="#">Modena armchair</a>
-                        </div>
-                    </div>
-                </td>
-                <td>Sofas</td>
-                <td>
-                    <div class="product-price">
-                        <div class="original-price">15.500.000</div>
-                        <div class="sale-price">15.000.000</div>
-                    </div>
-                </td>
-                <td>20</td>
-                <td>10</td>
-                <td>3 lượt</td>
-                <td>20</td>
-                <td>
-                    <span class="status-indicator visible">
-                        <i class="fas fa-circle"></i> Hiển thị
-                    </span>
-                </td>
-                <td>20</td>
-                <td>30-10-2025</td>
-                <td>30-10-2025</td>
-                <td>
-                    <div class="action-cell">
-                        <button class="action-button edit" data-id="6" title="Chỉnh sửa">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="action-button visibility" data-id="6" data-status="visible" title="Ẩn sản phẩm">
-                            <i class="fas fa-eye-slash"></i>
-                        </button>
-                        <button class="action-button delete" data-id="6" data-name="Modena armchair"
-                            title="Xóa sản phẩm">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-        </tbody>
-    </table>
+      <!-- Sản phẩm 2 -->
+      <tr>
+        <td class="checkbox-cell">
+          <input type="checkbox" />
+        </td>
+        <td>
+          <div class="product-info">
+            <div class="product-image">
+              <img src="/images/products/modena-armchair.jpg" alt="Modena armchair" />
+            </div>
+            <div class="product-name">
+              <a href="#">Modena armchair</a>
+            </div>
+          </div>
+        </td>
+        <td>Sofas</td>
+        <td>
+          <div class="product-price">
+            <div class="original-price">15.500.000</div>
+            <div class="sale-price">15.000.000</div>
+          </div>
+        </td>
+        <td>20</td>
+        <td>10</td>
+        <td>3 lượt</td>
+        <td>20</td>
+        <td>
+          <span class="status-indicator visible">
+            <i class="fas fa-circle"></i> Hiển thị
+          </span>
+        </td>
+        <td>20</td>
+        <td>30-10-2025</td>
+        <td>30-10-2025</td>
+        <td>
+          <div class="action-cell">
+            <button class="action-button edit" data-id="2" title="Chỉnh sửa">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="action-button visibility" data-id="2" data-status="visible" title="Ẩn sản phẩm">
+              <i class="fas fa-eye-slash"></i>
+            </button>
+            <button class="action-button delete" data-id="2" data-name="Modena armchair" title="Xóa sản phẩm">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
 </div>
 
+<style>
+  .product-price {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .product-price .original-price {
+    text-decoration: none;
+    color: #333;
+    font-weight: 500;
+  }
+
+  .product-price.has-sale .original-price {
+    text-decoration: line-through;
+    color: #888;
+    font-weight: normal;
+  }
+
+  .product-price .sale-price {
+    color: #e53935;
+    font-weight: 600;
+  }
+</style>
+
 <!-- Load Products JS -->
-<script src="/javascripts/products.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const URL_API = "http://localhost:3501/api";
+
+    function getProducts() {
+      fetch(URL_API + "/products/admin")
+        .then((response) => response.json())
+        .then((products) => {
+          if (!Array.isArray(products)) {
+            console.error("Invalid data format received:", products);
+            document.querySelector(".results-info").textContent =
+              "Lỗi định dạng dữ liệu.";
+            return;
+          }
+          renderProducts(products);
+          console.log(products);
+        })
+
+        .catch((error) => {
+          console.error("Lỗi khi tải sản phẩm:", error);
+          document.querySelector(".results-info").textContent =
+            "Không thể tải dữ liệu.";
+        });
+    }
+
+    function formatPrice(price) {
+      return new Intl.NumberFormat("vi-VN").format(parseFloat(price));
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return "-";
+      return new Date(dateStr).toLocaleDateString("vi-VN");
+    }
+
+    function renderProducts(products) {
+      const tableBody = document.querySelector("#productsTable tbody");
+      tableBody.innerHTML = "";
+
+      products.forEach((product) => {
+        const row = document.createElement("tr");
+        // Kiểm tra giá sale
+        const price = parseFloat(product.price || 0);
+        const priceSale =
+          product.price_sale && !isNaN(product.price_sale)
+            ? parseFloat(product.price_sale)
+            : null;
+        const hasSale =
+          priceSale !== null && priceSale > 0 && priceSale < price;
+
+        row.innerHTML = `
+                    <td class="checkbox-cell">
+                        <input type="checkbox">
+                    </td>
+                    <td>
+                        <div class="product-info">
+                            <div class="product-image">
+                                <img src="${product.product_image ||
+          "/images/products/default.jpg"
+          }" alt="${product.product_name}">
+                            </div>
+                            <div class="product-name">
+                                <a href="#">${product.product_name}</a>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${product.category_name || "-"}</td>
+                  <td>
+  <div class="product-price ${hasSale ? "has-sale" : ""}">
+    <div class="original-price">${formatPrice(price)}đ</div>
+    ${hasSale ? `<div class="sale-price">${formatPrice(priceSale)}đ</div>` : ""}
+  </div>
+</td>
+                    <td>${product.total_quantity || 0}</td>
+                    <td>${product.product_sold || 0}</td>
+                    <td>${product.comment_count || 0} lượt</td>
+                    <td>${product.product_view || 0}</td>
+                    <td>
+                        <span class="status-indicator ${product.product_status ? "visible" : "hidden"
+          }">
+                            <i class="fas fa-circle"></i> ${product.product_status ? "Hiển thị" : "Ẩn"
+          }
+                        </span>
+                    </td>
+                    <td>${product.product_priority || 0}</td>
+                    <td>${formatDate(product.created_at)}</td>
+                    <td>${formatDate(product.updated_at)}</td>
+                    <td>
+                        <div class="action-cell">
+                            <button class="action-button edit" data-id="${product.product_slug
+          }" title="Chỉnh sửa">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="action-button visibility" 
+                                data-id="${product.product_id}" 
+                                data-status="${product.product_status ? "visible" : "hidden"
+          }" 
+                                title="${product.product_status
+            ? "Ẩn sản phẩm"
+            : "Hiển thị sản phẩm"
+          }">
+                                <i class="fas fa-eye${product.product_status ? "-slash" : ""
+          }"></i>
+                            </button>
+                            <button class="action-button delete" 
+                                data-id="${product.product_slug}" 
+                                data-name="${product.product_name}"
+                                title="Xóa sản phẩm">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+        tableBody.appendChild(row);
+      });
+
+      // Update results info
+      document.querySelector(
+        ".results-info"
+      ).textContent = `Hiển thị ${products.length} sản phẩm`;
+
+      // Add event listeners for action buttons
+      setupActionButtons();
+    }
+
+    function setupActionButtons() {
+      // Delete button handler
+      document.querySelectorAll(".action-button.delete").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const productSlug = btn
+            .closest("tr")
+            .querySelector(".action-button.edit")
+            .getAttribute("data-id");
+          const productName = btn.getAttribute("data-name");
+          if (confirm(`Bạn có chắc chắn muốn xóa sản phẩm "${productName}"?`)) {
+            deleteProduct(productSlug);
+          }
+        });
+      });
+
+      // Visibility toggle handler
+      document.querySelectorAll(".action-button.visibility").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const productId = btn.getAttribute("data-id");
+          const currentStatus = btn.getAttribute("data-status");
+          toggleProductVisibility(productId, currentStatus === "visible");
+        });
+      });
+
+      // Edit button handler
+      document.querySelectorAll(".action-button.edit").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const productId = btn.getAttribute("data-id");
+          window.location.href = `/dashboard/products/edit/${productId}`;
+        });
+      });
+    }
+
+    function deleteProduct(productSlug) {
+      fetch(`${URL_API}/products/${productSlug}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`, // Assuming token is stored in localStorage
+        },
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.error) {
+            alert(data.error);
+          } else {
+            alert("Xóa sản phẩm thành công");
+            getProducts(); // Refresh the list
+          }
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+          alert("Có lỗi xảy ra khi xóa sản phẩm");
+        });
+    }
+
+    function toggleProductVisibility(productId, currentlyVisible) {
+      fetch(`${URL_API}/products/${productId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          product_status: currentlyVisible ? 0 : 1,
+        }),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.error) {
+            alert(data.error);
+          } else {
+            getProducts(); // Refresh the list
+          }
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+          alert("Có lỗi xảy ra khi cập nhật trạng thái sản phẩm");
+        });
+    }
+
+    // Initialize by loading products
+    getProducts();
+
+    // Setup search functionality
+    const searchInput = document.querySelector(".search-input");
+    if (searchInput) {
+      searchInput.addEventListener(
+        "input",
+        debounce(function (e) {
+          const searchTerm = e.target.value.toLowerCase();
+          const rows = document.querySelectorAll("#productsTable tbody tr");
+
+          rows.forEach((row) => {
+            const productName = row
+              .querySelector(".product-name a")
+              .textContent.toLowerCase();
+            const categoryName = row
+              .querySelector("td:nth-child(3)")
+              .textContent.toLowerCase();
+
+            if (
+              productName.includes(searchTerm) ||
+              categoryName.includes(searchTerm)
+            ) {
+              row.style.display = "";
+            } else {
+              row.style.display = "none";
+            }
+          });
+        }, 300)
+      );
+    }
+
+    // Debounce helper function
+    function debounce(func, wait) {
+      let timeout;
+      return function executedFunction(...args) {
+        const later = () => {
+          clearTimeout(timeout);
+          func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+      };
+    }
+  });
+</script>

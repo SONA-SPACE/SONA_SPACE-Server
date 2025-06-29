@@ -96,7 +96,7 @@ router.get("/:slug", async (req, res) => {
  * @access  Private (Admin only)
  */
 // verifyToken, isAdmin;
-router.post("/", async (req, res) => {
+router.post("/", verifyToken, isAdmin, async (req, res) => {
   try {
     const { name, image, banner, slug, status, priority } = req.body;
 
@@ -144,7 +144,7 @@ router.post("/", async (req, res) => {
  * @access  Private (Admin only)
  */
 // verifyToken, isAdmin,
-router.put("/:slug", async (req, res) => {
+router.put("/:slug", verifyToken, isAdmin, async (req, res) => {
   const slug = req.params.slug;
   if (!slug) return res.status(400).json({ message: "Slug is required" });
 
@@ -228,7 +228,7 @@ router.put("/:slug", async (req, res) => {
  * @access  Private (Admin only)
  */
 // verifyToken, isAdmin,
-router.delete("/:slug", async (req, res) => {
+router.delete("/:slug", verifyToken, isAdmin, async (req, res) => {
   const slug = req.params.slug;
   if (!slug) return res.status(400).json({ message: "Slug is required" });
 

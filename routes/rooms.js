@@ -89,7 +89,9 @@ router.post("/", async (req, res) => {
     }
 
     if (!banner && !image) {
-      return res.status(400).json({ error: "Không thể upload phòng không có hình ảnh" });
+      return res
+        .status(400)
+        .json({ error: "Không thể upload phòng không có hình ảnh" });
     }
 
     // Kiểm tra tên phòng đã tồn tại chưa
@@ -104,7 +106,14 @@ router.post("/", async (req, res) => {
 
     const [result] = await db.query(
       "INSERT INTO room (room_name, room_description, room_image, room_banner, status, slug, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())",
-      [name, description || null, image || null, banner || null, status ?? 0, slug]
+      [
+        name,
+        description || null,
+        image || null,
+        banner || null,
+        status ?? 0,
+        slug,
+      ]
     );
 
     const [newRoom] = await db.query("SELECT * FROM room WHERE room_id = ?", [
@@ -127,7 +136,7 @@ router.post("/", async (req, res) => {
  * @access  Private (Admin only)
  */
 // verifyToken, isAdmin,
-router.put("/:slug", async (req, res) => {
+router.put("/:slug", verifyToken, isAdmin, async (req, res) => {
   const slug = req.params.slug;
   if (!slug) return res.status(400).json({ message: "Slug is required" });
 
@@ -190,10 +199,19 @@ router.put("/:slug", async (req, res) => {
         updated_at = NOW()
       WHERE slug = ?
       `,
-      [name || null, image || null, banner || null, priority || 0, status ?? 1, slug]
+      [
+        name || null,
+        image || null,
+        banner || null,
+        priority || 0,
+        status ?? 1,
+        slug,
+      ]
     );
 
-    const [updatedRoom] = await db.query("SELECT * FROM room WHERE slug = ?", [slug]);
+    const [updatedRoom] = await db.query("SELECT * FROM room WHERE slug = ?", [
+      slug,
+    ]);
 
     res.json({
       message: "Room updated successfully",
@@ -205,14 +223,13 @@ router.put("/:slug", async (req, res) => {
   }
 });
 
-
 /**
  * @route   DELETE /api/rooms/:slug
  * @desc    Xóa phòng
  * @access  Private (Admin only)
  */
 // verifyToken, isAdmin,
-router.delete("/:slug", async (req, res) => {
+router.delete("/:slug", verifyToken, isAdmin, async (req, res) => {
   const slug = req.params.slug;
   // Kiểm tra phòng tồn tại
   if (!slug) {
@@ -249,7 +266,6 @@ router.delete("/:slug", async (req, res) => {
 
     // Xóa phòng
     await db.query("DELETE FROM room WHERE room_id = ?", [room_id]);
-
 
     res.json({ message: "Room deleted successfully" });
   } catch (error) {
@@ -474,11 +490,7 @@ router.post("/:slug/products", verifyToken, isAdmin, async (req, res) => {
  * @desc    Xóa sản phẩm khỏi phòng
  * @access  Private (Admin only)
  */
-router.delete(
-  "/:slug/products/:productId",
-  verifyToken,
-  isAdmin,
-  async (req, res) => {
+router.delete( "/:slug/products/:productId", verifyToken, isAdmin, async (req, res) => {
     try {
       const slug = req.params.slug;
       const productId = Number(req.params.productId);
@@ -524,9 +536,5 @@ router.delete(
     }
   }
 );
-
-
-
-
 
 module.exports = router;

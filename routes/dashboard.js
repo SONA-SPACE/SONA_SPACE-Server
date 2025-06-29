@@ -168,6 +168,13 @@ router.get("/addnews", (req, res) => {
   });
 });
 
+router.get("/editnews/:slug", (req, res) => {
+  res.render("dashboard/news/editnews", {
+    title: "Sona Space - Chỉnh sửa tin tức",
+    layout: "layouts/dashboard",
+    productId: req.params.slug,
+  });
+});
 // News Categories management
 router.get("/news-categories", (req, res) => {
   res.render("dashboard/news-categories", {

@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const db = require("../config/database");
 const { verifyToken, isAdmin } = require("../middleware/auth");
-const { sendEmail } = require("../utils/sendEmail");
+const { sendEmail } = require("../services/mailService");
 
 /**
  * @route   POST /api/contact-forms
@@ -16,6 +16,7 @@ router.post("/", async (req, res) => {
       name,
       email,
       phone,
+      room_name,
       design_description,
       require_design,
       style_design,
@@ -60,6 +61,7 @@ router.post("/", async (req, res) => {
         name,
         email,
         phone,
+        room_name,
         design_description,
         require_design,
         style_design,
@@ -68,13 +70,14 @@ router.post("/", async (req, res) => {
         design_fee,
         created_at,
         updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
     `,
       [
         contact_form_design_id || null,
         name,
         email,
         phone || null,
+        room_name || null,
         design_description,
         require_design || null,
         style_design || null,
@@ -84,7 +87,27 @@ router.post("/", async (req, res) => {
       ]
     );
 
+    const data = {
+      name,
+      email,
+      phone,
+      room_name,
+      design_description,
+      require_design,
+      style_design,
+      budget,
+      different_information,
+    };
+
+    await sendEmail(
+      data.email,
+      "Xác nhận Yêu cầu Tư vấn Thiết kế",
+      data
+    );
+    console.log(data);
+
     res.status(200).json({
+      data,
       success: true,
       message: "Gửi yêu cầu thành công",
       contactId: result.insertId,

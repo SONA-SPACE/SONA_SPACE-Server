@@ -3903,6 +3903,76 @@ textarea.form-control {
   font-size: 24px;
   margin-bottom: 0;
 }
+.add-category-container .category-form-column .form-section .variant-image-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+.add-category-container .category-form-column .form-section .variant-image-item {
+  width: 100px;
+  height: 100px;
+  border: 2px dashed var(--border-color);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.add-category-container .category-form-column .form-section .variant-image-item.active:hover,
+.add-category-container .category-form-column .form-section .variant-image-item.active:focus {
+  border-color: var(--primary-color);
+  background-color: var(--primary-light);
+}
+.add-category-container .category-form-column .form-section .variant-image-item img {
+  max-width: 90px;
+  max-height: 90px;
+  border-radius: 6px;
+  -o-object-fit: cover;
+     object-fit: cover;
+}
+.add-category-container .category-form-column .form-section .variant-image-item .remove-image {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2;
+}
+.add-category-container .category-form-column .form-section .variant-image-item .remove-image i {
+  font-size: 14px;
+}
+.add-category-container .category-form-column .form-section .variant-image-item .upload-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+}
+.add-category-container .category-form-column .form-section .variant-image-item .upload-placeholder i {
+  font-size: 28px;
+  margin-bottom: 8px;
+  color: var(--text-muted);
+}
+.add-category-container .category-form-column .form-section .variant-image-item .upload-placeholder .upload-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 5px;
+}
+.add-category-container .category-form-column .form-section .variant-image-item .upload-placeholder p {
+  margin: 0;
+  font-size: 13px;
+}
 @media (max-width: 992px) {
   .add-category-container .category-form-column .form-section .add-product-container {
     flex-direction: column;

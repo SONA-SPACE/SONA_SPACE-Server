@@ -124,74 +124,74 @@ router.get('/views', async (req, res) => {
  * @desc    Lấy chi tiết bài viết
  * @access  Public
  */
-router.get('/:id', async (req, res) => {
-  try {
-    const id = req.params.id;
+// router.get('/:id', async (req, res) => {
+//   try {
+//     const id = req.params.id;
 
-    // Hỗ trợ tìm theo ID hoặc slug
-    const isNumeric = /^\d+$/.test(id);
+//     // Hỗ trợ tìm theo ID hoặc slug
+//     const isNumeric = /^\d+$/.test(id);
 
-    let query;
-    let params;
+//     let query;
+//     let params;
 
-    if (isNumeric) {
-      query = 'n.news_id = ?';
-      params = [Number(id)];
-    } else {
-      query = 'n.news_slug = ?';
-      params = [id];
-    }
+//     if (isNumeric) {
+//       query = 'n.news_id = ?';
+//       params = [Number(id)];
+//     } else {
+//       query = 'n.news_slug = ?';
+//       params = [id];
+//     }
 
-    // Lấy thông tin bài viết
-    const [news] = await db.query(`
-      SELECT 
-        n.*,
-        u.user_name as author_name,
-        u.user_gmail as author_email,
-        COUNT(DISTINCT c.comment_id) as comment_count
-      FROM news n
-      LEFT JOIN user u ON n.author_id = u.user_id
-      LEFT JOIN comment c ON c.news_id = n.news_id
-      WHERE n.news_id = ?
-      GROUP BY n.news_id
-    `, [id]);
+//     // Lấy thông tin bài viết
+//     const [news] = await db.query(`
+//       SELECT 
+//         n.*,
+//         u.user_name as author_name,
+//         u.user_gmail as author_email,
+//         COUNT(DISTINCT c.comment_id) as comment_count
+//       FROM news n
+//       LEFT JOIN user u ON n.author_id = u.user_id
+//       LEFT JOIN comment c ON c.news_id = n.news_id
+//       WHERE n.news_id = ?
+//       GROUP BY n.news_id
+//     `, [id]);
 
-    if (news.length === 0) {
-      return res.status(404).json({ error: 'News article not found' });
-    }
+//     if (news.length === 0) {
+//       return res.status(404).json({ error: 'News article not found' });
+//     }
 
-    const newsItem = news[0];
+//     const newsItem = news[0];
 
-    // Kiểm tra quyền truy cập với bài viết chưa công khai
-    if (newsItem.news_status !== 1 && (!req.user || !req.user.isAdmin)) {
-      return res.status(403).json({ error: 'You do not have permission to access this article' });
-    }
+//     // Kiểm tra quyền truy cập với bài viết chưa công khai
+//     if (newsItem.news_status !== 1 && (!req.user || !req.user.isAdmin)) {
+//       return res.status(403).json({ error: 'You do not have permission to access this article' });
+//     }
 
-    // Tăng lượt xem
-    await db.query('UPDATE news SET news_view = news_view + 1 WHERE news_id = ?', [newsItem.news_id]);
+//     // Tăng lượt xem
+//     await db.query('UPDATE news SET news_view = news_view + 1 WHERE news_id = ?', [newsItem.news_id]);
 
-    // Lấy bài viết liên quan
-    const [relatedNews] = await db.query(`
-      SELECT 
-        n.*,
-        u.user_name as author_name,
-        u.user_gmail as author_email
-      FROM news n
-      LEFT JOIN user u ON n.author_id = u.user_id
-      WHERE n.news_category_id = ? AND n.news_id != ?
-      ORDER BY n.created_at DESC
-      LIMIT 5
-    `, [newsItem.news_category_id, newsItem.news_id]);
+//     // Lấy bài viết liên quan
+//     const [relatedNews] = await db.query(`
+//       SELECT 
+//         n.*,
+//         u.user_name as author_name,
+//         u.user_gmail as author_email
+//       FROM news n
+//       LEFT JOIN user u ON n.author_id = u.user_id
+//       WHERE n.news_category_id = ? AND n.news_id != ?
+//       ORDER BY n.created_at DESC
+//       LIMIT 5
+//     `, [newsItem.news_category_id, newsItem.news_id]);
 
-    res.json({
-      ...newsItem,
-      related_news: relatedNews
-    });
-  } catch (error) {
-    console.error('Error fetching news article:', error);
-    res.status(500).json({ error: 'Failed to fetch news article' });
-  }
-});
+//     res.json({
+//       ...newsItem,
+//       related_news: relatedNews
+//     });
+//   } catch (error) {
+//     console.error('Error fetching news article:', error);
+//     res.status(500).json({ error: 'Failed to fetch news article' });
+//   }
+// });
 
 /**
  * @route   GET /api/news/category/:categoryId
@@ -252,7 +252,16 @@ router.get('/category/:categoryId', async (req, res) => {
  * @desc    Tạo bài viết mới
  * @access  Private (Admin only)
  */
-router.post('/', verifyToken, isAdmin, async (req, res) => {
+
+function generateSlug(text) {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '') // loại bỏ ký tự đặc biệt
+    .replace(/[\s_-]+/g, '-') // thay thế khoảng trắng/gạch dưới bằng dấu -
+    .replace(/^-+|-+$/g, ''); // bỏ - ở đầu/cuối
+}
+router.post('/', verifyToken, async (req, res) => {
   try {
     const {
       title,
@@ -260,130 +269,143 @@ router.post('/', verifyToken, isAdmin, async (req, res) => {
       content,
       excerpt,
       thumbnail,
+      images,
       category_id,
-      tags,
-      status,
-      meta_title,
-      meta_description
+      status
     } = req.body;
 
-    // Kiểm tra các trường bắt buộc
     if (!title || !content) {
-      return res.status(400).json({ error: 'Title and content are required' });
+      return res.status(400).json({ error: 'Tiêu đề và nội dung là bắt buộc.' });
     }
 
-    // Tạo slug từ tiêu đề nếu không được cung cấp
-    let newsSlug = slug;
-    if (!newsSlug) {
-      newsSlug = title
-        .toLowerCase()
-        .replace(/[^\w\s-]/g, '')
-        .replace(/[\s_-]+/g, '-')
-        .replace(/^-+|-+$/g, '');
-    }
+    // Tạo slug từ title nếu không có, hoặc chuẩn hóa slug người nhập
+    let newsSlug = generateSlug(slug || title);
 
-    // Kiểm tra slug đã tồn tại chưa
-    const [existingSlugs] = await db.query('SELECT id FROM news WHERE slug = ?', [newsSlug]);
-
-    if (existingSlugs.length > 0) {
-      // Thêm timestamp vào slug để đảm bảo tính duy nhất
+    // Kiểm tra trùng slug trong DB
+    const [slugExists] = await db.query('SELECT news_id FROM news WHERE news_slug = ?', [newsSlug]);
+    if (slugExists.length > 0) {
       newsSlug = `${newsSlug}-${Date.now().toString().slice(-6)}`;
     }
 
-    // Xử lý tags
-    let tagString = null;
-    if (tags) {
-      if (Array.isArray(tags)) {
-        tagString = JSON.stringify(tags);
-      } else if (typeof tags === 'string') {
-        try {
-          // Nếu đã là chuỗi JSON
-          JSON.parse(tags);
-          tagString = tags;
-        } catch (e) {
-          // Nếu là chuỗi thường, chuyển thành mảng rồi chuyển thành JSON
-          tagString = JSON.stringify(tags.split(',').map(tag => tag.trim()));
-        }
-      }
-    }
-
-    // Tạo bài viết mới
     const [result] = await db.query(`
-INSERT INTO news (
-  news_title,
-  news_slug,
-  news_content,
-  news_description,
-  news_image,
-  news_category_id,
-  news_author,
-  news_comment,
-  news_status,
-  updated_at,
-  created_at
-) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP())
+      INSERT INTO news (
+        news_title,
+        news_slug,
+        news_content,
+        news_description,
+        news_image,
+        news_category_id,
+        news_author,
+        news_comment,
+        news_status,
+        created_at,
+        updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, NOW(), NOW())
     `, [
       title,
       newsSlug,
       content,
       excerpt || null,
-      thumbnail || null,
+      images ? JSON.stringify(images) : null,
       category_id || null,
       req.user.id,
       status || 1
     ]);
 
-    // Lấy thông tin bài viết vừa tạo
     const [newNews] = await db.query(`
-SELECT 
-  n.*, 
-  u.name AS author_name, 
-  c.name AS category_name
-FROM news n
-LEFT JOIN user u ON n.news_author = u.user_id
-LEFT JOIN news_category c ON n.news_category_id = c.id
-WHERE n.news_id = ?
+      SELECT 
+        n.*, 
+        u.user_name AS author_name,
+        c.news_category_name AS category_name
+      FROM news n
+      LEFT JOIN user u ON n.news_author = u.user_id
+      LEFT JOIN news_category c ON n.news_category_id = c.news_category_id
+      WHERE n.news_id = ?
     `, [result.insertId]);
 
-    const newsItem = newNews[0];
-
-    // Chuyển đổi tags từ chuỗi JSON thành mảng
-    if (newsItem.tags && typeof newsItem.tags === 'string') {
-      try {
-        newsItem.tags = JSON.parse(newsItem.tags);
-      } catch (e) {
-        newsItem.tags = [];
-      }
-    }
-
     res.status(201).json({
-      message: 'News article created successfully',
-      news: newsItem
+      message: 'Tạo tin tức thành công.',
+      news: newNews[0]
     });
+
   } catch (error) {
-    console.error('Error creating news article:', error);
-    res.status(500).json({ error: 'Failed to create news article' });
+    console.error('Lỗi tạo tin tức:', error);
+    res.status(500).json({ error: 'Không thể tạo tin tức.' });
   }
 });
+
 
 /**
  * @route   PUT /api/news/:id
  * @desc    Cập nhật bài viết
  * @access  Private (Admin only)
  */
-router.put('/:id', verifyToken, isAdmin, async (req, res) => {
+// GET /api/news/:slug
+router.get('/:slug', async (req, res) => {
   try {
-    const id = Number(req.params.id);
-    if (isNaN(id)) {
-      return res.status(400).json({ error: 'Invalid news ID' });
+    const slug = req.params.slug;
+
+    const [result] = await db.query(
+      `SELECT 
+        news_id, news_title AS title, news_slug AS slug, news_content AS content, 
+        news_description AS excerpt, news_image AS thumbnail,
+        news_category_id AS category_id, news_status AS status
+      FROM news WHERE news_slug = ?`,
+      [slug]
+    );
+
+    if (result.length === 0) {
+      return res.status(404).json({ error: 'News not found' });
     }
+
+    const newsItem = result[0];
+
+    // Parse ảnh phụ nếu dùng nhiều ảnh
+    if (newsItem.thumbnail) {
+      try {
+        const parsed = JSON.parse(newsItem.thumbnail);
+        if (Array.isArray(parsed)) {
+          newsItem.thumbnail = parsed[0] || null;
+          newsItem.images = parsed;
+        } else {
+          newsItem.images = [newsItem.thumbnail];
+        }
+      } catch (e) {
+        newsItem.images = [newsItem.thumbnail];
+      }
+    } else {
+      newsItem.images = [];
+    }
+
+    res.json(newsItem);
+  } catch (err) {
+    console.error('Error fetching news by slug:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// PUT /api/news/:slug
+router.put('/:slug', verifyToken, async (req, res) => {
+  try {
+    const slugParam = req.params.slug;
+    const [existingNews] = await db.query(
+      'SELECT * FROM news WHERE news_slug = ?',
+      [slugParam]
+    );
+
+    if (existingNews.length === 0) {
+      return res.status(404).json({ error: 'News article not found' });
+    }
+
+    const newsItem = existingNews[0];
+    const id = newsItem.news_id;
 
     const {
       title,
       slug,
       content,
       excerpt,
-      thumbnail,
+      images,
       category_id,
       tags,
       status,
@@ -391,132 +413,99 @@ router.put('/:id', verifyToken, isAdmin, async (req, res) => {
       meta_description
     } = req.body;
 
-    // Kiểm tra bài viết tồn tại
-    const [existingNews] = await db.query('SELECT * FROM news WHERE id = ?', [id]);
-
-    if (existingNews.length === 0) {
-      return res.status(404).json({ error: 'News article not found' });
+    // Slug logic
+    let newsSlug = slug;
+    if (!slug && title) {
+      newsSlug = title.toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/[đĐ]/g, "d").replace(/[^a-z0-9]/g, "-")
+        .replace(/-+/g, "-").replace(/^-+|-+$/g, "");
     }
 
-    const newsItem = existingNews[0];
-
-    // Kiểm tra slug
-    let newsSlug = slug;
-    if (newsSlug && newsSlug !== newsItem.slug) {
-      // Kiểm tra slug mới có trùng không
-      const [existingSlugs] = await db.query('SELECT id FROM news WHERE slug = ? AND id != ?', [newsSlug, id]);
-
-      if (existingSlugs.length > 0) {
-        // Thêm timestamp vào slug để đảm bảo tính duy nhất
+    if (newsSlug && newsSlug !== newsItem.news_slug) {
+      const [slugExists] = await db.query(
+        'SELECT news_id FROM news WHERE news_slug = ? AND news_id != ?',
+        [newsSlug, id]
+      );
+      if (slugExists.length > 0) {
         newsSlug = `${newsSlug}-${Date.now().toString().slice(-6)}`;
       }
     }
 
-    // Xử lý tags
+    // Tags xử lý
     let tagString = newsItem.tags;
     if (tags !== undefined) {
-      if (tags === null) {
-        tagString = null;
-      } else if (Array.isArray(tags)) {
-        tagString = JSON.stringify(tags);
-      } else if (typeof tags === 'string') {
+      if (tags === null) tagString = null;
+      else if (Array.isArray(tags)) tagString = JSON.stringify(tags);
+      else if (typeof tags === 'string') {
         try {
-          // Nếu đã là chuỗi JSON
           JSON.parse(tags);
           tagString = tags;
-        } catch (e) {
-          // Nếu là chuỗi thường, chuyển thành mảng rồi chuyển thành JSON
+        } catch {
           tagString = JSON.stringify(tags.split(',').map(tag => tag.trim()));
         }
       }
     }
 
-    // Cập nhật bài viết
     const updates = [];
     const values = [];
 
-    if (title !== undefined) {
-      updates.push('title = ?');
-      values.push(title);
-    }
+    if (title !== undefined) { updates.push('news_title = ?'); values.push(title); }
+    if (newsSlug !== undefined) { updates.push('news_slug = ?'); values.push(newsSlug); }
+    if (content !== undefined) { updates.push('news_content = ?'); values.push(content); }
+    if (excerpt !== undefined) { updates.push('news_description = ?'); values.push(excerpt || null); }
+    if (category_id !== undefined) { updates.push('news_category_id = ?'); values.push(category_id || null); }
+    if (tags !== undefined) { updates.push('tags = ?'); values.push(tagString); }
+    if (status !== undefined) { updates.push('news_status = ?'); values.push(status); }
+    if (meta_title !== undefined) { updates.push('meta_title = ?'); values.push(meta_title || null); }
+    if (meta_description !== undefined) { updates.push('meta_description = ?'); values.push(meta_description || null); }
 
-    if (newsSlug !== undefined) {
-      updates.push('slug = ?');
-      values.push(newsSlug);
-    }
+    // Xử lý ảnh
+    const newImages = Array.isArray(images) ? images.filter(Boolean).slice(0, 5) : [];
 
-    if (content !== undefined) {
-      updates.push('content = ?');
-      values.push(content);
-    }
-
-    if (excerpt !== undefined) {
-      updates.push('excerpt = ?');
-      values.push(excerpt || null);
-    }
-
-    if (thumbnail !== undefined) {
-      updates.push('thumbnail = ?');
-      values.push(thumbnail || null);
-    }
-
-    if (category_id !== undefined) {
-      updates.push('news_category_id = ?');
-      values.push(category_id || null);
-    }
-
-    if (tags !== undefined) {
-      updates.push('tags = ?');
-      values.push(tagString);
-    }
-
-    if (status !== undefined) {
-      updates.push('news_status = ?');
-      values.push(status);
-    }
-
-    if (meta_title !== undefined) {
-      updates.push('meta_title = ?');
-      values.push(meta_title || null);
-    }
-
-    if (meta_description !== undefined) {
-      updates.push('meta_description = ?');
-      values.push(meta_description || null);
-    }
-
-    updates.push('updated_at = NOW()');
-
-    if (updates.length === 1 && updates[0] === 'updated_at = NOW()') {
-      return res.status(400).json({ error: 'No update data provided' });
+    if (newImages.length > 0) {
+      updates.push('news_image = ?');
+      values.push(JSON.stringify(newImages));
     }
 
     values.push(id);
 
+    if (updates.length === 0) {
+      return res.status(400).json({ error: 'No update data provided' });
+    }
+
     await db.query(
-      `UPDATE news SET ${updates.join(', ')} WHERE id = ?`,
+      `UPDATE news SET ${updates.join(', ')} WHERE news_id = ?`,
       values
     );
 
-    // Lấy thông tin bài viết đã cập nhật
+    // Lấy lại bản ghi đã cập nhật
     const [updatedNews] = await db.query(`
       SELECT 
-        n.*,
-        u.name as author_name,
-        c.name as category_name
+        n.*, 
+        u.user_name AS author_name,
+        c.news_category_name AS category_name
       FROM news n
-      LEFT JOIN user u ON n.author_id = u.user_id
-      LEFT JOIN news_categories c ON n.news_category_id = c.id
-      WHERE n.id = ?
+      LEFT JOIN user u ON n.news_author = u.user_id
+      LEFT JOIN news_category c ON n.news_category_id = c.news_category_id
+      WHERE n.news_id = ?
     `, [id]);
 
     const updatedNewsItem = updatedNews[0];
 
-    // Chuyển đổi tags từ chuỗi JSON thành mảng
+    // Parse ảnh (news_image) và tags
+    if (updatedNewsItem.news_image && typeof updatedNewsItem.news_image === 'string') {
+      try {
+        updatedNewsItem.images = JSON.parse(updatedNewsItem.news_image);
+      } catch {
+        updatedNewsItem.images = [];
+      }
+    }
+
     if (updatedNewsItem.tags && typeof updatedNewsItem.tags === 'string') {
       try {
         updatedNewsItem.tags = JSON.parse(updatedNewsItem.tags);
-      } catch (e) {
+      } catch {
         updatedNewsItem.tags = [];
       }
     }
@@ -531,6 +520,12 @@ router.put('/:id', verifyToken, isAdmin, async (req, res) => {
   }
 });
 
+
+
+
+
+
+
 /**
  * @route   DELETE /api/news/:id
  * @desc    Xóa bài viết
@@ -543,15 +538,12 @@ router.delete('/:id', verifyToken, isAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Invalid news ID' });
     }
 
-    // Kiểm tra bài viết tồn tại
-    const [existingNews] = await db.query('SELECT * FROM news WHERE id = ?', [id]);
-
+    const [existingNews] = await db.query('SELECT * FROM news WHERE news_id = ?', [id]);
     if (existingNews.length === 0) {
       return res.status(404).json({ error: 'News article not found' });
     }
 
-    // Xóa bài viết
-    await db.query('DELETE FROM news WHERE id = ?', [id]);
+    await db.query('DELETE FROM news WHERE news_id = ?', [id]);
 
     res.json({ message: 'News article deleted successfully' });
   } catch (error) {
@@ -559,5 +551,6 @@ router.delete('/:id', verifyToken, isAdmin, async (req, res) => {
     res.status(500).json({ error: 'Failed to delete news article' });
   }
 });
+
 
 module.exports = router; 

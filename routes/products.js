@@ -1,8 +1,14 @@
+function extractPublicIdFromUrl(url) {
+  const matches = url.match(
+    /\/upload\/(?:v\d+\/)?([^\.]+)\.(jpg|jpeg|png|webp|gif)/
+  );
+  return matches ? matches[1] : null;
+}
 const express = require("express");
 const router = express.Router();
 const db = require("../config/database");
 
-const { verifyToken, isAdmin } = require("../middleware/auth");
+const { verifyToken, isAdmin, optionalAuth } = require("../middleware/auth");
 
 const LIMIT_PER_PAGE = 8;
 
@@ -11,7 +17,8 @@ const LIMIT_PER_PAGE = 8;
  * @desc    Lấy danh sách sản phẩm với phân trang, lọc và sắp xếp
  * @access  Public
  */
-router.get("/", verifyToken, async (req, res) => {
+router.get("/", optionalAuth, async (req, res) => {
+  const userId = req.user?.id || 0;
   try {
     // 1. Lấy tham số page và limit từ query, mặc định là 1 và 8
     const page = parseInt(req.query.page) || 1;
@@ -212,7 +219,6 @@ router.get("/", verifyToken, async (req, res) => {
   LIMIT ? OFFSET ?
 `;
 
-    const userId = req.user?.id || 0;
     const [products] = await db.query(query, [
       ...params,
       userId,
@@ -252,6 +258,7 @@ router.get("/", verifyToken, async (req, res) => {
     res.status(500).json({ error: "Failed to fetch products" });
   }
 });
+
 router.get("/admin", async (req, res) => {
   try {
     const [products] = await db.query(`
@@ -1154,8 +1161,24 @@ router.put("/admin/:slug", async (req, res) => {
     main_image,
     room_ids,
     variants,
+    removedImages = [],
   } = req.body;
-
+  if (removedImages.length) {
+    for (const imageUrl of removedImages) {
+      const publicId = extractPublicIdFromUrl(imageUrl);
+      if (publicId) {
+        try {
+          await cloudinary.uploader.destroy(publicId);
+        } catch (destroyErr) {
+          console.warn(
+            "Không thể xoá ảnh Cloudinary:",
+            publicId,
+            destroyErr.message
+          );
+        }
+      }
+    }
+  }
   // Validate
   if (!name || !slug || !category_id || !variants || !variants.length) {
     return res.status(400).json({
@@ -1227,9 +1250,7 @@ router.put("/admin/:slug", async (req, res) => {
         variant_slug,
       } = variant;
 
-      if (!color_id || !price || !quantity || !list_image || !variant_slug) {
-        throw new Error("Missing required variant fields");
-      }
+      const finalSlug = variant_slug || `${slug}-${color_id}`;
 
       await connection.query(
         `INSERT INTO variant_product (
@@ -1271,27 +1292,30 @@ router.put("/admin/:slug", async (req, res) => {
     // Lấy lại sản phẩm đã cập nhật kèm variants
     const [product] = await db.query(
       `SELECT 
-        p.*,
-        c.category_name,
-        JSON_ARRAYAGG(
-          JSON_OBJECT(
-            'variant_id', vp.variant_id,
-            'color_id', vp.color_id,
-            'color_name', col.color_name,
-            'color_hex', col.color_hex,
-            'price', vp.variant_product_price,
-            'price_sale', vp.variant_product_price_sale,
-            'quantity', vp.variant_product_quantity,
-            'list_image', vp.variant_product_list_image,
-            'slug', vp.variant_product_slug
-          )
-        ) as variants
-      FROM product p
-      LEFT JOIN category c ON p.category_id = c.category_id
-      LEFT JOIN variant_product vp ON p.product_id = vp.product_id
-      LEFT JOIN color col ON vp.color_id = col.color_id
-      WHERE p.product_id = ?
-      GROUP BY p.product_id`,
+  p.*,
+  c.category_name,
+  CONCAT('[', GROUP_CONCAT(
+    CONCAT(
+      '{',
+      '"variant_id":', vp.variant_id, ',',
+      '"color_id":', vp.color_id, ',',
+      '"color_name":"', col.color_name, '",',
+      '"color_hex":"', col.color_hex, '",',
+      '"price":', vp.variant_product_price, ',',
+      '"price_sale":', IFNULL(vp.variant_product_price_sale, 'null'), ',',
+      '"quantity":', vp.variant_product_quantity, ',',
+      '"list_image":"', vp.variant_product_list_image, '",',
+      '"slug":"', vp.variant_product_slug, '"',
+      '}'
+    )
+  ), ']') AS variants
+FROM product p
+LEFT JOIN category c ON p.category_id = c.category_id
+LEFT JOIN variant_product vp ON p.product_id = vp.product_id
+LEFT JOIN color col ON vp.color_id = col.color_id
+WHERE p.product_id = ?
+GROUP BY p.product_id;
+`,
       [productId]
     );
 
@@ -1311,6 +1335,113 @@ router.put("/admin/:slug", async (req, res) => {
     });
   } finally {
     connection.release();
+  }
+});
+// Đảm bảo có route GET /api/products/admin/:slug để trả về chi tiết sản phẩm cho trang edit
+
+router.get("/admin/:slug", async (req, res) => {
+  const slug = req.params.slug;
+  if (!slug) return res.status(400).json({ message: "Slug không hợp lệ" });
+
+  try {
+    // 1. Lấy thông tin sản phẩm
+    const [productRows] = await db.query(
+      `
+      SELECT 
+        p.*, c.category_name
+      FROM product p
+      LEFT JOIN category c ON p.category_id = c.category_id
+      WHERE p.product_slug = ? AND p.product_status = 1
+      `,
+      [slug]
+    );
+
+    if (!productRows.length) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    const product = productRows[0];
+
+    // 2. Lấy danh sách biến thể + màu sắc
+    const [variants] = await db.query(
+      `
+      SELECT
+        vp.variant_id,
+        vp.product_id,
+        c.color_id,
+        c.color_name,
+        c.color_hex,
+        c.color_priority,
+        vp.variant_product_price AS price,
+        vp.variant_product_price_sale AS price_sale,
+        vp.variant_product_quantity AS quantity,
+        vp.variant_product_slug AS slug,
+        vp.variant_product_list_image AS list_image
+      FROM variant_product vp
+      JOIN color c ON vp.color_id = c.color_id
+      WHERE vp.product_id = ?
+      ORDER BY c.color_priority DESC
+      `,
+      [product.product_id]
+    );
+
+    const variantsFull = variants.map((v) => ({
+      variant_id: v.variant_id,
+      product_id: v.product_id,
+      color_id: v.color_id,
+      color_name: v.color_name,
+      color_hex: v.color_hex,
+      quantity: v.quantity,
+      price: v.price,
+      price_sale: v.price_sale,
+      slug: v.slug,
+      list_image: v.list_image
+        ? v.list_image
+            .split(",")
+            .map((img) => img.trim().replace(/^['"]+|['"]+$/g, ""))
+        : [],
+    }));
+
+    // 3. Lấy danh sách phòng
+    const [rooms] = await db.query(
+      `
+      SELECT rp.room_id
+      FROM room_product rp
+      WHERE rp.product_id = ?
+      `,
+      [product.product_id]
+    );
+
+    return res.json({
+      product: {
+        id: product.product_id,
+        name: product.product_name,
+        description: product.product_description,
+        slug: product.product_slug,
+        sold: product.product_sold,
+        view: product.product_view,
+        rating: product.product_rating,
+        materials: product.variant_materials,
+        height: product.variant_height,
+        width: product.variant_width,
+        depth: product.variant_depth,
+        seating_height: product.variant_seating_height,
+        max_weight_load: product.variant_maximum_weight_load,
+        status: product.product_status,
+        category_id: product.category_id,
+        category_name: product.category_name,
+        created_at: product.created_at,
+        updated_at: product.updated_at,
+        main_image: product.product_image
+          ? product.product_image.trim().replace(/^['"]+|['"]+$/g, "")
+          : "",
+        variants: variantsFull,
+      },
+      rooms,
+    });
+  } catch (error) {
+    console.error("Error fetching product details (admin):", error);
+    res.status(500).json({ error: "Failed to fetch product details" });
   }
 });
 

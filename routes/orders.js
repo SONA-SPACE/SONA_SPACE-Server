@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
-const { verifyToken, isAdmin } = require('../middleware/auth');
+const { verifyToken, isAdmin, optionalAuth } = require('../middleware/auth');
 const crypto = require("crypto");
 const axios = require("axios");
 const { VNPay, ignoreLogger, dateFormat } = require('vnpay')
 // Áp dụng middleware xác thực cho tất cả các route
-router.use(verifyToken);
+// router.use(verifyToken);
 function formatDateVNPay(date) {
   const yyyy = date.getFullYear().toString();
   const MM = (date.getMonth() + 1).toString().padStart(2, '0');
@@ -16,13 +16,51 @@ function formatDateVNPay(date) {
   const ss = date.getSeconds().toString().padStart(2, '0');
   return `${yyyy}${MM}${dd}${HH}${mm}${ss}`;
 }
-
-
 /**
  * @route   GET /api/orders/count
  * @desc    Lấy số lượng đơn hàng theo trạng thái (chỉ admin)
  * @access  Private (Admin)
  */
+router.get('/hash/:orderHash', optionalAuth, async (req, res) => {
+  const { orderHash } = req.params;
+  console.log("🔍 Truy vấn đơn hàng:", orderHash);
+
+  try {
+    const [[order]] = await db.query(`
+      SELECT 
+        o.order_id,
+        o.order_hash,
+        o.created_at,
+        o.order_total_final,
+        (
+          SELECT SUM(oi.quantity)
+          FROM order_items oi
+          WHERE oi.order_id = o.order_id
+        ) AS total_quantity
+      FROM orders o
+      WHERE o.order_hash = ?
+    `, [orderHash]);
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy đơn hàng' });
+    }
+
+    return res.status(200).json({
+      success: true,
+      order: {
+        order_id: order.order_id,
+        order_hash: order.order_hash,
+        created_at: order.created_at,
+        order_total_final: order.order_total_final,
+        total_quantity: order.total_quantity || 0
+      }
+    });
+  } catch (error) {
+    console.error('Lỗi lấy thông tin đơn hàng:', error.message);
+    return res.status(500).json({ success: false, message: 'Lỗi máy chủ', error: error.message });
+  }
+});
+
 router.get('/count', async (req, res) => {
   try {
     const [result] = await db.query(`
@@ -56,7 +94,7 @@ router.get('/count', async (req, res) => {
  * @desc    Lấy danh sách tất cả đơn hàng (admin only)
  * @access  Private (Admin)
  */
-router.get('/', isAdmin, async (req, res) => {
+router.get('/', verifyToken, isAdmin, async (req, res) => {
   try {
     console.log('Đang truy cập GET /api/orders');
     console.log('User info:', req.user);
@@ -149,7 +187,10 @@ router.get('/', isAdmin, async (req, res) => {
  * @desc    Lấy thông tin chi tiết một đơn hàng
  * @access  Private
  */
-router.get('/:id', async (req, res) => {
+
+
+
+router.get('/:id', verifyToken, async (req, res) => {
   try {
     console.log('Đang truy cập GET /api/orders/:id với id =', req.params.id);
     const orderId = Number(req.params.id);
@@ -382,8 +423,10 @@ router.post('/', verifyToken, async (req, res) => {
       return res.status(200).json({
         message: "Order and MoMo payment created",
         payUrl,
-        order_id
+        order_id: orderRow.order_id,
+        order_hash: order_id
       });
+
     }
     // xử lý thanh toán VNPAY
     if (method === 'VNPAY') {
@@ -432,8 +475,10 @@ router.post('/', verifyToken, async (req, res) => {
       return res.status(200).json({
         message: "Order and VNPAY payment created",
         payUrl: paymentUrl,
-        order_id
+        order_id: orderRow.order_id,
+        order_hash: order_id
       });
+
     }
 
 
@@ -450,8 +495,10 @@ router.post('/', verifyToken, async (req, res) => {
 
       return res.status(201).json({
         message: 'COD order created and marked as paid',
-        order_id
+        order_id: orderRow.order_id,
+        order_hash: order_id
       });
+
     }
 
     return res.status(400).json({ error: 'Unsupported payment method' });
@@ -461,48 +508,8 @@ router.post('/', verifyToken, async (req, res) => {
   }
 });
 
-router.get('/:orderHash', async (req, res) => {
-  const { orderHash } = req.params;
 
-  try {
-    // Lấy thông tin đơn hàng theo order_hash
-    const [[order]] = await db.query(
-      `
-      SELECT 
-        o.order_id,
-        o.order_hash,
-        o.created_at,
-        o.order_total_final,
-        (
-          SELECT SUM(quantity)
-          FROM order_items
-          WHERE order_id = o.order_id
-        ) AS total_quantity
-      FROM orders o
-      WHERE o.order_hash = ?
-      `,
-      [orderHash]
-    );
 
-    if (!order) {
-      return res.status(404).json({ success: false, message: 'Không tìm thấy đơn hàng' });
-    }
-
-    return res.status(200).json({
-      success: true,
-      order: {
-        order_id: order.order_id,
-        order_hash: order.order_hash,
-        created_at: order.created_at,
-        order_total_final: order.order_total_final,
-        total_quantity: order.total_quantity || 0
-      }
-    });
-  } catch (error) {
-    console.error('Lỗi lấy thông tin đơn hàng:', error);
-    return res.status(500).json({ success: false, message: 'Lỗi máy chủ' });
-  }
-});
 
 
 /**

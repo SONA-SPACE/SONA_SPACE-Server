@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const db = require("../config/database");
 const { verifyToken, isAdmin } = require("../middleware/auth");
+const { sendEmail } = require("../utils/sendEmail");
 
 /**
  * @route   POST /api/contact-forms
@@ -83,13 +84,17 @@ router.post("/", async (req, res) => {
       ]
     );
 
-    res.status(201).json({
-      message: "Contact form submitted successfully",
+    res.status(200).json({
+      success: true,
+      message: "Gửi yêu cầu thành công",
       contactId: result.insertId,
     });
   } catch (error) {
     console.error("Error submitting contact form:", error);
-    res.status(500).json({ error: "Failed to submit contact form" });
+    res.status(500).json({
+      success: false,
+      error: error.message || "Gửi yêu cầu thất bại",
+    });
   }
 });
 

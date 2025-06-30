@@ -64,8 +64,9 @@ app.set("layout", "layouts/main");
 app.set("layout extractScripts", true);
 
 app.use(logger("dev"));
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+// Tăng giới hạn kích thước body để tránh lỗi "request entity too large"
+app.use(express.json({ limit: "20mb" }));
+app.use(express.urlencoded({ extended: false, limit: "20mb" }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
 app.use(cors());
@@ -83,7 +84,7 @@ app.get("/health", function (req, res) {
 // Base routes
 app.get("/", (req, res) => {
   res.render("main", {
-    title: "Sona Space - Admin Login"
+    title: "Sona Space - Admin Login",
   });
 });
 

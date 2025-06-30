@@ -8,7 +8,7 @@ const express = require("express");
 const router = express.Router();
 const db = require("../config/database");
 
-const { verifyToken, isAdmin } = require("../middleware/auth");
+const { verifyToken, isAdmin, optionalAuth } = require("../middleware/auth");
 
 const LIMIT_PER_PAGE = 8;
 
@@ -17,7 +17,8 @@ const LIMIT_PER_PAGE = 8;
  * @desc    Lấy danh sách sản phẩm với phân trang, lọc và sắp xếp
  * @access  Public
  */
-router.get("/", verifyToken, async (req, res) => {
+router.get("/", optionalAuth, async (req, res) => {
+  const userId = req.user?.id || 0;
   try {
     // 1. Lấy tham số page và limit từ query, mặc định là 1 và 8
     const page = parseInt(req.query.page) || 1;
@@ -218,7 +219,6 @@ router.get("/", verifyToken, async (req, res) => {
   LIMIT ? OFFSET ?
 `;
 
-    const userId = req.user?.id || 0;
     const [products] = await db.query(query, [
       ...params,
       userId,
@@ -258,6 +258,7 @@ router.get("/", verifyToken, async (req, res) => {
     res.status(500).json({ error: "Failed to fetch products" });
   }
 });
+
 router.get("/admin", async (req, res) => {
   try {
     const [products] = await db.query(`

@@ -18,7 +18,7 @@
         </div>
         <div class="form-group">
           <label for="roomSlug">Slug</label>
-          <input type="text" id="newsSlug" class="form-control" placeholder="nhập slug cho tin tức..." />
+          <input type="text" id="newsSlug" class="form-control" placeholder="nhap-slug-cho-tin-tuc" />
         </div>
       </div>
 
@@ -27,13 +27,6 @@
           <label for="newsCategory">Danh mục</label>
           <div class="select-wrapper">
             <select id="newsCategory" class="form-control">
-              <option value="">Chọn danh mục</option>
-              <option value="sofas">Sofas</option>
-              <option value="chairs">Ghế</option>
-              <option value="tables">Bàn</option>
-              <option value="storage">Tủ & Kệ</option>
-              <option value="beds">Giường</option>
-              <option value="lamps">Đèn</option>
             </select>
             <i class="fas fa-chevron-down"></i>
           </div>
@@ -51,10 +44,15 @@
       </div>
       <div class="form-row">
         <div class="form-group full-width">
-          <label for="newsDescription">Mô tả ngắn</label>
+          <label for="newsDescription">Mô tả</label>
           <textarea id="newsDescription" class="form-control" placeholder="Mô tả ngắn về tin tức"></textarea>
         </div>
-
+      </div>
+      <div class="form-row">
+        <div class="form-group full-width">
+          <label for="newsContent">Nội dung tin tức</label>
+          <textarea id="newsContent" class="form-control" placeholder="Mô tả ngắn về tin tức"></textarea>
+        </div>
       </div>
     </div>
 
@@ -69,31 +67,31 @@
   <div class="image-upload-column">
     <div class="image-upload-container">
       <div class="main-upload-area">
-        <div class="upload-placeholder1" id="avatarDropArea">
+        <div class="upload-placeholder2" id="avatarDropArea">
           <i class="far fa-image"></i>
           <p>Drop your image here, or browse</p>
           <p class="upload-hint">jpeg, png are allowed</p>
         </div>
       </div>
 
-      <div class="thumbnail-upload-grid">
+      <div class="thumbnail-upload-grid1">
         <div class="thumbnail-upload-item">
-          <div class="upload-placeholder1" id="thumb1">
+          <div class="upload-placeholder2" id="thumb1">
             <i class="far fa-image"></i>
           </div>
         </div>
         <div class="thumbnail-upload-item">
-          <div class="upload-placeholder1" id="thumb2">
+          <div class="upload-placeholder2" id="thumb2">
             <i class="far fa-image"></i>
           </div>
         </div>
         <div class="thumbnail-upload-item">
-          <div class="upload-placeholder1" id="thumb3">
+          <div class="upload-placeholder2" id="thumb3">
             <i class="far fa-image"></i>
           </div>
         </div>
         <div class="thumbnail-upload-item">
-          <div class="upload-placeholder1" id="thumb4">
+          <div class="upload-placeholder2" id="thumb4">
             <i class="far fa-image"></i>
           </div>
         </div>
@@ -110,6 +108,7 @@
   let thumbnailFiles = [null, null, null, null];
 
   document.addEventListener("DOMContentLoaded", () => {
+    loadNewsCategories();
     bindUpload("#avatarDropArea", (file) => (avatarFile = file));
 
     bindUpload("#thumb1", (file) => (thumbnailFiles[0] = file));
@@ -134,7 +133,7 @@
           setter(file);
           dropArea.innerHTML = `<img src="${URL.createObjectURL(
             file
-          )}" style="width:100%; border-radius:6px;">`;
+          )}" border-radius:6px;">`;
         }
       };
     });
@@ -147,7 +146,7 @@
     formData.append("folder", folder);
     if (subfolder) formData.append("subfolder", subfolder);
 
-    const res = await fetch("/api/upload/news", {
+    const res = await fetch("http://localhost:3501/api/upload/news", {
       method: "POST",
       body: formData,
     });
@@ -155,67 +154,96 @@
     return data.url || null;
   }
 
-  async function handleSaveNews() {
-    const title = document.getElementById("newsTitle").value.trim();
-    const slug = document.getElementById("newsSlug").value.trim();
-    const excerpt = document.getElementById("newsDescription").value.trim();
-    const content = document.getElementById("newsContent").value.trim();
-    const status = parseInt(document.getElementById("newsStatus").value);
-    const category_id = parseInt(document.getElementById("newsCategory").value);
+async function handleSaveNews() {
+  const title = document.getElementById("newsTitle").value.trim();
+  const slug = document.getElementById("newsSlug").value.trim();
+  const excerpt = document.getElementById("newsDescription").value.trim();
+  const content = document.getElementById("newsContent").value.trim();
+  const status = parseInt(document.getElementById("newsStatus").value);
+  const category_id = parseInt(document.getElementById("newsCategory").value);
 
-    const saveBtn = document.querySelector(".btn-save");
-    saveBtn.disabled = true;
-    saveBtn.innerText = "Đang lưu...";
+  const saveBtn = document.querySelector(".btn-save");
+  saveBtn.disabled = true;
+  saveBtn.innerText = "Đang lưu...";
 
-    if (!title || !excerpt) {
-      showToast("Vui lòng nhập tiêu đề và nội dung", "danger");
-      saveBtn.disabled = false;
-      saveBtn.innerText = "Lưu";
-      return;
-    }
-
-    try {
-      const thumbnail = await uploadImage(avatarFile, "SonaSpace/News");
-
-  const payload = {
-  title,
-  slug,
-  excerpt,
-  content, 
-  status,
-  category_id,
-  thumbnail
-};
-
-
-      const token = sessionStorage.getItem("authToken");
-
-      const res = await fetch("/api/news", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}` // cần token xác thực
-        },
-        body: JSON.stringify(payload)
-      });
-
-      const data = await res.json();
-
-      if (data.error) {
-        showToast(data.error, "danger");
-      } else {
-        showToast("Tạo tin tức thành công", "success");
-        setTimeout(() => (window.location.href = "/dashboard/news"), 1000);
-      }
-    } catch (err) {
-      console.error("Error:", err);
-      showToast("Có lỗi khi tạo tin tức", "danger");
-    }
-
+  if (!title || !excerpt || !content) {
+    showToast("Vui lòng nhập đầy đủ thông tin", "danger");
     saveBtn.disabled = false;
     saveBtn.innerText = "Lưu";
+    return;
   }
 
+  try {
+    const uploadedImages = [];
+
+    const mainImage = await uploadImage(avatarFile, "SonaSpace/News");
+    if (mainImage) uploadedImages.push(mainImage);
+
+    for (const file of thumbnailFiles) {
+      if (file) {
+        const url = await uploadImage(file, "SonaSpace/News", "sub");
+        if (url) uploadedImages.push(url);
+      }
+    }
+
+    const payload = {
+      title,
+      slug,
+      excerpt,
+      content,
+      status,
+      category_id,
+      thumbnail: uploadedImages[0] || null,
+      images: uploadedImages
+    };
+
+    const token = localStorage.getItem("token");
+
+    const res = await fetch("http://localhost:3501/api/news", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+
+    if (data.error) {
+      showToast(data.error, "danger");
+    } else {
+      showToast("Tạo tin tức thành công", "success");
+      setTimeout(() => (window.location.href = "/dashboard/news"), 1000);
+    }
+  } catch (err) {
+    console.error("Error:", err);
+    showToast("Có lỗi khi tạo tin tức", "danger");
+  }
+
+  saveBtn.disabled = false;
+  saveBtn.innerText = "Lưu";
+}
+
+
+  async function loadNewsCategories() {
+    const select = document.getElementById("newsCategory");
+    try {
+      const res = await fetch("http://localhost:3501/api/news-categories");
+      const categories = await res.json();
+
+      select.innerHTML = `<option value="">Chọn danh mục</option>`;
+      categories.forEach((cat) => {
+        const option = document.createElement("option");
+        option.value = cat.id;
+        option.textContent = cat.name;
+        select.appendChild(option);
+      });
+    } catch (err) {
+      console.error("Lỗi tải danh mục:", err);
+      showToast("Không thể tải danh mục", "danger");
+    }
+  }
 
   function showToast(message, type = "success") {
     let toastContainer = document.getElementById("toastContainer");

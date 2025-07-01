@@ -212,15 +212,22 @@
   const variantTemplate = document.getElementById("variantTemplate");
   const variantsList = document.getElementById("variantsList");
   let removedImages = [];
+
   function extractPublicIdFromUrl(url) {
-    const matches = url.match(/\/upload\/(?:v\d+\/)?([^\.]+)\.(jpg|jpeg|png|webp|gif)/);
-    return matches ? matches[1] : null;
+    const matches = url.match(/upload\/(?:v\d+\/)?([^\.]+)\.(jpg|jpeg|png|webp|gif)/);
+    if (!matches || !matches[1]) return null;
+    return matches[1];
   }
+
+
 
   // Xử lý xóa ảnh chính
   mainImageContainer.querySelector(".remove-image")?.addEventListener("click", () => {
     const publicId = extractPublicIdFromUrl(mainImagePreview.src);
-    if (publicId) removedImages.push(publicId);
+    if (publicId) {
+      removedImages.push(publicId);
+      console.log("[REMOVE IMAGE] Đã đánh dấu xóa ảnh chính:", publicId);
+    }
     mainImagePreview.src = "";
     mainImageContainer.style.display = "none";
     // Hiện lại box upload ảnh chính
@@ -278,13 +285,17 @@
       await loadProductSelectBoxes(slug, product.category_id, data.rooms?.map(r => r.room_id), null);
 
       // === Danh sách biến thể ===
-      product.variants.forEach((variant) => {
+      // Xóa hết biến thể cũ trước khi render lại
+      variantsList.innerHTML = "";
+
+      product.variants.forEach((variant, idx) => {
         const clone = variantTemplate.cloneNode(true);
         clone.style.display = "block";
         clone.removeAttribute("id");
+        clone.setAttribute("data-id", variant.variant_id);
 
         // Tiêu đề
-        clone.querySelector(".variant-title").textContent = variant.color_name;
+        clone.querySelector(".variant-title").textContent = variant.color_name || `Biến thể ${idx + 1}`;
 
         // Render lại danh sách màu cho select box này
         const colorSelect = clone.querySelector(".variant-color");
@@ -300,38 +311,6 @@
         clone.querySelector(".variant-price").value = variant.price ?? 0;
         clone.querySelector(".variant-sale-price").value = variant.price_sale ?? 0;
 
-        // Danh sách ảnh  
-        const imageGrid = clone.querySelector(".variant-image-grid");
-        // Xóa các ảnh cũ và box upload nếu có
-        imageGrid.innerHTML = "";
-
-
-        // Tạo box ảnh ban đầu
-        imageGrid.innerHTML = "";
-        variant.list_image?.forEach((imgUrl) => {
-          const imgBox = document.createElement("div");
-          imgBox.className = "variant-image-item loaded";
-          imgBox.innerHTML = `
-    <img src="${imgUrl}" alt="Preview" style="width:80px;margin:5px;">
-    <button class="remove-image"><i class="fas fa-times"></i></button>
-  `;
-          imgBox.querySelector(".remove-image").addEventListener("click", function (ev) {
-            ev.stopPropagation();
-            const img = imgBox.querySelector("img");
-            const publicId = extractPublicIdFromUrl(img.src);
-            if (publicId) removedImages.push(publicId);
-            imgBox.remove();
-            if (!imageGrid.querySelector('.variant-upload-box')) {
-              imageGrid.appendChild(createUploadBox(imageGrid));
-            }
-          });
-          imageGrid.appendChild(imgBox);
-        });
-
-        // Luôn thêm upload box ở cuối
-        imageGrid.appendChild(createUploadBox(imageGrid));
-
-
         // Lưu lại dữ liệu variant vào node để submit
         clone.variantData = {
           color_id: variant.color_id,
@@ -339,7 +318,10 @@
           quantity: variant.quantity ?? 0,
           price: variant.price ?? 0,
           price_sale: variant.price_sale ?? 0,
-          list_image: Array.isArray(variant.list_image) ? variant.list_image : [],
+          // http...,http...,http...
+          list_image: typeof variant.list_image === "string"
+            ? variant.list_image.split(",")
+            : (Array.isArray(variant.list_image) ? variant.list_image : []),
         };
 
         variantsList.appendChild(clone);
@@ -359,8 +341,7 @@
       console.error("Lỗi load sản phẩm:", err);
       alert("Không thể tải sản phẩm");
     }
-    // Gọi hàm để tải danh sách select boxes
-    setupAllVariantEvents();
+    // setupAllVariantEvents();
   }
 
   async function loadProductSelectBoxes(slug, selectedCategoryId, selectedRoomIds, selectedColorId) {
@@ -398,17 +379,17 @@
   }
 
   // Thêm hàm tạo box upload dấu cộng cho variant
-  function createUploadBox(imageGrid) {
+  function createUploadBox(imageGrid, variantId = null) {
     const uploadBox = document.createElement("div");
     uploadBox.className = "variant-image-item active variant-upload-box";
     uploadBox.innerHTML = `
-      <div class="upload-placeholder">
-        <i class="fas fa-plus"></i>
-        <input type="file" hidden accept="image/*" />
-      </div>
-    `;
+    <div class="upload-placeholder">
+      <i class="fas fa-plus"></i>
+      <input type="file" hidden accept="image/*" />
+    </div>
+  `;
+
     const input = uploadBox.querySelector('input[type="file"]');
-    const placeholder = uploadBox.querySelector(".upload-placeholder");
     const maxImages = 7;
 
     uploadBox.addEventListener("click", () => input.click());
@@ -417,30 +398,9 @@
       const file = e.target.files[0];
       if (file && file.type.startsWith("image/")) {
         const reader = new FileReader();
-        reader.onload = function (e) {
-
-          // Tạo box mới cho ảnh đã chọn
-          const loadedBox = document.createElement("div");
-          loadedBox.classList.add("loaded"); // 🔥 Cần thiết
-          loadedBox.className = "variant-image-item loaded";
-          loadedBox.innerHTML = `
-            <img src="${e.target.result}" alt="Preview" style="width:80px;margin:5px;">
-            <button class="remove-image"><i class="fas fa-times"></i></button>
-          `;
-          loadedBox.querySelector(".remove-image").addEventListener("click", function (ev) {
-            ev.stopPropagation();
-            loadedBox.remove();
-            // Nếu chưa có box upload thì thêm lại box upload vào cuối
-            if (!imageGrid.querySelector('.variant-upload-box')) {
-              imageGrid.appendChild(createUploadBox(imageGrid));
-            }
-          });
-          imageGrid.insertBefore(loadedBox, uploadBox);
-          input.value = "";
-          // Nếu đủ ảnh thì ẩn box upload
-          if (imageGrid.querySelectorAll('.variant-image-item.loaded').length >= maxImages) {
-            uploadBox.style.display = "none";
-          }
+        reader.onload = function (event) {
+          console.log("Ảnh biến thể src:", event.target.result);
+          addLoadedImageBox(event.target.result, imageGrid, uploadBox, file);
         };
         reader.readAsDataURL(file);
       }
@@ -449,12 +409,108 @@
     return uploadBox;
   }
 
+
+  // Hàm thêm box ảnh đã upload thành công vào grid
+  function addLoadedImageBox(imgUrl, imageGrid, uploadBox, file) {
+    const loadedBox = document.createElement("div");
+    loadedBox.className = "variant-image-item loaded";
+    loadedBox.dataset.local = "true"; // đánh dấu là ảnh mới
+    loadedBox.dataset.filename = file?.name || "";
+
+    loadedBox.innerHTML = `
+    <img src="${imgUrl}" alt="Preview" style="width:80px;margin:5px;">
+    <button class="remove-image"><i class="fas fa-times"></i></button>
+    <input type="file" hidden />
+  `;
+
+    // Lưu lại file để upload về sau
+    const hiddenInput = loadedBox.querySelector('input[type="file"]');
+    if (file) {
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(file);
+      hiddenInput.files = dataTransfer.files;
+    }
+
+    loadedBox.querySelector(".remove-image").addEventListener("click", function (ev) {
+      ev.stopPropagation();
+      loadedBox.remove();
+      if (!imageGrid.querySelector('.variant-upload-box')) {
+        imageGrid.appendChild(createUploadBox(imageGrid));
+      }
+    });
+
+    imageGrid.insertBefore(loadedBox, uploadBox);
+    uploadBox.querySelector('input[type="file"]').value = "";
+
+    if (imageGrid.querySelectorAll('.variant-image-item.loaded').length >= 7) {
+      uploadBox.style.display = "none";
+    }
+  }
+
+
+  // Sửa lại setupVariantImageUpload để truyền variantId cho createUploadBox
+  function setupVariantImageUpload(variantElement) {
+    const imageGrid = variantElement.querySelector(".variant-image-grid");
+    if (!imageGrid) return;
+
+    imageGrid.innerHTML = "";
+
+    const maxImages = 7;
+    const existingImages = variantElement.variantData?.list_image || [];
+    const variantId = variantElement.getAttribute("data-id") || null;
+
+    // Render ảnh đã có nếu tồn tại
+    existingImages.forEach((imgUrl) => {
+      const imgBox = document.createElement("div");
+      imgBox.className = "variant-image-item loaded";
+      imgBox.innerHTML = `
+      <img src="${imgUrl}" alt="Preview" style="width:80px;margin:5px;">
+      <button class="remove-image"><i class="fas fa-times"></i></button>
+    `;
+      imgBox.querySelector(".remove-image").addEventListener("click", function (ev) {
+        ev.stopPropagation();
+        const publicId = extractPublicIdFromUrl(imgUrl);
+        if (publicId) {
+          removedImages.push(publicId);
+          console.log("[REMOVE IMAGE] Đã đánh dấu xóa ảnh biến thể:", publicId);
+        }
+        imgBox.remove();
+        if (!imageGrid.querySelector('.variant-upload-box') && imageGrid.querySelectorAll('.variant-image-item.loaded').length < maxImages) {
+          imageGrid.appendChild(createUploadBox(imageGrid, variantId));
+        }
+      });
+      imageGrid.appendChild(imgBox);
+    });
+
+    // Nếu chưa đủ số lượng ảnh, thêm ô upload
+    if (existingImages.length < maxImages) {
+      imageGrid.appendChild(createUploadBox(imageGrid, variantId));
+    }
+  }
+
   // ==== Gọi khi tải trang ====
   window.addEventListener("DOMContentLoaded", loadProductDetail);
 
+  async function deleteVariant(variantId) {
+    try {
+      const res = await fetch(`${API_URL}/api/variants/${variantId}`, {
+        method: "DELETE",
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        showToast(`Xoá biến thể ${variantId} thất bại: ` + (result.error || ""), "danger");
+        console.error("Lỗi xoá biến thể:", result);
+        return;
+      }
+      console.log("✅ Xoá biến thể thành công:", variantId);
+    } catch (err) {
+      console.error("❌ Lỗi khi gọi deleteVariant:", err);
+      showToast("Lỗi kết nối khi xoá biến thể", "danger");
+    }
+  }
 
 
-  // ==== Xử lý sự kiện nút lưu ====
+  // ==== Xử lý sự kiện nút lưu (chỉ cập nhật thông tin chung sản phẩm) ====
   document.querySelector(".btn-save").addEventListener("click", async () => {
     try {
       // ===== LẤY DỮ LIỆU FORM =====
@@ -473,208 +529,285 @@
 
       // Ảnh chính
       let mainImageUrl = mainImagePreview?.src || null;
-      // Nếu là base64 thì upload lên cloudinary
       if (mainImageUrl && mainImageUrl.startsWith("data:image/")) {
         try {
           const formData = new FormData();
-          // Chuyển base64 thành file
           const res = await fetch(mainImageUrl);
           const blob = await res.blob();
           formData.append("image", blob, "main-image.png");
           formData.append("folder", "SonaSpace/Product");
           formData.append("subfolder", "main");
-          const uploadRes = await fetch("http://localhost:3501/api/upload/product", {
+          const uploadRes = await fetch(`${API_URL}/api/upload/product`, {
             method: "POST",
             body: formData,
           });
           const uploadData = await uploadRes.json();
           mainImageUrl = uploadData.url || mainImageUrl;
         } catch (err) {
-          console.error("Lỗi upload ảnh chính:", err);
+          showToast("Lỗi upload ảnh chính", "danger");
         }
       }
 
-      // ==== DỮ LIỆU BIẾN THỂ ====
-      const variantNodes = Array.from(document.querySelectorAll("#variantsList .variant-item"))
-        .filter(variantEl =>
-          variantEl.id !== "variantTemplate" &&
-          getComputedStyle(variantEl).display !== "none" &&
-          !variantEl.hidden
-        );
-
-      // Hàm upload ảnh nếu là base64, còn nếu đã là link cloudinary thì giữ nguyên
-      async function uploadIfNeeded(src) {
-        if (src.startsWith("http")) return src;
-        // Nếu là base64, upload lên cloudinary
-        try {
-          // Kiểm tra kích thước base64 (giới hạn 10MB Cloudinary)
-          const base64Length = src.length - (src.indexOf(',') + 1);
-          const fileSize = Math.floor(base64Length * 3 / 4); // bytes
-          if (fileSize > 10 * 1024 * 1024) {
-            showToast("Ảnh biến thể vượt quá 10MB, vui lòng chọn ảnh nhỏ hơn!", "danger");
-            return null;
+      // XÓA CÁC ẢNH ĐÃ ẤN DẤU ❌
+      if (removedImages.length > 0) {
+        for (const publicId of removedImages) {
+          try {
+            const res = await fetch(`${API_URL}/api/upload/${publicId}`, {
+              method: "DELETE",
+            });
+            const result = await res.json();
+            if (!res.ok) {
+              console.warn("❌ Lỗi xoá ảnh:", result);
+            } else {
+              console.log("🗑️ Đã xoá ảnh:", publicId);
+            }
+            console.log("[REMOVE IMAGE] Đã gửi yêu cầu xóa ảnh trên server:", publicId);
+          } catch (err) {
+            console.error("❌ Lỗi kết nối khi xoá ảnh:", err);
           }
-          const formData = new FormData();
-          const res = await fetch(src);
-          const blob = await res.blob();
-          formData.append("image", blob, "variant-image.png");
-          formData.append("folder", "SonaSpace/Product");
-          formData.append("subfolder", "variant");
-          const uploadRes = await fetch("http://localhost:3501/api/upload/product", {
-            method: "POST",
-            body: formData,
-          });
-          const uploadData = await uploadRes.json();
-          return uploadData.url || null;
-        } catch (err) {
-          console.error("Lỗi upload ảnh biến thể:", err);
-          showToast("Lỗi upload ảnh biến thể!", "danger");
-          return null;
         }
+
+        // Xóa mảng sau khi xử lý xong
+        removedImages = [];
       }
 
-      const variants = [];
-      for (const variantEl of variantNodes) {
-        const colorInput = variantEl.querySelector(".variant-color");
-        if (!colorInput) continue;
-        const color_id = parseInt(colorInput.value);
-        const variant_slug = variantEl.querySelector(".variant-slug").value.trim() || `${slugValue}-${color_id}`;
-        const quantity = parseInt(variantEl.querySelector(".variant-quantity").value) || 0;
-        const price = parseFloat(variantEl.querySelector(".variant-price").value) || 0;
-        const price_sale_raw = variantEl.querySelector(".variant-sale-price").value;
-        const price_sale = price_sale_raw === "" ? null : parseFloat(price_sale_raw);
-
-        // Lấy đúng các ảnh của biến thể này
-        const imageEls = variantEl.querySelectorAll(".variant-image-item.loaded img");
-        let list_image = Array.from(imageEls).map(img => img.src);
-
-        // Upload các ảnh base64 lên cloudinary nếu cần, loại bỏ ảnh lỗi (null)
-        const list_image_urls = [];
-        for (const src of list_image) {
-          const url = await uploadIfNeeded(src);
-          if (url) list_image_urls.push(url);
-        }
-
-        if (!color_id || !price || !quantity || list_image_urls.length === 0) {
-          console.warn("Biến thể không hợp lệ, bỏ qua:", {
-            color_id,
-            variant_slug,
-            quantity,
-            price,
-            price_sale,
-            list_image_urls
-          });
-          continue;
-        }
-
-        variants.push({
-          color_id,
-          variant_slug,
-          quantity,
-          price,
-          price_sale,
-          list_image: list_image_urls,
-        });
-      }
-
-      console.log("🧪 Biến thể gửi lên:", variants);
-
-      // ==== GỬI YÊU CẦU SỬA ====
+      // Chỉ gửi thông tin chung sản phẩm
       const payload = {
-        name,
-        slug: slugValue,
-        description,
-        category_id,
-        status,
-        materials,
-        height,
-        width,
-        depth,
-        seating_height,
-        max_weight_load,
+        name: productNameInput.value.trim(),
+        slug: productSlugInput.value.trim() || productNameInput.value.trim().toLowerCase().replace(/\s+/g, "-"),
+        description: productDescriptionTextarea.value.trim(),
+        category_id: parseInt(productCategorySelect.value),
+        status: parseInt(productStatusSelect.value),
+        materials: productMaterialInput.value.trim(),
+        height: parseFloat(productHeightInput.value) || null,
+        width: parseFloat(productWidthInput.value) || null,
+        depth: parseFloat(productDepthInput.value) || null,
+        seating_height: parseFloat(productSeatHeightInput.value) || null,
+        max_weight_load: parseFloat(productMaxLoadInput.value) || null,
         main_image: mainImageUrl,
-        room_ids,
-        variants,
-        removedImages,
+        room_ids: Array.from(productRoomsSelect.selectedOptions).map(opt => parseInt(opt.value)),
       };
-      console.log("Payload gửi lên:", payload);
+      console.log("[PRODUCT PAYLOAD]", payload);
 
-      // Nếu không có biến thể nào hợp lệ, báo lỗi rõ ràng
-      if (!variants.length) {
-        showToast("Bạn phải nhập ít nhất 1 biến thể hợp lệ (đủ màu, giá, số lượng, ảnh)!", "danger");
-        return;
-      }
-
+      // Cập nhật sản phẩm trước
       const res = await fetch(`${API_URL}/api/products/admin/${slug}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
-
       const result = await res.json();
-
       if (!res.ok) {
-        console.error("Lỗi cập nhật:", result);
         showToast("Lỗi khi cập nhật sản phẩm: " + (result.error || "Không rõ"), "danger");
         return;
       }
       showToast("Cập nhật sản phẩm thành công!", "success");
-      // setTimeout(() => window.location.reload(), 1000);
+
+      // === Cập nhật hoặc xóa các biến thể đã có (KHÔNG tạo mới ở đây) ===
+      const productId = result.product?.id || result.product?.product_id || result.product_id;
+      const variantElements = document.querySelectorAll("#variantsList .variant-item");
+      // XÓA: console.log("== VARIANT ELEMENTS =="";
+      // XÓA: variantElements.forEach(el => { console.log("data-id:", el.getAttribute("data-id")); });
+
+      // Xử lý xóa các biến thể đã bị remove khỏi DOM
+      const currentIds = Array.from(variantElements)
+        .map(el => el.getAttribute("data-id"))
+        .filter(Boolean);
+      const loadedIds = Array.from(document.querySelectorAll("#variantsList .variant-item[data-id]"))
+        .map(el => el.getAttribute("data-id"));
+      const deletedIds = loadedIds.filter(id => !currentIds.includes(id));
+      for (const delId of deletedIds) {
+        if (delId) {
+          await deleteVariant(delId);
+        }
+      }
+
+
+      for (const variantEl of variantElements) {
+        let variantId = variantEl.getAttribute("data-id");
+        const color_id = parseInt(variantEl.querySelector(".variant-color")?.value || 0);
+        const slug = variantEl.querySelector(".variant-slug")?.value.trim();
+        const quantity = parseInt(variantEl.querySelector(".variant-quantity")?.value || 0);
+        const price = parseFloat(variantEl.querySelector(".variant-price")?.value || 0);
+        const price_sale = parseFloat(variantEl.querySelector(".variant-sale-price")?.value || 0);
+
+        let finalVariantId = variantId;
+        let list_image = [];
+
+        const loadedImageBoxes = Array.from(
+          variantEl.querySelectorAll(".variant-image-item.loaded")
+        );
+
+        // Nếu là biến thể mới, tạo trước khi upload ảnh
+        if (!finalVariantId) {
+          const created = await addVariant(productId, {
+            color_id,
+            slug,
+            quantity,
+            price,
+            price_sale,
+            list_image: "", // Tạo tạm, ảnh sẽ thêm sau
+          });
+
+          if (!created || !created.variant_id) {
+            showToast("Không thể tạo biến thể mới", "danger");
+            continue;
+          }
+
+          finalVariantId = created.variant_id;
+          variantEl.setAttribute("data-id", finalVariantId);
+        }
+
+        // Upload ảnh nếu là ảnh base64
+        for (const box of loadedImageBoxes) {
+          const img = box.querySelector("img");
+          const input = box.querySelector('input[type="file"]');
+          if (!img) continue;
+
+          const src = img.src;
+
+          if (src.startsWith("http")) {
+            list_image.push(src); // Ảnh cũ giữ nguyên
+          } else if (src.startsWith("data:image/") && input?.files?.[0]) {
+            const uploadedUrl = await uploadVariantImageToServer(finalVariantId, input.files[0]);
+            if (uploadedUrl) {
+              list_image.push(uploadedUrl);
+              img.src = uploadedUrl;
+              input.value = "";
+            }
+          }
+        }
+
+        // Cập nhật lại list_image trong DOM và variantData
+        variantEl.variantData = {
+          color_id,
+          slug,
+          quantity,
+          price,
+          price_sale,
+          list_image,
+        };
+
+        setupVariantImageUpload(variantEl); // Cập nhật lại box ảnh
+
+        // Gửi request cập nhật biến thể với ảnh đã upload
+        await updateVariant(finalVariantId, {
+          color_id,
+          slug,
+          quantity,
+          price,
+          price_sale,
+          list_image: list_image.join(","), // backend yêu cầu dạng chuỗi
+        });
+      }
+      showToast("Cập nhật biến thể thành công!", "success");
     } catch (err) {
-      console.error("Lỗi gửi yêu cầu:", err);
-      showToast("Đã có lỗi xảy ra khi gửi dữ liệu.", "danger");
+      console.error("Lỗi khi lưu sản phẩm:", err);
+      showToast("Lỗi khi lưu sản phẩm", "danger");
     }
   });
 
-  // ===== Xử lý Thêm biến thể mới (không popup, giống trang add) =====
-  document.querySelector(".btn-add-variant").addEventListener("click", function () {
-    // Clone template
+  async function updateVariant(variantId, data) {
+    try {
+      const res = await fetch(`${API_URL}/api/variants/${variantId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      const result = await res.json();
+      if (!res.ok) {
+        console.error("❌ Lỗi cập nhật variant:", result);
+        showToast("Cập nhật biến thể thất bại", "danger");
+        return null;
+      }
+
+      console.log("✅ Cập nhật variant thành công:", result);
+      return result;
+    } catch (err) {
+      console.error("❌ Lỗi kết nối khi gọi updateVariant:", err);
+      showToast("Lỗi kết nối khi cập nhật biến thể", "danger");
+      return null;
+    }
+  }
+  async function addVariant(productId, data) {
+    try {
+      const res = await fetch(`${API_URL}/api/variants/${productId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      const result = await res.json();
+      if (!res.ok) {
+        console.error("❌ Lỗi tạo biến thể:", result);
+        showToast("Tạo biến thể thất bại", "danger");
+        return null;
+      }
+
+      console.log("✅ Tạo biến thể thành công:", result);
+      return result;
+    } catch (err) {
+      console.error("❌ Lỗi kết nối khi gọi addVariant:", err);
+      showToast("Lỗi kết nối khi tạo biến thể", "danger");
+      return null;
+    }
+  }
+  document.querySelector(".btn-add-variant").addEventListener("click", async function () {
     const newVariant = variantTemplate.cloneNode(true);
     newVariant.style.display = "block";
     newVariant.removeAttribute("id");
+    newVariant.classList.add("variant-item");
 
-    // Đặt lại tiêu đề
-    const variantCount = variantsList.querySelectorAll(".variant-item:not(#variantTemplate)").length + 1;
-    newVariant.querySelector(".variant-title").textContent = `Biến thể ${variantCount}`;
-
-    // Render lại select màu cho biến thể mới
+    // Render dropdown màu
     const colorSelect = newVariant.querySelector(".variant-color");
     colorSelect.innerHTML = globalColors.map(
-      (color) =>
-        `<option value="${color.color_id}">${color.color_name}</option>`
+      (color) => `<option value="${color.color_id}">${color.color_name}</option>`
     ).join("");
 
-    // Setup sự kiện cho biến thể mới
+    // Setup event
     setupVariantEvents(newVariant);
-
-    // Thêm vào danh sách
     variantsList.appendChild(newVariant);
   });
 
-  // Hàm setup các sự kiện cho biến thể (toggle, remove, auto-slug, upload ảnh)
+  // Đảm bảo định nghĩa setupVariantEvents trước khi gọi trong loadProductDetail
   function setupVariantEvents(variantElement) {
     // Toggle nội dung biến thể
-    variantElement.querySelector(".btn-toggle-variant")?.addEventListener("click", function () {
-      const content = variantElement.querySelector(".variant-content");
-      const icon = this.querySelector("i");
-      // Sửa: Nếu đang ẩn thì hiển thị, nếu đang hiện thì ẩn
-      if (content.style.display === "none") {
-        content.style.display = "block";
-        icon.classList.replace("fa-chevron-down", "fa-chevron-up");
-      } else {
-        content.style.display = "none";
-        icon.classList.replace("fa-chevron-up", "fa-chevron-down");
-      }
-    });
+    variantElement
+      .querySelector(".btn-toggle-variant")
+      ?.addEventListener("click", function () {
+        const content = variantElement.querySelector(".variant-content");
+        const icon = this.querySelector("i");
+        if (content.style.display === "none") {
+          content.style.display = "block";
+          icon.classList.replace("fa-chevron-down", "fa-chevron-up");
+        } else {
+          content.style.display = "none";
+          icon.classList.replace("fa-chevron-up", "fa-chevron-down");
+        }
+      });
 
     // Xóa biến thể
-    variantElement.querySelector(".btn-remove-variant")?.addEventListener("click", function () {
-      if (confirm("Bạn có chắc muốn xóa biến thể này?")) {
-        variantElement.remove();
-      }
-    });
+    variantElement
+      .querySelector(".btn-remove-variant")
+      ?.addEventListener("click", async function () {
+        if (confirm("Bạn có chắc muốn xóa biến thể này?")) {
+          const variantId = variantElement.getAttribute("data-id");
+
+          // Nếu đã có trong DB thì gọi API xoá
+          if (variantId) {
+            await deleteVariant(variantId);
+          }
+
+          // Dù là mới hay cũ cũng xoá khỏi DOM
+          console.log("[REMOVE VARIANT] Đã xóa biến thể khỏi DOM:", variantId || "new (chưa có ID)");
+          variantElement.remove();
+        }
+      });
+
 
     // Tự động tạo slug khi chọn màu
     const colorSelect = variantElement.querySelector(".variant-color");
@@ -696,6 +829,7 @@
       });
     }
 
+
     // Xử lý upload ảnh biến thể
     setupVariantImageUpload(variantElement);
 
@@ -703,130 +837,64 @@
     const content = variantElement.querySelector(".variant-content");
     if (content) content.style.display = "block";
 
-    // Sửa lỗi: Nếu có sẵn ảnh (khi load từ API), render lại đúng DOM structure cho từng ảnh
+    // Nếu có sẵn ảnh (khi load từ API), render lại đúng DOM structure cho từng ảnh
     const imageGrid = variantElement.querySelector(".variant-image-grid");
-
     if (imageGrid && variantElement.variantData?.list_image?.length) {
-      // Xóa ảnh cũ
       imageGrid.innerHTML = "";
-
       variantElement.variantData.list_image.forEach((imgUrl) => {
         const imgBox = document.createElement("div");
         imgBox.className = "variant-image-item loaded";
         imgBox.innerHTML = `
-      <img src="${imgUrl}" alt="Preview" style="width:80px;margin:5px;">
-      <button class="remove-image"><i class="fas fa-times"></i></button>
-    `;
-
-        // Sự kiện xóa ảnh
+            <img src="${imgUrl}" alt="Preview" style="width:80px;margin:5px;">
+            <button class="remove-image"><i class="fas fa-times"></i></button>
+          `;
         imgBox.querySelector(".remove-image").addEventListener("click", function (ev) {
           ev.stopPropagation();
           const publicId = extractPublicIdFromUrl(imgUrl);
-          if (publicId) removedImages.push(publicId);
+          if (publicId) {
+            removedImages.push(publicId);
+            console.log("[REMOVE IMAGE] Đã đánh dấu xóa ảnh biến thể:", publicId);
+          }
           imgBox.remove();
-
-          // Nếu chưa có box upload thì thêm lại box upload
           if (!imageGrid.querySelector('.variant-upload-box')) {
             imageGrid.appendChild(createUploadBox(imageGrid));
           }
         });
-
         imageGrid.appendChild(imgBox);
       });
-
-      // Thêm box upload vào cuối
       imageGrid.appendChild(createUploadBox(imageGrid));
     }
   }
 
-  // Hàm xử lý upload ảnh cho variant (giống trang add)
-  function setupVariantImageUpload(variantElement) {
-    const imageGrid = variantElement.querySelector(".variant-image-grid");
-    const maxImages = 7;
-    let currentImageCount = 0;
+  // Hàm upload ảnh biến thể lên server và trả về URL
+  async function uploadVariantImageToServer(variantId, file) {
+    const formData = new FormData();
+    formData.append("image", file);
+    formData.append("folder", "SonaSpace/Product");
+    formData.append("subfolder", "variant"); // dùng thư mục riêng cho mỗi variant
 
-    function createImageBox() {
-      const div = document.createElement("div");
-      div.className = "variant-image-item active";
-      div.innerHTML = `
-        <div class="upload-placeholder">
-          <i class="fas fa-plus"></i>
-          <input type="file" hidden accept="image/*">
-        </div>
-      `;
-      return div;
-    }
-
-    function setupImageBox(imageBox) {
-      const input = imageBox.querySelector('input[type="file"]');
-      const placeholder = imageBox.querySelector(".upload-placeholder");
-      imageBox.addEventListener("click", () => input.click());
-      input.addEventListener("change", function (e) {
-        const file = e.target.files[0];
-        if (file && file.type.startsWith("image/")) {
-          const reader = new FileReader();
-          reader.onload = function (e) {
-            imageBox.classList.add("loaded");
-            placeholder.style.display = "none";
-            const img = document.createElement("img");
-            img.src = e.target.result;
-            img.alt = "Preview";
-            imageBox.appendChild(img);
-            const removeBtn = document.createElement("button");
-            removeBtn.className = "remove-image";
-            removeBtn.innerHTML = `<i class="fas fa-times"></i>`;
-            imageBox.appendChild(removeBtn);
-            removeBtn.addEventListener("click", function (e) {
-              e.stopPropagation();
-              imageBox.remove();
-              currentImageCount--;
-              const lastBox = imageGrid.lastElementChild;
-              if (!lastBox || lastBox.classList.contains("loaded")) {
-                if (currentImageCount < maxImages) {
-                  const newBox = createImageBox();
-                  imageGrid.appendChild(newBox);
-                  setupImageBox(newBox);
-                  currentImageCount++;
-                }
-              }
-            });
-            if (currentImageCount < maxImages) {
-              const newBox = createImageBox();
-              imageGrid.appendChild(newBox);
-              setupImageBox(newBox);
-              currentImageCount++;
-            }
-          };
-          reader.readAsDataURL(file);
-        }
+    try {
+      console.log(">> Gửi file:", file);
+      console.log(">> Tên:", file.name);
+      console.log(">> Type:", file.type);
+      const res = await fetch(`${API_URL}/api/upload/product`, {
+        method: "POST",
+        body: formData,
       });
-    }
 
-    imageGrid.innerHTML = "";
-    const firstBox = createImageBox();
-    imageGrid.appendChild(firstBox);
-    setupImageBox(firstBox);
-    currentImageCount++;
-  }
-
-  // Khi load lại sản phẩm từ API, setup lại sự kiện cho các biến thể cũ
-  function setupAllVariantEvents() {
-    document.querySelectorAll("#variantsList .variant-item").forEach(variantEl => {
-      if (variantEl.id !== "variantTemplate") {
-        setupVariantEvents(variantEl);
-        // Luôn hiển thị phần nội dung biến thể khi load lại
-        const content = variantEl.querySelector(".variant-content");
-        if (content) content.style.display = "block";
+      const result = await res.json();
+      if (!res.ok || !result.url) {
+        showToast("Lỗi upload ảnh: " + (result.error || "Không rõ"), "danger");
+        return null;
       }
-    });
+
+      return result.url;
+    } catch (error) {
+      console.error("Lỗi kết nối:", error);
+      showToast("Lỗi kết nối khi upload ảnh", "danger");
+      return null;
+    }
   }
-
-  // Gọi lại sau khi render biến thể từ API
-  window.addEventListener("DOMContentLoaded", () => {
-    // ...existing code...
-    setTimeout(setupAllVariantEvents, 500); // Đảm bảo gọi sau khi render xong
-  });
-
 </script>
 
 

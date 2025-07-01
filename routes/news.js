@@ -89,6 +89,106 @@ router.get('/', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch news' });
   }
 });
+router.get('/simple', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    const conditions = [];
+    const queryParams = [];
+
+    if (req.query.category_id) {
+      conditions.push('n.news_category_id = ?');
+      queryParams.push(Number(req.query.category_id));
+    }
+
+    if (req.query.keyword) {
+      conditions.push('n.news_title LIKE ?');
+      const keyword = `%${req.query.keyword}%`;
+      queryParams.push(keyword);
+    }
+
+    if (req.user && req.user.isAdmin) {
+      if (req.query.status) {
+        conditions.push('n.news_status = ?');
+        queryParams.push(req.query.status);
+      }
+    } else {
+      conditions.push('n.news_status = 1');
+    }
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    const [countResult] = await db.query(`
+      SELECT COUNT(*) as total
+      FROM news n
+      LEFT JOIN news_category c ON n.news_category_id = c.news_category_id
+      ${whereClause}
+    `, queryParams);
+
+    const totalNews = countResult[0].total;
+    const totalPages = Math.ceil(totalNews / limit);
+
+    const paginationParams = [...queryParams, offset, limit];
+    const [newsRaw] = await db.query(`
+      SELECT 
+        n.news_image,
+        n.news_title,
+        n.news_slug,
+        n.news_view,
+        n.news_status,
+        n.created_at,
+        n.updated_at,
+        c.news_category_name AS category_name
+      FROM news n
+      LEFT JOIN news_category c ON n.news_category_id = c.news_category_id
+      ${whereClause}
+      ORDER BY n.created_at DESC
+      LIMIT ?, ?
+    `, paginationParams);
+
+    const news = newsRaw.map(item => {
+      let firstImage = null;
+      try {
+        const parsedImages = JSON.parse(item.news_image || "[]");
+        if (Array.isArray(parsedImages) && parsedImages.length > 0) {
+          firstImage = parsedImages[0];
+        }
+      } catch (err) {
+        console.warn("Không thể parse news_image:", item.news_image);
+      }
+
+      return {
+        news_image: firstImage,
+        news_title: item.news_title,
+        news_slug: item.news_slug,
+        news_view: item.news_view,
+        news_status: item.news_status,
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        category_name: item.category_name
+      };
+    });
+
+    res.json({
+      news,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalNews,
+        newsPerPage: limit,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching news:', error);
+    res.status(500).json({ error: 'Failed to fetch news' });
+  }
+});
+
+
 
 
 router.get('/views', async (req, res) => {
@@ -256,10 +356,13 @@ router.get('/category/:categoryId', async (req, res) => {
 function generateSlug(text) {
   return text
     .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/[^a-z0-9\s-]/g, "")
     .trim()
-    .replace(/[^\w\s-]/g, '') // loại bỏ ký tự đặc biệt
-    .replace(/[\s_-]+/g, '-') // thay thế khoảng trắng/gạch dưới bằng dấu -
-    .replace(/^-+|-+$/g, ''); // bỏ - ở đầu/cuối
+    .replace(/\s+/g, "-")
+    .replace(/\-+/g, "-");
 }
 router.post('/', verifyToken, async (req, res) => {
   try {
@@ -417,9 +520,13 @@ router.put('/:slug', verifyToken, async (req, res) => {
     let newsSlug = slug;
     if (!slug && title) {
       newsSlug = title.toLowerCase()
-        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-        .replace(/[đĐ]/g, "d").replace(/[^a-z0-9]/g, "-")
-        .replace(/-+/g, "-").replace(/^-+|-+$/g, "");
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/đ/g, "d")
+        .replace(/[^a-z0-9\s-]/g, "")
+        .trim()
+        .replace(/\s+/g, "-")
+        .replace(/\-+/g, "-");
     }
 
     if (newsSlug && newsSlug !== newsItem.news_slug) {
@@ -428,7 +535,7 @@ router.put('/:slug', verifyToken, async (req, res) => {
         [newsSlug, id]
       );
       if (slugExists.length > 0) {
-        newsSlug = `${newsSlug}-${Date.now().toString().slice(-6)}`;
+        newsSlug = `${newsSlug}-${Date.now().toString().slice(-4)}`;
       }
     }
 
@@ -519,11 +626,6 @@ router.put('/:slug', verifyToken, async (req, res) => {
     res.status(500).json({ error: 'Failed to update news article' });
   }
 });
-
-
-
-
-
 
 
 /**

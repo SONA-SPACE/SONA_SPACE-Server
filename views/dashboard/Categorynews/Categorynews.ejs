@@ -1,0 +1,164 @@
+<!-- Trang Quản lý tin tức -->
+<!-- Tiêu đề và Thanh công cụ -->
+<div class="room_page">
+    <div class="dashboard-header-row">
+        <h2 class="dashboard-title">Tin tức</h2>
+        <div class="action-buttons">
+            <button class="add-product-btn" onclick="window.location.href='/dashboard/addcategorynews'">
+                <i class="fas fa-plus"></i> Thêm danh mục tin
+            </button>
+        </div>
+    </div>
+
+    <!-- Bộ lọc và Tìm kiếm -->
+    <div class="filter-row">
+        <div class="search-container">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" class="search-input" placeholder="Search">
+        </div>
+        <div class="date-range">
+            <i class="far fa-calendar-alt"></i>
+            <span>1/05/2025 - 31/5/2025</span>
+        </div>
+        <div class="results-info">
+            Hiển thị 1-6 trong tổng số 500
+        </div>
+    </div>
+
+    <!-- Bảng Danh mục Tin tức -->
+    <div class="category-table-container">
+        <table class="category-table" id="newsCategoriesTable">
+            <thead>
+                <tr>
+                    <th>Danh mục</th>
+                    <th>Số tin</th>
+                    <th>Trạng thái</th>
+                    <th>Ngày tạo</th>
+                    <th>Ngày cập nhật</th>
+                    <th>Slug</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Dữ liệu sẽ được JS đổ vào -->
+            </tbody>
+        </table>
+    </div>
+</div>
+<!-- Load News Categories JS -->
+<!-- <script src="/javascripts/news-categories.js"></script> -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const URL_API = "http://localhost:3501/api";
+
+        function getNewsCategories() {
+            fetch(URL_API + "/news-categories")
+                .then((response) => response.json())
+                .then((data) => {
+                    renderCategories(data); // data.news-categories từ API backend
+                    console.log("Danh sách bài viết danh mục:", data);
+                })
+                .catch((error) => {
+                    console.error("Lỗi khi tải danh mục:", error);
+                    document.querySelector(".results-info").textContent = "Không thể tải dữ liệu.";
+                });
+        }
+
+        function renderCategories(categories) {
+            const tableBody = document.querySelector("#newsCategoriesTable tbody");
+            tableBody.innerHTML = "";
+
+            categories.forEach((category) => {
+                const row = document.createElement("tr");
+                const status = category.status === 1 ? "visible" : "hidden";
+
+                row.innerHTML = `
+        <td>
+            <div class="room-info">
+                <div class="room-image">
+                    <img src="${category.image}" alt="${category.name}" >
+                </div>
+            <div class="room-name">${category.name}</div>
+            </div>
+        </td>
+        <td>${category.news_count || 0}</td>
+        <td>
+            <span class="status-indicator ${status === "visible" ? "visible" : "hidden"
+                    }">
+                <i class="fas ${status === "visible" ? "fa-eye" : "fa-eye-slash"
+                    }"></i>
+                ${status === "visible" ? "Hiển thị" : "Ẩn"}
+            </span>
+        </td>
+        <td>${formatDate(category.created_at)}</td>
+        <td>${formatDate(category.updated_at)}</td>
+        <td>${category.slug}</td>
+        <td>
+                <div class="action-cell">
+                    <button class="action-button edit" data-id="${category.slug}"
+                    onclick="window.location.href='/dashboard/editcategorynews/${category.slug}'"
+                    title="Chỉnh sửa">
+                    <i class="fas fa-edit"></i>
+                    </button>
+
+                    <button class="action-button visibility" data-id="${category.id
+                    }" data-status="${status}" title="${status === "visible" ? "Ẩn không gian" : "Hiển thị không gian"
+                    }">
+                    <i class="fas ${status === "visible" ? "fa-eye-slash" : "fa-eye"
+                    }"></i>
+                    </button>
+                    <button class="action-button delete" data-id="${category.id}" data-title="${category.name}" title="Xóa tin tức">
+                    <i class="fas fa-trash"></i>
+                    </button>
+
+                </div>
+                </td>
+        `;
+                tableBody.appendChild(row);
+            });
+           document.querySelectorAll(".action-button.delete").forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    const categoryId = btn.getAttribute("data-id");
+                    const categoryName = btn.getAttribute("data-title");
+                    deleteNewsCategory(categoryId, categoryName);
+                });
+            });
+
+            document.querySelector(".results-info").textContent = `Hiển thị ${categories.length} kết quả`;
+        }
+
+
+        function deleteNewsCategory(id, name) {
+            if (!confirm(`Bạn có chắc muốn xóa danh mục "${name}"?`)) return;
+
+            const token = localStorage.getItem("token") || sessionStorage.getItem("authToken");
+
+            fetch(`${URL_API}/news-categories/${id}`, {
+                method: "DELETE",
+                headers: {
+                    "Authorization": `Bearer ${token}`,
+                }
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.error) {
+                        showToast(data.error, "danger");
+                    } else {
+                        showToast("Xóa bài viết thành công", "success");
+                        setTimeout(() => location.reload(), 1000);
+                        getNewsCategories();
+                    }
+                })
+                .catch(err => {
+                    console.error("Lỗi khi xóa:", err);
+                    showToast("Xảy ra lỗi khi xóa bài viết", "danger");
+                });
+        }
+        function formatDate(dateStr) {
+            if (!dateStr) return "-";
+            return new Date(dateStr).toLocaleDateString("vi-VN");
+        }
+
+        getNewsCategories();
+    });
+</script>

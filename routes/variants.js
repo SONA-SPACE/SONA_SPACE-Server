@@ -2,7 +2,14 @@ const express = require("express");
 const router = express.Router();
 const db = require("../config/database");
 const { verifyToken, isAdmin } = require("../middleware/auth");
+const cloudinary = require("../config/cloudinary");
+const upload = require("../middleware/upload");
 
+const formatImageList = (list) => {
+  if (Array.isArray(list)) return list.join(",");
+  if (typeof list === "string") return list;
+  return null;
+};
 /**
  * @route   GET /api/variants
  * @desc    Lấy danh sách biến thể sản phẩm
@@ -150,111 +157,225 @@ router.post("/", verifyToken, isAdmin, async (req, res) => {
   }
 });
 
-/**
- * @route   PUT /api/variants/:id
- * @desc    Cập nhật thông tin biến thể
+/* * @route   POST /api/variants/:productId
+ * @desc    Tạo biến thể mới cho sản phẩm
  * @access  Private (Admin only)
  */
-router.put("/:id", verifyToken, isAdmin, async (req, res) => {
+
+/**
+ * @route   POST /api/variants/:productId
+ * @desc    Tạo biến thể mới cho sản phẩm (nhận JSON, list_image là mảng URL)
+ * @access  Private (Admin only)
+ */
+
+router.post("/:productId", async (req, res) => {
+  const productId = req.params.productId;
+  const { color_id, slug, quantity, price, price_sale, list_image } = req.body;
+
+  if (!productId) return res.status(400).json({ error: "Thiếu productId" });
+
   try {
-    const id = Number(req.params.id);
-    if (isNaN(id)) {
-      return res.status(400).json({ error: "Invalid variant ID" });
-    }
-
-    const {
-      variant_colors,
-      variant_materials,
-      variant_width,
-      variant_height,
-      variant_depth,
-      list_img,
-    } = req.body;
-
-    // Kiểm tra biến thể tồn tại
-    const [existingVariant] = await db.query(
-      "SELECT variant_id FROM variant_product WHERE variant_id = ?",
-      [id]
+    // Kiểm tra sản phẩm tồn tại
+    const [product] = await db.query(
+      "SELECT product_id FROM product WHERE product_id = ?",
+      [productId]
     );
-    if (existingVariant.length === 0) {
-      return res.status(404).json({ error: "Variant not found" });
+    if (product.length === 0) {
+      return res.status(404).json({ error: "Product không tồn tại" });
     }
 
-    await db.query(
-      `
-      UPDATE variant_product SET
-        variant_colors = COALESCE(?, variant_colors),
-        variant_materials = COALESCE(?, variant_materials),
-        variant_width = COALESCE(?, variant_width),
-        variant_height = COALESCE(?, variant_height),
-        variant_depth = COALESCE(?, variant_depth),
-        list_img = COALESCE(?, list_img)
-      WHERE variant_id = ?
-    `,
+    // Xử lý list_image (mảng hoặc chuỗi)
+    let listImageStr = formatImageList(list_image);
+    if (!listImageStr) listImageStr = ""; // Đảm bảo luôn là chuỗi, không null
+
+    // Insert vào DB
+    const [result] = await db.query(
+      `INSERT INTO variant_product (
+        product_id,
+        color_id,
+        variant_product_slug,
+        variant_product_quantity,
+        variant_product_price,
+        variant_product_price_sale,
+        variant_product_list_image
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
-        variant_colors || null,
-        variant_materials || null,
-        variant_width || null,
-        variant_height || null,
-        variant_depth || null,
-        list_img || null,
-        id,
+        productId,
+        color_id || null,
+        slug || null,
+        quantity || null,
+        price || null,
+        price_sale || null,
+        listImageStr,
       ]
     );
 
-    const [updatedVariant] = await db.query(
-      "SELECT * FROM variant_product WHERE variant_id = ?",
-      [id]
-    );
-
-    res.json({
-      message: "Variant updated successfully",
-      variant: updatedVariant[0],
+    res.status(201).json({
+      message: "Tạo biến thể thành công",
+      variant_id: result.insertId,
+      list_image: list_image,
     });
   } catch (error) {
-    console.error("Error updating variant:", error);
-    res.status(500).json({ error: "Failed to update variant" });
+    console.error("[POST VARIANT] Lỗi:", error);
+    res
+      .status(500)
+      .json({ error: "Tạo biến thể thất bại", detail: error.message });
   }
 });
 
 /**
- * @route   DELETE /api/variants/:id
+ * @route   PUT /api/variants/:variantId
+ * @desc    Cập nhật thông tin biến thể
+ * @access  Private (Admin only)
+ */
+router.put("/:variantId", async (req, res) => {
+  const variantId = req.params.variantId;
+  let { color_id, slug, quantity, price, price_sale, list_image } = req.body;
+
+  // Đảm bảo list_image là chuỗi
+  const listImageStr = formatImageList(list_image);
+
+  if (!variantId) {
+    return res.status(400).json({ error: "Variant ID is required" });
+  }
+
+  // Kiểm tra biến thể tồn tại
+  const [existingVariant] = await db.query(
+    "SELECT variant_id FROM variant_product WHERE variant_id = ?",
+    [variantId]
+  );
+  if (existingVariant.length === 0) {
+    return res.status(404).json({ error: "Variant not found" });
+  }
+
+  await db.query(
+    `
+    UPDATE variant_product SET
+      color_id = COALESCE(?, color_id),
+      variant_product_slug = COALESCE(?, variant_product_slug),
+      variant_product_quantity = COALESCE(?, variant_product_quantity),
+      variant_product_price = COALESCE(?, variant_product_price),
+      variant_product_price_sale = COALESCE(?, variant_product_price_sale),
+      variant_product_list_image = COALESCE(?, variant_product_list_image)
+    WHERE variant_id = ?
+  `,
+    [
+      color_id || null,
+      slug || null,
+      quantity || null,
+      price || null,
+      price_sale || null,
+      listImageStr, // Đảm bảo là chuỗi
+      variantId,
+    ]
+  );
+
+  const [updatedVariant] = await db.query(
+    "SELECT * FROM variant_product WHERE variant_id = ?",
+    [variantId]
+  );
+
+  res.json({
+    message: "Variant updated successfully",
+    variant: updatedVariant[0],
+  });
+});
+
+/**
+ * @route   DELETE /api/variants/:variantId
  * @desc    Xóa biến thể
  * @access  Private (Admin only)
  */
-router.delete("/:id", verifyToken, isAdmin, async (req, res) => {
-  try {
-    const id = Number(req.params.id);
-    if (isNaN(id)) {
-      return res.status(400).json({ error: "Invalid variant ID" });
+router.delete("/:variantId", async (req, res) => {
+  const { variantId } = req.params;
+
+  if (!variantId) {
+    return res.status(400).json({ error: "Thiếu variantId" });
+  }
+
+  // 🟢 Đặt hàm này ngay đầu trước khi sử dụng nó
+  const extractPublicIdFromUrl = (url) => {
+    const parts = url.split("/upload/");
+    if (parts.length < 2) return null;
+
+    const pathParts = parts[1].split("/");
+    if (pathParts[0].startsWith("v") && !isNaN(pathParts[0].substring(1))) {
+      pathParts.shift();
     }
 
-    // Kiểm tra biến thể tồn tại
+    const fullPath = pathParts.join("/");
+    return fullPath.replace(/\.(jpg|jpeg|png|webp|gif)$/, "");
+  };
+
+  try {
+    // 1. Kiểm tra biến thể tồn tại
     const [existingVariant] = await db.query(
-      "SELECT variant_id FROM variant_product WHERE variant_id = ?",
-      [id]
+      "SELECT * FROM variant_product WHERE variant_id = ?",
+      [variantId]
     );
     if (existingVariant.length === 0) {
-      return res.status(404).json({ error: "Variant not found" });
+      return res.status(404).json({ error: "Biến thể không tồn tại" });
     }
 
-    // Kiểm tra biến thể có trong order_items không
+    // 2. Check có trong đơn hàng không
     const [orderItems] = await db.query(
-      "SELECT id FROM order_items WHERE variant_id = ? LIMIT 1",
-      [id]
+      "SELECT * FROM order_items WHERE variant_id = ? LIMIT 1",
+      [variantId]
     );
     if (orderItems.length > 0) {
-      return res
-        .status(400)
-        .json({ error: "Cannot delete variant that is used in orders" });
+      return res.status(400).json({
+        error: "Không thể xoá biến thể đang được sử dụng trong đơn hàng",
+      });
     }
 
-    await db.query("DELETE FROM variant_product WHERE variant_id = ?", [id]);
+    // 3. Tách ảnh từ list_image
+    const listImageStr = existingVariant[0].variant_product_list_image || "";
 
-    res.json({ message: "Variant deleted successfully" });
+    const imageUrls = listImageStr
+      .split(",")
+      .filter((url) => url.trim() !== "");
+
+    const publicIds = imageUrls
+      .map((url) => {
+        try {
+          return extractPublicIdFromUrl(url);
+        } catch (err) {
+          console.warn("Lỗi extract URL:", url);
+          return null;
+        }
+      })
+      .filter(Boolean);
+
+    // 4. Xoá ảnh khỏi Cloudinary
+    await Promise.all(
+      publicIds.map(async (id) => {
+        try {
+          const result = await cloudinary.uploader.destroy(id);
+          console.log("🗑️ Đã xoá ảnh:", id, result);
+          return result;
+        } catch (err) {
+          console.warn("❌ Không thể xoá ảnh:", id, err.message);
+          return null;
+        }
+      })
+    );
+    console.log("🗑️ Đã xoá ảnh khỏi Cloudinary:", publicIds);
+
+    // 5. Xoá biến thể
+    await db.query("DELETE FROM variant_product WHERE variant_id = ?", [
+      variantId,
+    ]);
+
+    res.json({
+      message: "Đã xoá biến thể và ảnh thành công",
+      deletedImages: publicIds,
+    });
   } catch (error) {
-    console.error("Error deleting variant:", error);
-    res.status(500).json({ error: "Failed to delete variant" });
+    console.error("❌ Lỗi khi xoá biến thể:", error);
+    res.status(500).json({
+      error: "Lỗi server khi xoá biến thể",
+      detail: error.message,
+    });
   }
 });
 
@@ -264,16 +385,19 @@ router.delete("/:id", verifyToken, isAdmin, async (req, res) => {
  * @access  Public
  */
 // GET /api/variants/by-product/:slug
-router.get('/by-product/:slug', async (req, res) => {
+router.get("/by-product/:slug", async (req, res) => {
   const slug = req.params.slug;
   if (!slug) return res.status(400).json({ error: "Missing product slug" });
   try {
-    const [rows] = await db.query(`
+    const [rows] = await db.query(
+      `
       SELECT vp.*
       FROM variant_product vp
       JOIN product p ON vp.product_id = p.product_id
       WHERE p.product_slug = ?
-    `, [slug]);
+    `,
+      [slug]
+    );
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch variants by product" });

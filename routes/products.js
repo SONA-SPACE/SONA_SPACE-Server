@@ -697,7 +697,7 @@ router.post("/", verifyToken, isAdmin, async (req, res) => {
  * @desc    Cập nhật thông tin sản phẩm
  * @access  Private (Admin only)
  */
-router.put("/:id", verifyToken, isAdmin, async (req, res) => {
+router.put("/:id", async (req, res) => {
   const id = Number(req.params.id);
   if (isNaN(id)) return res.status(400).json({ message: "ID phải là số" });
 
@@ -1186,9 +1186,10 @@ router.put("/admin/:slug", async (req, res) => {
     max_weight_load,
     main_image,
     room_ids,
-    variants,
     removedImages = [],
   } = req.body;
+
+  // Xoá ảnh Cloudinary nếu cần
   if (removedImages.length) {
     for (const imageUrl of removedImages) {
       const publicId = extractPublicIdFromUrl(imageUrl);
@@ -1205,20 +1206,20 @@ router.put("/admin/:slug", async (req, res) => {
       }
     }
   }
-  // Validate
-  if (!name || !slug || !category_id || !variants || !variants.length) {
+
+  // Validate đầu vào
+  if (!name || !slug || !category_id) {
     return res.status(400).json({
       error: "Missing required fields",
-      required: "name, slug, category_id, variants",
+      required: "name, slug, category_id",
     });
   }
 
-  // Start transaction
   const connection = await db.getConnection();
   await connection.beginTransaction();
 
   try {
-    // 1. Lấy product_id từ slug
+    // Tìm product_id từ slug
     const [productRows] = await connection.query(
       `SELECT product_id FROM product WHERE product_slug = ?`,
       [slug]
@@ -1229,7 +1230,7 @@ router.put("/admin/:slug", async (req, res) => {
     }
     const productId = productRows[0].product_id;
 
-    // 2. Update product
+    // Cập nhật sản phẩm
     await connection.query(
       `UPDATE product SET
         product_name = ?,
@@ -1260,47 +1261,7 @@ router.put("/admin/:slug", async (req, res) => {
       ]
     );
 
-    // 3. Xóa variants cũ
-    await connection.query(`DELETE FROM variant_product WHERE product_id = ?`, [
-      productId,
-    ]);
-
-    // 4. Thêm variants mới
-    for (const variant of variants) {
-      const {
-        color_id,
-        price,
-        price_sale,
-        quantity,
-        list_image,
-        variant_slug,
-      } = variant;
-
-      const finalSlug = variant_slug || `${slug}-${color_id}`;
-
-      await connection.query(
-        `INSERT INTO variant_product (
-          product_id,
-          color_id,
-          variant_product_price,
-          variant_product_price_sale,
-          variant_product_quantity,
-          variant_product_list_image,
-          variant_product_slug
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [
-          productId,
-          color_id,
-          price,
-          price_sale || null,
-          quantity,
-          list_image.join(","),
-          variant_slug,
-        ]
-      );
-    }
-
-    // 5. Cập nhật liên kết phòng
+    // Cập nhật liên kết phòng
     await connection.query(`DELETE FROM room_product WHERE product_id = ?`, [
       productId,
     ]);
@@ -1312,45 +1273,23 @@ router.put("/admin/:slug", async (req, res) => {
       );
     }
 
-    // Commit transaction
+    // Commit
     await connection.commit();
 
-    // Lấy lại sản phẩm đã cập nhật kèm variants
+    // Trả về sản phẩm đã cập nhật (không cần variants ở đây)
     const [product] = await db.query(
       `SELECT 
-  p.*,
-  c.category_name,
-  CONCAT('[', GROUP_CONCAT(
-    CONCAT(
-      '{',
-      '"variant_id":', vp.variant_id, ',',
-      '"color_id":', vp.color_id, ',',
-      '"color_name":"', col.color_name, '",',
-      '"color_hex":"', col.color_hex, '",',
-      '"price":', vp.variant_product_price, ',',
-      '"price_sale":', IFNULL(vp.variant_product_price_sale, 'null'), ',',
-      '"quantity":', vp.variant_product_quantity, ',',
-      '"list_image":"', vp.variant_product_list_image, '",',
-      '"slug":"', vp.variant_product_slug, '"',
-      '}'
-    )
-  ), ']') AS variants
-FROM product p
-LEFT JOIN category c ON p.category_id = c.category_id
-LEFT JOIN variant_product vp ON p.product_id = vp.product_id
-LEFT JOIN color col ON vp.color_id = col.color_id
-WHERE p.product_id = ?
-GROUP BY p.product_id;
-`,
+        p.*,
+        c.category_name
+      FROM product p
+      LEFT JOIN category c ON p.category_id = c.category_id
+      WHERE p.product_id = ?`,
       [productId]
     );
 
     res.json({
       message: "Product updated successfully",
-      product: {
-        ...product[0],
-        variants: JSON.parse(product[0].variants),
-      },
+      product: product[0],
     });
   } catch (error) {
     await connection.rollback();
@@ -1363,6 +1302,7 @@ GROUP BY p.product_id;
     connection.release();
   }
 });
+
 // Đảm bảo có route GET /api/products/admin/:slug để trả về chi tiết sản phẩm cho trang edit
 
 router.get("/admin/:slug", async (req, res) => {

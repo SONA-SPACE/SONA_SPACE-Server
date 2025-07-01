@@ -45,16 +45,15 @@
         </table>
     </div>
 </div>
-</div>
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         const URL_API = "http://localhost:3501/api";
 
         function getNews() {
-            fetch(URL_API + "/news")
+            fetch(URL_API + "/news/simple")
                 .then((response) => response.json())
                 .then((data) => {
-                    renderNews(data.news); // data.news từ API backend
+                    renderNews(data.news); 
                     console.log("Danh sách bài viết:", data.news);
                 })
                 .catch((error) => {
@@ -72,26 +71,27 @@
                 const row = document.createElement("tr");
 
                 const status = news.news_status === 1 ? "visible" : "hidden";
-                let imageUrl = "/images/default.jpg";
-                try {
-                    const images = JSON.parse(news.news_image);
-                    if (Array.isArray(images) && images.length > 0) {
-                        imageUrl = images[0];
-                    }
-                } catch (e) {
-                    console.warn("Không thể parse ảnh:", news.news_image);
-                }
+               const imageUrl = news.news_image || "/images/default.jpg";
+
+                // try {
+                //     const images = JSON.parse(news.news_image);
+                //     if (Array.isArray(images) && images.length > 0) {
+                //         imageUrl = images[0];
+                //     }
+                // } catch (e) {
+                //     console.warn("Không thể parse ảnh:", news.news_image);
+                // }
                 row.innerHTML = `
-    <td>
-        <div class="room-info">
-        <div class="room-image">
-            <img src="${imageUrl}" alt="${news.news_name}" >
-        </div>
-            <div class="room-name">${news.news_title}</div>
-        </div>
-    </td>
-    <td>${news.category_name || "-"}</td>
-    <td>${news.news_view || 0}</td>
+                    <td>
+                        <div class="room-info">
+                        <div class="room-image">
+                            <img src="${imageUrl}" alt="${news.news_name}" >
+                        </div>
+                            <div class="room-name">${news.news_title}</div>
+                        </div>
+                    </td>
+                    <td>${news.category_name || "-"}</td>
+                    <td>${news.news_view || 0}</td>
                 <td>
                 <span class="status-indicator ${status === "visible" ? "visible" : "hidden"
                     }">

@@ -99,7 +99,7 @@ app.use("/api/variants", variantsRouter);
 app.use("/api/rooms", roomsRouter);
 app.use("/api/news", newsRouter);
 app.use("/api/news-categories", newsCategoriesRouter);
-app.use("/api/contact-forms-design", contactFormsRouter);
+app.use("/api/contact-form-design", contactFormsRouter);
 app.use("/api/comments", commentsRouter);
 app.use("/api/debug", debugRouter);
 app.use("/api/orders-id", ordersIdRouter);

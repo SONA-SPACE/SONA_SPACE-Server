@@ -176,13 +176,26 @@ router.get("/editnews/:slug", (req, res) => {
   });
 });
 // News Categories management
-router.get("/news-categories", (req, res) => {
-  res.render("dashboard/news-categories", {
+router.get("/Categorynews", (req, res) => {
+  res.render("dashboard/Categorynews/Categorynews", {
     title: "Sona Space - Danh mục tin tức",
     layout: "layouts/dashboard",
   });
 });
+router.get("/addcategorynews", (req, res) => {
+  res.render("dashboard/Categorynews/addcategorynews", {
+    title: "Sona Space - Quản lý tin tức",
+    layout: "layouts/dashboard",
+  });
+});
 
+router.get("/editcategorynews/:slug", (req, res) => {
+  res.render("dashboard/Categorynews/editcategorynews", {
+    title: "Sona Space - Chỉnh sửa tin tức",
+    layout: "layouts/dashboard",
+    productId: req.params.slug,
+  });
+});
 // Settings
 router.get("/settings", (req, res) => {
   res.render("dashboard/settings", {

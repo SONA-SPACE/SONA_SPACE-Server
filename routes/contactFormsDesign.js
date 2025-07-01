@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const db = require("../config/database");
 const { verifyToken, isAdmin } = require("../middleware/auth");
+const { sendEmail } = require("../services/mailService");
 
 /**
  * @route   POST /api/contact-forms
@@ -15,6 +16,7 @@ router.post("/", async (req, res) => {
       name,
       email,
       phone,
+      room_name,
       design_description,
       require_design,
       style_design,
@@ -59,6 +61,7 @@ router.post("/", async (req, res) => {
         name,
         email,
         phone,
+        room_name,
         design_description,
         require_design,
         style_design,
@@ -67,13 +70,14 @@ router.post("/", async (req, res) => {
         design_fee,
         created_at,
         updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
     `,
       [
         contact_form_design_id || null,
         name,
         email,
         phone || null,
+        room_name || null,
         design_description,
         require_design || null,
         style_design || null,
@@ -83,13 +87,37 @@ router.post("/", async (req, res) => {
       ]
     );
 
-    res.status(201).json({
-      message: "Contact form submitted successfully",
+    const data = {
+      name,
+      email,
+      phone,
+      room_name,
+      design_description,
+      require_design,
+      style_design,
+      budget,
+      different_information,
+    };
+
+    await sendEmail(
+      data.email,
+      "Xác nhận Yêu cầu Tư vấn Thiết kế",
+      data
+    );
+    console.log(data);
+
+    res.status(200).json({
+      data,
+      success: true,
+      message: "Gửi yêu cầu thành công",
       contactId: result.insertId,
     });
   } catch (error) {
     console.error("Error submitting contact form:", error);
-    res.status(500).json({ error: "Failed to submit contact form" });
+    res.status(500).json({
+      success: false,
+      error: error.message || "Gửi yêu cầu thất bại",
+    });
   }
 });
 
@@ -98,8 +126,7 @@ router.post("/", async (req, res) => {
  * @desc    Lấy danh sách các form liên hệ
  * @access  Private (Admin only)
  */
-// verifyToken, isAdmin,
-router.get("/", async (req, res) => {
+router.get("/", verifyToken, isAdmin, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
@@ -113,7 +140,7 @@ router.get("/", async (req, res) => {
     // Đếm tổng số form liên hệ
     const [countResult] = await db.query(`
       SELECT COUNT(*) as total 
-      FROM contact_form
+      FROM contact_form_design
       ${statusFilter}
     `);
 
@@ -123,7 +150,7 @@ router.get("/", async (req, res) => {
     // Lấy danh sách form liên hệ
     const [forms] = await db.query(
       `
-      SELECT * FROM contact_form
+      SELECT * FROM contact_form_design
       ${statusFilter}
       ORDER BY created_at DESC
       LIMIT ?, ?
@@ -188,21 +215,12 @@ router.put("/:id", verifyToken, isAdmin, async (req, res) => {
     const { status, admin_notes } = req.body;
 
     // Kiểm tra form tồn tại
-    const [forms] = await db.query("SELECT * FROM contact_form WHERE id = ?", [
+    const [forms] = await db.query("SELECT * FROM contact_form_design WHERE id = ?", [
       id,
     ]);
 
     if (forms.length === 0) {
       return res.status(404).json({ error: "Contact form not found" });
-    }
-
-    // Kiểm tra trạng thái hợp lệ
-    const validStatuses = ["new", "in_progress", "completed", "spam"];
-    if (status && !validStatuses.includes(status)) {
-      return res.status(400).json({
-        error: "Invalid status",
-        validStatuses,
-      });
     }
 
     // Cập nhật form
@@ -228,12 +246,12 @@ router.put("/:id", verifyToken, isAdmin, async (req, res) => {
     values.push(id);
 
     await db.query(
-      `UPDATE contact_form SET ${updates.join(", ")} WHERE id = ?`,
+      `UPDATE contact_form_design SET ${updates.join(", ")} WHERE id = ?`,
       values
     );
 
     const [updatedForm] = await db.query(
-      "SELECT * FROM contact_form WHERE id = ?",
+      "SELECT * FROM contact_form_design WHERE id = ?",
       [id]
     );
 

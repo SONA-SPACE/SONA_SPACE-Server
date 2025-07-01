@@ -336,60 +336,83 @@ router.get("/admin", async (req, res) => {
  * @desc    Lấy danh sách sản phẩm mới nhất
  * @access  Public
  */
-router.get("/newest", async (req, res) => {
+router.get("/newest", optionalAuth, async (req, res) => {
+  const userId = req.user?.id || 0;
+
   try {
     const limit = parseInt(req.query.limit) || 8;
 
-    // Lấy danh sách sản phẩm mới nhất
     const [products] = await db.query(
       `
       SELECT 
-  p.product_id AS id,
-  p.product_name AS name,
-  p.product_slug AS slug,
-  p.product_image AS image,
-  p.category_id,
-  cat.category_name,
-  p.created_at,
-  p.updated_at,
+        p.product_id AS id,
+        p.product_name AS name,
+        p.product_slug AS slug,
+        p.product_image AS image,
+        p.category_id,
+        cat.category_name,
+        p.created_at,
+        p.updated_at,
 
-  (
-  SELECT vp2.variant_product_price
-  FROM variant_product vp2
-  WHERE vp2.product_id = p.product_id
-  ORDER BY vp2.variant_id ASC
-  LIMIT 1
-) AS price,
+        (
+          SELECT vp2.variant_product_price
+          FROM variant_product vp2
+          WHERE vp2.product_id = p.product_id
+          ORDER BY vp2.variant_id ASC
+          LIMIT 1
+        ) AS price,
 
-(
-  SELECT vp2.variant_product_price_sale
-  FROM variant_product vp2
-  WHERE vp2.product_id = p.product_id
-  ORDER BY vp2.variant_id ASC
-  LIMIT 1
-) AS price_sale,
+        (
+          SELECT vp2.variant_product_price_sale
+          FROM variant_product vp2
+          WHERE vp2.product_id = p.product_id
+          AND vp2.variant_product_price_sale > 0
+          ORDER BY vp2.variant_id ASC
+          LIMIT 1
+        ) AS price_sale,
 
-  IFNULL(JSON_ARRAYAGG(DISTINCT col.color_hex), JSON_ARRAY()) AS color_hex,
+        IFNULL(JSON_ARRAYAGG(DISTINCT col.color_hex), JSON_ARRAY()) AS color_hex,
 
-  (
-    SELECT COUNT(*) FROM comment WHERE product_id = p.product_id
-  ) AS comment_count
+        (
+          SELECT COUNT(*) FROM comment WHERE product_id = p.product_id
+        ) AS comment_count,
 
-FROM product p
-LEFT JOIN category cat ON p.category_id = cat.category_id
-LEFT JOIN variant_product vp ON p.product_id = vp.product_id
-LEFT JOIN color col ON vp.color_id = col.color_id
+        (
+          SELECT vp2.variant_id
+          FROM variant_product vp2
+          WHERE vp2.product_id = p.product_id
+          ORDER BY vp2.variant_id ASC
+          LIMIT 1
+        ) AS variant_id,
 
-WHERE p.product_status = 1
-GROUP BY p.product_id
-ORDER BY p.created_at DESC
-LIMIT ?
+        (
+          SELECT EXISTS (
+            SELECT 1
+            FROM wishlist w
+            WHERE w.variant_id = (
+              SELECT vp3.variant_id
+              FROM variant_product vp3
+              WHERE vp3.product_id = p.product_id
+              ORDER BY vp3.variant_id ASC
+              LIMIT 1
+            )
+            AND w.user_id = ?
+            AND w.status = 1
+          )
+        ) AS isWishlist
 
+      FROM product p
+      LEFT JOIN category cat ON p.category_id = cat.category_id
+      LEFT JOIN variant_product vp ON p.product_id = vp.product_id
+      LEFT JOIN color col ON vp.color_id = col.color_id
+      WHERE p.product_status = 1
+      GROUP BY p.product_id
+      ORDER BY p.created_at DESC
+      LIMIT ?
     `,
-      [limit] // Lấy nhiều hơn để tránh giới hạn dòng khi 1 sản phẩm có nhiều màu
+      [userId, limit]
     );
 
-    // Nhóm theo `product_id` để trả về mỗi sản phẩm với tất cả các màu
     const result = products.map((item) => ({
       id: item.id,
       name: item.name,
@@ -397,12 +420,14 @@ LIMIT ?
       image: item.image,
       category_id: item.category_id,
       category_name: item.category_name,
+      variant_id: item.variant_id,
       created_at: item.created_at,
       updated_at: item.updated_at,
       price: item.price ?? "0.00",
       price_sale: item.price_sale ?? "0.00",
       color_hex: JSON.parse(item.color_hex || "[]"),
       comment_count: item.comment_count ?? 0,
+      isWishlist: item.isWishlist === 1,
     }));
 
     res.json(result);
@@ -411,6 +436,7 @@ LIMIT ?
     res.status(500).json({ error: "Failed to fetch newest products" });
   }
 });
+
 
 /**
  * @route   GET /api/products/:id

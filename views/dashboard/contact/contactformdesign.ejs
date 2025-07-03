@@ -1,1 +1,275 @@
-<h1>contact form design</h1>
+<div class="dashboard-header-row">
+  <h2 class="dashboard-title">Contact Form Design</h2>
+  <div class="action-buttons">
+    <button
+      class="add-contact-form-btn"
+      onclick="window.location.href='/dashboard/contact/add'"
+    >
+      <i class="fas fa-plus"></i> Thêm contact form
+    </button>
+  </div>
+</div>
+
+<!-- Bộ lọc và Tìm kiếm -->
+<div class="filter-row">
+  <div class="search-container">
+    <i class="fas fa-search search-icon"></i>
+    <input type="text" class="search-input" placeholder="Search" />
+  </div>
+  <div class="date-range">
+    <i class="far fa-calendar-alt"></i>
+    <span>1/05/2025 - 31/5/2025</span>
+  </div>
+  <div class="results-info">Hiển thị 1-6 trong tổng số 500</div>
+</div>
+
+<!-- Bảng Sản phẩm -->
+<div class="contact-form-table-container">
+  <table class="contact-form-table" id="contactFormTable">
+    <thead>
+      <tr>
+        <th class="checkbox-cell">
+          <input type="checkbox" />
+        </th>
+        <th data-sortable="true">Tên khách hàng</th>
+        <th data-sortable="true">Email</th>
+        <th data-sortable="true">Số điện thoại</th>
+        <th data-sortable="true">Không gian thiết kế</th>
+        <th data-sortable="true">Yêu cầu thiết kế</th>
+        <th data-sortable="true">Ngân sách</th>
+        <th data-sortable="true">Phí thiết kế</th>
+        <th data-sortable="true">Trạng thái</th>
+        <th data-sortable="true">Ngày cập nhật</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<!-- Load Contact Form JS -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const URL_API = "http://localhost:3501/api";
+
+    function getContactForm() {
+      fetch(URL_API + "/contact-form-design")
+        .then((response) => response.json())
+        .then((data) => {
+          renderContactForm(data.forms);
+          console.log(data.forms);
+        })
+        .catch((error) => {
+          console.error("Lỗi khi tải contact form:", error);
+          document.querySelector(".results-info").textContent =
+            "Không thể tải dữ liệu.";
+        });
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return "-";
+      return new Date(dateStr).toLocaleDateString("vi-VN");
+    }
+
+    function renderContactForm(contactForm) {
+      const tableBody = document.querySelector("#contactFormTable tbody");
+      tableBody.innerHTML = "";
+
+      contactForm.forEach((contactForm) => {
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+                        <td class="checkbox-cell">
+                            <input type="checkbox">
+                        </td>
+                        <td>
+                            <div class="contact-form-info">
+                                <div class="contact-form-name">
+                                    <a href="#">${contactForm.name}</a>
+                                </div>
+                            </div>
+                        </td>
+                        <td>${contactForm.email || "-"}</td>
+                        <td>${contactForm.phone || "-"}</td>
+                        <td>${contactForm.room_name || "-"}</td>
+                        <td>
+                            <div class="td-2-lines-content">
+                                ${contactForm.require_design || "-"}
+                            </div>
+                        </td>
+                        <td>${contactForm.budget || "-"}</td>
+                        <td>${contactForm.design_fee || "-"}</td>
+                        <td>
+                            <span class="status-indicator ${
+                              contactForm.status
+                            }">
+                                <i class="fas fa-circle"></i> ${
+                                  contactForm.status
+                                }
+                            </span>
+                        </td>
+                        <td>${formatDate(contactForm.updated_at)}</td>
+                        <td>
+                            <div class="action-cell">
+                                <button class="action-button edit" data-id="${
+                                  contactForm.contact_form_design_id
+                                }" title="Chỉnh sửa">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="action-button delete" 
+                                    data-id="${
+                                      contactForm.contact_form_design_id
+                                    }" 
+                                    data-name="${contactForm.name}"
+                                    title="Xóa sản phẩm">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+        tableBody.appendChild(row);
+      });
+
+      // Update results info
+      document.querySelector(
+        ".results-info"
+      ).textContent = `Hiển thị ${contactForm.length} contact form`;
+
+      // Add event listeners for action buttons
+      setupActionButtons();
+    }
+
+    function setupActionButtons() {
+      // Delete button handler
+      document.querySelectorAll(".action-button.delete").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const contactFormSlug = btn
+            .closest("tr")
+            .querySelector(".action-button.edit")
+            .getAttribute("data-id");
+          const contactFormName = btn.getAttribute("data-name");
+          if (
+            confirm(
+              `Bạn có chắc chắn muốn xóa contact form "${contactFormName}"?`
+            )
+          ) {
+            deleteContactForm(contactFormSlug);
+          }
+        });
+      });
+
+      // Visibility toggle handler
+      // document.querySelectorAll(".action-button.visibility").forEach((btn) => {
+      //   btn.addEventListener("click", () => {
+      //     const contactFormId = btn.getAttribute("data-id");
+      //     const currentStatus = btn.getAttribute("data-status");
+      //     toggleContactFormVisibility(
+      //       contactFormId,
+      //       currentStatus === "visible"
+      //     );
+      //   });
+      // });
+
+      // Edit button handler
+      document.querySelectorAll(".action-button.edit").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const contactFormId = btn.getAttribute("data-id");
+          window.location.href = `/dashboard/contact/edit/${contactFormId}`;
+        });
+      });
+    }
+
+    function deleteContactForm(contactFormSlug) {
+      fetch(`${URL_API}/contact-form-design/${contactFormSlug}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`, // Assuming token is stored in localStorage
+        },
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.error) {
+            alert(data.error);
+          } else {
+            alert("Xóa contact form thành công");
+            getContactForm(); // Refresh the list
+          }
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+          alert("Có lỗi xảy ra khi xóa contact form");
+        });
+    }
+
+    function toggleContactFormVisibility(contactFormId, currentlyVisible) {
+      fetch(`${URL_API}/contact-form-design/${contactFormId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({
+          contact,
+        }),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.error) {
+            alert(data.error);
+          } else {
+            getContactForm(); // Refresh the list
+          }
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+          alert("Có lỗi xảy ra khi cập nhật trạng thái contact form");
+        });
+    }
+
+    // Initialize by loading products
+    getContactForm();
+
+    // Setup search functionality
+    const searchInput = document.querySelector(".search-input");
+    if (searchInput) {
+      searchInput.addEventListener(
+        "input",
+        debounce(function (e) {
+          const searchTerm = e.target.value.toLowerCase();
+          const rows = document.querySelectorAll("#productsTable tbody tr");
+
+          rows.forEach((row) => {
+            const contactFormName = row
+              .querySelector(".contact-form-name a")
+              .textContent.toLowerCase();
+            const categoryName = row
+              .querySelector("td:nth-child(3)")
+              .textContent.toLowerCase();
+
+            if (
+              contactFormName.includes(searchTerm) ||
+              categoryName.includes(searchTerm)
+            ) {
+              row.style.display = "";
+            } else {
+              row.style.display = "none";
+            }
+          });
+        }, 300)
+      );
+    }
+
+    // Debounce helper function
+    function debounce(func, wait) {
+      let timeout;
+      return function executedFunction(...args) {
+        const later = () => {
+          clearTimeout(timeout);
+          func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+      };
+    }
+  });
+</script>

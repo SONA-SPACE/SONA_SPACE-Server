@@ -1,8 +1,8 @@
 /* Dashboard CSS */
 :root {
-  --sidebar-width: 180px;
+  --sidebar-width: 220px;
   --header-height: 60px;
-  --primary-color: #3262e7;
+  --primary-color: #F0A00A;
   --primary-light: rgba(50, 98, 231, 0.1);
   --success-color: #28a745;
   --warning-color: #ffc107;
@@ -42,6 +42,20 @@ body {
     position: fixed;
     overflow-y: auto;
     z-index: 100;
+    &::-webkit-scrollbar {
+      width: 6px; /* Độ rộng thanh cuộn */
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background-color: #ccc;
+      border-radius: 4px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background-color: var(--border-color);
+      border-radius: 4px;
+    }
+
     .brand-container {
       padding: 20px 16px;
       border-bottom: 1px solid var(--border-color);
@@ -103,7 +117,7 @@ body {
 
   .nav-item.active a {
     color: var(--primary-color);
-    background-color: var(--primary-light);
+    background-color: color-mix(in srgb, var(--primary-color), rgb(255, 255, 255) 95%);
     font-weight: 500;
   }
 

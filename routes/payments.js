@@ -137,14 +137,21 @@ router.get('/order/:orderId', verifyToken, async (req, res) => {
  */
 router.post('/', verifyToken, async (req, res) => {
   try {
-    const { order_id, amount, payment_method, transaction_id, payment_status, payment_details } = req.body;
+    const {
+      order_id,
+      amount,
+      payment_method,
+      transaction_id,
+      payment_status, // expected: 'completed' | 'pending'
+      payment_details
+    } = req.body;
 
     if (!order_id || !amount || !payment_method) {
       return res.status(400).json({ error: 'Order ID, amount and payment method are required' });
     }
 
     // Kiểm tra đơn hàng tồn tại
-    const [orders] = await db.query('SELECT * FROM \`order\` WHERE order_id = ?', [order_id]);
+    const [orders] = await db.query('SELECT * FROM `order` WHERE order_id = ?', [order_id]);
     if (orders.length === 0) {
       return res.status(404).json({ error: 'Order not found' });
     }
@@ -156,8 +163,11 @@ router.post('/', verifyToken, async (req, res) => {
       return res.status(403).json({ error: 'Unauthorized access to create payment for this order' });
     }
 
-    // Lấy thanh toán hiện có của đơn hàng
-    const [existingPayments] = await db.query('SELECT SUM(amount) as paid FROM payment WHERE order_id = ? AND payment_status = "completed"', [order_id]);
+    // Lấy tổng tiền đã thanh toán trước đó
+    const [existingPayments] = await db.query(
+      'SELECT SUM(amount) as paid FROM payment WHERE order_id = ? AND payment_status = "completed"',
+      [order_id]
+    );
     const paidAmount = existingPayments[0].paid || 0;
     const remainingAmount = order.order_total - paidAmount;
 
@@ -170,9 +180,9 @@ router.post('/', verifyToken, async (req, res) => {
       });
     }
 
-    // Tạo thanh toán mới
-    const [result] = await db.query(`
-      INSERT INTO payment (
+    // ✅ Ghi thanh toán mới
+    const [result] = await db.query(
+      `INSERT INTO payment (
         order_id, 
         amount, 
         payment_method, 
@@ -180,26 +190,27 @@ router.post('/', verifyToken, async (req, res) => {
         payment_status, 
         payment_details,
         created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, NOW())
-    `, [
-      order_id,
-      amount,
-      payment_method,
-      transaction_id || null,
-      payment_status || 'pending',
-      payment_details ? JSON.stringify(payment_details) : null
-    ]);
+      ) VALUES (?, ?, ?, ?, ?, ?, NOW())`,
+      [
+        order_id,
+        amount,
+        payment_method,
+        transaction_id || null,
+        payment_status || 'pending',
+        payment_details ? JSON.stringify(payment_details) : null
+      ]
+    );
 
-    // Lấy thông tin thanh toán vừa tạo
     const [newPayment] = await db.query('SELECT * FROM payment WHERE payment_id = ?', [result.insertId]);
 
-    // Cập nhật trạng thái đơn hàng nếu thanh toán thành công
+    // ✅ Cập nhật trạng thái đơn hàng nếu cần
     if (payment_status === 'completed') {
-      // Tính lại tổng số tiền đã thanh toán
-      const [updatedPayments] = await db.query('SELECT SUM(amount) as paid FROM payment WHERE order_id = ? AND payment_status = "completed"', [order_id]);
+      const [updatedPayments] = await db.query(
+        'SELECT SUM(amount) as paid FROM payment WHERE order_id = ? AND payment_status = "completed"',
+        [order_id]
+      );
       const totalPaid = updatedPayments[0].paid || 0;
 
-      // Cập nhật trạng thái thanh toán của đơn hàng
       let paymentStatus = 'unpaid';
       if (totalPaid >= order.order_total) {
         paymentStatus = 'paid';
@@ -207,18 +218,26 @@ router.post('/', verifyToken, async (req, res) => {
         paymentStatus = 'partially_paid';
       }
 
-      await db.query('UPDATE \`order\` SET payment_status = ? WHERE order_id = ?', [paymentStatus, order_id]);
+      // ✅ Nếu là thanh toán COD thì đơn hàng đã trả đủ ngay
+      // ✅ Nếu là MOMO / VNPAY thanh toán completed cũng là trả đủ
+      const currentStatus = 'PENDING';
+
+      await db.query(
+        'UPDATE `order` SET payment_status = ?, current_status = ? WHERE order_id = ?',
+        [paymentStatus, currentStatus, order_id]
+      );
     }
 
-    res.status(201).json({
+    return res.status(201).json({
       message: 'Payment created successfully',
       payment: newPayment[0]
     });
   } catch (error) {
     console.error('Error creating payment:', error);
-    res.status(500).json({ error: 'Failed to create payment' });
+    return res.status(500).json({ error: 'Failed to create payment' });
   }
 });
+
 
 /**
  * @route   PUT /api/payments/:id

@@ -258,7 +258,33 @@ router.get("/", optionalAuth, async (req, res) => {
     res.status(500).json({ error: "Failed to fetch products" });
   }
 });
+router.get("/search", async (req, res) => {
+  const keyword = req.query.q?.trim() || "";
+  if (!keyword) return res.json({ results: [] });
 
+  try {
+    const [rows] = await db.query(`
+      SELECT 
+        product_id AS id, 
+        product_name AS name, 
+        product_slug AS slug,
+        product_image AS image
+      FROM product
+      WHERE product_status = 1 
+        AND LOWER(product_name) LIKE LOWER(?)
+      ORDER BY created_at DESC
+      LIMIT 10
+    `, [`%${keyword}%`]);
+
+    res.json({ results: rows.map(item => ({
+      ...item,
+      image: item.image ? String(item.image) : ""
+    })) });
+  } catch (err) {
+    console.error("Search error:", err);
+    res.status(500).json({ error: "Search failed" });
+  }
+});
 router.get("/admin", async (req, res) => {
   try {
     const [products] = await db.query(`

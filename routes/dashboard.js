@@ -55,6 +55,13 @@ router.get("/contact-forms-design", (req, res) => {
   });
 });
 
+router.get("/contact-forms-design/:id", (req, res) => {
+  res.render("dashboard/contact/contactformdetail", {
+    title: "Sona Space - Contact Forms Design",
+    layout: "layouts/dashboard",
+  });
+});
+
 // Products management
 router.get("/products", (req, res) => {
   res.render("dashboard/products/products", {

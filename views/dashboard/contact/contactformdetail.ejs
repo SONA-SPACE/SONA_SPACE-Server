@@ -1,0 +1,429 @@
+<!-- Tiêu đề -->
+<div class="dashboard-header-row">
+  <h2 class="dashboard-title">Chi tiết form</h2>
+</div>
+<!-- Layout -->
+<div class="detail-form-container">
+  <!-- Form -->
+  <div class="form-column">
+    <div class="form-section">
+      <div class="form-section-header">
+        <div class="form-section-header-left">
+          <h3 class="section-title">Thông tin thiết kế theo yêu cầu</h3>
+          <p class="section-description">
+            Ngày tạo: <span id="created_at"></span>
+          </p>
+          <p class="section-description">
+            Ngày cập nhật: <span id="updated_at"></span>
+          </p>
+          <p class="section-description">
+            Trạng thái: <span id="status_text" class="status-text"></span>
+          </p>
+        </div>
+        <div class="form-section-header-right">
+          <select name="status" id="status">
+            <option value="PENDING">Chờ xử lý</option>
+            <option value="IN_PROGRESS">Đang xử lý</option>
+            <option value="RESOLVED">Đã xử lý</option>
+            <option value="REJECTED">Từ chối</option>
+            <option value="CLOSED">Đã đóng</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="name">Tên Khách Hàng</label>
+          <input
+            type="text"
+            id="name"
+            class="form-control"
+            placeholder="Nhập tên phòng"
+          />
+        </div>
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input
+            type="email"
+            id="email"
+            class="form-control"
+            placeholder="ví dụ: phong-khach, phong-ngu"
+          />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="room_name">Không gian thiết kế</label>
+          <input
+            type="text"
+            id="room_name"
+            class="form-control"
+            placeholder="Ví dụ: phòng khách, phòng ngủ"
+          />
+        </div>
+        <div class="form-group">
+          <label for="phone">Số điện thoại</label>
+          <input
+            type="text"
+            id="phone"
+            class="form-control"
+            placeholder="Ví dụ: 0909090909"
+          />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="budget">Ngân sách của khách hàng</label>
+          <input
+            type="text"
+            id="budget"
+            class="form-control"
+            placeholder="Ví dụ: 100000000 VNĐ"
+          />
+        </div>
+        <div class="form-group">
+          <label for="design_fee">Chi phí thiết kế</label>
+          <input
+            type="text"
+            id="design_fee"
+            class="form-control"
+            placeholder="Ví dụ: 100000000 VNĐ"
+          />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="design_description">Mô tả yêu cầu</label>
+          <textarea
+            id="design_description"
+            class="form-control"
+            rows="3"
+          ></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h3 class="section-title">Thông tin chi tiết thiết kế</h3>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="style_design">Phong cách thiết kế</label>
+          <textarea id="style_design" class="form-control" rows="3"></textarea>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="require_design">Mô tả yêu cầu</label>
+          <textarea
+            id="require_design"
+            class="form-control"
+            rows="3"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="different_information">Thông tin khác</label>
+          <textarea
+            id="different_information"
+            class="form-control"
+            rows="3"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="remarks">Ghi chú</label>
+          <textarea id="remarks" class="form-control" rows="3"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Nút -->
+    <div class="form-actions">
+      <button type="button" class="btn btn-cancel">Hủy</button>
+      <button type="button" class="btn btn-save">Lưu</button>
+    </div>
+  </div>
+
+  <!-- Cột phải: Sản phẩm trong thiết kế -->
+  <div class="design-products-column">
+    <div class="form-section">
+      <h3 class="section-title">Sản phẩm trong thiết kế</h3>
+      
+      <!-- Form thêm sản phẩm -->
+      <div class="add-product-form">
+          <div class="form-group">
+              <label for="variant-select">Chọn sản phẩm</label>
+              <select id="variant-select" class="form-control"></select>
+          </div>
+          <div class="form-group">
+              <label for="quantity-input">Số lượng</label>
+              <input type="number" id="quantity-input" class="form-control" value="1" min="1">
+          </div>
+          <button type="button" class="btn btn-add" id="add-product-btn">Thêm</button>
+      </div>
+
+      <!-- Bảng sản phẩm -->
+      <div class="products-table-container">
+          <table class="products-table">
+              <thead>
+                  <tr>
+                      <th>Sản phẩm</th>
+                      <th>SKU</th>
+                      <th>Số lượng</th>
+                      <th>Đơn giá</th>
+                      <th>Thành tiền</th>
+                      <th></th>
+                  </tr>
+              </thead>
+              <tbody id="design-products-tbody">
+                  <!-- Dữ liệu sẽ được chèn vào đây bằng JS -->
+              </tbody>
+          </table>
+      </div>
+       <div class="total-price-container">
+            <strong>Tổng cộng:</strong> <span id="total-design-price">0 VNĐ</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- JS xử lý -->
+<script>
+  const id = window.location.pathname.split("/").pop();
+  console.log(id);
+
+  document.addEventListener("DOMContentLoaded", () => {
+    loadData();
+    loadVariants();
+    loadDesignDetails();
+    document.querySelector(".btn-save").addEventListener("click", handleUpdate);
+    document.getElementById("add-product-btn").addEventListener("click", handleAddProduct);
+  });
+
+  function formatCurrency(value) {
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
+  }
+
+  function loadVariants() {
+    fetch("/api/variants")
+      .then((res) => res.json())
+      .then((data) => {
+        const select = document.getElementById("variant-select");
+        select.innerHTML = '<option value="">Chọn một sản phẩm</option>';
+        data.variants.forEach((variant) => {
+          const option = document.createElement("option");
+          option.value = variant.variant_id;
+          option.dataset.price = variant.price;
+          option.textContent = `${variant.product_name} - ${variant.variant_name} (${variant.sku})`;
+          select.appendChild(option);
+        });
+      });
+  }
+
+  function loadDesignDetails() {
+    fetch(`/api/contact-form-design/${id}/details`)
+      .then((res) => res.json())
+      .then((details) => {
+        const tbody = document.getElementById("design-products-tbody");
+        tbody.innerHTML = "";
+        let total = 0;
+        details.forEach((item) => {
+          const row = document.createElement("tr");
+          row.dataset.id = item.contact_form_design_detail_id;
+          row.innerHTML = `
+            <td>${item.product_name}</td>
+            <td>${item.sku}</td>
+            <td>${item.quantity}</td>
+            <td>${formatCurrency(item.unit_price)}</td>
+            <td>${formatCurrency(item.total_price)}</td>
+            <td><button class="btn-remove-product" onclick="handleRemoveProduct(${item.contact_form_design_detail_id})"><i class="fas fa-trash-alt"></i></button></td>
+          `;
+          tbody.appendChild(row);
+          total += item.total_price;
+        });
+        document.getElementById("total-design-price").textContent = formatCurrency(total);
+      });
+  }
+
+  async function handleAddProduct() {
+      const variantSelect = document.getElementById("variant-select");
+      const variant_id = variantSelect.value;
+      const quantity = document.getElementById("quantity-input").value;
+      
+      if (!variant_id) {
+          showToast("Vui lòng chọn một sản phẩm.", "danger");
+          return;
+      }
+
+      const selectedOption = variantSelect.options[variantSelect.selectedIndex];
+      const unit_price = selectedOption.dataset.price;
+
+      try {
+          const res = await fetch(`/api/contact-form-design/${id}/details`, {
+              method: "POST",
+              headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${localStorage.getItem("token")}`,
+              },
+              body: JSON.stringify({ variant_id, quantity, unit_price }),
+          });
+
+          const data = await res.json();
+          if (res.ok) {
+              showToast("Thêm sản phẩm thành công", "success");
+              loadDesignDetails(); // Tải lại danh sách
+          } else {
+              showToast(data.error || "Có lỗi xảy ra", "danger");
+          }
+      } catch (error) {
+          showToast("Không thể thêm sản phẩm", "danger");
+      }
+  }
+
+  async function handleRemoveProduct(detailId) {
+      if (!confirm("Bạn có chắc muốn xóa sản phẩm này?")) return;
+
+      try {
+          const res = await fetch(`/api/contact-form-design/${id}/details/${detailId}`, {
+              method: "DELETE",
+              headers: {
+                  Authorization: `Bearer ${localStorage.getItem("token")}`,
+              },
+          });
+
+          const data = await res.json();
+          if (res.ok) {
+              showToast("Xóa sản phẩm thành công", "success");
+              loadDesignDetails(); // Tải lại danh sách
+          } else {
+              showToast(data.error || "Có lỗi xảy ra", "danger");
+          }
+      } catch (error) {
+          showToast("Không thể xóa sản phẩm", "danger");
+      }
+  }
+
+  function loadData() {
+    fetch(`/api/contact-form-design/${id}`)
+      .then((res) => res.json())
+      .then((data) => {
+        console.log(data);
+        document.getElementById("created_at").innerHTML = data.created_at;
+        document.getElementById("updated_at").innerHTML = data.updated_at;
+        document.getElementById("name").value = data.name;
+        document.getElementById("email").value = data.email;
+        document.getElementById("room_name").value = data.room_name;
+        document.getElementById("phone").value = data.phone;
+        document.getElementById("budget").value = data.budget;
+        document.getElementById("design_fee").value = data.design_fee;
+        document.getElementById("design_description").value =
+          data.design_description;
+        document.getElementById("require_design").value = data.require_design;
+        document.getElementById("style_design").value = data.style_design;
+        document.getElementById("different_information").value =
+          data.different_information;
+        document.getElementById("design_fee").value = data.design_fee;
+        document.getElementById("status").value = data.status;
+        document.getElementById("status_text").innerHTML =
+          data.status.charAt(0).toUpperCase() + data.status.slice(1);
+        document
+          .getElementById("status_text")
+          .classList.add(`status-${data.status.toLowerCase()}`);
+        document.getElementById("remarks").value = data.remarks;
+      });
+  }
+
+  async function handleUpdate() {
+    const name = document.getElementById("name").value;
+    const email = document.getElementById("email").value;
+    const room_name = document.getElementById("room_name").value;
+    const phone = document.getElementById("phone").value;
+    const budget = document.getElementById("budget").value;
+    const design_fee = document.getElementById("design_fee").value;
+    const design_description =
+      document.getElementById("design_description").value;
+    const require_design = document.getElementById("require_design").value;
+    const style_design = document.getElementById("style_design").value;
+    const different_information = document.getElementById(
+      "different_information"
+    ).value;
+    const remarks = document.getElementById("remarks").value;
+    const status = document.getElementById("status").value;
+
+    try {
+      const payload = {
+        name,
+        email,
+        room_name,
+        phone,
+        budget,
+        design_fee,
+        design_description,
+        require_design,
+        style_design,
+        different_information,
+        remarks,
+        status,
+      };
+
+      const res = await fetch(`/api/contact-form-design/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (data.error) {
+        showToast(data.error, "danger");
+      } else {
+        showToast("Cập nhật thành công", "success");
+        setTimeout(
+          () => (window.location.href = "/dashboard/contact-forms-design"),
+          1500
+        );
+      }
+    } finally {
+      document.querySelector(".btn-save").disabled = false;
+      document.querySelector(".btn-save").innerText = "Lưu";
+    }
+  }
+
+  function showToast(message, type = "success") {
+    let toastContainer = document.getElementById("toastContainer");
+    if (!toastContainer) {
+      toastContainer = document.createElement("div");
+      toastContainer.id = "toastContainer";
+      toastContainer.className = "position-fixed top-0 end-0 p-3";
+      toastContainer.style.zIndex = "1050";
+      document.body.appendChild(toastContainer);
+    }
+
+    const toast = document.createElement("div");
+    toast.className = `toast align-items-center text-white bg-${type} border-0`;
+    toast.setAttribute("role", "alert");
+    toast.setAttribute("aria-live", "assertive");
+    toast.setAttribute("aria-atomic", "true");
+
+    toast.innerHTML = `
+          <div class="d-flex">
+            <div class="toast-body">${message}</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+          </div>`;
+
+    toastContainer.appendChild(toast);
+    const bsToast = new bootstrap.Toast(toast, { delay: 4000 });
+    bsToast.show();
+    toast.addEventListener("hidden.bs.toast", () => toast.remove());
+  }
+</script>

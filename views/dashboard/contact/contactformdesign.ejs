@@ -85,7 +85,9 @@
                         <td>
                             <div class="contact-form-info">
                                 <div class="contact-form-name">
-                                    <a href="#">${contactForm.name}</a>
+                                    <a href="/dashboard/contact-forms-design/${
+                                      contactForm.contact_form_design_id
+                                    }">${contactForm.name}</a>
                                 </div>
                             </div>
                         </td>
@@ -143,7 +145,7 @@
       // Delete button handler
       document.querySelectorAll(".action-button.delete").forEach((btn) => {
         btn.addEventListener("click", () => {
-          const contactFormSlug = btn
+          const contactFormId = btn
             .closest("tr")
             .querySelector(".action-button.edit")
             .getAttribute("data-id");
@@ -153,51 +155,39 @@
               `Bạn có chắc chắn muốn xóa contact form "${contactFormName}"?`
             )
           ) {
-            deleteContactForm(contactFormSlug);
+            deleteContactForm(contactFormId);
           }
         });
       });
-
-      // Visibility toggle handler
-      // document.querySelectorAll(".action-button.visibility").forEach((btn) => {
-      //   btn.addEventListener("click", () => {
-      //     const contactFormId = btn.getAttribute("data-id");
-      //     const currentStatus = btn.getAttribute("data-status");
-      //     toggleContactFormVisibility(
-      //       contactFormId,
-      //       currentStatus === "visible"
-      //     );
-      //   });
-      // });
 
       // Edit button handler
       document.querySelectorAll(".action-button.edit").forEach((btn) => {
         btn.addEventListener("click", () => {
           const contactFormId = btn.getAttribute("data-id");
-          window.location.href = `/dashboard/contact/edit/${contactFormId}`;
+          window.location.href = `/dashboard/contact-forms-design/${contactFormId}`;
         });
       });
     }
 
-    function deleteContactForm(contactFormSlug) {
-      fetch(`${URL_API}/contact-form-design/${contactFormSlug}`, {
+    function deleteContactForm(contactFormId) {
+      fetch(`${URL_API}/contact-form-design/${contactFormId}`, {
         method: "DELETE",
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`, // Assuming token is stored in localStorage
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
       })
         .then((response) => response.json())
         .then((data) => {
           if (data.error) {
-            alert(data.error);
+            showToast(data.error, "danger");
           } else {
-            alert("Xóa contact form thành công");
-            getContactForm(); // Refresh the list
+            showToast("Xóa contact form thành công", "success");
+            getContactForm();
           }
         })
         .catch((error) => {
           console.error("Error:", error);
-          alert("Có lỗi xảy ra khi xóa contact form");
+          showToast("Có lỗi xảy ra khi xóa contact form", "danger");
         });
     }
 
@@ -270,6 +260,34 @@
         clearTimeout(timeout);
         timeout = setTimeout(later, wait);
       };
+    }
+
+    function showToast(message, type = "success") {
+      let toastContainer = document.getElementById("toastContainer");
+      if (!toastContainer) {
+        toastContainer = document.createElement("div");
+        toastContainer.id = "toastContainer";
+        toastContainer.className = "position-fixed top-0 end-0 p-3";
+        toastContainer.style.zIndex = "1050";
+        document.body.appendChild(toastContainer);
+      }
+
+      const toast = document.createElement("div");
+      toast.className = `toast align-items-center text-white bg-${type} border-0`;
+      toast.setAttribute("role", "alert");
+      toast.setAttribute("aria-live", "assertive");
+      toast.setAttribute("aria-atomic", "true");
+
+      toast.innerHTML = `
+          <div class="d-flex">
+            <div class="toast-body">${message}</div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+          </div>`;
+
+      toastContainer.appendChild(toast);
+      const bsToast = new bootstrap.Toast(toast, { delay: 4000 });
+      bsToast.show();
+      toast.addEventListener("hidden.bs.toast", () => toast.remove());
     }
   });
 </script>

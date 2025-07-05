@@ -44,12 +44,6 @@
             </div>
             <div class="form-row">
                 <div class="form-group full-width">
-                    <label for="newsDescription">Mô tả</label>
-                    <textarea id="newsDescription" class="form-control" placeholder="Mô tả ngắn về tin tức"></textarea>
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group full-width">
                     <label for="newsContent">Nội dung tin tức</label>
                     <textarea id="newsContent" class="form-control" placeholder="Mô tả ngắn về tin tức"></textarea>
                 </div>
@@ -150,7 +144,6 @@
             if (data) {
                 document.getElementById("newsTitle").value = data.title || "";
                 document.getElementById("newsSlug").value = data.slug || "";
-                document.getElementById("newsDescription").value = data.excerpt || "";
                 document.getElementById("newsContent").value = data.content || "";
                 document.getElementById("newsStatus").value = data.status;
                 document.getElementById("newsCategory").value = data.category_id;
@@ -195,7 +188,6 @@
     async function handleUpdateNews() {
         const title = document.getElementById("newsTitle").value.trim();
         const slug = document.getElementById("newsSlug").value.trim();
-        const excerpt = document.getElementById("newsDescription").value.trim();
         const content = document.getElementById("newsContent").value.trim();
         const status = parseInt(document.getElementById("newsStatus").value);
         const category_id = parseInt(document.getElementById("newsCategory").value);
@@ -204,7 +196,7 @@
         saveBtn.disabled = true;
         saveBtn.innerText = "Đang lưu...";
 
-        if (!title || !excerpt || !content) {
+        if (!title  || !content) {
             showToast("Vui lòng nhập đầy đủ thông tin", "danger");
             saveBtn.disabled = false;
             saveBtn.innerText = "Lưu";
@@ -232,7 +224,6 @@
             const payload = {
                 title,
                 slug,
-                excerpt,
                 content,
                 status,
                 category_id,

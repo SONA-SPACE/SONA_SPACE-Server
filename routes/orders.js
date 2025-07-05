@@ -66,7 +66,6 @@ router.get('/hash/:orderHash', optionalAuth, async (req, res) => {
   const { orderHash } = req.params;
 
   try {
-    // Lấy thông tin đơn hàng và thông tin người dùng
     const [[order]] = await db.query(`
       SELECT   
         o.order_id,
@@ -84,8 +83,8 @@ router.get('/hash/:orderHash', optionalAuth, async (req, res) => {
         o.user_id,
         o.order_name_new,
         o.order_email_new,
-        u.user_name AS user_name_old,
-        u.user_gmail AS user_email_old
+        u.user_name AS order_name_old,
+        u.user_gmail AS order_email_old
       FROM orders o
       LEFT JOIN user u ON o.user_id = u.user_id
       WHERE o.order_hash = ?
@@ -95,7 +94,6 @@ router.get('/hash/:orderHash', optionalAuth, async (req, res) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy đơn hàng' });
     }
 
-    // Lấy danh sách sản phẩm
     const [items] = await db.query(`
       SELECT 
         oi.order_item_id AS id,
@@ -129,9 +127,11 @@ router.get('/hash/:orderHash', optionalAuth, async (req, res) => {
     };
     const statusStep = statusStepMap[order.current_status] || 1;
 
-    // Ưu tiên tên và email mới nếu có, nếu không thì lấy tên cũ
-    const recipientName = order.order_name_new || order.user_name_old || "Khách hàng";
-    const recipientEmail = order.order_email_new || order.user_email_old || "";
+    // Ưu tiên thông tin mới nếu có, fallback về thông tin cũ
+    const recipientName = order.order_name_new?.trim() || order.order_name_old?.trim() || "Khách hàng";
+    const recipientEmail = order.order_email_new?.trim() || order.order_email_old?.trim() || "";
+    const recipientPhone = order.order_number2?.trim() || order.order_number1?.trim() || "";
+    const recipientAddress = order.order_address_new?.trim() || order.order_address_old?.trim() || "";
 
     return res.status(200).json({
       success: true,
@@ -141,18 +141,28 @@ router.get('/hash/:orderHash', optionalAuth, async (req, res) => {
         date: order.created_at,
         status: order.current_status,
         statusStep,
+
+        // Ưu tiên sử dụng cho frontend
         recipientName,
         recipientEmail,
-        order_number2: order.order_number2 || order.order_number1,
-        address: order.order_address_new || order.order_address_old,
+        recipientPhone,
+        address: recipientAddress,
+
+        // Thông tin chi tiết cũ và mới để frontend so sánh nếu cần
+        order_name_old: order.order_name_old || "",
+        order_name_new: order.order_name_new || "",
+        order_email_old: order.order_email_old || "",
+        order_email_new: order.order_email_new || "",
+        order_address_old: order.order_address_old || "",
+        order_address_new: order.order_address_new || "",
+        order_number1: order.order_number1 || "",
+        order_number2: order.order_number2 || "",
+
         subtotal: order.order_total,
         shippingFee: Number(order.shipping_fee) || 0,
         discount: Number(order.order_discount) || 0,
         total: order.order_total_final,
-        order_name_old: order.user_name_old || "",
-        order_email_old: order.user_email_old || "",
-        order_name_new: order.order_name_new || "",
-        order_email_new: order.order_email_new || "",
+
         products: items.map(item => ({
           id: item.id,
           name: item.product_name,
@@ -174,10 +184,11 @@ router.get('/hash/:orderHash', optionalAuth, async (req, res) => {
     });
 
   } catch (error) {
-    console.error(' Lỗi khi truy vấn đơn hàng:', error.message);
+    console.error('❌ Lỗi khi truy vấn đơn hàng:', error.message);
     return res.status(500).json({ success: false, message: 'Lỗi máy chủ', error: error.message });
   }
 });
+
 
 
 
@@ -430,8 +441,8 @@ router.post('/', verifyToken, async (req, res) => {
       amount,
       order_address_new,
       order_number2,
-      order_name,
-      order_email,
+      order_name_new,
+      order_email_new,
       cart_items = []
     } = req.body;
 
@@ -455,13 +466,17 @@ router.post('/', verifyToken, async (req, res) => {
     const defaultName = userInfo.user_name?.trim() || '';
     const defaultEmail = userInfo.user_gmail?.trim() || '';
 
-    const orderNameNew = (order_name?.trim() && order_name.trim() !== defaultName)
-      ? order_name.trim()
+    const orderNameOld = defaultName;
+    const orderEmailOld = defaultEmail;
+
+    const orderNameNew = (order_name_new?.trim() && order_name_new.trim() !== defaultName)
+      ? order_name_new.trim()
       : null;
 
-    const orderEmailNew = (order_email?.trim() && order_email.trim() !== defaultEmail)
-      ? order_email.trim()
+    const orderEmailNew = (order_email_new?.trim() && order_email_new.trim() !== defaultEmail)
+      ? order_email_new.trim()
       : null;
+
 
     const defaultAddress = userInfo.user_address?.trim() || '';
     const defaultPhone = userInfo.user_number?.trim() || '';
@@ -483,25 +498,30 @@ router.post('/', verifyToken, async (req, res) => {
     }
 
     //  Tạo đơn hàng
-    await db.query(`
+ await db.query(`
   INSERT INTO orders (
     order_hash, user_id, order_address_old, order_address_new,
     order_number1, order_number2, order_total, order_total_final, 
-    current_status, created_at, order_name_new, order_email_new
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?)
+    current_status, created_at, 
+    order_name_old, order_name_new,
+    order_email_old, order_email_new
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?)
 `, [
-      order_id,
-      user_id,
-      finalAddressOld,
-      finalAddressNew,
-      finalNumber1,
-      finalNumber2,
-      order_total,
-      order_total,
-      currentStatus,
-      orderNameNew,
-      orderEmailNew
-    ]);
+  order_id,
+  user_id,
+  finalAddressOld,
+  finalAddressNew,
+  finalNumber1,
+  finalNumber2,
+  order_total,
+  order_total,
+  currentStatus,
+  orderNameOld,
+  orderNameNew,
+  orderEmailOld,
+  orderEmailNew
+]);
+
 
 
 

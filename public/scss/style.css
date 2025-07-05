@@ -3224,6 +3224,7 @@ body {
 
 .room-name {
   font-weight: 500;
+  width: 400px;
 }
 
 .status-indicator.visible {
@@ -4226,8 +4227,40 @@ textarea.form-control {
 }
 
 .upload-placeholder2 img {
+  width: 200px;
+  height: 200px;
   max-width: 100%;
   max-height: 300px;
+  border-radius: 6px;
+}
+
+.upload-placeholder3 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+}
+
+.upload-placeholder3 i {
+  font-size: 32px;
+  margin-bottom: 15px;
+  color: var(--text-muted);
+}
+
+.upload-placeholder3 p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.upload-placeholder3 .upload-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 5px;
+}
+
+.upload-placeholder3 img {
+  max-width: 100%;
   border-radius: 6px;
 }
 
@@ -4254,6 +4287,11 @@ textarea.form-control {
 }
 
 .thumbnail-upload-item .upload-placeholder2 i {
+  font-size: 24px;
+  margin-bottom: 0;
+}
+
+.thumbnail-upload-item .upload-placeholder3 i {
   font-size: 24px;
   margin-bottom: 0;
 }

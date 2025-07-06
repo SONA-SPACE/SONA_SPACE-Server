@@ -280,8 +280,8 @@
 
   .add-product-form {
     display: flex;
+    flex-direction: column;
     gap: 10px;
-    align-items: flex-end;
     margin-bottom: 20px;
 
     .form-group {
@@ -295,12 +295,12 @@
       border-radius: 4px;
       cursor: pointer;
       border: none;
-      background-color: var(--primary-color);
+      background-color: var(--primary-co  lor);
       color: white;
       height: fit-content;
 
       &:hover {
-        background-color: var(--primary-dark-color);
+        background-color: color-mix(in srgb, var(--primary-color) 90%, black 10%);
       }
     }
   }

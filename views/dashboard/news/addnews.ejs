@@ -18,7 +18,7 @@
         </div>
         <div class="form-group">
           <label for="roomSlug">Slug</label>
-          <input type="text" id="newsSlug" class="form-control" placeholder="nhap-slug-cho-tin-tuc" />
+          <input type="text" id="newsSlug" class="form-control" placeholder="nhap-slug-cho-tin-tuc: co the tu tao" />
         </div>
       </div>
 
@@ -42,16 +42,11 @@
           </div>
         </div>
       </div>
-      <div class="form-row">
-        <div class="form-group full-width">
-          <label for="newsDescription">Mô tả</label>
-          <textarea id="newsDescription" class="form-control" placeholder="Mô tả ngắn về tin tức"></textarea>
-        </div>
-      </div>
+
       <div class="form-row">
         <div class="form-group full-width">
           <label for="newsContent">Nội dung tin tức</label>
-          <textarea id="newsContent" class="form-control" placeholder="Mô tả ngắn về tin tức"></textarea>
+          <textarea id="newsContent" class="form-control" placeholder="Nội dung tin tức"></textarea>
         </div>
       </div>
     </div>
@@ -67,7 +62,7 @@
   <div class="image-upload-column">
     <div class="image-upload-container">
       <div class="main-upload-area">
-        <div class="upload-placeholder2" id="avatarDropArea">
+        <div class="upload-placeholder3" id="avatarDropArea">
           <i class="far fa-image"></i>
           <p>Drop your image here, or browse</p>
           <p class="upload-hint">jpeg, png are allowed</p>
@@ -157,7 +152,6 @@
 async function handleSaveNews() {
   const title = document.getElementById("newsTitle").value.trim();
   const slug = document.getElementById("newsSlug").value.trim();
-  const excerpt = document.getElementById("newsDescription").value.trim();
   const content = document.getElementById("newsContent").value.trim();
   const status = parseInt(document.getElementById("newsStatus").value);
   const category_id = parseInt(document.getElementById("newsCategory").value);
@@ -166,7 +160,7 @@ async function handleSaveNews() {
   saveBtn.disabled = true;
   saveBtn.innerText = "Đang lưu...";
 
-  if (!title || !excerpt || !content) {
+  if (!title || !category_id || !content) {
     showToast("Vui lòng nhập đầy đủ thông tin", "danger");
     saveBtn.disabled = false;
     saveBtn.innerText = "Lưu";
@@ -189,7 +183,6 @@ async function handleSaveNews() {
     const payload = {
       title,
       slug,
-      excerpt,
       content,
       status,
       category_id,

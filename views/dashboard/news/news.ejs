@@ -53,7 +53,7 @@
             fetch(URL_API + "/news/simple")
                 .then((response) => response.json())
                 .then((data) => {
-                    renderNews(data.news); 
+                    renderNews(data.news);
                     console.log("Danh sách bài viết:", data.news);
                 })
                 .catch((error) => {
@@ -71,7 +71,7 @@
                 const row = document.createElement("tr");
 
                 const status = news.news_status === 1 ? "visible" : "hidden";
-               const imageUrl = news.news_image || "/images/default.jpg";
+                const imageUrl = news.news_image || "/images/default.jpg";
 
                 // try {
                 //     const images = JSON.parse(news.news_image);
@@ -85,7 +85,7 @@
                     <td>
                         <div class="room-info">
                         <div class="room-image">
-                            <img src="${imageUrl}" alt="${news.news_name}" >
+                            <img src="${imageUrl}" alt="${news.news_title}" >
                         </div>
                             <div class="room-name">${news.news_title}</div>
                         </div>
@@ -100,10 +100,10 @@
                     ${status === "visible" ? "Hiển thị" : "Ẩn"}
                 </span>
                 </td>
-    <td>${formatDate(news.created_at)}</td>
-    <td>${formatDate(news.updated_at)}</td>
+                <td>${formatDate(news.created_at)}</td>
+                <td>${formatDate(news.updated_at)}</td>
 
-    <td>
+                <td>
                 <div class="action-cell">
                     <button class="action-button edit" data-id="${news.news_slug}"
                     onclick="window.location.href='/dashboard/editnews/${news.news_slug}'"
@@ -143,8 +143,13 @@
         function deleteNews(newsId, newsTitle) {
             if (!confirm(`Bạn có chắc chắn muốn xóa bài viết "${newsTitle}"?`)) return;
 
+            const token = localStorage.getItem("token");
+
             fetch(`${URL_API}/news/${newsId}`, {
                 method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
             })
                 .then((res) => res.json())
                 .then((data) => {
@@ -160,6 +165,7 @@
                     showToast("Xảy ra lỗi khi xóa bài viết", "danger");
                 });
         }
+
 
         function formatDate(dateStr) {
             if (!dateStr) return "-";

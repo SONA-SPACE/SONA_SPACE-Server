@@ -133,6 +133,7 @@ router.get('/simple', async (req, res) => {
     const paginationParams = [...queryParams, offset, limit];
     const [newsRaw] = await db.query(`
       SELECT 
+        n.news_id,
         n.news_image,
         n.news_title,
         n.news_slug,
@@ -160,6 +161,7 @@ router.get('/simple', async (req, res) => {
       }
 
       return {
+         news_id: item.news_id,
         news_image: firstImage,
         news_title: item.news_title,
         news_slug: item.news_slug,
@@ -370,7 +372,6 @@ router.post('/', verifyToken, async (req, res) => {
       title,
       slug,
       content,
-      excerpt,
       thumbnail,
       images,
       category_id,
@@ -390,12 +391,12 @@ router.post('/', verifyToken, async (req, res) => {
       newsSlug = `${newsSlug}-${Date.now().toString().slice(-6)}`;
     }
 
+    // INSERT không cần trường excerpt nữa
     const [result] = await db.query(`
       INSERT INTO news (
         news_title,
         news_slug,
         news_content,
-        news_description,
         news_image,
         news_category_id,
         news_author,
@@ -403,12 +404,11 @@ router.post('/', verifyToken, async (req, res) => {
         news_status,
         created_at,
         updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, NOW(), NOW())
+      ) VALUES (?, ?, ?, ?, ?, ?, 0, ?, NOW(), NOW())
     `, [
       title,
       newsSlug,
       content,
-      excerpt || null,
       images ? JSON.stringify(images) : null,
       category_id || null,
       req.user.id,
@@ -436,6 +436,7 @@ router.post('/', verifyToken, async (req, res) => {
     res.status(500).json({ error: 'Không thể tạo tin tức.' });
   }
 });
+
 
 
 /**
@@ -507,7 +508,6 @@ router.put('/:slug', verifyToken, async (req, res) => {
       title,
       slug,
       content,
-      excerpt,
       images,
       category_id,
       tags,
@@ -560,7 +560,6 @@ router.put('/:slug', verifyToken, async (req, res) => {
     if (title !== undefined) { updates.push('news_title = ?'); values.push(title); }
     if (newsSlug !== undefined) { updates.push('news_slug = ?'); values.push(newsSlug); }
     if (content !== undefined) { updates.push('news_content = ?'); values.push(content); }
-    if (excerpt !== undefined) { updates.push('news_description = ?'); values.push(excerpt || null); }
     if (category_id !== undefined) { updates.push('news_category_id = ?'); values.push(category_id || null); }
     if (tags !== undefined) { updates.push('tags = ?'); values.push(tagString); }
     if (status !== undefined) { updates.push('news_status = ?'); values.push(status); }

@@ -5937,7 +5937,7 @@ textarea.form-control {
   border-radius: 4px;
   cursor: pointer;
   border: none;
-  background-color: var(--primary-color);
+  background-color: var(--primary-co lor);
   color: white;
   height: -moz-fit-content;
   height: fit-content;

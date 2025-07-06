@@ -172,10 +172,52 @@ router.post("/:productId", async (req, res) => {
   const productId = req.params.productId;
   const { color_id, slug, quantity, price, price_sale, list_image } = req.body;
 
-  if (!productId) return res.status(400).json({ error: "Thiếu productId" });
+  const errors = [];
+  const variantIndex = 0;
+
+  const isEmpty = (val) => val === undefined || val === null || String(val).trim() === '';
+  const isNumber = (val) => !isEmpty(val) && !isNaN(Number(val));
+  const addError = (field, message) => {
+    errors.push({ field: `variants[${variantIndex}].${field}`, message });
+  };
+
+  // Validate productId
+  if (!productId || isNaN(productId)) {
+    return res.status(400).json({ error: "Thiếu hoặc sai productId" });
+  }
+
+  // Validate fields
+  if (isEmpty(color_id)) {
+    addError("color_id", "Màu sắc là bắt buộc");
+  }
+
+  if (isEmpty(slug)) {
+    addError("slug", "Slug là bắt buộc");
+  }
+
+  if (!isNumber(quantity)) {
+    addError("quantity", "Số lượng không hợp lệ");
+  }
+
+  if (!isNumber(price)) {
+    addError("price", "Giá không hợp lệ");
+  }
+
+  if (!Array.isArray(list_image) || list_image.length === 0) {
+    addError("list_image", "Cần ít nhất một ảnh");
+  } else {
+    list_image.forEach((img, i) => {
+      if (typeof img !== "string" || !img.startsWith("http")) {
+        addError(`list_image[${i}]`, `Ảnh ${i + 1} không hợp lệ`);
+      }
+    });
+  }
+
+  if (errors.length > 0) {
+    return res.status(400).json({ error: "Dữ liệu không hợp lệ", errors });
+  }
 
   try {
-    // Kiểm tra sản phẩm tồn tại
     const [product] = await db.query(
       "SELECT product_id FROM product WHERE product_id = ?",
       [productId]
@@ -184,11 +226,14 @@ router.post("/:productId", async (req, res) => {
       return res.status(404).json({ error: "Product không tồn tại" });
     }
 
-    // Xử lý list_image (mảng hoặc chuỗi)
-    let listImageStr = formatImageList(list_image);
-    if (!listImageStr) listImageStr = ""; // Đảm bảo luôn là chuỗi, không null
+    const formatImageList = (input) => {
+      if (Array.isArray(input)) return input.filter(Boolean).join(",");
+      if (typeof input === "string") return input.split(",").filter(Boolean).join(",");
+      return "";
+    };
 
-    // Insert vào DB
+    const listImageStr = formatImageList(list_image);
+
     const [result] = await db.query(
       `INSERT INTO variant_product (
         product_id,
@@ -201,10 +246,10 @@ router.post("/:productId", async (req, res) => {
       ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         productId,
-        color_id || null,
-        slug || null,
-        quantity || null,
-        price || null,
+        color_id,
+        slug,
+        quantity,
+        price,
         price_sale || null,
         listImageStr,
       ]
@@ -217,11 +262,14 @@ router.post("/:productId", async (req, res) => {
     });
   } catch (error) {
     console.error("[POST VARIANT] Lỗi:", error);
-    res
-      .status(500)
-      .json({ error: "Tạo biến thể thất bại", detail: error.message });
+    res.status(500).json({
+      error: "Tạo biến thể thất bại",
+      detail: error.message,
+    });
   }
 });
+
+
 
 /**
  * @route   PUT /api/variants/:variantId
@@ -232,40 +280,86 @@ router.put("/:variantId", async (req, res) => {
   const variantId = req.params.variantId;
   let { color_id, slug, quantity, price, price_sale, list_image } = req.body;
 
-  // Đảm bảo list_image là chuỗi
-  const listImageStr = formatImageList(list_image);
+  const errors = [];
+  const variantIndex = 0; // vì mỗi lần chỉ xử lý 1 variant
 
-  if (!variantId) {
-    return res.status(400).json({ error: "Variant ID is required" });
+  const addError = (field, message) => {
+    errors.push({ field: `variants[${variantIndex}].${field}`, message });
+  };
+
+  // ==== Kiểm tra rỗng trước ====
+  if (!variantId || isNaN(variantId)) {
+    return res.status(400).json([{ field: "variantId", message: "Thiếu ID biến thể." }]);
   }
 
-  // Kiểm tra biến thể tồn tại
+  if (color_id === undefined || color_id === null || color_id === "") {
+    addError("color_id", "Vui lòng chọn màu cho biến thể.");
+  } else if (isNaN(color_id)) {
+    addError("color_id", "Màu không hợp lệ.");
+  }
+
+  if (!slug || typeof slug !== "string" || slug.trim() === "") {
+    addError("slug", "Slug không được để trống.");
+  }
+  if (quantity === null || isNaN(quantity)) {
+    errors.push({ field: `variants[${index}].quantity`, message: "Số lượng không được để trống." });
+  }
+
+  if (quantity === undefined || quantity === null || quantity === "") {
+    addError("quantity", "Số lượng không được để trống.");
+  } else if (isNaN(quantity) || Number(quantity) < 0) {
+    addError("quantity", "Số lượng phải là số không âm.");
+  }
+
+  if (price === undefined || price === null || price === "") {
+    addError("price", "Giá không được để trống.");
+  } else if (isNaN(price) || Number(price) < 0) {
+    addError("price", "Giá phải là số không âm.");
+  }
+
+  // ==== Kiểm tra ảnh ====
+  const formatImageList = (input) => {
+    if (Array.isArray(input)) return input.filter(Boolean).join(",");
+    if (typeof input === "string") return input.split(",").filter(Boolean).join(",");
+    return "";
+  };
+
+  const listImageStr = formatImageList(list_image);
+
+  if (!listImageStr) {
+    addError("list_image", "Vui lòng chọn ít nhất 1 ảnh cho biến thể.");
+  }
+
+  if (errors.length > 0) {
+    return res.status(400).json({ errors });
+  }
+
+  // ==== Kiểm tra variant tồn tại ====
   const [existingVariant] = await db.query(
     "SELECT variant_id FROM variant_product WHERE variant_id = ?",
     [variantId]
   );
   if (existingVariant.length === 0) {
-    return res.status(404).json({ error: "Variant not found" });
+    return res.status(404).json({ error: "Biến thể không tồn tại." });
   }
 
+  // ==== Cập nhật ====
   await db.query(
-    `
-    UPDATE variant_product SET
-      color_id = COALESCE(?, color_id),
-      variant_product_slug = COALESCE(?, variant_product_slug),
-      variant_product_quantity = COALESCE(?, variant_product_quantity),
-      variant_product_price = COALESCE(?, variant_product_price),
-      variant_product_price_sale = COALESCE(?, variant_product_price_sale),
-      variant_product_list_image = COALESCE(?, variant_product_list_image)
-    WHERE variant_id = ?
-  `,
+    `UPDATE variant_product SET
+      color_id = ?,
+      variant_product_slug = ?,
+      variant_product_quantity = ?,
+      variant_product_price = ?,
+      variant_product_price_sale = ?,
+      variant_product_list_image = ?
+    WHERE variant_id = ?`,
     [
-      color_id || null,
-      slug || null,
-      quantity || null,
-      price || null,
-      price_sale || null,
-      listImageStr, // Đảm bảo là chuỗi
+      Number(color_id),
+      slug.trim(),
+      Number(quantity),
+      Number(price),
+      Number(price_sale),
+      listImageStr,
       variantId,
     ]
   );
@@ -276,10 +370,12 @@ router.put("/:variantId", async (req, res) => {
   );
 
   res.json({
-    message: "Variant updated successfully",
+    message: "Cập nhật biến thể thành công!",
     variant: updatedVariant[0],
   });
 });
+
+
 
 /**
  * @route   DELETE /api/variants/:variantId

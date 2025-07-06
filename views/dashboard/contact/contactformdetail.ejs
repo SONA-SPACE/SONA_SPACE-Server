@@ -156,46 +156,74 @@
   <div class="design-products-column">
     <div class="form-section">
       <h3 class="section-title">Sản phẩm trong thiết kế</h3>
-      
+
       <!-- Form thêm sản phẩm -->
       <div class="add-product-form">
-          <div class="form-group">
-              <label for="variant-select">Chọn sản phẩm</label>
-              <select id="variant-select" class="form-control"></select>
-          </div>
-          <div class="form-group">
-              <label for="quantity-input">Số lượng</label>
-              <input type="number" id="quantity-input" class="form-control" value="1" min="1">
-          </div>
-          <button type="button" class="btn btn-add" id="add-product-btn">Thêm</button>
+        <div class="form-group">
+          <label for="variant-select">Chọn sản phẩm</label>
+          <select id="variant-select" class="form-control">
+            <option value="">Chọn một sản phẩm</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="quantity-input">Số lượng</label>
+          <input
+            type="number"
+            id="quantity-input"
+            class="form-control"
+            value="1"
+            min="1"
+          />
+        </div>
+        <div class="form-group">
+          <label for="unit-price-input">Đơn giá</label>
+          <input
+            type="text"
+            id="unit-price-input"
+            class="form-control"
+            value="0"
+          />
+        </div>
+        <button type="button" class="btn btn-add" id="add-product-btn">
+          Thêm
+        </button>
       </div>
 
       <!-- Bảng sản phẩm -->
       <div class="products-table-container">
-          <table class="products-table">
-              <thead>
-                  <tr>
-                      <th>Sản phẩm</th>
-                      <th>SKU</th>
-                      <th>Số lượng</th>
-                      <th>Đơn giá</th>
-                      <th>Thành tiền</th>
-                      <th></th>
-                  </tr>
-              </thead>
-              <tbody id="design-products-tbody">
-                  <!-- Dữ liệu sẽ được chèn vào đây bằng JS -->
-              </tbody>
-          </table>
+        <table class="products-table">
+          <thead>
+            <tr>
+              <th>Ảnh</th>
+              <th>Tên</th>
+              <th style="white-space: nowrap; text-align: center">Số lượng</th>
+              <th style="white-space: nowrap; text-align: center">Đơn giá</th>
+              <th style="white-space: nowrap; text-align: center">
+                Thành tiền
+              </th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="design-products-tbody">
+            <!-- Dữ liệu sẽ được chèn vào đây bằng JS -->
+          </tbody>
+        </table>
       </div>
-       <div class="total-price-container">
-            <strong>Tổng cộng:</strong> <span id="total-design-price">0 VNĐ</span>
+      <div class="total-price-container">
+        <strong>Tổng cộng:</strong> <span id="total-design-price">0 VNĐ</span>
       </div>
     </div>
   </div>
 </div>
 
 <!-- JS xử lý -->
+<!-- Tom Select CSS -->
+<link
+  href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.bootstrap5.min.css"
+  rel="stylesheet"
+/>
+<!-- Tom Select JS -->
+<script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
 <script>
   const id = window.location.pathname.split("/").pop();
   console.log(id);
@@ -205,33 +233,68 @@
     loadVariants();
     loadDesignDetails();
     document.querySelector(".btn-save").addEventListener("click", handleUpdate);
-    document.getElementById("add-product-btn").addEventListener("click", handleAddProduct);
+    document
+      .getElementById("add-product-btn")
+      .addEventListener("click", handleAddProduct);
   });
 
   function formatCurrency(value) {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+    }).format(value);
   }
-
   function loadVariants() {
-    fetch("/api/variants")
+    fetch(`/api/products/variants`)
       .then((res) => res.json())
       .then((data) => {
         const select = document.getElementById("variant-select");
         select.innerHTML = '<option value="">Chọn một sản phẩm</option>';
-        data.variants.forEach((variant) => {
+        data.forEach((variant) => {
           const option = document.createElement("option");
           option.value = variant.variant_id;
+          option.textContent = `${variant.product_name} - ${
+            variant.variant_name || variant.slug
+          } (${variant.sku || ""})`;
+          // Lưu giá vào thuộc tính data
           option.dataset.price = variant.price;
-          option.textContent = `${variant.product_name} - ${variant.variant_name} (${variant.sku})`;
+          option.dataset.priceSale = variant.price_sale || "";
           select.appendChild(option);
+        });
+
+        // Nếu đã có Tom Select instance, destroy trước khi khởi tạo lại (nếu cần)
+        if (select.tomselect) {
+          select.tomselect.destroy();
+        }
+        // Khởi tạo Tom Select
+        new TomSelect("#variant-select", {
+          create: false,
+          sortField: "text",
+          placeholder: "Chọn một sản phẩm",
+          allowEmptyOption: true,
         });
       });
   }
+
+  // Lắng nghe khi chọn sản phẩm
+  document.addEventListener("DOMContentLoaded", function () {
+    loadVariants();
+    // Event change lấy giá
+    document
+      .getElementById("variant-select")
+      .addEventListener("change", function () {
+        const selectedOption = this.options[this.selectedIndex];
+        const price =
+          selectedOption.dataset.priceSale || selectedOption.dataset.price;
+        document.getElementById("unit-price-input").value = price || 0;
+      });
+  });
 
   function loadDesignDetails() {
     fetch(`/api/contact-form-design/${id}/details`)
       .then((res) => res.json())
       .then((details) => {
+        console.log(details);
         const tbody = document.getElementById("design-products-tbody");
         tbody.innerHTML = "";
         let total = 0;
@@ -239,76 +302,96 @@
           const row = document.createElement("tr");
           row.dataset.id = item.contact_form_design_detail_id;
           row.innerHTML = `
-            <td>${item.product_name}</td>
-            <td>${item.sku}</td>
-            <td>${item.quantity}</td>
-            <td>${formatCurrency(item.unit_price)}</td>
-            <td>${formatCurrency(item.total_price)}</td>
-            <td><button class="btn-remove-product" onclick="handleRemoveProduct(${item.contact_form_design_detail_id})"><i class="fas fa-trash-alt"></i></button></td>
+            <td style="white-space: nowrap; min-width: 100px;">
+              <div class="product-image-container">
+                <img src="${item.first_image}" alt="${
+            item.product_name
+          }" style="width: 80px; height: 35px;">
+              </div>
+            </td>
+            <td style="white-space: nowrap;">${item.product_name}</td>
+            <td style="white-space: nowrap;">${item.quantity}</td>
+            <td style="white-space: nowrap;">${formatCurrency(
+              item.unit_price
+            )}</td>
+            <td style="white-space: nowrap;">${formatCurrency(
+              item.total_price
+            )}</td>
+            <td><button class="btn-remove-product" onclick="handleRemoveProduct(${
+              item.variant_id
+            })"><i class="fas fa-trash-alt"></i></button></td>
+            <td><button class="btn-edit-product" onclick="handleEditProduct(${
+              item.variant_id
+            })"><i class="fas fa-edit"></i></button></td>
           `;
           tbody.appendChild(row);
           total += item.total_price;
         });
-        document.getElementById("total-design-price").textContent = formatCurrency(total);
+        document.getElementById("total-design-price").textContent =
+          formatCurrency(total);
       });
   }
 
   async function handleAddProduct() {
-      const variantSelect = document.getElementById("variant-select");
-      const variant_id = variantSelect.value;
-      const quantity = document.getElementById("quantity-input").value;
-      
-      if (!variant_id) {
-          showToast("Vui lòng chọn một sản phẩm.", "danger");
-          return;
+    const variantSelect = document.getElementById("variant-select");
+    const variant_id = variantSelect.value;
+    const quantity = document.getElementById("quantity-input").value;
+    const unit_price = document.getElementById("unit-price-input").value;
+
+    if (!variant_id) {
+      showToast("Vui lòng chọn một sản phẩm.", "danger");
+      return;
+    }
+
+    const selectedOption = variantSelect.options[variantSelect.selectedIndex];
+    // const unit_price = selectedOption.dataset.price;
+
+    try {
+      const res = await fetch(`/api/contact-form-design/${id}/details`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({ variant_id, quantity, unit_price }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        showToast("Thêm sản phẩm thành công", "success");
+        loadDesignDetails(); // Tải lại danh sách
+      } else {
+        showToast(data.error || "Có lỗi xảy ra", "danger");
       }
-
-      const selectedOption = variantSelect.options[variantSelect.selectedIndex];
-      const unit_price = selectedOption.dataset.price;
-
-      try {
-          const res = await fetch(`/api/contact-form-design/${id}/details`, {
-              method: "POST",
-              headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${localStorage.getItem("token")}`,
-              },
-              body: JSON.stringify({ variant_id, quantity, unit_price }),
-          });
-
-          const data = await res.json();
-          if (res.ok) {
-              showToast("Thêm sản phẩm thành công", "success");
-              loadDesignDetails(); // Tải lại danh sách
-          } else {
-              showToast(data.error || "Có lỗi xảy ra", "danger");
-          }
-      } catch (error) {
-          showToast("Không thể thêm sản phẩm", "danger");
-      }
+    } catch (error) {
+      showToast("Không thể thêm sản phẩm", "danger");
+    }
   }
 
   async function handleRemoveProduct(detailId) {
-      if (!confirm("Bạn có chắc muốn xóa sản phẩm này?")) return;
+    if (!confirm("Bạn có chắc muốn xóa sản phẩm này?")) return;
 
-      try {
-          const res = await fetch(`/api/contact-form-design/${id}/details/${detailId}`, {
-              method: "DELETE",
-              headers: {
-                  Authorization: `Bearer ${localStorage.getItem("token")}`,
-              },
-          });
+    try {
+      const res = await fetch(
+        `/api/contact-form-design/${id}/details/${detailId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
 
-          const data = await res.json();
-          if (res.ok) {
-              showToast("Xóa sản phẩm thành công", "success");
-              loadDesignDetails(); // Tải lại danh sách
-          } else {
-              showToast(data.error || "Có lỗi xảy ra", "danger");
-          }
-      } catch (error) {
-          showToast("Không thể xóa sản phẩm", "danger");
+      const data = await res.json();
+      if (res.ok) {
+        showToast("Xóa sản phẩm thành công", "success");
+        loadDesignDetails(); // Tải lại danh sách
+      } else {
+        showToast(data.error || "Có lỗi xảy ra", "danger");
       }
+    } catch (error) {
+      showToast("Không thể xóa sản phẩm", "danger");
+    }
   }
 
   function loadData() {
@@ -357,7 +440,7 @@
     ).value;
     const remarks = document.getElementById("remarks").value;
     const status = document.getElementById("status").value;
-
+    const unit_price = document.getElementById("unit-price-input").value;
     try {
       const payload = {
         name,

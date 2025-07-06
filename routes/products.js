@@ -263,7 +263,8 @@ router.get("/search", async (req, res) => {
   if (!keyword) return res.json({ results: [] });
 
   try {
-    const [rows] = await db.query(`
+    const [rows] = await db.query(
+      `
       SELECT 
         product_id AS id, 
         product_name AS name, 
@@ -274,12 +275,16 @@ router.get("/search", async (req, res) => {
         AND LOWER(product_name) LIKE LOWER(?)
       ORDER BY created_at DESC
       LIMIT 10
-    `, [`%${keyword}%`]);
+    `,
+      [`%${keyword}%`]
+    );
 
-    res.json({ results: rows.map(item => ({
-      ...item,
-      image: item.image ? String(item.image) : ""
-    })) });
+    res.json({
+      results: rows.map((item) => ({
+        ...item,
+        image: item.image ? String(item.image) : "",
+      })),
+    });
   } catch (err) {
     console.error("Search error:", err);
     res.status(500).json({ error: "Search failed" });
@@ -463,6 +468,51 @@ router.get("/newest", optionalAuth, async (req, res) => {
   }
 });
 
+router.get("/variants", async (req, res) => {
+  try {
+    // Lấy toàn bộ variants kèm tên sản phẩm và hình đầu tiên
+    const [variants] = await db.query(
+      `
+      SELECT
+        vp.variant_id,
+        vp.product_id,
+        p.product_name,
+        vp.color_id,
+        vp.variant_product_price AS variant_product_price,
+        vp.variant_product_price_sale AS variant_product_price_sale,
+        vp.variant_product_quantity AS variant_product_quantity,
+        vp.variant_product_slug AS variant_product_slug,
+        vp.variant_product_list_image AS list_image
+      FROM variant_product vp
+      JOIN product p ON vp.product_id = p.product_id
+      ORDER BY vp.product_id, vp.variant_id
+      `
+    );
+
+    // Chuẩn hóa: lấy ảnh đầu tiên cho mỗi variant
+    const result = variants.map((v) => ({
+      variant_id: v.variant_id,
+      product_id: v.product_id,
+      product_name: v.product_name,
+      color_id: v.color_id,
+      price: v.variant_product_price,
+      price_sale: v.variant_product_price_sale,
+      quantity: v.variant_product_quantity,
+      slug: v.variant_product_slug,
+      first_image: v.list_image
+        ? v.list_image
+            .split(",")[0]
+            .trim()
+            .replace(/^['"]+|['"]+$/g, "")
+        : null,
+    }));
+
+    res.json(result);
+  } catch (error) {
+    console.error("Error fetching variants:", error);
+    res.status(500).json({ error: "Failed to fetch variants" });
+  }
+});
 
 /**
  * @route   GET /api/products/:id

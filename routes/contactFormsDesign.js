@@ -170,6 +170,155 @@ router.get("/", verifyToken, isAdmin, async (req, res) => {
 });
 
 /**
+ * @route   GET /api/contact-forms/:id
+ * @desc    Lấy chi tiết một form liên hệ
+ * @access  Private (Admin only)
+ */
+router.get("/:id", verifyToken, isAdmin, async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ error: "Invalid contact form ID" });
+    }
+
+    const [forms] = await db.query(
+      "SELECT * FROM contact_form_design WHERE contact_form_design_id = ?",
+      [id]
+    );
+
+    if (forms.length === 0) {
+      return res.status(404).json({ error: "Contact form not found" });
+    }
+
+    res.json(forms[0]);
+  } catch (error) {
+    console.error("Error fetching contact form:", error);
+    res.status(500).json({ error: "Failed to fetch contact form" });
+  }
+});
+
+/**
+ * @route   PUT /api/contact-forms/:id
+ * @desc    Cập nhật trạng thái form liên hệ
+ * @access  Private (Admin only)
+ */
+router.put("/:id", verifyToken, isAdmin, async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ error: "Invalid contact form ID" });
+    }
+
+    const { status, remarks, ...rest } = req.body;
+    const editableFields = [
+      "name",
+      "email",
+      "phone",
+      "room_name",
+      "design_description",
+      "require_design",
+      "style_design",
+      "budget",
+      "different_information",
+      "design_fee",
+    ];
+
+    // Kiểm tra form tồn tại
+    const [forms] = await db.query(
+      "SELECT * FROM contact_form_design WHERE contact_form_design_id = ?",
+      [id]
+    );
+    if (forms.length === 0) {
+      return res.status(404).json({ error: "Contact form not found" });
+    }
+
+    // Kiểm tra trạng thái hợp lệ
+    
+    if (status !== undefined && status !== null && status !== "") {
+      const [statusEnumRows] = await db.query(`
+        SHOW COLUMNS FROM contact_form_design LIKE 'status'
+      `);
+      const statusEnumStr = statusEnumRows[0].Type.match(/enum\((.*)\)/)[1];
+      const validStatuses = statusEnumStr
+        .split(",")
+        .map((s) => s.replace(/'/g, "").trim());
+
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ error: "Trạng thái không hợp lệ" });
+      }
+      // Kiểm tra chuyển trạng thái hợp lệ
+      const currentStatus = forms[0].status;
+      const validTransitions = {
+        PENDING: ["IN_PROGRESS"],
+        IN_PROGRESS: ["RESOLVED", "REJECTED"],
+        RESOLVED: ["CLOSED"],
+        REJECTED: ["CLOSED"],
+        CLOSED: [],
+      };
+      if (
+        status !== currentStatus &&
+        !validTransitions[currentStatus].includes(status)
+      ) {
+        return res
+          .status(400)
+          .json({ error: "Trạng thái không được phép chuyển đổi" });
+      }
+    }
+    // Cập nhật form
+    const updates = [];
+    const values = [];
+
+    // Duyệt qua các trường được phép update
+    for (const key of editableFields) {
+      if (rest[key] !== undefined) {
+        updates.push(`${key} = ?`);
+        values.push(rest[key]);
+      }
+    }
+
+    // Thêm status nếu có truyền lên
+    if (status !== undefined && status !== null && status !== "") {
+      updates.push("status = ?");
+      values.push(status);
+    }
+
+    if (remarks !== undefined) {
+      updates.push("remarks = ?");
+      values.push(remarks);
+    }
+
+    // Luôn cập nhật updated_at
+    updates.push("updated_at = NOW()");
+
+    if (updates.length === 1 && updates[0] === "updated_at = NOW()") {
+      return res.status(400).json({ error: "Không có dữ liệu cập nhật" });
+    }
+
+    values.push(id);
+
+    await db.query(
+      `UPDATE contact_form_design SET ${updates.join(
+        ", "
+      )} WHERE contact_form_design_id = ?`,
+      values
+    );
+
+    const [updatedForm] = await db.query(
+      "SELECT * FROM contact_form_design WHERE contact_form_design_id = ?",
+      [id]
+    );
+
+    res.json({
+      message: "Contact form updated successfully",
+      form: updatedForm[0],
+    });
+  } catch (error) {
+    console.error("Error updating contact form:", error);
+    res.status(500).json({ error: "Failed to update contact form" });
+  }
+});
+
+/**
  * @route   GET /api/contact-form-design/:id/details
  * @desc    Lấy danh sách sản phẩm trong chi tiết thiết kế
  * @access  Private (Admin only)
@@ -445,107 +594,6 @@ router.delete(
     }
   }
 );
-
-/**
- * @route   PUT /api/contact-forms/:id
- * @desc    Cập nhật trạng thái form liên hệ
- * @access  Private (Admin only)
- */
-router.put("/:id", verifyToken, isAdmin, async (req, res) => {
-  try {
-    const id = Number(req.params.id);
-    if (isNaN(id)) {
-      return res.status(400).json({ error: "Invalid contact form ID" });
-    }
-
-    const { status, remarks } = req.body;
-
-    // Kiểm tra form tồn tại
-    const [forms] = await db.query(
-      "SELECT * FROM contact_form_design WHERE contact_form_design_id = ?",
-      [id]
-    );
-
-    if (forms.length === 0) {
-      return res.status(404).json({ error: "Contact form not found" });
-    }
-
-    // Kiểm tra trạng thái hợp lệ
-    const [statusEnumRows] = await db.query(`
-      SHOW COLUMNS FROM contact_form_design LIKE 'status'
-    `);
-
-    const statusEnumStr = statusEnumRows[0].Type.match(/enum\((.*)\)/)[1];
-    const validStatuses = statusEnumStr
-      .split(",")
-      .map((s) => s.replace(/'/g, "").trim());
-    console.log(validStatuses);
-
-    if (status !== undefined && status !== null && status !== "") {
-      if (!validStatuses.includes(status)) {
-        return res.status(400).json({ error: "Trạng thái không hợp lệ" });
-      }
-      // Kiểm tra chuyển trạng thái hợp lệ
-      const currentStatus = forms[0].status;
-      const validTransitions = {
-        PENDING: ["IN_PROGRESS"],
-        IN_PROGRESS: ["RESOLVED", "REJECTED"],
-        RESOLVED: ["CLOSED"],
-        REJECTED: ["CLOSED"],
-        CLOSED: [],
-      };
-      if (
-        status !== currentStatus &&
-        !validTransitions[currentStatus].includes(status)
-      ) {
-        return res
-          .status(400)
-          .json({ error: "Trạng thái không được phép chuyển đổi" });
-      }
-    }
-    // Cập nhật form
-    const updates = [];
-    const values = [];
-
-    if (status) {
-      updates.push("status = ?");
-      values.push(status);
-    }
-
-    if (remarks !== undefined) {
-      updates.push("remarks = ?");
-      values.push(remarks);
-    }
-
-    updates.push("updated_at = NOW()");
-
-    if (updates.length === 1 && updates[0] === "updated_at = NOW()") {
-      return res.status(400).json({ error: "Không có dữ liệu cập nhật" });
-    }
-
-    values.push(id);
-
-    await db.query(
-      `UPDATE contact_form_design SET ${updates.join(
-        ", "
-      )} WHERE contact_form_design_id = ?`,
-      values
-    );
-
-    const [updatedForm] = await db.query(
-      "SELECT * FROM contact_form_design WHERE contact_form_design_id = ?",
-      [id]
-    );
-
-    res.json({
-      message: "Contact form updated successfully",
-      form: updatedForm[0],
-    });
-  } catch (error) {
-    console.error("Error updating contact form:", error);
-    res.status(500).json({ error: "Failed to update contact form" });
-  }
-});
 
 /**
  * @route   DELETE /api/contact-forms/:id

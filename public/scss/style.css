@@ -5885,8 +5885,8 @@ textarea.form-control {
 }
 .design-products-column .add-product-form {
   display: flex;
+  flex-direction: column;
   gap: 10px;
-  align-items: flex-end;
   margin-bottom: 20px;
 }
 .design-products-column .add-product-form .form-group {
@@ -5905,7 +5905,7 @@ textarea.form-control {
   height: fit-content;
 }
 .design-products-column .add-product-form .btn-add:hover {
-  background-color: var(--primary-dark-color);
+  background-color: color-mix(in srgb, var(--primary-color) 90%, black 10%);
 }
 .design-products-column .products-table-container {
   overflow-x: auto;

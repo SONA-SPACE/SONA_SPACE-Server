@@ -24,35 +24,71 @@ router.get("/", verifyToken, async (req, res) => {
         w.quantity,
         w.status,
         w.created_at,
+
+        -- Variant
         v.variant_id,
         v.variant_product_price AS price,
         v.variant_product_price_sale AS price_sale,
         v.variant_product_list_image AS image,
+
+        -- Màu chính của variant
+        c.color_id,
         c.color_name,
         c.color_hex,
+
+        -- Product
         p.product_id,
         p.product_name,
+        p.product_slug AS slug,
         p.product_image AS product_image,
-        cat.category_name AS category,
+        p.category_id,
+
+        -- Category
+        cat.category_name AS category_name,
+
+        -- Mảng tất cả màu của sản phẩm
+        (
+          SELECT JSON_ARRAYAGG(JSON_OBJECT(
+            'color_id', col.color_id,
+            'color_name', col.color_name,
+            'color_hex', col.color_hex
+          ))
+          FROM variant_product vp2
+          LEFT JOIN color col ON vp2.color_id = col.color_id
+          WHERE vp2.product_id = p.product_id
+        ) AS colors,
+
+        -- Comment stats
         (SELECT COUNT(*) FROM comment WHERE product_id = p.product_id) AS comment_count,
         (SELECT AVG(comment_rating) FROM comment WHERE product_id = p.product_id) AS average_rating
+
       FROM wishlist w
       JOIN variant_product v ON w.variant_id = v.variant_id
       JOIN product p ON v.product_id = p.product_id
       LEFT JOIN color c ON v.color_id = c.color_id
       LEFT JOIN category cat ON p.category_id = cat.category_id
+
       WHERE w.user_id = ? AND w.status = ?
       ORDER BY w.created_at DESC
       `,
       [userId, status]
     );
 
-    res.status(200).json(items);
+    // Parse JSON string fields (colors)
+    const result = items.map((item) => ({
+      ...item,
+      colors: item.colors ? JSON.parse(item.colors) : [],
+      isWishlist: true // luôn true vì đang ở trang wishlist
+    }));
+
+    res.status(200).json(result);
   } catch (err) {
     console.error("Error fetching wishlist/cart:", err);
     res.status(500).json({ error: "Lỗi khi lấy dữ liệu giỏ hàng/wishlist" });
   }
 });
+
+
 
 
 /**
@@ -210,7 +246,7 @@ router.put('/:id', verifyToken, async (req, res) => {
 router.delete('/clear', verifyToken, async (req, res) => {
   const userId = req.user.id; // lấy từ middleware authenticate
   console.log("Xóa giỏ hàng cho user:", userId); // DEBUG
-  
+
   try {
     await db.query("DELETE FROM wishlist WHERE user_id = ? AND status = 0", [userId]);
     res.status(200).json({ message: 'Đã xóa toàn bộ giỏ hàng' });

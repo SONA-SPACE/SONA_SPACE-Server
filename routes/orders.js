@@ -191,6 +191,35 @@ router.get('/hash/:orderHash', optionalAuth, async (req, res) => {
 
 
 
+// GET /api/orders/admin
+router.get('/admin', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const [orders] = await db.query(`
+      SELECT 
+        o.order_id,
+        o.order_hash,
+        o.created_at,
+        o.current_status,
+        o.order_total_final,
+        o.order_name_new,
+        o.order_name_old,
+        o.order_email_new,
+        o.order_email_old,
+        u.user_name,
+        COUNT(oi.order_item_id) AS item_count
+      FROM orders o
+      LEFT JOIN user u ON o.user_id = u.user_id
+      LEFT JOIN order_items oi ON o.order_id = oi.order_id
+      GROUP BY o.order_id
+      ORDER BY o.created_at DESC
+    `);
+
+    res.json({ success: true, orders });
+  } catch (err) {
+    console.error("Lỗi khi lấy danh sách đơn hàng:", err);
+    res.status(500).json({ success: false, message: "Lỗi server" });
+  }
+});
 
 
 router.get('/count', async (req, res) => {
@@ -498,7 +527,7 @@ router.post('/', verifyToken, async (req, res) => {
     }
 
     //  Tạo đơn hàng
- await db.query(`
+    await db.query(`
   INSERT INTO orders (
     order_hash, user_id, order_address_old, order_address_new,
     order_number1, order_number2, order_total, order_total_final, 
@@ -507,20 +536,20 @@ router.post('/', verifyToken, async (req, res) => {
     order_email_old, order_email_new
   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?)
 `, [
-  order_id,
-  user_id,
-  finalAddressOld,
-  finalAddressNew,
-  finalNumber1,
-  finalNumber2,
-  order_total,
-  order_total,
-  currentStatus,
-  orderNameOld,
-  orderNameNew,
-  orderEmailOld,
-  orderEmailNew
-]);
+      order_id,
+      user_id,
+      finalAddressOld,
+      finalAddressNew,
+      finalNumber1,
+      finalNumber2,
+      order_total,
+      order_total,
+      currentStatus,
+      orderNameOld,
+      orderNameNew,
+      orderEmailOld,
+      orderEmailNew
+    ]);
 
 
 
@@ -689,6 +718,44 @@ router.post('/', verifyToken, async (req, res) => {
 });
 
 
+// PUT /api/orders/:id/status
+router.put('/:id/status', verifyToken, isAdmin, async (req, res) => {
+  const orderId = req.params.id;
+  const { new_status } = req.body;
+
+  const validStatuses = ['PENDING', 'CONFIRMED', 'SHIPPING', 'SUCCESS', 'FAILED', 'CANCELLED'];
+  if (!validStatuses.includes(new_status)) {
+    return res.status(400).json({ error: 'Trạng thái không hợp lệ' });
+  }
+
+  try {
+    // Lấy trạng thái hiện tại
+    const [[order]] = await db.query('SELECT current_status FROM orders WHERE order_id = ?', [orderId]);
+    if (!order) return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
+
+    const fromStatus = order.current_status;
+    const toStatus = new_status;
+
+    if (fromStatus === toStatus) {
+      return res.status(200).json({ message: 'Trạng thái không thay đổi' });
+    }
+
+    // Cập nhật trạng thái
+    await db.query('UPDATE orders SET current_status = ? WHERE order_id = ?', [toStatus, orderId]);
+
+    // Ghi log chuyển trạng thái
+    await db.query(`
+      INSERT INTO order_status_log (
+        order_id, from_status, to_status, trigger_by, step, created_at
+      ) VALUES (?, ?, ?, 'admin', ?, NOW())
+    `, [orderId, fromStatus, toStatus, `Chuyển trạng thái từ ${fromStatus} ➝ ${toStatus}`]);
+
+    return res.status(200).json({ success: true, message: `Đã chuyển trạng thái đơn hàng sang ${toStatus}` });
+  } catch (err) {
+    console.error('Lỗi cập nhật trạng thái đơn hàng:', err);
+    res.status(500).json({ error: 'Lỗi máy chủ khi cập nhật trạng thái' });
+  }
+});
 
 
 
@@ -697,53 +764,53 @@ router.post('/', verifyToken, async (req, res) => {
  * @desc    Cập nhật trạng thái đơn hàng
  * @access  Private (Admin)
  */
-router.put('/:id/status', isAdmin, async (req, res) => {
-  try {
-    const orderId = Number(req.params.id);
-    const { status_id, note } = req.body;
+// router.put('/:id/status', isAdmin, async (req, res) => {
+//   try {
+//     const orderId = Number(req.params.id);
+//     const { status_id, note } = req.body;
 
-    if (isNaN(orderId) || !status_id) {
-      return res.status(400).json({ error: 'Invalid order ID or status ID' });
-    }
+//     if (isNaN(orderId) || !status_id) {
+//       return res.status(400).json({ error: 'Invalid order ID or status ID' });
+//     }
 
-    // Kiểm tra đơn hàng tồn tại
-    const [existingOrder] = await db.query(
-      'SELECT order_id, order_status_id FROM `order` WHERE order_id = ?',
-      [orderId]
-    );
+//     // Kiểm tra đơn hàng tồn tại
+//     const [existingOrder] = await db.query(
+//       'SELECT order_id, order_status_id FROM `order` WHERE order_id = ?',
+//       [orderId]
+//     );
 
-    if (existingOrder.length === 0) {
-      return res.status(404).json({ error: 'Order not found' });
-    }
+//     if (existingOrder.length === 0) {
+//       return res.status(404).json({ error: 'Order not found' });
+//     }
 
-    // Kiểm tra trạng thái tồn tại
-    const [existingStatus] = await db.query(
-      'SELECT order_status_id FROM order_status WHERE order_status_id = ?',
-      [status_id]
-    );
+//     // Kiểm tra trạng thái tồn tại
+//     const [existingStatus] = await db.query(
+//       'SELECT order_status_id FROM order_status WHERE order_status_id = ?',
+//       [status_id]
+//     );
 
-    if (existingStatus.length === 0) {
-      return res.status(404).json({ error: 'Status not found' });
-    }
+//     if (existingStatus.length === 0) {
+//       return res.status(404).json({ error: 'Status not found' });
+//     }
 
-    // Cập nhật trạng thái đơn hàng
-    await db.query(
-      'UPDATE `order` SET order_status_id = ?, updated_at = NOW() WHERE order_id = ?',
-      [status_id, orderId]
-    );
+//     // Cập nhật trạng thái đơn hàng
+//     await db.query(
+//       'UPDATE `order` SET order_status_id = ?, updated_at = NOW() WHERE order_id = ?',
+//       [status_id, orderId]
+//     );
 
-    // Thêm vào lịch sử trạng thái
-    await db.query(`
-      INSERT INTO order_status_log (order_id, order_status_id, note, created_at)
-      VALUES (?, ?, ?, NOW())
-    `, [orderId, status_id, note || null]);
+//     // Thêm vào lịch sử trạng thái
+//     await db.query(`
+//       INSERT INTO order_status_log (order_id, order_status_id, note, created_at)
+//       VALUES (?, ?, ?, NOW())
+//     `, [orderId, status_id, note || null]);
 
-    res.json({ message: 'Order status updated successfully' });
-  } catch (error) {
-    console.error('Error updating order status:', error);
-    res.status(500).json({ error: 'Failed to update order status' });
-  }
-});
+//     res.json({ message: 'Order status updated successfully' });
+//   } catch (error) {
+//     console.error('Error updating order status:', error);
+//     res.status(500).json({ error: 'Failed to update order status' });
+//   }
+// });
 
 /**
  * @route   DELETE /api/orders/:id

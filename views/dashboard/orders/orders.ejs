@@ -100,7 +100,7 @@
           <table>
             <tbody id="orders-list">
               <!-- Dữ liệu đơn hàng mẫu -->
-              <tr>
+              <!-- <tr>
                 <td><input type="checkbox" class="checkbox"></td>
                 <td class="order-id">ORD-10586</td>
                 <td>16:08:55 8-05-2025</td>
@@ -250,7 +250,7 @@
                     <button class="action-btn"><i class="fas fa-trash-alt"></i></button>
                   </div>
                 </td>
-              </tr>
+              </tr> -->
             </tbody>
           </table>
           
@@ -366,3 +366,73 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 </script> 
+<script>
+async function loadOrders() {
+  try {
+    const res = await fetch('/api/orders/admin', {
+      headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+    });
+    const data = await res.json();
+    console.log("Orders data:", data);
+
+    if (!data.success) throw new Error(data.message);
+
+    const orders = data.orders;
+    const tbody = document.getElementById('orders-list');
+    tbody.innerHTML = ''; // Clear cũ
+
+    orders.forEach(order => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><input type="checkbox" class="checkbox"></td>
+        <td class="order-id">${order.order_hash}</td>
+        <td>${formatDate(order.created_at)}</td>
+        <td>${order.order_name_new || order.order_name_old || order.user_name}</td>
+        <td><span class="status paid">Đã thanh toán</span></td>
+        <td>${order.item_count} sản phẩm</td>
+        <td>${formatPrice(order.order_total_final)} đ</td>
+        <td>-</td>
+        <td><span class="status processing">${mapStatus(order.current_status)}</span></td>
+        <td>${formatDate(order.created_at)}</td>
+        <td>
+          <div class="actions">
+            <button class="action-btn"><i class="fas fa-pencil-alt"></i></button>
+            <button class="action-btn"><i class="fas fa-trash-alt"></i></button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  } catch (err) {
+    console.error("Lỗi khi load orders:", err);
+  }
+}
+
+function formatDate(dateStr) {
+  const d = new Date(dateStr);
+  return `${d.getHours()}:${d.getMinutes()}:${d.getSeconds()} ${d.getDate()}-${d.getMonth() + 1}-${d.getFullYear()}`;
+}
+
+function formatPrice(price) {
+  const numeric = parseFloat(price);
+  const integerPart = Math.floor(numeric);
+  return integerPart.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
+
+function mapStatus(status) {
+  switch (status) {
+    case 'PENDING': return 'Chờ xác nhận';
+    case 'CONFIRMED': return 'Đã xác nhận';
+    case 'SHIPPING': return 'Đang giao';
+    case 'SUCCESS': return 'Giao hàng thành công';
+    case 'FAILED': return 'Thất bại';
+    case 'CANCELLED': return 'Đã hủy';
+    default: return status;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  loadOrders(); // 🚀 Load đơn hàng khi vào trang
+});
+</script>

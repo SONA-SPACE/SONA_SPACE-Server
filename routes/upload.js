@@ -9,11 +9,10 @@ router.post("/category", upload.single("image"), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: "Thiếu file ảnh" });
 
     const { folder, subfolder } = req.body;
-    const base64Image = `data:${
-      req.file.mimetype
-    };base64,${req.file.buffer.toString("base64")}`;
+    const base64Image = `data:${req.file.mimetype
+      };base64,${req.file.buffer.toString("base64")}`;
 
-    // Ghép folder đầy đủ
+
     const targetFolder = subfolder ? `${folder}/${subfolder}` : folder;
 
     const result = await cloudinary.uploader.upload(base64Image, {
@@ -35,11 +34,10 @@ router.post("/room", upload.single("image"), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: "Thiếu file ảnh" });
 
     const { folder, subfolder } = req.body;
-    const base64Image = `data:${
-      req.file.mimetype
-    };base64,${req.file.buffer.toString("base64")}`;
+    const base64Image = `data:${req.file.mimetype
+      };base64,${req.file.buffer.toString("base64")}`;
 
-    // Ghép folder đầy đủ
+
     const targetFolder = subfolder ? `${folder}/${subfolder}` : folder;
 
     const result = await cloudinary.uploader.upload(base64Image, {
@@ -56,19 +54,43 @@ router.post("/room", upload.single("image"), async (req, res) => {
   }
 });
 
+
 router.post("/product", upload.single("image"), async (req, res) => {
   try {
     if (!req.file) {
-      console.error("[UPLOAD] Không nhận được file ảnh từ client", req.body);
-      return res.status(400).json({ error: "Thiếu file ảnh" });
+      return res.status(400).json({
+        error: "Thiếu file ảnh",
+        field: "image",
+        detail: "Vui lòng chọn một file ảnh để upload",
+      });
+    }
+
+    // Validate định dạng ảnh
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(req.file.mimetype)) {
+      return res.status(400).json({
+        error: "Định dạng ảnh không hợp lệ",
+        field: "image",
+        detail: "Chỉ chấp nhận file ảnh JPEG, PNG hoặc WEBP",
+      });
+    }
+
+
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (req.file.size > maxSize) {
+      return res.status(400).json({
+        error: "Ảnh vượt quá dung lượng cho phép",
+        field: "image",
+        detail: "Ảnh phải nhỏ hơn 5MB",
+      });
     }
 
     const folder = req.body.folder || "SonaSpace/Product";
     const subfolder = req.body.subfolder || "";
     const targetFolder = subfolder ? `${folder}/${subfolder}` : folder;
-    const base64Image = `data:${
-      req.file.mimetype
-    };base64,${req.file.buffer.toString("base64")}`;
+
+
+    const base64Image = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
 
     let result;
     try {
@@ -76,21 +98,26 @@ router.post("/product", upload.single("image"), async (req, res) => {
         folder: targetFolder,
       });
     } catch (cloudErr) {
-      console.error("[UPLOAD] Lỗi upload lên cloudinary:", cloudErr);
-      return res
-        .status(500)
-        .json({ error: "Lỗi upload cloudinary", detail: cloudErr.message });
+      console.error("[UPLOAD] Lỗi upload Cloudinary:", cloudErr);
+      return res.status(500).json({
+        error: "Lỗi khi upload ảnh lên Cloudinary",
+        detail: cloudErr.message,
+      });
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       message: "Upload thành công",
       url: result.secure_url,
     });
   } catch (error) {
-    console.error("Upload failed:", error);
-    res.status(500).json({ error: "Lỗi upload ảnh", detail: error.message });
+    console.error("[UPLOAD] Lỗi hệ thống:", error);
+    return res.status(500).json({
+      error: "Lỗi không xác định khi upload ảnh",
+      detail: error.message,
+    });
   }
 });
+
 
 /**
  * @route   POST /api/upload/:variantId
@@ -98,7 +125,6 @@ router.post("/product", upload.single("image"), async (req, res) => {
  * @access  Private (Admin only)
  */
 
-// POST /api/upload/:variantId
 router.delete("/:publicId(*)", async (req, res) => {
   try {
     const { publicId } = req.params;
@@ -161,9 +187,8 @@ router.post("/news", upload.single("image"), async (req, res) => {
 
     const { folder = "SonaSpace", subfolder = "News" } = req.body;
 
-    const base64Image = `data:${
-      req.file.mimetype
-    };base64,${req.file.buffer.toString("base64")}`;
+    const base64Image = `data:${req.file.mimetype
+      };base64,${req.file.buffer.toString("base64")}`;
 
     const targetFolder = subfolder ? `${folder}/${subfolder}` : folder;
 

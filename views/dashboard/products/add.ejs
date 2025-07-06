@@ -1,272 +1,201 @@
-<!-- Trang Thêm Sản phẩm -->
-
-<!-- Tiêu đề -->
 <div class="dashboard-header-row">
   <h2 class="dashboard-title">Thêm sản phẩm</h2>
 </div>
 
-<!-- Container chính - chia 2 cột -->
-<div class="add-product-container">
-  <!-- Cột trái: Form thông tin sản phẩm -->
-  <div class="product-form-column">
-    <!-- Phần thông tin sản phẩm cơ bản -->
-    <div class="form-section">
-      <h3 class="section-title">Thông tin sản phẩm</h3>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label for="productName">Tên sản phẩm</label>
-          <input
-            type="text"
-            id="productName"
-            class="form-control"
-            placeholder="Nhập tên sản phẩm"
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="productSlug">Slug</label>
-          <input
-            type="text"
-            id="productSlug"
-            class="form-control"
-            placeholder="Có thể tự tạo nếu bỏ trống"
-          />
-        </div>
-        <div class="form-group">
-          <label for="productStatus">Trạng thái</label>
-          <div class="select-wrapper">
-            <select id="productStatus" class="form-control">
-              <option value="">Chọn trạng thái</option>
-              <option value="1">Hiển thị</option>
-              <option value="0">Ẩn</option>
-            </select>
-            <i class="fas fa-chevron-down"></i>
+<form id="addProductForm" novalidate>
+  <div class="add-product-container">
+    <div class="product-form-column">
+      <div class="form-section">
+        <h3 class="section-title">Thông tin sản phẩm</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="productName">Tên sản phẩm</label>
+            <input type="text" id="productName" class="form-control" placeholder="Nhập tên sản phẩm" />
+            <div class="invalid-feedback"></div>
           </div>
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label for="productCategory">Danh mục</label>
-          <div class="select-wrapper">
-            <select id="productCategory" class="form-control">
-              <option value="">Chọn danh mục</option>
-            </select>
-            <i class="fas fa-chevron-down"></i>
+          <div class="form-group">
+            <label for="productSlug">Slug</label>
+            <input type="text" id="productSlug" class="form-control" placeholder="Có thể tự tạo nếu bỏ trống" />
+            <div class="invalid-feedback"></div>
           </div>
-        </div>
-
-        <div class="form-group">
-          <label for="productRooms">Danh mục phòng</label>
-          <div class="select-wrapper">
-            <select id="productRooms" class="form-control">
-              <option value="">Đang tải...</option>
-            </select>
-            <i class="fas fa-chevron-down"></i>
-          </div>
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group full-width">
-          <label for="productDescription">Mô tả</label>
-          <textarea
-            id="productDescription"
-            class="form-control"
-            rows="5"
-            placeholder="Nhập mô tả"
-          ></textarea>
-        </div>
-      </div>
-    </div>
-
-    <!-- Phần thông tin bổ sung -->
-    <div class="form-section">
-      <h3 class="section-title">Thông tin bổ sung</h3>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label for="productDepth">Độ sâu (cm)</label>
-          <input
-            type="number"
-            id="productDepth"
-            class="form-control"
-            placeholder="Nhập độ sâu"
-          />
-        </div>
-        <div class="form-group">
-          <label for="productWidth">Chiều rộng (cm)</label>
-          <input
-            type="number"
-            id="productWidth"
-            class="form-control"
-            placeholder="Nhập chiều rộng"
-          />
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label for="productHeight">Chiều cao (cm)</label>
-          <input
-            type="number"
-            id="productHeight"
-            class="form-control"
-            placeholder="Nhập chiều cao"
-          />
-        </div>
-        <div class="form-group">
-          <label for="productMaxLoad">Tải trọng tối đa (kg)</label>
-          <input
-            type="number"
-            id="productMaxLoad"
-            class="form-control"
-            placeholder="Nhập tải trọng"
-          />
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label for="productSeatHeight">Chiều cao chỗ ngồi (cm)</label>
-          <input
-            type="number"
-            id="productSeatHeight"
-            class="form-control"
-            placeholder="Nhập chiều cao chỗ ngồi"
-          />
-        </div>
-        <div class="form-group">
-          <label for="productMaterial">Chất liệu</label>
-          <input
-            type="text"
-            id="productMaterial"
-            class="form-control"
-            placeholder="Nhập chất liệu"
-          />
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Cột phải: Ảnh và biến thể sản phẩm -->
-  <div class="right-column">
-    <!-- Phần ảnh chính của sản phẩm -->
-    <div class="form-section">
-      <h3 class="section-title">Ảnh chính sản phẩm</h3>
-      <div class="main-image-upload">
-        <div class="upload-zone" id="mainImageUpload">
-          <i class="fas fa-cloud-upload-alt"></i>
-          <p>Kéo thả hoặc click để tải ảnh</p>
-          <p class="upload-hint">Định dạng: JPG, PNG (Tối đa 5MB)</p>
-          <input type="file" hidden accept="image/*" />
-        </div>
-        <div class="main-image-preview" style="display: none">
-          <img src="" alt="Preview" />
-          <button class="remove-image"><i class="fas fa-times"></i></button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Phần biến thể sản phẩm -->
-    <div class="form-section">
-      <div class="variant-header">
-        <h3 class="section-title">Biến thể sản phẩm</h3>
-        <button type="button" class="btn btn-add-variant">
-          <i class="fas fa-plus"></i> Thêm biến thể
-        </button>
-      </div>
-
-      <div id="variantsList">
-        <!-- Template cho một biến thể -->
-        <div class="variant-item" style="display: none" id="variantTemplate">
-          <div class="variant-header">
-            <h4 class="variant-title">Biến thể mới</h4>
-            <div class="variant-actions">
-              <button class="btn-toggle-variant">
-                <i class="fas fa-chevron-down"></i>
-              </button>
-              <button class="btn-remove-variant">
-                <i class="fas fa-trash"></i>
-              </button>
+          <div class="form-group">
+            <label for="productStatus">Trạng thái</label>
+            <div class="select-wrapper">
+              <select id="productStatus" class="form-control">
+                <option value="">Chọn trạng thái</option>
+                <option value="1">Hiển thị</option>
+                <option value="0">Ẩn</option>
+              </select>
+              <i class="fas fa-chevron-down"></i>
             </div>
+            <div class="invalid-feedback"></div>
           </div>
-
-          <div class="variant-content">
-            <div class="form-row">
-              <div class="form-group">
-                <label>Tên màu</label>
-                <div class="select-wrapper">
-                  <select class="form-control variant-color">
-                    <option value="">Chọn màu</option>
-                  </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="productCategory">Danh mục</label>
+            <div class="select-wrapper">
+              <select id="productCategory" class="form-control">
+                <option value="">Chọn danh mục</option>
+              </select>
+              <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="invalid-feedback"></div>
+          </div>
+          <div class="form-group">
+            <label for="productRooms">Danh mục phòng</label>
+            <div class="select-wrapper">
+              <select id="productRooms" class="form-control">
+                <option value="">Chọn phòng</option>
+              </select>
+              <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="invalid-feedback"></div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group full-width">
+            <label for="productDescription">Mô tả</label>
+            <textarea id="productDescription" class="form-control" rows="5" placeholder="Nhập mô tả"></textarea>
+            <div class="invalid-feedback"></div>
+          </div>
+        </div>
+      </div>
+      <div class="form-section">
+        <h3 class="section-title">Thông tin bổ sung</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="productDepth">Độ sâu (cm)</label>
+            <input type="number" id="productDepth" class="form-control" placeholder="Nhập độ sâu" />
+            <div class="invalid-feedback"></div>
+          </div>
+          <div class="form-group">
+            <label for="productWidth">Chiều rộng (cm)</label>
+            <input type="number" id="productWidth" class="form-control" placeholder="Nhập chiều rộng" />
+            <div class="invalid-feedback"></div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="productHeight">Chiều cao (cm)</label>
+            <input type="number" id="productHeight" class="form-control" placeholder="Nhập chiều cao" />
+            <div class="invalid-feedback"></div>
+          </div>
+          <div class="form-group">
+            <label for="productMaxLoad">Tải trọng tối đa (kg)</label>
+            <input type="number" id="productMaxLoad" class="form-control" placeholder="Nhập tải trọng" />
+            <div class="invalid-feedback"></div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="productSeatHeight">Chiều cao chỗ ngồi (cm)</label>
+            <input type="number" id="productSeatHeight" class="form-control" placeholder="Nhập chiều cao chỗ ngồi" />
+            <div class="invalid-feedback"></div>
+          </div>
+          <div class="form-group">
+            <label for="productMaterial">Chất liệu</label>
+            <input type="text" id="productMaterial" class="form-control" placeholder="Nhập chất liệu" />
+            <div class="invalid-feedback"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="right-column">
+      <div class="form-section">
+        <h3 class="section-title">Ảnh chính sản phẩm</h3>
+        <div class="main-image-upload">
+          <div class="upload-zone" id="mainImageUpload">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <p>Kéo thả hoặc click để tải ảnh</p>
+            <p class="upload-hint">Định dạng: JPG, PNG (Tối đa 5MB)</p>
+            <input type="file" id="mainImageFile" accept="image/*" hidden />
+          </div>
+          <div class="main-image-preview" style="display: none">
+            <img src="" alt="Preview" />
+            <button class="remove-image"><i class="fas fa-times"></i></button>
+          </div>
+        </div>
+      </div>
+      <div class="form-section">
+        <div class="variant-header">
+          <h3 class="section-title">Biến thể sản phẩm</h3>
+          <button type="button" class="btn btn-add-variant">
+            <i class="fas fa-plus"></i> Thêm biến thể
+          </button>
+        </div>
+        <div id="variantsList">
+          <!-- Template biến thể -->
+          <div class="variant-item" style="display: none" id="variantTemplate">
+            <div class="variant-header">
+              <h4 class="variant-title">Biến thể mới</h4>
+              <div class="variant-actions">
+                <button class="btn-toggle-variant">
                   <i class="fas fa-chevron-down"></i>
+                </button>
+                <button class="btn-remove-variant">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </div>
+            <div class="variant-content">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Tên màu</label>
+                  <div class="select-wrapper">
+                    <select class="form-control variant-color">
+                      <option value="">Chọn màu</option>
+                    </select>
+                    <i class="fas fa-chevron-down"></i>
+                  </div>
+                  <div class="invalid-feedback"></div>
+                </div>
+                <div class="form-group">
+                  <label>Slug</label>
+                  <input type="text" class="form-control variant-slug" placeholder="Tự động tạo nếu để trống" />
+                  <div class="invalid-feedback"></div>
                 </div>
               </div>
-              <div class="form-group">
-                <label>Slug</label>
-                <input
-                  type="text"
-                  class="form-control variant-slug"
-                  placeholder="Tự động tạo nếu để trống"
-                />
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Số lượng</label>
+                  <input type="number" class="form-control variant-quantity" min="0" placeholder="Nhập số lượng" />
+                  <div class="invalid-feedback"></div>
+                </div>
+                <div class="form-group">
+                  <label>Giá gốc</label>
+                  <input type="number" class="form-control variant-price" min="0" placeholder="Nhập giá gốc" />
+                  <div class="invalid-feedback"></div>
+                </div>
+                <div class="form-group">
+                  <label>Giá giảm</label>
+                  <input type="number" class="form-control variant-sale-price" min="0" placeholder="Nhập giá giảm" />
+                </div>
               </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label>Số lượng</label>
-                <input
-                  type="number"
-                  class="form-control variant-quantity"
-                  min="0"
-                  placeholder="Nhập số lượng"
-                />
-              </div>
-              <div class="form-group">
-                <label>Giá gốc</label>
-                <input
-                  type="number"
-                  class="form-control variant-price"
-                  min="0"
-                  placeholder="Nhập giá gốc"
-                />
-              </div>
-              <div class="form-group">
-                <label>Giá giảm</label>
-                <input
-                  type="number"
-                  class="form-control variant-sale-price"
-                  min="0"
-                  placeholder="Nhập giá giảm"
-                />
-              </div>
-            </div>
-
-            <div class="variant-images">
-              <label>Hình ảnh biến thể</label>
-              <div class="variant-image-grid">
-                <div class="variant-image-item active">
-                  <div class="upload-placeholder">
-                    <i class="fas fa-plus"></i>
-                    <input type="file" hidden accept="image/*" />
+              <div class="variant-images">
+                <label>Hình ảnh biến thể</label>
+                <div class="variant-image-grid">
+                  <div class="variant-image-item active">
+                    <div class="upload-placeholder">
+                      <i class="fas fa-plus"></i>
+                      <input type="file" accept="image/*" />
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+          <!-- end template -->
         </div>
       </div>
     </div>
   </div>
-</div>
+  <div class="form-actions">
+    <button type="button" class="btn btn-cancel">Hủy</button>
+    <button type="button" class="btn btn-save">Lưu</button>
+  </div>
+</form>
 
-<!-- Nút hành động -->
-<div class="form-actions">
-  <button type="button" class="btn btn-cancel">Hủy</button>
-  <button type="button" class="btn btn-save">Lưu</button>
-</div>
 
 <script>
   const API_URL = "http://localhost:3501/api";
@@ -330,11 +259,12 @@
     toast.setAttribute("aria-atomic", "true");
 
     toast.innerHTML = `
-        <div class="d-flex">
-            <div class="toast-body">${message}</div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-        </div>
-    `;
+  <div class="d-flex">
+    <div class="toast-body" style="font-size: 24px;">${message}</div>
+    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+  </div>
+`;
+
 
     toastContainer.appendChild(toast);
     const bsToast = new bootstrap.Toast(toast, { delay: 3000 });
@@ -385,14 +315,14 @@
       const colorOptions = `
             <option value="">Chọn màu</option>
             ${colors
-              .map(
-                (color) => `
+          .map(
+            (color) => `
                 <option value="${color.color_id}" data-hex="${color.color_hex}">
                     ${color.color_name}
                 </option>
             `
-              )
-              .join("")}
+          )
+          .join("")}
         `;
 
       document.querySelectorAll(".variant-color").forEach((select) => {
@@ -463,16 +393,14 @@
   document
     .querySelector(".btn-add-variant")
     .addEventListener("click", function () {
-      const newVariant = document
-        .getElementById("variantTemplate")
-        .cloneNode(true);
-      newVariant.id = `variant-${
-        document.querySelectorAll(".variant-item").length + 1
-      }`;
+      const visibleVariants = [...document.querySelectorAll(".variant-item")].filter(v => v.style.display !== "none");
+      const newIndex = visibleVariants.length;
+
+      const newVariant = document.getElementById("variantTemplate").cloneNode(true);
+      newVariant.id = `variant-${newIndex + 1}`;
       newVariant.style.display = "block";
-      newVariant.querySelector(".variant-title").textContent = `Biến thể ${
-        document.querySelectorAll(".variant-item").length + 1
-      }`;
+      newVariant.querySelector(".variant-title").textContent = `Biến thể ${newIndex + 1}`;
+
 
       // Thêm sự kiện cho nút toggle và remove
       setupVariantEvents(newVariant);
@@ -543,65 +471,65 @@
     }
 
     function setupImageBox(imageBox) {
-  const input = imageBox.querySelector('input[type="file"]');
-  const placeholder = imageBox.querySelector(".upload-placeholder");
+      const input = imageBox.querySelector('input[type="file"]');
+      const placeholder = imageBox.querySelector(".upload-placeholder");
 
-  // Bấm box là chọn ảnh
-  imageBox.addEventListener("click", () => input.click());
+      // Bấm box là chọn ảnh
+      imageBox.addEventListener("click", () => input.click());
 
-  // Khi chọn file ảnh
-  input.addEventListener("change", function (e) {
-    const file = e.target.files[0];
-    if (file && file.type.startsWith("image/")) {
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        // Đánh dấu box đã có ảnh
-        imageBox.classList.add("loaded");
+      // Khi chọn file ảnh
+      input.addEventListener("change", function (e) {
+        const file = e.target.files[0];
+        if (file && file.type.startsWith("image/")) {
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            // Đánh dấu box đã có ảnh
+            imageBox.classList.add("loaded");
 
-        // Ẩn placeholder
-        placeholder.style.display = "none";
+            // Ẩn placeholder
+            placeholder.style.display = "none";
 
-        // Hiển thị ảnh preview
-        const img = document.createElement("img");
-        img.src = e.target.result;
-        img.alt = "Preview";
-        imageBox.appendChild(img);
+            // Hiển thị ảnh preview
+            const img = document.createElement("img");
+            img.src = e.target.result;
+            img.alt = "Preview";
+            imageBox.appendChild(img);
 
-        // Nút xóa ảnh
-        const removeBtn = document.createElement("button");
-        removeBtn.className = "remove-image";
-        removeBtn.innerHTML = `<i class="fas fa-times"></i>`;
-        imageBox.appendChild(removeBtn);
+            // Nút xóa ảnh
+            const removeBtn = document.createElement("button");
+            removeBtn.className = "remove-image";
+            removeBtn.innerHTML = `<i class="fas fa-times"></i>`;
+            imageBox.appendChild(removeBtn);
 
-        // Xử lý xóa ảnh
-        removeBtn.addEventListener("click", function (e) {
-          e.stopPropagation();
-          imageBox.remove();
-          currentImageCount--;
+            // Xử lý xóa ảnh
+            removeBtn.addEventListener("click", function (e) {
+              e.stopPropagation();
+              imageBox.remove();
+              currentImageCount--;
 
-          const lastBox = imageGrid.lastElementChild;
-          if (!lastBox || lastBox.classList.contains("loaded")) {
+              const lastBox = imageGrid.lastElementChild;
+              if (!lastBox || lastBox.classList.contains("loaded")) {
+                if (currentImageCount < maxImages) {
+                  const newBox = createImageBox();
+                  imageGrid.appendChild(newBox);
+                  setupImageBox(newBox);
+                  currentImageCount++;
+                }
+              }
+            });
+
+            // Nếu chưa đủ số ảnh, thêm box mới
             if (currentImageCount < maxImages) {
               const newBox = createImageBox();
               imageGrid.appendChild(newBox);
               setupImageBox(newBox);
               currentImageCount++;
             }
-          }
-        });
-
-        // Nếu chưa đủ số ảnh, thêm box mới
-        if (currentImageCount < maxImages) {
-          const newBox = createImageBox();
-          imageGrid.appendChild(newBox);
-          setupImageBox(newBox);
-          currentImageCount++;
+          };
+          reader.readAsDataURL(file);
         }
-      };
-      reader.readAsDataURL(file);
+      });
     }
-  });
-}
 
 
     // Xóa tất cả box hiện tại
@@ -658,11 +586,16 @@
 </script>
 <script>
   document.querySelector(".btn-save").addEventListener("click", async () => {
+    const form = document.getElementById("addProductForm");
+
+    if (!form.checkValidity()) {
+      form.classList.add("was-validated");
+      return;
+    }
+
     const name = document.getElementById("productName").value.trim();
     const slug = document.getElementById("productSlug").value.trim();
-    const description = document
-      .getElementById("productDescription")
-      .value.trim();
+    const description = document.getElementById("productDescription").value.trim();
     const category_id = document.getElementById("productCategory").value;
     const status = document.getElementById("productStatus").value;
     const materials = document.getElementById("productMaterial").value.trim();
@@ -672,42 +605,44 @@
     const seating_height = document.getElementById("productSeatHeight").value;
     const max_weight_load = document.getElementById("productMaxLoad").value;
 
-    const room_ids = [
-      ...document.getElementById("productRooms").selectedOptions,
-    ]
+    const room_ids = [...document.getElementById("productRooms").selectedOptions]
       .map((opt) => opt.value)
       .filter((val) => val);
 
     const mainImageFile = mainImageInput.files[0];
-    const main_image = await uploadImage(
-      mainImageFile,
-      "SonaSpace/Product",
-      "main"
+    const main_image = await uploadImage(mainImageFile, "SonaSpace/Product", "main");
+
+    const variantElements = [...document.querySelectorAll(".variant-item")].filter(
+      (item) => item.style.display !== "none"
     );
 
-    // Lấy danh sách biến thể
-    const variantElements = [
-      ...document.querySelectorAll(".variant-item"),
-    ].filter((item) => item.style.display !== "none");
+    if (variantElements.length === 0) {
+      showToast("Sản phẩm phải có ít nhất 1 biến thể!", "danger");
+
+      const sectionTitle = [...document.querySelectorAll(".section-title")].find(el =>
+        el.textContent.includes("Biến thể")
+      );
+      if (sectionTitle) {
+        sectionTitle.scrollIntoView({ behavior: "smooth" });
+      }
+
+      return;
+    }
 
     const variants = await Promise.all(
       variantElements.map(async (item) => {
         const color_id = item.querySelector(".variant-color").value;
         const variant_slug = item.querySelector(".variant-slug").value.trim();
-        const quantity = parseInt(
-          item.querySelector(".variant-quantity").value
-        );
+        const quantity = parseInt(item.querySelector(".variant-quantity").value);
         const price = parseFloat(item.querySelector(".variant-price").value);
         const price_sale =
           parseFloat(item.querySelector(".variant-sale-price").value) || null;
 
-        // Upload từng ảnh biến thể
         const list_image_inputs = [
-          ...item.querySelectorAll(
-            '.variant-image-item.loaded input[type="file"]'
-          ),
+          ...item.querySelectorAll('.variant-image-item.loaded input[type="file"]'),
         ];
         const list_image_urls = [];
+
         for (const input of list_image_inputs) {
           const file = input.files[0];
           const url = await uploadImage(file, "SonaSpace/Product", "variant");
@@ -724,12 +659,11 @@
         };
       })
     );
+
     try {
       const res = await fetch(`${API_URL}/products/add`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name,
           slug,
@@ -749,9 +683,92 @@
       });
 
       const data = await res.json();
-
       if (!res.ok) {
-        throw new Error(data.error || "Lỗi không xác định");
+        // Xóa lỗi cũ
+        document.querySelectorAll(".is-invalid").forEach(el => el.classList.remove("is-invalid"));
+        document.querySelectorAll(".invalid-feedback").forEach(el => el.textContent = "");
+
+        if (data.errors && Array.isArray(data.errors)) {
+          data.errors.forEach(({ field, message }) => {
+            let input = null;
+
+            // Trường thuộc biến thể
+            if (field.startsWith("variants[")) {
+              const match = field.match(/variants\[(\d+)\]\.(.+)/);
+              if (match) {
+                const idx = parseInt(match[1]);
+                const key = match[2];
+                const visibleVariants = [...document.querySelectorAll(".variant-item")].filter(v => v.style.display !== "none");
+                const variantEl = visibleVariants[idx];
+
+
+                if (variantEl) {
+                  // Trường nhập liệu
+                  if (key === "color_id") input = variantEl.querySelector(".variant-color");
+                  if (key === "variant_slug") input = variantEl.querySelector(".variant-slug");
+                  if (key === "quantity") input = variantEl.querySelector(".variant-quantity");
+                  if (key === "price") input = variantEl.querySelector(".variant-price");
+
+                  if (input) {
+                    input.classList.add("is-invalid");
+                    const feedback = input.closest(".form-group")?.querySelector(".invalid-feedback");
+                    if (feedback) feedback.textContent = message;
+                  }
+
+                  // Lỗi ảnh biến thể
+                  if (key === "list_image") {
+                    const imgSection = variantEl.querySelector(".variant-images");
+
+                    // Xóa lỗi cũ nếu có
+                    const oldFeedback = imgSection.querySelector(".invalid-feedback");
+                    if (oldFeedback) oldFeedback.remove();
+
+                    const feedback = document.createElement("div");
+                    feedback.className = "invalid-feedback d-block";
+                    feedback.textContent = message;
+                    imgSection.appendChild(feedback);
+                  }
+                }
+              }
+            } else {
+              // Trường chung
+              const fieldMap = {
+                name: "productName",
+                slug: "productSlug",
+                description: "productDescription",
+                category_id: "productCategory",
+                status: "productStatus",
+                materials: "productMaterial",
+                height: "productHeight",
+                width: "productWidth",
+                depth: "productDepth",
+                seating_height: "productSeatHeight",
+                max_weight_load: "productMaxLoad",
+                main_image: "mainImageFile",
+                room_ids: "productRooms",
+              };
+              const id = fieldMap[field];
+              if (id) {
+                input = document.getElementById(id);
+                if (input) {
+                  input.classList.add("is-invalid");
+                  const feedback = input.closest(".form-group")?.querySelector(".invalid-feedback");
+                  if (feedback) feedback.textContent = message;
+                }
+              }
+            }
+          });
+
+
+          // Cuộn đến lỗi đầu tiên (nếu có)
+          const firstInvalid = document.querySelector(".is-invalid");
+          if (firstInvalid) {
+            firstInvalid.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+        } else {
+          showToast(data.error || "Lỗi không xác định", "danger");
+        }
+        return;
       }
 
       showToast("Tạo sản phẩm thành công");
@@ -763,4 +780,21 @@
       showToast("Lỗi khi tạo sản phẩm: " + error.message, "danger");
     }
   });
+  document.addEventListener("input", function (e) {
+    if (e.target.classList.contains("form-control") && e.target.classList.contains("is-invalid")) {
+      e.target.classList.remove("is-invalid");
+      const feedback = e.target.closest(".form-group")?.querySelector(".invalid-feedback");
+      if (feedback) feedback.textContent = "";
+    }
+  });
+
+  document.addEventListener("change", function (e) {
+    if (e.target.classList.contains("form-control") && e.target.classList.contains("is-invalid")) {
+      e.target.classList.remove("is-invalid");
+      const feedback = e.target.closest(".form-group")?.querySelector(".invalid-feedback");
+      if (feedback) feedback.textContent = "";
+    }
+  });
+
+
 </script>

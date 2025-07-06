@@ -17,6 +17,7 @@
         <div class="form-group">
           <label for="productName">Tên sản phẩm</label>
           <input type="text" id="productName" class="form-control" placeholder="Nhập tên sản phẩm" />
+          <div class="invalid-feedback"></div>
         </div>
         <div class="form-group">
           <label for="productSlug">Slug</label>
@@ -32,6 +33,7 @@
             </select>
             <i class="fas fa-chevron-down"></i>
           </div>
+          <div class="invalid-feedback"></div>
         </div>
       </div>
 
@@ -42,6 +44,7 @@
             <select id="productCategory" class="form-control"></select>
             <i class="fas fa-chevron-down"></i>
           </div>
+          <div class="invalid-feedback"></div>
         </div>
         <div class="form-group">
           <label for="productRooms">Danh mục phòng</label>
@@ -49,6 +52,7 @@
             <select id="productRooms" class="form-control"></select>
             <i class="fas fa-chevron-down"></i>
           </div>
+          <div class="invalid-feedback"></div>
         </div>
       </div>
 
@@ -56,7 +60,9 @@
         <div class="form-group full-width">
           <label for="productDescription">Mô tả</label>
           <textarea id="productDescription" class="form-control" rows="5" placeholder="Nhập mô tả"></textarea>
+          <div class="invalid-feedback"></div>
         </div>
+
       </div>
     </div>
 
@@ -67,30 +73,36 @@
         <div class="form-group">
           <label for="productDepth">Độ sâu (cm)</label>
           <input type="number" id="productDepth" class="form-control" placeholder="Nhập độ sâu" />
+          <div class="invalid-feedback"></div>
         </div>
         <div class="form-group">
           <label for="productWidth">Chiều rộng (cm)</label>
           <input type="number" id="productWidth" class="form-control" placeholder="Nhập chiều rộng" />
+          <div class="invalid-feedback"></div>
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
           <label for="productHeight">Chiều cao (cm)</label>
           <input type="number" id="productHeight" class="form-control" placeholder="Nhập chiều cao" />
+          <div class="invalid-feedback"></div>
         </div>
         <div class="form-group">
           <label for="productMaxLoad">Tải trọng tối đa (kg)</label>
           <input type="number" id="productMaxLoad" class="form-control" placeholder="Nhập tải trọng" />
+          <div class="invalid-feedback"></div>
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
           <label for="productSeatHeight">Chiều cao chỗ ngồi (cm)</label>
           <input type="number" id="productSeatHeight" class="form-control" placeholder="Nhập chiều cao chỗ ngồi" />
+          <div class="invalid-feedback"></div>
         </div>
         <div class="form-group">
           <label for="productMaterial">Chất liệu</label>
           <input type="text" id="productMaterial" class="form-control" placeholder="Nhập chất liệu" />
+          <div class="invalid-feedback"></div>
         </div>
       </div>
     </div>
@@ -144,25 +156,32 @@
                   </select>
                   <i class="fas fa-chevron-down"></i>
                 </div>
+                <div class="invalid-feedback"></div>
               </div>
               <div class="form-group">
                 <label>Slug</label>
                 <input type="text" class="form-control variant-slug" placeholder="Tự động tạo nếu để trống" />
+                <div class="invalid-feedback"></div>
               </div>
+
             </div>
+
 
             <div class="form-row">
               <div class="form-group">
                 <label>Số lượng</label>
                 <input type="number" class="form-control variant-quantity" min="0" placeholder="Nhập số lượng" />
+                <div class="invalid-feedback"></div>
               </div>
               <div class="form-group">
                 <label>Giá gốc</label>
                 <input type="number" class="form-control variant-price" min="0" placeholder="Nhập giá gốc" />
+                <div class="invalid-feedback"></div>
               </div>
               <div class="form-group">
                 <label>Giá giảm</label>
                 <input type="number" class="form-control variant-sale-price" min="0" placeholder="Nhập giá giảm" />
+                <div class="invalid-feedback"></div>
               </div>
             </div>
 
@@ -186,6 +205,26 @@
 
 <!-- Hiển thị sản phẩm theo id -->
 <script>
+  function showFieldError(input, message) {
+    if (!input) return;
+    input.classList.add("is-invalid");
+
+    let feedback = input.parentElement.querySelector(".invalid-feedback");
+    if (!feedback) {
+      feedback = document.createElement("div");
+      feedback.className = "invalid-feedback";
+      input.parentElement.appendChild(feedback);
+    }
+    feedback.textContent = message;
+  }
+
+
+  function clearFieldError(input) {
+    if (!input) return;
+    input.classList.remove("is-invalid");
+    input.parentElement.querySelector(".invalid-feedback")?.remove();
+  }
+
   const API_URL = "http://localhost:3501";
   const slug = window.location.pathname.split("/").pop();
   let globalColors = []; // Thêm biến toàn cục lưu danh sách màu
@@ -293,6 +332,7 @@
         clone.style.display = "block";
         clone.removeAttribute("id");
         clone.setAttribute("data-id", variant.variant_id);
+        clone.classList.add("variant-item"); // ✅ THÊM DÒNG NÀY
 
         // Tiêu đề
         clone.querySelector(".variant-title").textContent = variant.color_name || `Biến thể ${idx + 1}`;
@@ -315,7 +355,7 @@
         clone.variantData = {
           color_id: variant.color_id,
           variant_slug: variant.slug || "",
-          quantity: variant.quantity ?? 0,
+          quantity: variant.quantity,
           price: variant.price ?? 0,
           price_sale: variant.price_sale ?? 0,
           // http...,http...,http...
@@ -489,7 +529,32 @@
   }
 
   // ==== Gọi khi tải trang ====
-  window.addEventListener("DOMContentLoaded", loadProductDetail);
+  window.addEventListener("DOMContentLoaded", () => {
+    loadProductDetail();
+
+    // Clear lỗi khi người dùng nhập lại
+    const allInputs = [
+      productNameInput,
+      productSlugInput,
+      productCategorySelect,
+      productStatusSelect,
+      productDescriptionTextarea,
+      productMaterialInput,
+      productDepthInput,
+      productWidthInput,
+      productHeightInput,
+      productSeatHeightInput,
+      productMaxLoadInput
+    ];
+
+
+    allInputs.forEach(input => {
+      if (!input) return;
+      input.addEventListener("input", () => clearFieldError(input));
+      input.addEventListener("change", () => clearFieldError(input));
+    });
+  });
+
 
   async function deleteVariant(variantId) {
     try {
@@ -597,10 +662,93 @@
       });
       const result = await res.json();
       if (!res.ok) {
-        showToast("Lỗi khi cập nhật sản phẩm: " + (result.error || "Không rõ"), "danger");
+        if (result.errors && Array.isArray(result.errors)) {
+          result.errors.forEach((err) => {
+            const field = err.field;
+            const message = err.message;
+
+            // ===== Lỗi của sản phẩm chung =====
+            if (field === "name") {
+              showFieldError(productNameInput, message);
+            } else if (field === "slug") {
+              showFieldError(productSlugInput, message);
+            } else if (field === "category_id") {
+              showFieldError(productCategorySelect, message);
+            } else if (field === "status") {
+              showFieldError(productStatusSelect, message);
+            } else if (field === "description") {
+              showFieldError(productDescriptionTextarea, message);
+            } else if (field === "height") {
+              showFieldError(productHeightInput, message);
+            } else if (field === "width") {
+              showFieldError(productWidthInput, message);
+            } else if (field === "depth") {
+              showFieldError(productDepthInput, message);
+            } else if (field === "seating_height") {
+              showFieldError(productSeatHeightInput, message);
+            } else if (field === "max_weight_load") {
+              showFieldError(productMaxLoadInput, message);
+            } else if (field === "materials") {
+              showFieldError(productMaterialInput, message);
+            }
+
+
+            // ===== Lỗi của biến thể =====
+            else if (field.startsWith("variants[")) {
+              const match = field.match(/variants\[(\d+)\]\.(.+)/);
+
+              if (match) {
+                const index = parseInt(match[1], 10);
+                const fieldName = match[2];
+
+                const variantEl = document.querySelectorAll("#variantsList .variant-item")[index];
+                if (variantEl) {
+                  let input;
+                  if (fieldName === "slug") {
+                    input = variantEl.querySelector(".variant-slug");
+                  } else if (fieldName === "quantity") {
+                    input = variantEl.querySelector(".variant-quantity");
+                    console.log("[VALIDATE] Tìm thấy input quantity:", input);
+                  } else if (fieldName === "price") {
+                    input = variantEl.querySelector(".variant-price");
+                  } else if (fieldName === "price_sale") {
+                    input = variantEl.querySelector(".variant-sale-price");
+                  } else if (fieldName === "color_id") {
+                    input = variantEl.querySelector(".variant-color");
+                  } else if (fieldName === "list_image") {
+                    // Nếu muốn hiện lỗi ảnh, có thể thêm alert/tooltip gần khung ảnh
+                    const imageGrid = variantEl.querySelector(".variant-image-grid");
+                    if (imageGrid) {
+                      const existingError = imageGrid.querySelector(".invalid-feedback");
+                      if (!existingError) {
+                        const errorBox = document.createElement("div");
+                        errorBox.className = "invalid-feedback";
+                        errorBox.style.display = "block";
+                        errorBox.style.fontSize = "13px";
+                        errorBox.style.color = "#dc3545";
+                        errorBox.textContent = message;
+                        imageGrid.appendChild(errorBox);
+                      }
+                    }
+                    return;
+                  }
+
+                  if (input) {
+                    showFieldError(input, message);
+                  }
+
+                }
+              }
+            }
+          });
+        }
+
+        showToast("Lỗi khi cập nhật sản phẩm", "danger");
         return;
       }
+
       showToast("Cập nhật sản phẩm thành công!", "success");
+
 
       // === Cập nhật hoặc xóa các biến thể đã có (KHÔNG tạo mới ở đây) ===
       const productId = result.product?.id || result.product?.product_id || result.product_id;
@@ -705,6 +853,11 @@
       showToast("Lỗi khi lưu sản phẩm", "danger");
     }
   });
+  window.addEventListener("DOMContentLoaded", () => {
+    [productNameInput, productSlugInput, productCategorySelect, productStatusSelect, productDescriptionTextarea].forEach(input => {
+      input.addEventListener("input", () => clearFieldError(input));
+    });
+  });
 
   async function updateVariant(variantId, data) {
     try {
@@ -789,6 +942,9 @@
           icon.classList.replace("fa-chevron-up", "fa-chevron-down");
         }
       });
+    variantElement.querySelectorAll("input, select").forEach((input) => {
+      input.addEventListener("input", () => clearFieldError(input));
+    });
 
     // Xóa biến thể
     variantElement
@@ -829,6 +985,10 @@
       });
     }
 
+    const firstInvalid = document.querySelector(".is-invalid");
+    if (firstInvalid) {
+      firstInvalid.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
 
     // Xử lý upload ảnh biến thể
     setupVariantImageUpload(variantElement);
@@ -897,9 +1057,7 @@
   }
 </script>
 
-
 <div id="toastContainer" class="position-fixed top-0 end-0 p-3" style="z-index:1050"></div>
-
 <script>
 
   function showToast(message, type = "success") {
@@ -933,3 +1091,37 @@
   }
 
 </script>
+
+
+
+<!-- API -->
+
+<!-- Lấy chi tiết sản phẩm -->
+<!-- GET /api/products/admin/:slug -->
+
+<!-- Lấy danh sách danh mục -->
+<!-- GET /api/categories -->
+
+<!-- Lấy danh sách phòng -->
+<!-- GET /api/rooms -->
+
+<!-- Lấy danh sách màu sắc -->
+<!-- GET /api/color/filter -->
+
+<!-- Cập nhật sản phẩm -->
+<!-- PUT /api/products/admin/:slug -->
+
+<!-- Thêm ảnh sản phẩm-->
+<!-- POST /api/upload/product -->
+
+<!-- Xoá ảnh sản phẩm -->
+<!-- DELETE /api/upload/:publicId -->
+
+<!-- Tạo biển thể mới -->
+<!-- POST /api/variants/:productId -->
+
+<!-- Cập nhật biến thể -->
+<!-- PUT /api/variants/:variantId -->
+
+<!-- Xoá biến thể -->
+<!-- DELETE /api/variants/:variantId -->

@@ -280,10 +280,10 @@ router.get("/search", async (req, res) => {
     );
 
     res.json({
-      results: rows.map((item) => ({
+      results: rows.map(item => ({
         ...item,
-        image: item.image ? String(item.image) : "",
-      })),
+        image: item.image ? String(item.image) : ""
+      }))
     });
   } catch (err) {
     console.error("Search error:", err);
@@ -501,9 +501,9 @@ router.get("/variants", async (req, res) => {
       slug: v.variant_product_slug,
       first_image: v.list_image
         ? v.list_image
-            .split(",")[0]
-            .trim()
-            .replace(/^['"]+|['"]+$/g, "")
+          .split(",")[0]
+          .trim()
+          .replace(/^['"]+|['"]+$/g, "")
         : null,
     }));
 
@@ -576,8 +576,8 @@ ORDER BY c.color_priority DESC
       slug: v.slug,
       list_image: v.list_image
         ? v.list_image
-            .split(",")
-            .map((img) => img.trim().replace(/^['\"]+|['\"]+$/g, ""))
+          .split(",")
+          .map((img) => img.trim().replace(/^['\"]+|['\"]+$/g, ""))
         : [],
     }));
 
@@ -1081,9 +1081,11 @@ router.get("/by-category/:categoryId", async (req, res) => {
   }
 });
 
-// Đặt route này TRƯỚC bất kỳ route động nào như "/:slug"
-
-router.post("/add", async (req, res) => {
+/** * @route   POST /api/products/add
+ * @desc    Thêm sản phẩm mới (Admin)
+ * @access  Private (Admin only)
+ */
+router.post('/add', async (req, res) => {
   try {
     const {
       name,
@@ -1102,20 +1104,100 @@ router.post("/add", async (req, res) => {
       variants,
     } = req.body;
 
-    // Validate required fields
-    if (!name || !slug || !category_id || !variants || !variants.length) {
-      return res.status(400).json({
-        error: "Missing required fields",
-        required: "name, slug, category_id, variants",
+    const errors = [];
+
+    // Helper validators
+    const isEmpty = val => val === undefined || val === null || String(val).trim() === '';
+    const isNumber = val => !isEmpty(val) && !isNaN(Number(val));
+
+    // --- Validate main product fields ---
+    if (isEmpty(name)) {
+      errors.push({ field: 'name', message: 'Tên sản phẩm là bắt buộc' });
+    }
+    if (isEmpty(description)) {
+      errors.push({ field: 'description', message: 'Mô tả sản phẩm là bắt buộc' });
+    }
+    if (isEmpty(slug)) {
+      errors.push({ field: 'slug', message: 'Slug là bắt buộc' });
+    }
+    if (isEmpty(category_id)) {
+      errors.push({ field: 'category_id', message: 'Danh mục là bắt buộc' });
+    }
+    // Validate status select
+    if (isEmpty(status)) {
+      errors.push({ field: 'status', message: 'Vui lòng chọn trạng thái' });
+    } else if (![0, 1, '0', '1'].includes(status)) {
+      errors.push({ field: 'status', message: 'Trạng thái không hợp lệ' });
+    }
+    // Validate main image
+    if (isEmpty(main_image)) {
+      errors.push({ field: 'main_image', message: 'Ảnh chính sản phẩm là bắt buộc' });
+    }
+    // Validate materials
+    if (isEmpty(materials)) {
+      errors.push({ field: 'materials', message: 'Chất liệu là bắt buộc' });
+    }
+    // Validate numeric fields
+    if (!isNumber(height)) {
+      errors.push({ field: 'height', message: 'Chiều cao không hợp lệ' });
+    }
+    if (!isNumber(width)) {
+      errors.push({ field: 'width', message: 'Chiều rộng không hợp lệ' });
+    }
+    if (!isNumber(depth)) {
+      errors.push({ field: 'depth', message: 'Chiều sâu không hợp lệ' });
+    }
+    if (!isNumber(seating_height)) {
+      errors.push({ field: 'seating_height', message: 'Chiều cao chỗ ngồi không hợp lệ' });
+    }
+    if (!isNumber(max_weight_load)) {
+      errors.push({ field: 'max_weight_load', message: 'Tải trọng tối đa không hợp lệ' });
+    }
+    // Validate rooms select (multiple)
+    if (!Array.isArray(room_ids) || room_ids.length === 0) {
+      errors.push({ field: 'room_ids', message: 'Vui lòng chọn ít nhất một phòng' });
+    }
+
+    // --- Validate variants array ---
+    if (!Array.isArray(variants) || variants.length === 0) {
+      errors.push({ field: 'variants', message: 'Phải có ít nhất một biến thể sản phẩm' });
+    } else {
+      variants.forEach((v, i) => {
+        const idx = i + 1;
+        if (isEmpty(v.color_id)) {
+          errors.push({ field: `variants[${i}].color_id`, message: `Biến thể ${idx}: Thiếu màu sắc` });
+        }
+        if (isEmpty(v.variant_slug)) {
+          errors.push({ field: `variants[${i}].variant_slug`, message: `Biến thể ${idx}: Thiếu slug` });
+        }
+        if (!isNumber(v.price)) {
+          errors.push({ field: `variants[${i}].price`, message: `Biến thể ${idx}: Giá không hợp lệ` });
+        }
+        if (!isNumber(v.quantity)) {
+          errors.push({ field: `variants[${i}].quantity`, message: `Biến thể ${idx}: Số lượng không hợp lệ` });
+        }
+        if (!Array.isArray(v.list_image) || v.list_image.length === 0) {
+          errors.push({ field: `variants[${i}].list_image`, message: `Biến thể ${idx}: Cần ít nhất 1 ảnh` });
+        } else {
+          v.list_image.forEach((img, j) => {
+            if (typeof img !== 'string' || !img.startsWith('http')) {
+              errors.push({ field: `variants[${i}].list_image[${j}]`, message: `Ảnh ${j + 1} của biến thể ${idx} không hợp lệ` });
+            }
+          });
+        }
       });
     }
 
-    // Start transaction
+    // If any validation errors, return 400
+    if (errors.length > 0) {
+      return res.status(400).json({ error: 'Dữ liệu không hợp lệ', errors });
+    }
+
+    // Start transaction for insert
     const connection = await db.getConnection();
     await connection.beginTransaction();
-
     try {
-      // 1. Insert product
+      // Insert product
       const [productResult] = await connection.query(
         `INSERT INTO product (
           product_name,
@@ -1133,37 +1215,22 @@ router.post("/add", async (req, res) => {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           name,
-          description || null,
+          description,
           slug,
           category_id,
-          status || 1,
-          materials || null,
-          height || null,
-          width || null,
-          depth || null,
-          seating_height || null,
-          max_weight_load || null,
-          main_image || null,
+          status,
+          materials,
+          height,
+          width,
+          depth,
+          seating_height,
+          max_weight_load,
+          main_image,
         ]
       );
-
       const productId = productResult.insertId;
-
-      // 2. Insert variants
-      for (const variant of variants) {
-        const {
-          color_id,
-          price,
-          price_sale,
-          quantity,
-          list_image,
-          variant_slug,
-        } = variant;
-
-        if (!color_id || !price || !quantity || !list_image || !variant_slug) {
-          throw new Error("Missing required variant fields");
-        }
-
+      // Insert variants
+      for (const v of variants) {
         await connection.query(
           `INSERT INTO variant_product (
             product_id,
@@ -1176,77 +1243,46 @@ router.post("/add", async (req, res) => {
           ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
           [
             productId,
-            color_id,
-            price,
-            price_sale || null,
-            quantity,
-            list_image.join(","),
-            variant_slug,
+            v.color_id,
+            v.price,
+            v.price_sale || null,
+            v.quantity,
+            v.list_image.join(','),
+            v.variant_slug,
           ]
         );
       }
-
-      // 3. Insert room associations if provided
-      if (room_ids && room_ids.length > 0) {
-        const roomValues = room_ids.map((roomId) => [productId, roomId]);
+      // Insert room associations
+      if (room_ids.length > 0) {
+        const roomValues = room_ids.map(rid => [productId, rid]);
         await connection.query(
           `INSERT INTO room_product (product_id, room_id) VALUES ?`,
           [roomValues]
         );
       }
-
-      // Commit transaction
       await connection.commit();
-
-      // Get the created product with variants
-      const [product] = await db.query(
-        `SELECT 
-          p.*,
-          c.category_name,
-          JSON_ARRAYAGG(
-            JSON_OBJECT(
-              'variant_id', vp.variant_id,
-              'color_id', vp.color_id,
-              'color_name', col.color_name,
-              'color_hex', col.color_hex,
-              'price', vp.variant_product_price,
-              'price_sale', vp.variant_product_price_sale,
-              'quantity', vp.variant_product_quantity,
-              'list_image', vp.variant_product_list_image,
-              'slug', vp.variant_product_slug
-            )
-          ) as variants
-        FROM product p
-        LEFT JOIN category c ON p.category_id = c.category_id
-        LEFT JOIN variant_product vp ON p.product_id = vp.product_id
-        LEFT JOIN color col ON vp.color_id = col.color_id
-        WHERE p.product_id = ?
-        GROUP BY p.product_id`,
-        [productId]
-      );
-
-      res.status(201).json({
-        message: "Product created successfully",
-        product: {
-          ...product[0],
-          variants: JSON.parse(product[0].variants),
-        },
-      });
-    } catch (error) {
-      // Rollback on error
+      return res.status(201).json({ message: 'Tạo sản phẩm thành công', product_id: productId });
+    } catch (insertErr) {
       await connection.rollback();
-      throw error;
+      throw insertErr;
     } finally {
       connection.release();
     }
-  } catch (error) {
-    console.error("Error creating product:", error);
-    res.status(500).json({
-      error: "Failed to create product",
-      details: error.message,
-    });
+  } catch (err) {
+    console.error('Lỗi khi tạo sản phẩm:', err);
+    return res.status(500).json({ error: 'Lỗi server', details: err.message });
   }
 });
+
+
+
+
+
+/** * @route   PUT /api/products/admin/:slug
+ * @desc    Cập nhật sản phẩm
+ *    @access  Private (Admin only)
+ */
+
 router.put("/admin/:slug", async (req, res) => {
   const { slug } = req.params;
   const {
@@ -1265,7 +1301,60 @@ router.put("/admin/:slug", async (req, res) => {
     removedImages = [],
   } = req.body;
 
-  // Xoá ảnh Cloudinary nếu cần
+  // === VALIDATION ===
+  const errors = [];
+  const isEmpty = (val) => val === undefined || val === null || String(val).trim() === '';
+  const isNumber = (val) => !isEmpty(val) && !isNaN(Number(val));
+
+  if (isEmpty(name)) {
+    errors.push({ field: "name", message: "Tên sản phẩm là bắt buộc" });
+  }
+  if (isEmpty(description)) {
+    errors.push({ field: "description", message: "Mô tả sản phẩm là bắt buộc" });
+  }
+  if (isEmpty(slug)) {
+    errors.push({ field: "slug", message: "Slug là bắt buộc" });
+  }
+  if (isEmpty(category_id)) {
+    errors.push({ field: "category_id", message: "Danh mục là bắt buộc" });
+  }
+  if (isEmpty(status)) {
+    errors.push({ field: "status", message: "Vui lòng chọn trạng thái" });
+  } else if (![0, 1, '0', '1'].includes(status)) {
+    errors.push({ field: "status", message: "Trạng thái không hợp lệ" });
+  }
+  if (isEmpty(main_image)) {
+    errors.push({ field: "main_image", message: "Ảnh chính sản phẩm là bắt buộc" });
+  }
+  if (isEmpty(materials)) {
+    errors.push({ field: "materials", message: "Chất liệu là bắt buộc" });
+  }
+
+  if (!isNumber(height)) {
+    errors.push({ field: "height", message: "Chiều cao không hợp lệ" });
+  }
+  if (!isNumber(width)) {
+    errors.push({ field: "width", message: "Chiều rộng không hợp lệ" });
+  }
+  if (!isNumber(depth)) {
+    errors.push({ field: "depth", message: "Chiều sâu không hợp lệ" });
+  }
+  if (!isNumber(seating_height)) {
+    errors.push({ field: "seating_height", message: "Chiều cao chỗ ngồi không hợp lệ" });
+  }
+  if (!isNumber(max_weight_load)) {
+    errors.push({ field: "max_weight_load", message: "Tải trọng tối đa không hợp lệ" });
+  }
+
+  if (!Array.isArray(room_ids) || room_ids.length === 0) {
+    errors.push({ field: "room_ids", message: "Vui lòng chọn ít nhất một phòng" });
+  }
+
+  if (errors.length > 0) {
+    return res.status(400).json({ error: "Dữ liệu không hợp lệ", errors });
+  }
+
+  // === XÓA ẢNH CLOUDINARY ===
   if (removedImages.length) {
     for (const imageUrl of removedImages) {
       const publicId = extractPublicIdFromUrl(imageUrl);
@@ -1273,29 +1362,16 @@ router.put("/admin/:slug", async (req, res) => {
         try {
           await cloudinary.uploader.destroy(publicId);
         } catch (destroyErr) {
-          console.warn(
-            "Không thể xoá ảnh Cloudinary:",
-            publicId,
-            destroyErr.message
-          );
+          console.warn("Không thể xoá ảnh Cloudinary:", publicId, destroyErr.message);
         }
       }
     }
-  }
-
-  // Validate đầu vào
-  if (!name || !slug || !category_id) {
-    return res.status(400).json({
-      error: "Missing required fields",
-      required: "name, slug, category_id",
-    });
   }
 
   const connection = await db.getConnection();
   await connection.beginTransaction();
 
   try {
-    // Tìm product_id từ slug
     const [productRows] = await connection.query(
       `SELECT product_id FROM product WHERE product_slug = ?`,
       [slug]
@@ -1306,7 +1382,6 @@ router.put("/admin/:slug", async (req, res) => {
     }
     const productId = productRows[0].product_id;
 
-    // Cập nhật sản phẩm
     await connection.query(
       `UPDATE product SET
         product_name = ?,
@@ -1323,25 +1398,22 @@ router.put("/admin/:slug", async (req, res) => {
       WHERE product_id = ?`,
       [
         name,
-        description || null,
+        description,
         category_id,
-        status || 1,
-        materials || null,
-        height || null,
-        width || null,
-        depth || null,
-        seating_height || null,
-        max_weight_load || null,
-        main_image || null,
+        status,
+        materials,
+        height,
+        width,
+        depth,
+        seating_height,
+        max_weight_load,
+        main_image,
         productId,
       ]
     );
 
-    // Cập nhật liên kết phòng
-    await connection.query(`DELETE FROM room_product WHERE product_id = ?`, [
-      productId,
-    ]);
-    if (room_ids && room_ids.length > 0) {
+    await connection.query(`DELETE FROM room_product WHERE product_id = ?`, [productId]);
+    if (room_ids.length > 0) {
       const roomValues = room_ids.map((roomId) => [productId, roomId]);
       await connection.query(
         `INSERT INTO room_product (product_id, room_id) VALUES ?`,
@@ -1349,10 +1421,8 @@ router.put("/admin/:slug", async (req, res) => {
       );
     }
 
-    // Commit
     await connection.commit();
 
-    // Trả về sản phẩm đã cập nhật (không cần variants ở đây)
     const [product] = await db.query(
       `SELECT 
         p.*,
@@ -1378,6 +1448,7 @@ router.put("/admin/:slug", async (req, res) => {
     connection.release();
   }
 });
+
 
 // Đảm bảo có route GET /api/products/admin/:slug để trả về chi tiết sản phẩm cho trang edit
 
@@ -1439,8 +1510,8 @@ router.get("/admin/:slug", async (req, res) => {
       slug: v.slug,
       list_image: v.list_image
         ? v.list_image
-            .split(",")
-            .map((img) => img.trim().replace(/^['"]+|['"]+$/g, ""))
+          .split(",")
+          .map((img) => img.trim().replace(/^['"]+|['"]+$/g, ""))
         : [],
     }));
 

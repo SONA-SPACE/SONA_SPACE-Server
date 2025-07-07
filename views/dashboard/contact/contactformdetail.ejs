@@ -226,7 +226,6 @@
 <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
 <script>
   const id = window.location.pathname.split("/").pop();
-  console.log(id);
 
   document.addEventListener("DOMContentLoaded", () => {
     loadData();
@@ -239,11 +238,13 @@
   });
 
   function formatCurrency(value) {
+    if (typeof value !== "number" || isNaN(value)) return "-";
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
       currency: "VND",
     }).format(value);
   }
+
   function loadVariants() {
     fetch(`/api/products/variants`)
       .then((res) => res.json())
@@ -320,15 +321,12 @@
             <td><button class="btn-remove-product" onclick="handleRemoveProduct(${
               item.variant_id
             })"><i class="fas fa-trash-alt"></i></button></td>
-            <td><button class="btn-edit-product" onclick="handleEditProduct(${
-              item.variant_id
-            })"><i class="fas fa-edit"></i></button></td>
           `;
           tbody.appendChild(row);
-          total += item.total_price;
+          total += Number(item.total_price) || 0;
         });
         document.getElementById("total-design-price").textContent =
-          formatCurrency(total);
+          total > 0 ? formatCurrency(total) : "0 VNĐ";
       });
   }
 
@@ -398,15 +396,18 @@
     fetch(`/api/contact-form-design/${id}`)
       .then((res) => res.json())
       .then((data) => {
-        console.log(data);
         document.getElementById("created_at").innerHTML = data.created_at;
         document.getElementById("updated_at").innerHTML = data.updated_at;
         document.getElementById("name").value = data.name;
         document.getElementById("email").value = data.email;
         document.getElementById("room_name").value = data.room_name;
         document.getElementById("phone").value = data.phone;
-        document.getElementById("budget").value = data.budget;
-        document.getElementById("design_fee").value = data.design_fee;
+        document.getElementById("budget").value = data.budget
+          ? Number(data.budget).toLocaleString("vi-VN")
+          : "";
+        document.getElementById("design_fee").value = data.design_fee
+          ? Number(data.design_fee).toLocaleString("vi-VN")
+          : "";
         document.getElementById("design_description").value =
           data.design_description;
         document.getElementById("require_design").value = data.require_design;

@@ -89,10 +89,13 @@
                 <button class="filter-toggle">Vận chuyển</button>
               </div>
               <div class="filter">
-                <button class="filter-toggle">Trạng thái đơn hàng</button>
+                <button class="filter-toggle">Trạng thái</button>
               </div>
               <div class="filter">
                 <button class="filter-toggle">Ngày cập nhật</button>
+              </div>
+              <div class="filter">
+                <button class="filter-toggle">Hành động</button>
               </div>
             </div>
           </div>
@@ -391,7 +394,23 @@ async function loadOrders() {
         <td><span class="status paid">Đã thanh toán</span></td>
         <td>${order.item_count} sản phẩm</td>
         <td>${formatPrice(order.order_total_final)} đ</td>
-        <td>-</td>
+        <td>
+          ${(() => {
+            // Tạo mảng các trạng thái vận chuyển với biểu tượng
+            const shippingStatuses = [
+              { status: 'Đang giao hàng', class: 'badge-primary', icon: 'fa-truck' },
+              { status: 'Đang lấy hàng', class: 'badge-warning', icon: 'fa-box' },
+              { status: 'Giao hàng thành công', class: 'badge-success', icon: 'fa-check-circle' },
+              { status: 'Giao hàng thất bại', class: 'badge-danger', icon: 'fa-times-circle' }
+            ];
+            
+            // Lấy trạng thái dựa trên index của đơn hàng
+            const statusIndex = order.order_id % 4;
+            const currentStatus = shippingStatuses[statusIndex];
+            
+            return `<span class="badge ${currentStatus.class}"><i class="fas ${currentStatus.icon} mr-1"></i>${currentStatus.status}</span>`;
+          })()}
+        </td>
         <td><span class="status processing">${mapStatus(order.current_status)}</span></td>
         <td>${formatDate(order.created_at)}</td>
         <td>

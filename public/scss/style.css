@@ -4952,13 +4952,13 @@ textarea.form-control {
 .orders-page .orders-table .table-header {
   display: flex;
   padding: 15px 20px;
-  border-bottom: 1px solid #e0e0e0;
+  border-bottom: 1px solid hsl(0, 0%, 88%);
   align-items: center;
 }
 .orders-page .orders-table .table-header .bulk-actions {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: 35px;
 }
 .orders-page .orders-table .table-header .bulk-actions .checkbox {
   width: 18px;
@@ -4981,11 +4981,15 @@ textarea.form-control {
 }
 .orders-page .orders-table .table-header .table-filters {
   display: flex;
-  margin-left: auto;
-  gap: 15px;
+  margin-left: 60px;
+  width: 100%;
+  gap: 30px;
 }
 .orders-page .orders-table .table-header .table-filters .filter {
   position: relative;
+}
+.orders-page .orders-table .table-header .table-filters .filter:nth-child(2), .orders-page .orders-table .table-header .table-filters .filter:nth-child(3) {
+  margin-left: 20px;
 }
 .orders-page .orders-table .table-header .table-filters .filter .filter-toggle {
   padding: 5px 10px;
@@ -5131,6 +5135,38 @@ textarea.form-control {
 .orders-page .orders-table .table-footer .pagination .page-item.disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Styles cho các badge trạng thái vận chuyển */
+.badge {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.badge-primary {
+  background-color: #007bff;
+  color: #fff;
+}
+
+.badge-warning {
+  background-color: #ffc107;
+  color: #212529;
+}
+
+.badge-success {
+  background-color: #28a745;
+  color: #fff;
+}
+
+.badge-danger {
+  background-color: #dc3545;
+  color: #fff;
 }
 
 .order-detail-page {
@@ -5994,4 +6030,193 @@ textarea.form-control {
   text-align: right;
   font-size: 16px;
   color: var(--text-primary);
+}
+
+.invoice-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 40px;
+  font-family: "Arial", sans-serif;
+  color: #333;
+  background-color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+}
+
+.invoice-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 40px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #eee;
+}
+.invoice-header .company-info .company-logo {
+  max-width: 120px;
+  margin-bottom: 10px;
+}
+.invoice-header .company-info .company-logo img {
+  width: 100%;
+  height: auto;
+}
+.invoice-header .company-info .company-name {
+  font-size: 24px;
+  font-weight: bold;
+  color: #f37121;
+  margin-bottom: 5px;
+}
+.invoice-header .company-info .company-details {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.5;
+}
+.invoice-header .company-contact {
+  text-align: right;
+  font-size: 14px;
+  color: #666;
+  line-height: 1.5;
+}
+
+.invoice-body {
+  margin-bottom: 40px;
+}
+.invoice-body .invoice-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 30px;
+}
+.invoice-body .invoice-info .client-info .info-title {
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: #666;
+}
+.invoice-body .invoice-info .client-info .client-name {
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+.invoice-body .invoice-info .client-info .client-details {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.5;
+}
+.invoice-body .invoice-info .invoice-details {
+  text-align: right;
+}
+.invoice-body .invoice-info .invoice-details .info-title {
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: #666;
+}
+.invoice-body .invoice-info .invoice-details .invoice-number {
+  font-weight: bold;
+  margin-bottom: 15px;
+}
+.invoice-body .invoice-info .invoice-details .invoice-total {
+  font-size: 28px;
+  font-weight: bold;
+  color: #f37121;
+}
+.invoice-body .invoice-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 30px;
+}
+.invoice-body .invoice-meta .meta-item .meta-title {
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: #666;
+}
+.invoice-body .invoice-meta .meta-item .meta-value {
+  font-weight: bold;
+}
+.invoice-body .invoice-meta .meta-date {
+  text-align: right;
+}
+
+.invoice-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 30px;
+}
+.invoice-table th {
+  background-color: #f8f8f8;
+  padding: 12px;
+  text-align: left;
+  font-weight: bold;
+  color: #666;
+  border-bottom: 2px solid #eee;
+}
+.invoice-table td {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+}
+.invoice-table td:last-child {
+  text-align: right;
+}
+.invoice-table .item-description {
+  font-size: 14px;
+  color: #666;
+}
+.invoice-table .table-footer td {
+  padding-top: 20px;
+  border-bottom: none;
+}
+.invoice-table .table-footer td:first-child {
+  text-align: right;
+  font-weight: bold;
+}
+.invoice-table .table-footer td:last-child {
+  font-weight: bold;
+}
+.invoice-table .table-footer .total-row td {
+  font-size: 18px;
+  font-weight: bold;
+  padding-top: 10px;
+}
+
+.invoice-footer {
+  margin-top: 60px;
+  text-align: center;
+  font-size: 14px;
+  color: #666;
+}
+.invoice-footer .thank-you {
+  font-weight: bold;
+  margin-bottom: 30px;
+}
+.invoice-footer .terms {
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+.invoice-footer .terms .terms-title {
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.print-button {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #f37121;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  margin-top: 20px;
+}
+.print-button:hover {
+  background-color: #d5580c;
+}
+
+@media print {
+  .invoice-container {
+    box-shadow: none;
+    padding: 0;
+  }
+  .print-button {
+    display: none;
+  }
+  body {
+    background-color: white;
+  }
 }/*# sourceMappingURL=style.css.map */

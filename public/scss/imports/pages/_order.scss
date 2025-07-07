@@ -159,13 +159,13 @@
         .table-header {
             display: flex;
             padding: 15px 20px;
-            border-bottom: 1px solid #e0e0e0;
+            border-bottom: 1px solid hsl(0, 0%, 88%);
             align-items: center;
 
             .bulk-actions {
                 display: flex;
                 align-items: center;
-                gap: 15px;
+                gap: 35px;
 
                 .checkbox {
                     width: 18px;
@@ -192,11 +192,17 @@
 
             .table-filters {
                 display: flex;
-                margin-left: auto;
-                gap: 15px;
+                margin-left: 60px;
+                width: 100%;
+                gap: 30px;
 
                 .filter {
                     position: relative;
+
+                    &:nth-child(2),
+                    &:nth-child(3) {
+                        margin-left: 20px;
+                    }
 
                     .filter-toggle {
                         padding: 5px 10px;
@@ -373,4 +379,36 @@
             }
         }
     }
+}
+
+/* Styles cho các badge trạng thái vận chuyển */
+.badge {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.badge-primary {
+  background-color: #007bff;
+  color: #fff;
+}
+
+.badge-warning {
+  background-color: #ffc107;
+  color: #212529;
+}
+
+.badge-success {
+  background-color: #28a745;
+  color: #fff;
+}
+
+.badge-danger {
+  background-color: #dc3545;
+  color: #fff;
 }

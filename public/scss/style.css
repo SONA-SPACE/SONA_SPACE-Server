@@ -4954,6 +4954,7 @@ textarea.form-control {
   padding: 15px 20px;
   border-bottom: 1px solid hsl(0, 0%, 88%);
   align-items: center;
+  white-space: nowrap;
 }
 .orders-page .orders-table .table-header .bulk-actions {
   display: flex;
@@ -4981,14 +4982,17 @@ textarea.form-control {
 }
 .orders-page .orders-table .table-header .table-filters {
   display: flex;
-  margin-left: 60px;
+  margin-left: 45px;
   width: 100%;
   gap: 30px;
 }
 .orders-page .orders-table .table-header .table-filters .filter {
   position: relative;
 }
-.orders-page .orders-table .table-header .table-filters .filter:nth-child(2), .orders-page .orders-table .table-header .table-filters .filter:nth-child(3) {
+.orders-page .orders-table .table-header .table-filters .filter:nth-child(2) {
+  margin-left: 10px;
+}
+.orders-page .orders-table .table-header .table-filters .filter:nth-child(3) {
   margin-left: 20px;
 }
 .orders-page .orders-table .table-header .table-filters .filter .filter-toggle {
@@ -5015,6 +5019,9 @@ textarea.form-control {
 .orders-page .orders-table table {
   width: 100%;
   border-collapse: collapse;
+}
+.orders-page .orders-table table tr {
+  white-space: nowrap;
 }
 .orders-page .orders-table table th,
 .orders-page .orders-table table td {

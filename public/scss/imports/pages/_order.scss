@@ -161,6 +161,7 @@
             padding: 15px 20px;
             border-bottom: 1px solid hsl(0, 0%, 88%);
             align-items: center;
+            white-space: nowrap;
 
             .bulk-actions {
                 display: flex;
@@ -192,14 +193,17 @@
 
             .table-filters {
                 display: flex;
-                margin-left: 60px;
+                margin-left: 45px;
                 width: 100%;
                 gap: 30px;
 
                 .filter {
                     position: relative;
 
-                    &:nth-child(2),
+                    &:nth-child(2) {
+                        margin-left: 10px;
+                    }
+
                     &:nth-child(3) {
                         margin-left: 20px;
                     }
@@ -233,6 +237,10 @@
         table {
             width: 100%;
             border-collapse: collapse;
+
+            tr {
+                white-space: nowrap;
+            }
 
             th,
             td {
@@ -383,32 +391,32 @@
 
 /* Styles cho các badge trạng thái vận chuyển */
 .badge {
-  display: inline-block;
-  padding: 5px 10px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 600;
-  text-align: center;
-  white-space: nowrap;
-  vertical-align: middle;
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: middle;
 }
 
 .badge-primary {
-  background-color: #007bff;
-  color: #fff;
+    background-color: #007bff;
+    color: #fff;
 }
 
 .badge-warning {
-  background-color: #ffc107;
-  color: #212529;
+    background-color: #ffc107;
+    color: #212529;
 }
 
 .badge-success {
-  background-color: #28a745;
-  color: #fff;
+    background-color: #28a745;
+    color: #fff;
 }
 
 .badge-danger {
-  background-color: #dc3545;
-  color: #fff;
+    background-color: #dc3545;
+    color: #fff;
 }

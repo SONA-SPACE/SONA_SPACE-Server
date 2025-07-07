@@ -946,4 +946,88 @@ router.get('/status/count', isAdmin, async (req, res) => {
   }
 });
 
+/**
+ * @route   POST /api/orders/send-invoice
+ * @desc    Gửi hóa đơn qua email
+ * @access  Private
+ */
+router.post('/send-invoice', verifyToken, async (req, res) => {
+  try {
+    const { order_id, email } = req.body;
+    
+    if (!order_id || !email) {
+      return res.status(400).json({ success: false, message: 'Thiếu thông tin đơn hàng hoặc email' });
+    }
+    
+    // Lấy thông tin đơn hàng
+    const [orders] = await db.query(`
+      SELECT * FROM orders WHERE order_id = ?
+    `, [order_id]);
+    
+    if (orders.length === 0) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy đơn hàng' });
+    }
+    
+    const order = orders[0];
+    
+    // Lấy thông tin chi tiết đơn hàng
+    const [orderItems] = await db.query(`
+      SELECT oi.*, p.product_name, vp.variant_name
+      FROM order_items oi
+      JOIN variant_product vp ON oi.variant_id = vp.variant_id
+      JOIN product p ON vp.product_id = p.product_id
+      WHERE oi.order_id = ?
+    `, [order_id]);
+    
+    // Tạo nội dung email
+    const invoiceUrl = `${process.env.SITE_URL || 'http://localhost:3501'}/dashboard/orders/invoice/${order_id}`;
+    
+    // Trong thực tế, bạn sẽ sử dụng một thư viện gửi email như nodemailer
+    // Ví dụ mẫu này chỉ giả lập việc gửi email
+    console.log(`Gửi hóa đơn #${order_id} đến email: ${email}`);
+    console.log(`URL hóa đơn: ${invoiceUrl}`);
+    
+    // Trong môi trường thực tế, bạn sẽ gửi email thực sự:
+    /*
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
+    });
+    
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: `Hóa đơn đơn hàng #${order_id} - Sona Space`,
+      html: `
+        <h1>Hóa đơn đơn hàng #${order_id}</h1>
+        <p>Kính gửi ${order.customer_name || 'Quý khách'},</p>
+        <p>Cảm ơn bạn đã mua hàng tại Sona Space. Vui lòng xem hóa đơn chi tiết tại đường dẫn bên dưới:</p>
+        <p><a href="${invoiceUrl}" target="_blank">Xem hóa đơn</a></p>
+        <p>Trân trọng,</p>
+        <p>Đội ngũ Sona Space</p>
+      `
+    };
+    
+    await transporter.sendMail(mailOptions);
+    */
+    
+    res.json({ 
+      success: true, 
+      message: 'Hóa đơn đã được gửi thành công',
+      data: {
+        order_id,
+        email,
+        invoice_url: invoiceUrl
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error sending invoice:', error);
+    res.status(500).json({ success: false, message: 'Lỗi khi gửi hóa đơn', error: error.message });
+  }
+});
+
 module.exports = router; 

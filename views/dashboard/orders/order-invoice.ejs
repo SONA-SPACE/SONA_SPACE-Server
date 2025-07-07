@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- Bootstrap CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css">
+  
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/css/style.css">
+  
+  <style>
+    /* Inline CSS cho invoice */
+    .invoice-container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px;
+      font-family: 'Roboto', sans-serif;
+      color: #333;
+      background-color: #fff;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .invoice-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 40px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .company-info .company-logo {
+      max-width: 120px;
+      margin-bottom: 10px;
+    }
+
+    .company-info .company-logo img {
+      width: 100%;
+      height: auto;
+    }
+
+    .company-info .company-name {
+      font-size: 24px;
+      font-weight: bold;
+      color: #f37121;
+      margin-bottom: 5px;
+    }
+
+    .company-info .company-details {
+      font-size: 14px;
+      color: #666;
+      line-height: 1.5;
+    }
+
+    .company-contact {
+      text-align: right;
+      font-size: 14px;
+      color: #666;
+      line-height: 1.5;
+    }
+
+    .invoice-body {
+      margin-bottom: 40px;
+    }
+
+    .invoice-info {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 30px;
+    }
+
+    .client-info .info-title,
+    .invoice-details .info-title {
+      font-weight: bold;
+      margin-bottom: 5px;
+      color: #666;
+    }
+
+    .client-info .client-name {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .client-info .client-details {
+      font-size: 14px;
+      color: #666;
+      line-height: 1.5;
+    }
+
+    .invoice-details {
+      text-align: right;
+    }
+
+    .invoice-details .invoice-number {
+      font-weight: bold;
+      margin-bottom: 15px;
+    }
+
+    .invoice-details .invoice-total {
+      font-size: 28px;
+      font-weight: bold;
+      color: #f37121;
+    }
+
+    .invoice-meta {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 30px;
+    }
+
+    .meta-item .meta-title {
+      font-weight: bold;
+      margin-bottom: 5px;
+      color: #666;
+    }
+
+    .meta-item .meta-value {
+      font-weight: bold;
+    }
+
+    .meta-date {
+      text-align: right;
+    }
+
+    .invoice-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 30px;
+    }
+
+    .invoice-table th {
+      background-color: #f8f8f8;
+      padding: 12px;
+      text-align: left;
+      font-weight: bold;
+      color: #666;
+      border-bottom: 2px solid #eee;
+    }
+
+    .invoice-table td {
+      padding: 12px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .invoice-table td:last-child {
+      text-align: right;
+    }
+
+    .item-description {
+      font-size: 14px;
+      color: #666;
+    }
+
+    .table-footer td {
+      padding-top: 20px;
+      border-bottom: none;
+    }
+
+    .table-footer td:first-child {
+      text-align: right;
+      font-weight: bold;
+    }
+
+    .table-footer td:last-child {
+      font-weight: bold;
+    }
+
+    .table-footer .total-row td {
+      font-size: 18px;
+      font-weight: bold;
+      padding-top: 10px;
+    }
+
+    .invoice-footer {
+      margin-top: 60px;
+      text-align: center;
+      font-size: 14px;
+      color: #666;
+    }
+
+    .thank-you {
+      font-weight: bold;
+      margin-bottom: 30px;
+    }
+
+    .terms {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+    }
+
+    .terms-title {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .print-button {
+      display: inline-block;
+      padding: 10px 20px;
+      background-color: #f37121;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      margin-top: 20px;
+      text-decoration: none;
+    }
+
+    .print-button:hover {
+      background-color: #e05f00;
+      color: white;
+      text-decoration: none;
+    }
+
+    @media print {
+      .invoice-container {
+        box-shadow: none;
+        padding: 0;
+      }
+      
+      .print-button {
+        display: none;
+      }
+      
+      body {
+        background-color: white;
+      }
+    }
+  </style>
+</head>
+<body>
+<!-- Trang hóa đơn -->
+<div class="invoice-container">
+  <div class="invoice-header">
+    <div class="company-info">
+      <div class="company-logo">
+        <img src="/images/logo.png" alt="Sona Space Logo">
+      </div>
+      <div class="company-details">
+        www.sonaspace.com<br>
+        hello@sonaspace.com<br>
+        +84 123 456 789
+      </div>
+    </div>
+    <div class="company-contact">
+      <div>Địa chỉ công ty</div>
+      <div>Quận 1, TP Hồ Chí Minh, Việt Nam</div>
+      <div>MST: 0123456789</div>
+    </div>
+  </div>
+
+  <div class="invoice-body">
+    <div class="invoice-info">
+      <div class="client-info">
+        <div class="info-title">Khách hàng</div>
+        <div class="client-name"><%= order?.customer_name || 'Khách hàng' %></div>
+        <div class="client-details">
+          <%= order?.shipping_address || 'Địa chỉ khách hàng' %><br>
+          <%= order?.customer_phone || 'Số điện thoại' %><br>
+          <%= order?.customer_email || 'Email khách hàng' %>
+        </div>
+      </div>
+      <div class="invoice-details">
+        <div class="info-title">Số hóa đơn</div>
+        <div class="invoice-number">#<%= order?.order_id || 'INV-001' %></div>
+        <div class="info-title">Tổng tiền (VND)</div>
+        <div class="invoice-total"><%= new Intl.NumberFormat('vi-VN').format(order?.total_amount || 0) %></div>
+      </div>
+    </div>
+
+    <div class="invoice-meta">
+      <div class="meta-item">
+        <div class="meta-title">Mã tham chiếu</div>
+        <div class="meta-value">INV-<%= order?.order_id || '001' %></div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-title">Nội dung</div>
+        <div class="meta-value">Đơn hàng nội thất</div>
+      </div>
+      <div class="meta-item meta-date">
+        <div class="meta-title">Ngày xuất hóa đơn</div>
+        <div class="meta-value"><%= new Date().toLocaleDateString('vi-VN') %></div>
+      </div>
+      <div class="meta-item meta-date">
+        <div class="meta-title">Ngày thanh toán</div>
+        <div class="meta-value"><%= new Date(Date.now() + 15*24*60*60*1000).toLocaleDateString('vi-VN') %></div>
+      </div>
+    </div>
+
+    <table class="invoice-table">
+      <thead>
+        <tr>
+          <th>SẢN PHẨM</th>
+          <th>SỐ LƯỢNG</th>
+          <th>ĐƠN GIÁ</th>
+          <th>THÀNH TIỀN</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (order && order.items && order.items.length > 0) { %>
+          <% order.items.forEach(item => { %>
+            <tr>
+              <td>
+                <%= item.product_name %>
+                <div class="item-description"><%= item.variant_name || 'Mặc định' %></div>
+              </td>
+              <td><%= item.quantity %></td>
+              <td><%= new Intl.NumberFormat('vi-VN').format(item.product_price) %></td>
+              <td><%= new Intl.NumberFormat('vi-VN').format(item.product_price * item.quantity) %></td>
+            </tr>
+          <% }); %>
+        <% } else { %>
+          <tr>
+            <td>
+              Sofa Modena 2,5 seater
+              <div class="item-description">Màu nâu, chất liệu da cao cấp</div>
+            </td>
+            <td>1</td>
+            <td>15.000.000</td>
+            <td>15.000.000</td>
+          </tr>
+          <tr>
+            <td>
+              Bàn trà Oslo
+              <div class="item-description">Gỗ sồi tự nhiên, kích thước 120x60cm</div>
+            </td>
+            <td>1</td>
+            <td>4.500.000</td>
+            <td>4.500.000</td>
+          </tr>
+        <% } %>
+      </tbody>
+      <tfoot class="table-footer">
+        <tr>
+          <td colspan="3">Tổng tiền hàng</td>
+          <td><%= new Intl.NumberFormat('vi-VN').format(order?.subtotal || 19500000) %></td>
+        </tr>
+        <tr>
+          <td colspan="3">Phí vận chuyển</td>
+          <td><%= new Intl.NumberFormat('vi-VN').format(order?.shipping_fee || 300000) %></td>
+        </tr>
+        <tr>
+          <td colspan="3">Thuế VAT (8%)</td>
+          <td><%= new Intl.NumberFormat('vi-VN').format(order?.tax || 1560000) %></td>
+        </tr>
+        <tr class="total-row">
+          <td colspan="3">Tổng cộng</td>
+          <td><%= new Intl.NumberFormat('vi-VN').format(order?.total_amount || 21360000) %></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <div class="invoice-footer">
+    <div class="thank-you">Cảm ơn quý khách đã mua hàng!</div>
+    
+    <div class="terms">
+      <div class="terms-title">Điều khoản & Điều kiện</div>
+      <div>Vui lòng thanh toán trong vòng 15 ngày kể từ ngày nhận hóa đơn.</div>
+    </div>
+  </div>
+  
+  <div style="text-align: center;">
+    <button class="print-button" onclick="window.print()">In hóa đơn</button>
+    <button class="print-button" style="background-color: #4CAF50;" onclick="sendInvoiceEmail()">Gửi qua email</button>
+    <a href="/dashboard/orders/view/<%= orderId %>" class="print-button" style="background-color: #2196F3;">Quay lại</a>
+  </div>
+</div>
+
+<script>
+  function sendInvoiceEmail() {
+    // Lấy thông tin đơn hàng và email khách hàng
+    const orderId = '<%= order?.order_id || "INV-001" %>';
+    const customerEmail = '<%= order?.customer_email || "customer@example.com" %>';
+    
+    // Hiển thị thông báo đang gửi
+    alert(`Đang gửi hóa đơn #${orderId} đến email: ${customerEmail}`);
+    
+    // Gọi API gửi email
+    fetch('/api/orders/send-invoice', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({
+        order_id: orderId,
+        email: customerEmail
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        alert('Hóa đơn đã được gửi thành công!');
+      } else {
+        alert('Có lỗi xảy ra khi gửi hóa đơn: ' + data.message);
+      }
+    })
+    .catch(error => {
+      console.error('Lỗi khi gửi hóa đơn:', error);
+      alert('Có lỗi xảy ra khi gửi hóa đơn. Vui lòng thử lại sau.');
+    });
+  }
+</script>
+</body>
+</html>

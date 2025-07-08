@@ -46,6 +46,30 @@ router.get('/codes',verifyToken, async (req, res) => {
   }
 });
 
+router.get('/admin',verifyToken, async (req, res) => {
+  try {
+    const [rows] = await db.query(`
+      SELECT 
+        couponcode_id AS id,
+        code, 
+        title,
+        value_price AS discount, 
+        description,
+        is_flash_sale AS isFlashSale,
+        discount_type,
+        start_time ,
+        status,
+        exp_time 
+      FROM couponcode
+      WHERE exp_time > NOW()
+      ORDER BY start_time DESC
+    `);
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching public coupon codes:', error);
+    res.status(500).json({ error: 'Failed to fetch public coupons' });
+  }
+});
 /**
  * @route   GET /api/couponcodes/:id
  * @desc    Lấy thông tin một mã giảm giá
@@ -84,72 +108,49 @@ router.post('/', verifyToken, isAdmin, async (req, res) => {
       min_order,
       used,
       is_flash_sale,
-      combinations
+      combinations,
+      discount_type,
+      status,
     } = req.body;
 
-    // Validate bắt buộc
-    if (!code || !title || !value_price || !exp_time) {
-      return res.status(400).json({ error: 'Code, title, value_price and exp_time are required' });
+    if (!code || !title || !value_price || !exp_time || !discount_type || status === undefined) {
+      return res.status(400).json({ error: 'Vui lòng nhập đầy đủ thông tin' });
     }
 
-    // Kiểm tra mã trùng
     const [exist] = await db.query('SELECT * FROM couponcode WHERE code = ?', [code]);
     if (exist.length > 0) {
-      return res.status(400).json({ error: 'Coupon code already exists' });
+      return res.status(400).json({ error: 'Mã voucher đã tồn tại' });
     }
 
-    // Validate value_price
     if (isNaN(value_price) || Number(value_price) <= 0) {
-      return res.status(400).json({ error: 'value_price must be a positive number' });
+      return res.status(400).json({ error: 'Giá giảm không hợp lệ' });
     }
 
-    // Validate ngày
     const startDate = start_time ? new Date(start_time) : new Date();
     const endDate = new Date(exp_time);
     if (endDate <= startDate) {
-      return res.status(400).json({ error: 'exp_time must be after start_time' });
+      return res.status(400).json({ error: 'Thời gian kết thúc phải sau thời gian bắt đầu' });
     }
 
-    // Thêm coupon mới
     const [result] = await db.query(`
       INSERT INTO couponcode (
-        user_id,
-        code,
-        title,
-        value_price,
-        description,
-        start_time,
-        exp_time,
-        min_order,
-        used,
-        is_flash_sale,
-        combinations
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        user_id, code, title, value_price, description, start_time, exp_time,
+        min_order, used, is_flash_sale, combinations, discount_type, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
-      req.user.id, // từ verifyToken
-      code,
-      title,
-      value_price,
-      description || null,
-      startDate,
-      endDate,
-      min_order || null,
-      used || false,
-      is_flash_sale || false,
-      combinations || null
+      req.user.id, code, title, value_price, description || null, startDate, endDate,
+      min_order || null, used || false, is_flash_sale || false, combinations || null,
+      discount_type, status
     ]);
 
     const [newCoupon] = await db.query('SELECT * FROM couponcode WHERE couponcode_id = ?', [result.insertId]);
-
-    res.status(201).json({
-      message: 'Coupon code created successfully',
-      coupon: newCoupon[0]
-    });
+    res.status(201).json({ message: 'Tạo voucher thành công', coupon: newCoupon[0] });
   } catch (error) {
     console.error('Error creating coupon code:', error);
-    res.status(500).json({ error: 'Failed to create coupon code' });
+    res.status(500).json({ error: 'Lỗi máy chủ khi tạo voucher' });
   }
 });
+
 
 
 /**
@@ -160,7 +161,7 @@ router.post('/', verifyToken, isAdmin, async (req, res) => {
 router.put('/:id', verifyToken, isAdmin, async (req, res) => {
   try {
     const id = Number(req.params.id);
-    if (isNaN(id)) return res.status(400).json({ error: 'Invalid coupon ID' });
+    if (isNaN(id)) return res.status(400).json({ error: 'ID voucher không hợp lệ' });
 
     const {
       code,
@@ -172,38 +173,114 @@ router.put('/:id', verifyToken, isAdmin, async (req, res) => {
       min_order,
       used,
       is_flash_sale,
-      combinations
+      combinations,
+      discount_type,
+      status
     } = req.body;
 
+    // Kiểm tra voucher có tồn tại
     const [exist] = await db.query('SELECT * FROM couponcode WHERE couponcode_id = ?', [id]);
-    if (!exist.length) return res.status(404).json({ error: 'Coupon not found' });
+    if (!exist.length) return res.status(404).json({ error: 'Không tìm thấy voucher' });
 
     const updates = [];
     const values = [];
 
-    if (code !== undefined) { updates.push('code = ?'); values.push(code); }
-    if (title !== undefined) { updates.push('title = ?'); values.push(title); }
-    if (description !== undefined) { updates.push('description = ?'); values.push(description); }
-    if (value_price !== undefined) { updates.push('value_price = ?'); values.push(value_price); }
-    if (start_time !== undefined) { updates.push('start_time = ?'); values.push(new Date(start_time)); }
-    if (exp_time !== undefined) { updates.push('exp_time = ?'); values.push(new Date(exp_time)); }
-    if (min_order !== undefined) { updates.push('min_order = ?'); values.push(min_order); }
-    if (used !== undefined) { updates.push('used = ?'); values.push(used ? 1 : 0); }
-    if (is_flash_sale !== undefined) { updates.push('is_flash_sale = ?'); values.push(is_flash_sale ? 1 : 0); }
-    if (combinations !== undefined) { updates.push('combinations = ?'); values.push(combinations); }
+    // Kiểm tra nếu code bị trùng với mã khác
+    if (code !== undefined) {
+      const [duplicate] = await db.query('SELECT * FROM couponcode WHERE code = ? AND couponcode_id != ?', [code, id]);
+      if (duplicate.length > 0) {
+        return res.status(400).json({ error: 'Mã voucher đã tồn tại' });
+      }
+      updates.push('code = ?');
+      values.push(code);
+    }
 
-    if (!updates.length) return res.status(400).json({ error: 'No update data provided' });
+    if (title !== undefined) {
+      updates.push('title = ?');
+      values.push(title);
+    }
+
+    if (description !== undefined) {
+      updates.push('description = ?');
+      values.push(description);
+    }
+
+    if (value_price !== undefined) {
+      if (isNaN(value_price) || Number(value_price) <= 0) {
+        return res.status(400).json({ error: 'Giá giảm không hợp lệ' });
+      }
+      updates.push('value_price = ?');
+      values.push(value_price);
+    }
+
+    if (start_time !== undefined) {
+      updates.push('start_time = ?');
+      values.push(new Date(start_time));
+    }
+
+    if (exp_time !== undefined) {
+      const endDate = new Date(exp_time);
+      if (start_time) {
+        const startDate = new Date(start_time);
+        if (endDate <= startDate) {
+          return res.status(400).json({ error: 'Thời gian kết thúc phải sau thời gian bắt đầu' });
+        }
+      }
+      updates.push('exp_time = ?');
+      values.push(endDate);
+    }
+
+    if (min_order !== undefined) {
+      updates.push('min_order = ?');
+      values.push(min_order);
+    }
+
+    if (used !== undefined) {
+      updates.push('used = ?');
+      values.push(used ? 1 : 0);
+    }
+
+    if (is_flash_sale !== undefined) {
+      updates.push('is_flash_sale = ?');
+      values.push(is_flash_sale ? 1 : 0);
+    }
+
+    if (combinations !== undefined) {
+      updates.push('combinations = ?');
+      values.push(combinations);
+    }
+
+    if (discount_type !== undefined) {
+      if (!['percentage', 'fixed'].includes(discount_type)) {
+        return res.status(400).json({ error: 'Kiểu giảm giá không hợp lệ' });
+      }
+      updates.push('discount_type = ?');
+      values.push(discount_type);
+    }
+
+    if (status !== undefined) {
+      if (![0, 1].includes(Number(status))) {
+        return res.status(400).json({ error: 'Trạng thái không hợp lệ' });
+      }
+      updates.push('status = ?');
+      values.push(Number(status));
+    }
+
+    if (!updates.length) {
+      return res.status(400).json({ error: 'Không có trường nào để cập nhật' });
+    }
 
     values.push(id);
     await db.query(`UPDATE couponcode SET ${updates.join(', ')} WHERE couponcode_id = ?`, values);
 
     const [updated] = await db.query('SELECT * FROM couponcode WHERE couponcode_id = ?', [id]);
-    res.json({ message: 'Coupon updated successfully', coupon: updated[0] });
+    res.json({ message: 'Cập nhật voucher thành công', coupon: updated[0] });
   } catch (error) {
     console.error('Error updating coupon code:', error);
-    res.status(500).json({ error: 'Failed to update coupon code' });
+    res.status(500).json({ error: 'Lỗi máy chủ khi cập nhật voucher' });
   }
 });
+
 
 // DELETE mã giảm giá
 router.delete('/:id', verifyToken, isAdmin, async (req, res) => {

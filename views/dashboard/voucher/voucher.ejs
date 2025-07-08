@@ -1,0 +1,159 @@
+<!-- Trang Quản lý tin tức -->
+<!-- Tiêu đề và Thanh công cụ -->
+<div class="room_page">
+    <div class="dashboard-header-row">
+        <h2 class="dashboard-title">Voucher</h2>
+        <div class="action-buttons">
+            <button class="add-product-btn" onclick="window.location.href='/dashboard/addvoucher'">
+                <i class="fas fa-plus"></i> Thêm voucher
+            </button>
+        </div>
+    </div>
+
+    <!-- Bộ lọc và Tìm kiếm -->
+    <div class="filter-row">
+        <div class="search-container">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" class="search-input" placeholder="Search">
+        </div>
+        <div class="date-range">
+            <i class="far fa-calendar-alt"></i>
+            <span>1/05/2025 - 31/5/2025</span>
+        </div>
+        <div class="results-info">
+            Hiển thị 1-6 trong tổng số 500
+        </div>
+    </div>
+
+    <div class="room-table-container">
+        <table class="room-table" id="roomTable">
+            <thead>
+                <tr>
+                    <th>Mã giảm giá</th>
+                    <th>Tiêu đề</th>
+                    <th>Giá giảm</th>
+                    <!-- <th>Mô tả</th> -->
+                    <th>Trạng thái</th>
+                    <th>Thời gian bắt đầu</th>
+                    <th>Thời gian kết thúc</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Dữ liệu sẽ được JS đổ vào -->
+            </tbody>
+        </table>
+    </div>
+</div>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const URL_API = "http://localhost:3501/api";
+        const formatPrice = (price) => {
+            const rounded = Math.round(price); // Đảm bảo là số nguyên
+            return rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        };
+        function getNews() {
+            fetch(URL_API + "/couponcodes/admin")
+                .then((response) => response.json())
+                .then((data) => {
+                    renderVoucher(data);
+                    console.log("Danh sách voucher:", data);
+                })
+                .catch((error) => {
+                    console.error("Lỗi khi tải danh sách voucher:", error);
+                    document.querySelector(".results-info").textContent =
+                        "Không thể tải dữ liệu.";
+                });
+        }
+
+        function renderVoucher(VoucherList) {
+            const tableBody = document.querySelector("#roomTable tbody");
+            tableBody.innerHTML = "";
+
+            VoucherList.forEach((voucher) => {
+                const row = document.createElement("tr");
+
+                const status = voucher.status === 1 ? "visible" : "hidden";
+                row.innerHTML = `
+                    <td>${voucher.code}</td>
+                    <td>${voucher.title}</td>
+                    <td>${formatPrice(voucher.discount)}${voucher.discount_type === "percentage" ? "%" : "đ"}</td>
+                  
+                    <td>
+                        <span class="status-indicator ${status === "visible" ? "visible" : "hidden"}">
+                        <i class="fas ${status === "visible" ? "fa-eye" : "fa-eye-slash"}"></i>
+                        ${status === "visible" ? "Hiển thị" : "Ẩn"}
+                        </span>
+                    </td>
+                    <td>${formatDate(voucher.start_time)}</td>
+                    <td>${formatDate(voucher.exp_time)}</td>
+                <td>
+                <div class="action-cell">
+                    <button class="action-button edit" data-id="${voucher.id}"
+                    onclick="window.location.href='/dashboard/editvoucher/${voucher.id}'"
+                    title="Chỉnh sửa">
+                    <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="action-button visibility" data-id="${voucher.id
+                    }" data-status="${status}" title="${status === "visible" ? "Ẩn voucher" : "Hiển thị voucher"
+                    }">
+                    <i class="fas ${status === "visible" ? "fa-eye-slash" : "fa-eye"
+                    }"></i>
+                    </button>
+                    <button class="action-button delete" data-id="${voucher.id}" data-title="${voucher.title}" title="Xóa tin tức">
+                    <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+                </td>
+    `;
+
+                tableBody.appendChild(row);
+            });
+
+            // Gán sự kiện xóa
+            document.querySelectorAll(".action-button.delete").forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    const voucherId = btn.getAttribute("data-id");
+                    const voucherTitle = btn.getAttribute("data-title");
+                    deleteVoucher(voucherId, voucherTitle);
+                });
+            });
+
+            document.querySelector(".results-info").textContent = `Hiển thị ${VoucherList.length} kết quả`;
+        }
+
+        function deleteVoucher(voucherId, voucherTitle) {
+            if (!confirm(`Bạn có chắc chắn muốn xóa voucher "${voucherTitle}"?`)) return;
+
+            const token = localStorage.getItem("token");
+
+            fetch(`${URL_API}/couponcodes/${voucherId}`, {
+                method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            })
+                .then((res) => res.json())
+                .then((data) => {
+                    if (data.error) {
+                        showToast(data.error, "danger");
+                    } else {
+                        showToast("Xóa voucher thành công", "success");
+                        setTimeout(() => location.reload(), 1000);
+                    }
+                })
+                .catch((err) => {
+                    console.error("Lỗi khi xóa voucher:", err);
+                    showToast("Xảy ra lỗi khi xóa voucher", "danger");
+                });
+        }
+
+
+
+        function formatDate(dateStr) {
+            if (!dateStr) return "-";
+            return new Date(dateStr).toLocaleDateString("vi-VN");
+        }
+
+        getNews();
+    });
+</script>

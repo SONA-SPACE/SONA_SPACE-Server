@@ -1,0 +1,184 @@
+
+<div class="dashboard-header-row">
+    <h2 class="dashboard-title">Thêm Voucher</h2>
+</div>
+
+<div class="add-voucher-container">
+    <div class="voucher-form-column">
+        <div class="form-section-voucher">
+            <h3 class="section-title">Thông tin Voucher</h3>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="vouchertitle">Tiêu đề</label>
+                    <input type="text" id="vouchertitle" class="form-control" placeholder="Nhập tiêu đề" />
+                </div>
+                <div class="form-group">
+                    <label for="vouchercode">Mã giảm giá</label>
+                    <input type="text" id="vouchercode" class="form-control" placeholder="Nhập mã giảm giá" />
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="voucherprice">Giá giảm</label>
+                    <input type="number" id="voucherprice" class="form-control" placeholder="Nhập giá giảm" />
+                </div>
+                <div class="form-group">
+                    <label for="vouchertype">Kiểu giảm</label>
+                    <div class="select-wrapper">
+                        <select id="vouchertype" class="form-control">
+                            <option value="1">Phần trăm</option>
+                            <option value="0">Cố định</option>
+                        </select>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="voucherflash">Flash sale</label>
+                    <div class="select-wrapper">
+                        <select id="voucherflash" class="form-control">
+                            <option value="1">Có</option>
+                            <option value="0">Không</option>
+                        </select>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="voucherStatus">Trạng thái</label>
+                    <div class="select-wrapper">
+                        <select id="voucherStatus" class="form-control">
+                            <option value="1">Hiển thị</option>
+                            <option value="0">Ẩn</option>
+                        </select>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="voucherStart">Thời gian bắt đầu</label>
+                    <input type="datetime-local" id="voucherStart" class="form-control" />
+                </div>
+                <div class="form-group">
+                    <label for="voucherEnd">Thời gian kết thúc</label>
+                    <input type="datetime-local" id="voucherEnd" class="form-control" />
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="voucherdescription">Mô tả</label>
+                    <input type="text" id="voucherdescription" class="form-control" placeholder="Nhập mô tả" />
+                </div>
+            </div>
+        </div>
+
+        <div class="form-actionss">
+            <button type="button" class="btn btn-cancel">Hủy</button>
+            <button type="button" class="btn btn-save">Lưu</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        document
+            .querySelector(".btn-save")
+            .addEventListener("click", handlesavevoucher);
+    });
+
+    async function handlesavevoucher() {
+        const title = document.getElementById("vouchertitle").value.trim();
+        const description = document.getElementById("voucherdescription").value.trim();
+        const code = document.getElementById("vouchercode").value.trim();
+        const discount = parseFloat(document.getElementById("voucherprice").value);
+        const discount_type = document.getElementById("vouchertype").value === "1" ? "percentage" : "fixed";
+        const is_flash_sale = parseInt(document.getElementById("voucherflash").value);
+        const status = parseInt(document.getElementById("voucherStatus").value);
+        const start_time = document.getElementById("voucherStart").value;
+        const exp_time = document.getElementById("voucherEnd").value;
+
+        const saveBtn = document.querySelector(".btn-save");
+        saveBtn.disabled = true;
+        saveBtn.innerText = "Đang lưu...";
+
+        if (!title || !code || isNaN(discount) || !exp_time) {
+            showToast("Vui lòng điền đầy đủ thông tin", "danger");
+            saveBtn.disabled = false;
+            saveBtn.innerText = "Lưu";
+            return;
+        }
+
+        const payload = {
+            code,
+            title,
+            description,
+            value_price: discount,
+            discount_type,
+            start_time,
+            exp_time,
+            is_flash_sale,
+            status,
+        };
+
+        try {
+            const res = await fetch("/api/couponcodes", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                },
+                body: JSON.stringify(payload),
+            });
+
+            const data = await res.json();
+            if (data.error) {
+                showToast(data.error, "danger");
+            } else {
+                showToast("Tạo voucher thành công", "success");
+                setTimeout(() => (window.location.href = "/dashboard/voucher"), 1500);
+            }
+        } catch (err) {
+            console.error("Lỗi tạo voucher:", err);
+            showToast("Lỗi máy chủ", "danger");
+        } finally {
+            saveBtn.disabled = false;
+            saveBtn.innerText = "Lưu";
+        }
+    }
+
+    function showToast(message, type = "success") {
+        let toastContainer = document.getElementById("toastContainer");
+        if (!toastContainer) {
+            toastContainer = document.createElement("div");
+            toastContainer.id = "toastContainer";
+            toastContainer.className = "position-fixed top-0 end-0 p-3";
+            toastContainer.style.zIndex = "1050";
+            document.body.appendChild(toastContainer);
+        }
+
+        const toast = document.createElement("div");
+        toast.className = `toast align-items-center text-white bg-${type} border-0`;
+        toast.setAttribute("role", "alert");
+        toast.setAttribute("aria-live", "assertive");
+        toast.setAttribute("aria-atomic", "true");
+
+        toast.innerHTML = `
+        <div class="d-flex">
+          <div class="toast-body">${message}</div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+      `;
+
+        toastContainer.appendChild(toast);
+        const bsToast = new bootstrap.Toast(toast, { delay: 4000 });
+        bsToast.show();
+
+        toast.addEventListener("hidden.bs.toast", () => toast.remove());
+    }
+</script>

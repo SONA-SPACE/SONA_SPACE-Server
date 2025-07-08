@@ -668,7 +668,7 @@ router.post('/', verifyToken, async (req, res) => {
 
       await db.query(`
         INSERT INTO payments (order_id, method, amount, status, transaction_code, created_at)
-        VALUES (?, ?, ?, 'PENDING', ?, NOW())
+        VALUES (?, ?, ?, 'SUCCESS', ?, NOW())
       `, [orderId, method, amount, momoOrderId]);
 
       return res.status(200).json({
@@ -724,7 +724,7 @@ router.post('/', verifyToken, async (req, res) => {
     if (method === 'COD') {
       await db.query(`
         INSERT INTO payments (order_id, method, amount, status, created_at)
-        VALUES (?, ?, ?, 'SUCCESS', NOW())
+        VALUES (?, ?, ?, 'PENDING', NOW())
       `, [orderId, method, amount]);
 
       return res.status(201).json({

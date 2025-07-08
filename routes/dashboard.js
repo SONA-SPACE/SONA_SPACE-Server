@@ -143,6 +143,27 @@ router.get("/orders", (req, res) => {
   });
 });
 
+
+// voucher management
+router.get("/voucher", (req, res) => {
+  res.render("dashboard/voucher/voucher", {
+    title: "Orders Management",
+    layout: "layouts/dashboard",
+  });
+});
+router.get("/addvoucher", (req, res) => {
+  res.render("dashboard/voucher/addvoucher", {
+    title: "Orders Management",
+    layout: "layouts/dashboard",
+  });
+});
+router.get("/editvoucher/:id", (req, res) => {
+  res.render("dashboard/voucher/editvoucher", {
+    title: "Orders Management",
+    layout: "layouts/dashboard",
+  });
+});
+
 // View specific order
 router.get("/orders/view/:id", (req, res) => {
   res.render("dashboard/orders/order-detail", {

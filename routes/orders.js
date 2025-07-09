@@ -84,9 +84,13 @@ router.get('/hash/:orderHash', optionalAuth, async (req, res) => {
         o.order_name_new,
         o.order_email_new,
         u.user_name AS order_name_old,
-        u.user_gmail AS order_email_old
+        u.user_gmail AS order_email_old,
+        cc.code AS coupon_code,
+        cc.value_price AS coupon_value
       FROM orders o
       LEFT JOIN user u ON o.user_id = u.user_id
+      LEFT JOIN couponcode cc ON o.couponcode_id = cc.couponcode_id
+      
       WHERE o.order_hash = ?
     `, [orderHash]);
 
@@ -141,14 +145,12 @@ router.get('/hash/:orderHash', optionalAuth, async (req, res) => {
         date: order.created_at,
         status: order.current_status,
         statusStep,
-
-        // Ưu tiên sử dụng cho frontend
+        couponCode: order.coupon_code || "",
+        couponValue: order.coupon_value || "",
         recipientName,
         recipientEmail,
         recipientPhone,
         address: recipientAddress,
-
-        // Thông tin chi tiết cũ và mới để frontend so sánh nếu cần
         order_name_old: order.order_name_old || "",
         order_name_new: order.order_name_new || "",
         order_email_old: order.order_email_old || "",
@@ -184,7 +186,7 @@ router.get('/hash/:orderHash', optionalAuth, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Lỗi khi truy vấn đơn hàng:', error.message);
+    console.error(' Lỗi khi truy vấn đơn hàng:', error.message);
     return res.status(500).json({ success: false, message: 'Lỗi máy chủ', error: error.message });
   }
 });
@@ -472,6 +474,7 @@ router.post('/', verifyToken, async (req, res) => {
       order_number2,
       order_name_new,
       order_email_new,
+      couponcode_id,
       cart_items = []
     } = req.body;
 
@@ -526,6 +529,25 @@ router.post('/', verifyToken, async (req, res) => {
       return res.status(400).json({ error: 'Đơn hàng đã tồn tại' });
     }
 
+
+    let couponcodeId = couponcode_id || null;
+
+    if (!couponcodeId && req.body.coupon_code) {
+      const [[coupon]] = await db.query(
+        `SELECT couponcode_id FROM couponcode WHERE code = ?`,
+        [req.body.coupon_code]
+      );
+      if (coupon) couponcodeId = coupon.couponcode_id;
+    }
+    console.log(" Dữ liệu coupon nhận được:", {
+      couponcode_id: req.body.couponcode_id,
+      coupon_code: req.body.coupon_code,
+      finalCouponcodeId: couponcodeId,
+    });
+
+
+
+
     //  Tạo đơn hàng
     await db.query(`
   INSERT INTO orders (
@@ -533,8 +555,9 @@ router.post('/', verifyToken, async (req, res) => {
     order_number1, order_number2, order_total, order_total_final, 
     current_status, created_at, 
     order_name_old, order_name_new,
-    order_email_old, order_email_new
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?)
+    order_email_old, order_email_new,
+    couponcode_id
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?)
 `, [
       order_id,
       user_id,
@@ -548,10 +571,11 @@ router.post('/', verifyToken, async (req, res) => {
       orderNameOld,
       orderNameNew,
       orderEmailOld,
-      orderEmailNew
+      orderEmailNew,
+      couponcodeId
     ]);
 
-
+    console.log(" Sử dụng couponcodeId:", couponcodeId);
 
 
     //  Lấy order_id
@@ -644,7 +668,7 @@ router.post('/', verifyToken, async (req, res) => {
 
       await db.query(`
         INSERT INTO payments (order_id, method, amount, status, transaction_code, created_at)
-        VALUES (?, ?, ?, 'PENDING', ?, NOW())
+        VALUES (?, ?, ?, 'SUCCESS', ?, NOW())
       `, [orderId, method, amount, momoOrderId]);
 
       return res.status(200).json({
@@ -700,7 +724,7 @@ router.post('/', verifyToken, async (req, res) => {
     if (method === 'COD') {
       await db.query(`
         INSERT INTO payments (order_id, method, amount, status, created_at)
-        VALUES (?, ?, ?, 'SUCCESS', NOW())
+        VALUES (?, ?, ?, 'PENDING', NOW())
       `, [orderId, method, amount]);
 
       return res.status(201).json({
@@ -954,22 +978,22 @@ router.get('/status/count', isAdmin, async (req, res) => {
 router.post('/send-invoice', verifyToken, async (req, res) => {
   try {
     const { order_id, email } = req.body;
-    
+
     if (!order_id || !email) {
       return res.status(400).json({ success: false, message: 'Thiếu thông tin đơn hàng hoặc email' });
     }
-    
+
     // Lấy thông tin đơn hàng
     const [orders] = await db.query(`
       SELECT * FROM orders WHERE order_id = ?
     `, [order_id]);
-    
+
     if (orders.length === 0) {
       return res.status(404).json({ success: false, message: 'Không tìm thấy đơn hàng' });
     }
-    
+
     const order = orders[0];
-    
+
     // Lấy thông tin chi tiết đơn hàng
     const [orderItems] = await db.query(`
       SELECT oi.*, p.product_name, vp.variant_name
@@ -978,15 +1002,15 @@ router.post('/send-invoice', verifyToken, async (req, res) => {
       JOIN product p ON vp.product_id = p.product_id
       WHERE oi.order_id = ?
     `, [order_id]);
-    
+
     // Tạo nội dung email
     const invoiceUrl = `${process.env.SITE_URL || 'http://localhost:3501'}/dashboard/orders/invoice/${order_id}`;
-    
+
     // Trong thực tế, bạn sẽ sử dụng một thư viện gửi email như nodemailer
     // Ví dụ mẫu này chỉ giả lập việc gửi email
     console.log(`Gửi hóa đơn #${order_id} đến email: ${email}`);
     console.log(`URL hóa đơn: ${invoiceUrl}`);
-    
+
     // Trong môi trường thực tế, bạn sẽ gửi email thực sự:
     /*
     const transporter = nodemailer.createTransport({
@@ -1013,9 +1037,9 @@ router.post('/send-invoice', verifyToken, async (req, res) => {
     
     await transporter.sendMail(mailOptions);
     */
-    
-    res.json({ 
-      success: true, 
+
+    res.json({
+      success: true,
       message: 'Hóa đơn đã được gửi thành công',
       data: {
         order_id,
@@ -1023,7 +1047,7 @@ router.post('/send-invoice', verifyToken, async (req, res) => {
         invoice_url: invoiceUrl
       }
     });
-    
+
   } catch (error) {
     console.error('Error sending invoice:', error);
     res.status(500).json({ success: false, message: 'Lỗi khi gửi hóa đơn', error: error.message });

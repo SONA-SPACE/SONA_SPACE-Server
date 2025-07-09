@@ -71,6 +71,22 @@
       return new Date(dateStr).toLocaleDateString("vi-VN");
     }
 
+    function formatStatus(status) {
+      if (status === "PENDING") {
+        return "Chờ xử lý";
+      } else if (status === "CLOSED") {
+        return "Đã đóng";
+      } else if (status === "REJECTED") {
+        return "Từ chối";
+      } else if (status === "IN_PROGRESS") {
+        return "Đang xử lý";
+      } else if (status === "RESOLVED") {
+        return "Đã giải quyết";
+      } else {
+        return status;
+      }
+    }
+
     function renderContactForm(contactForm) {
       const tableBody = document.querySelector("#contactFormTable tbody");
       tableBody.innerHTML = "";
@@ -99,15 +115,12 @@
                                 ${contactForm.require_design || "-"}
                             </div>
                         </td>
-                        <td>${contactForm.budget || "-"}</td>
-                        <td>${contactForm.design_fee || "-"}</td>
+                       <td>${contactForm.budget ? Number(contactForm.budget).toLocaleString("vi-VN") : "-"}</td>
+                       <td>${contactForm.design_fee ? Number(contactForm.design_fee).toLocaleString("vi-VN") : "-"}</td>
                         <td>
-                            <span class="status-indicator ${
-                              contactForm.status
-                            }">
-                                <i class="fas fa-circle"></i> ${
-                                  contactForm.status
-                                }
+                            <span class="status-indicator ${contactForm.status}">
+                                <i class="fas fa-circle"></i> 
+                                ${formatStatus(contactForm.status)}
                             </span>
                         </td>
                         <td>${formatDate(contactForm.updated_at)}</td>

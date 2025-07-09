@@ -196,11 +196,9 @@
             <tr>
               <th>Ảnh</th>
               <th>Tên</th>
-              <th style="white-space: nowrap; text-align: center">Số lượng</th>
-              <th style="white-space: nowrap; text-align: center">Đơn giá</th>
-              <th style="white-space: nowrap; text-align: center">
-                Thành tiền
-              </th>
+              <th style="white-space: nowrap">Số lượng</th>
+              <th style="white-space: nowrap">Đơn giá</th>
+              <th style="white-space: nowrap">Thành tiền</th>
               <th></th>
             </tr>
           </thead>
@@ -210,7 +208,28 @@
         </table>
       </div>
       <div class="total-price-container">
-        <strong>Tổng cộng:</strong> <span id="total-design-price">0 VNĐ</span>
+        <table class="products-table" style="margin-top: 24px">
+          <tbody>
+            <tr>
+              <td><strong>Tổng giá sản phẩm:</strong></td>
+              <td style="text-align: right">
+                <span id="total-product-price">0 VNĐ</span>
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Chi phí thiết kế:</strong></td>
+              <td style="text-align: right">
+                <span id="design-fee">0 VNĐ</span>
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Tổng cộng:</strong></td>
+              <td style="text-align: right; font-weight: bold">
+                <span id="total-design-price">0 VNĐ</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
@@ -226,7 +245,8 @@
 <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
 <script>
   const id = window.location.pathname.split("/").pop();
-  console.log(id);
+  let total_product_price = 0;
+  let design_fee = 0;
 
   document.addEventListener("DOMContentLoaded", () => {
     loadData();
@@ -239,11 +259,13 @@
   });
 
   function formatCurrency(value) {
+    if (typeof value !== "number" || isNaN(value)) return "0 VNĐ";
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
       currency: "VND",
     }).format(value);
   }
+
   function loadVariants() {
     fetch(`/api/products/variants`)
       .then((res) => res.json())
@@ -294,10 +316,9 @@
     fetch(`/api/contact-form-design/${id}/details`)
       .then((res) => res.json())
       .then((details) => {
-        console.log(details);
         const tbody = document.getElementById("design-products-tbody");
         tbody.innerHTML = "";
-        let total = 0;
+        total_product_price = 0;
         details.forEach((item) => {
           const row = document.createElement("tr");
           row.dataset.id = item.contact_form_design_detail_id;
@@ -312,23 +333,23 @@
             <td style="white-space: nowrap;">${item.product_name}</td>
             <td style="white-space: nowrap;">${item.quantity}</td>
             <td style="white-space: nowrap;">${formatCurrency(
-              item.unit_price
+              Number(item.unit_price)
             )}</td>
             <td style="white-space: nowrap;">${formatCurrency(
-              item.total_price
+              Number(item.total_price)
             )}</td>
             <td><button class="btn-remove-product" onclick="handleRemoveProduct(${
               item.variant_id
             })"><i class="fas fa-trash-alt"></i></button></td>
-            <td><button class="btn-edit-product" onclick="handleEditProduct(${
-              item.variant_id
-            })"><i class="fas fa-edit"></i></button></td>
           `;
           tbody.appendChild(row);
-          total += item.total_price;
+          total_product_price += Number(item.total_price) || 0;
         });
-        document.getElementById("total-design-price").textContent =
-          formatCurrency(total);
+        document.getElementById("total-product-price").textContent =
+          total_product_price > 0
+            ? formatCurrency(total_product_price)
+            : "0 VNĐ";
+        updateTotalPrice();
       });
   }
 
@@ -398,15 +419,23 @@
     fetch(`/api/contact-form-design/${id}`)
       .then((res) => res.json())
       .then((data) => {
-        console.log(data);
+        design_fee = data.design_fee || 0;
+
         document.getElementById("created_at").innerHTML = data.created_at;
         document.getElementById("updated_at").innerHTML = data.updated_at;
         document.getElementById("name").value = data.name;
         document.getElementById("email").value = data.email;
         document.getElementById("room_name").value = data.room_name;
         document.getElementById("phone").value = data.phone;
-        document.getElementById("budget").value = data.budget;
-        document.getElementById("design_fee").value = data.design_fee;
+        document.getElementById("budget").value = data.budget
+          ? Number(data.budget).toLocaleString("vi-VN")
+          : "";
+        document.getElementById("design_fee").value = data.design_fee
+          ? Number(data.design_fee).toLocaleString("vi-VN")
+          : "";
+        document.getElementById("design-fee").textContent = formatCurrency(
+          Number(design_fee)
+        );
         document.getElementById("design_description").value =
           data.design_description;
         document.getElementById("require_design").value = data.require_design;
@@ -421,6 +450,7 @@
           .getElementById("status_text")
           .classList.add(`status-${data.status.toLowerCase()}`);
         document.getElementById("remarks").value = data.remarks;
+        updateTotalPrice();
       });
   }
 
@@ -480,6 +510,14 @@
       document.querySelector(".btn-save").disabled = false;
       document.querySelector(".btn-save").innerText = "Lưu";
     }
+  }
+
+  // Hàm cập nhật tổng cộng
+  function updateTotalPrice() {
+    const total =
+      (Number(total_product_price) || 0) + (Number(design_fee) || 0);
+    document.getElementById("total-design-price").textContent =
+      total > 0 ? formatCurrency(total) : "0 VNĐ";
   }
 
   function showToast(message, type = "success") {

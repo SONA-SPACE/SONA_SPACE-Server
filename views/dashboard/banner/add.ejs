@@ -1,0 +1,160 @@
+<!-- Tiêu đề và Thanh công cụ -->
+<div class="dashboard-header-row">
+  <h2 class="dashboard-title">Thêm Banner Mới</h2>
+  <div class="action-buttons">
+    <button class="btn btn-outline-secondary" onclick="window.location.href='/dashboard/banners'">
+      <i class="fas fa-arrow-left"></i> Quay lại
+    </button>
+  </div>
+</div>
+
+<!-- Form thêm banner -->
+<div class="card">
+  <div class="card-body">
+    <form id="addBannerForm" enctype="multipart/form-data">
+      <div class="row">
+        <div class="col-md-8">
+          <div class="mb-3">
+            <label for="title" class="form-label">Tiêu đề <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="title" name="title" required>
+          </div>
+          
+          <div class="mb-3">
+            <label for="subtitle" class="form-label">Phụ đề</label>
+            <input type="text" class="form-control" id="subtitle" name="subtitle">
+          </div>
+          
+          <div class="mb-3">
+            <label for="link_url" class="form-label">Liên kết</label>
+            <input type="text" class="form-control" id="link_url" name="link_url" placeholder="https://">
+          </div>
+          
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="position" class="form-label">Vị trí</label>
+                <input type="number" class="form-control" id="position" name="position" min="0" value="0">
+              </div>
+            </div>
+            
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="status" class="form-label">Trạng thái</label>
+                <select class="form-select" id="status" name="status">
+                  <option value="active" selected>Hiển thị</option>
+                  <option value="inactive">Ẩn</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <label for="page_type" class="form-label">Trang hiển thị <span class="text-danger">*</span></label>
+            <select class="form-select" id="page_type" name="page_type" required>
+              <option value="home">Trang chủ</option>
+              <option value="product">Sản phẩm</option>
+              <option value="space">Không gian</option>
+              <option value="blog">Blog</option>
+              <option value="about">Về chúng tôi</option>
+              <option value="login">Đăng nhập</option>
+              <option value="register">Đăng ký</option>
+            </select>
+            <div class="form-text">Chọn trang sẽ hiển thị banner này</div>
+          </div>
+        </div>
+        
+        <div class="col-md-4">
+          <div class="mb-3">
+            <label for="image" class="form-label">Hình ảnh <span class="text-danger">*</span></label>
+            <div class="image-preview-container">
+              <div class="image-preview">
+                <img id="imagePreview" src="/images/no-image.png" alt="Preview">
+              </div>
+              <div class="mt-2">
+                <input type="file" class="form-control" id="image" name="image" accept="image/*" required>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="d-flex justify-content-end mt-3">
+        <button type="button" class="btn btn-secondary me-2" onclick="window.location.href='/dashboard/banners'">Hủy</button>
+        <button type="submit" class="btn btn-primary">Lưu banner</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Preview hình ảnh khi chọn file
+    document.getElementById('image').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          document.getElementById('imagePreview').src = e.target.result;
+        }
+        reader.readAsDataURL(file);
+      }
+    });
+    
+    // Xử lý submit form
+    document.getElementById('addBannerForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          alert('Bạn cần đăng nhập để thực hiện thao tác này');
+          return;
+        }
+        
+        const formData = new FormData(this);
+        
+        const response = await fetch('/api/banners', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Không thể tạo banner');
+        }
+        
+        alert('Tạo banner thành công!');
+        window.location.href = '/dashboard/banners';
+      } catch (error) {
+        console.error('Error creating banner:', error);
+        alert(error.message);
+      }
+    });
+  });
+</script>
+
+<style>
+  .image-preview-container {
+    border: 1px dashed #ccc;
+    padding: 1rem;
+    border-radius: 4px;
+    text-align: center;
+  }
+  
+  .image-preview {
+    margin-bottom: 1rem;
+    min-height: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .image-preview img {
+    max-width: 100%;
+    max-height: 200px;
+    object-fit: contain;
+  }
+</style> 

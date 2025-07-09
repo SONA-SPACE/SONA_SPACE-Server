@@ -21,32 +21,52 @@ router.get('/', verifyToken, isAdmin, async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch coupon codes' });
   }
 });
-
-router.get('/codes',verifyToken, async (req, res) => {
+router.get('/user-has-coupon', verifyToken, async (req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT 
-        code, 
-        title AS discount, 
-        description,
-        start_time AS validFrom,
-        exp_time AS validUntil,
-        min_order AS minOrder,
-        used,
-        is_flash_sale AS isFlashSale,
-        combinations
-      FROM couponcode
-      WHERE exp_time > NOW()
-      ORDER BY exp_time ASC
+        *
+      FROM user_has_coupon
     `);
     res.json(rows);
   } catch (error) {
-    console.error('Error fetching public coupon codes:', error);
-    res.status(500).json({ error: 'Failed to fetch public coupons' });
+    console.error('Lỗi khi gọi has-coupon', error);
+    res.status(500).json({ error: 'Failed to fetch public has-coupons' });
+  }
+});
+router.get('/codes', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const [rows] = await db.query(`
+      SELECT 
+        c.code, 
+        c.title AS discount, 
+        c.description,
+        c.start_time AS validFrom,
+        c.exp_time AS validUntil,
+        c.min_order AS minOrder,
+        c.used,
+        c.status,
+        c.is_flash_sale AS isFlashSale,
+        c.combinations,
+        u.status AS userUsedStatus 
+      FROM couponcode c
+      LEFT JOIN user_has_coupon u 
+        ON c.couponcode_id = u.couponcode_id AND u.user_id = ?
+      WHERE c.exp_time > NOW() AND c.status != 0
+      ORDER BY c.exp_time ASC
+    `, [userId]);
+
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching coupon codes with usage status:', error);
+    res.status(500).json({ error: 'Failed to fetch coupons' });
   }
 });
 
-router.get('/admin',verifyToken, async (req, res) => {
+
+router.get('/admin', verifyToken, async (req, res) => {
   try {
     const [rows] = await db.query(`
       SELECT 
@@ -58,6 +78,7 @@ router.get('/admin',verifyToken, async (req, res) => {
         is_flash_sale AS isFlashSale,
         discount_type,
         start_time ,
+        used,
         status,
         exp_time 
       FROM couponcode
@@ -117,6 +138,10 @@ router.post('/', verifyToken, isAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Vui lòng nhập đầy đủ thông tin' });
     }
 
+    if (used !== undefined && (isNaN(used) || Number(used) <= 0)) {
+      return res.status(400).json({ error: 'Lượt sử dụng không hợp lệ' });
+    }
+
     const [exist] = await db.query('SELECT * FROM couponcode WHERE code = ?', [code]);
     if (exist.length > 0) {
       return res.status(400).json({ error: 'Mã voucher đã tồn tại' });
@@ -139,7 +164,7 @@ router.post('/', verifyToken, isAdmin, async (req, res) => {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `, [
       req.user.id, code, title, value_price, description || null, startDate, endDate,
-      min_order || null, used || false, is_flash_sale || false, combinations || null,
+      min_order || null, used || 1, is_flash_sale || false, combinations || null,
       discount_type, status
     ]);
 
@@ -237,7 +262,7 @@ router.put('/:id', verifyToken, isAdmin, async (req, res) => {
 
     if (used !== undefined) {
       updates.push('used = ?');
-      values.push(used ? 1 : 0);
+      values.push(Number(used)); 
     }
 
     if (is_flash_sale !== undefined) {
@@ -314,11 +339,11 @@ router.post('/validate', verifyToken, async (req, res) => {
 
     const [coupons] = await db.query(`
       SELECT * FROM couponcode 
-      WHERE code = ? AND used = 0
+      WHERE code = ? AND used > 0
     `, [code]);
 
     if (coupons.length === 0) {
-      return res.status(404).json({ error: 'Invalid or inactive coupon code' });
+      return res.status(404).json({ error: 'Bạn đã sử dụng voucher này rồi' });
     }
 
     const coupon = coupons[0];
@@ -327,24 +352,24 @@ router.post('/validate', verifyToken, async (req, res) => {
     // Kiểm tra thời gian bắt đầu
     const startTime = coupon.start_time ? new Date(coupon.start_time) : null;
     if (startTime && startTime > now) {
-      return res.status(400).json({ error: 'Coupon code is not yet active' });
+      return res.status(400).json({ error: 'Voucher chưa hoạt động' });
     }
 
     // Kiểm tra thời gian hết hạn
     const expTime = new Date(coupon.exp_time);
     if (expTime < now) {
-      return res.status(400).json({ error: 'Coupon code has expired' });
+      return res.status(400).json({ error: 'Voucher đã hêt hạn' });
     }
 
     // Kiểm tra đơn hàng tối thiểu
     if (coupon.min_order !== null && cart_total < coupon.min_order) {
       return res.status(400).json({
-        error: 'Order total does not meet minimum purchase requirement',
+        error: 'Tổng giá trị đơn hàng không đáp ứng yêu cầu mua tối thiểu',
         min_purchase: coupon.min_order
       });
     }
 
-    // Tính giảm giá dựa trên discount_type
+    // Tính giảm giá
     let discountAmount = 0;
     const discountType = coupon.discount_type;
     const value = Number(coupon.value_price);
@@ -355,6 +380,26 @@ router.post('/validate', verifyToken, async (req, res) => {
       discountAmount = Math.min(cart_total, value);
     }
 
+    // Kiểm tra lượt sử dụng
+    const [usedBefore] = await db.query(
+      'SELECT * FROM user_has_coupon WHERE user_id = ? AND couponcode_id = ? AND status = 1',
+      [req.user.id, coupon.couponcode_id]
+    );
+
+    if (usedBefore.length > 0) {
+      return res.status(400).json({ error: 'Bạn đã sử dụng mã giảm giá này rồi' });
+    }
+
+    //  Trừ 1 lượt sử dụng
+    await db.query('UPDATE couponcode SET used = used - 1 WHERE couponcode_id = ? AND used > 0', [coupon.couponcode_id]);
+    // Ngươidi dùng đã sử dụng mã giảm giá
+    await db.query(`
+      INSERT INTO user_has_coupon (user_id, couponcode_id, status)
+      VALUES (?, ?, 1)
+      ON DUPLICATE KEY UPDATE status = 1, used_at = NOW()
+      `, [req.user.id, coupon.couponcode_id]);
+
+
     res.json({
       valid: true,
       coupon: {
@@ -362,7 +407,7 @@ router.post('/validate', verifyToken, async (req, res) => {
         code: coupon.code,
         title: coupon.title,
         value_price: coupon.value_price,
-        discount_type: coupon.discount_type, 
+        discount_type: coupon.discount_type,
         discount_amount: discountAmount,
         exp_time: coupon.exp_time,
         description: coupon.description,
@@ -376,6 +421,7 @@ router.post('/validate', verifyToken, async (req, res) => {
     res.status(500).json({ error: 'Failed to validate coupon code' });
   }
 });
+
 
 
 

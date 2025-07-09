@@ -4,6 +4,7 @@ const db = require('../config/database');
 const { verifyToken, isAdmin, optionalAuth } = require('../middleware/auth');
 const crypto = require("crypto");
 const axios = require("axios");
+const { sendEmail1 } = require("../services/mailService1");
 const { VNPay, ignoreLogger, dateFormat } = require('vnpay')
 // Áp dụng middleware xác thực cho tất cả các route
 // router.use(verifyToken);
@@ -21,6 +22,22 @@ function formatDateVNPay(date) {
  * @desc    Lấy số lượng đơn hàng theo trạng thái (chỉ admin)
  * @access  Private (Admin)
  */
+
+router.get("/test-email", async (req, res) => {
+  const result = await sendEmail1(
+    "totrongnhan1209@example.com", // email test thật
+    "Test đơn hàng",
+    {
+      name: "Nguyễn Văn A",
+      order_id: "TEST123",
+      amount: 500000,
+      method: "COD",
+      address: "123 Lê Lợi, Q.1, TP.HCM",
+    }
+  );
+  res.json({ result });
+});
+
 router.get('/complete/:orderHash', optionalAuth, async (req, res) => {
   const { orderHash } = req.params;
   console.log("🔍 Truy vấn đơn hàng:", orderHash);
@@ -605,7 +622,35 @@ router.post('/', verifyToken, async (req, res) => {
       ]);
     }
 
-
+    const emailData = {
+      name: orderNameNew || orderNameOld,
+      email: orderEmailNew || orderEmailOld,
+      phone: finalNumber2 || finalNumber1,
+      address: finalAddressNew || finalAddressOld,
+      amount,
+      method,
+      order_id,
+      created_at: new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" }),
+      current_status: currentStatus,
+      order_total_final: amount.toLocaleString("vi-VN") + "đ",
+      products: cart_items.map((item) => ({
+        name: item.name,
+        quantity: item.quantity,
+        price: (item.price * 1).toLocaleString("vi-VN", {
+          style: "decimal",
+          maximumFractionDigits: 0
+        }) + "đ",
+        total: (item.price * item.quantity).toLocaleString("vi-VN") + "đ",
+        image: item.image
+      }))
+    };
+    console.log(emailData, "dsaasasasa");
+    try {
+      await sendEmail1(emailData.email, "Xác nhận đơn hàng", emailData);
+      console.log("Đã gửi email xác nhận:", emailData.email);
+    } catch (err) {
+      console.error("Lỗi khi gửi email:", err.message);
+    }
     await db.query(`
       INSERT INTO order_status_log (
         order_id,
@@ -778,8 +823,8 @@ router.put('/:id/status', verifyToken, isAdmin, async (req, res) => {
       ) VALUES (?, ?, ?, 'admin', ?, NOW())
     `, [orderId, fromStatus, toStatus, `Chuyển trạng thái từ ${fromStatus} ➝ ${toStatus}`]);
 
-    return res.status(200).json({ 
-      success: true, 
+    return res.status(200).json({
+      success: true,
       message: `Đã chuyển trạng thái đơn hàng sang ${toStatus}`,
       new_status: toStatus
     });

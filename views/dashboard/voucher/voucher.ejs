@@ -4,7 +4,7 @@
     <div class="dashboard-header-row">
         <h2 class="dashboard-title">Voucher</h2>
         <div class="action-buttons">
-            <button class="add-product-btn" onclick="window.location.href='/dashboard/addvoucher'">
+            <button class="add-product-btn" onclick="window.location.href='/dashboard/voucher/addvoucher'">
                 <i class="fas fa-plus"></i> Thêm voucher
             </button>
         </div>
@@ -32,7 +32,7 @@
                     <th>Mã giảm giá</th>
                     <th>Tiêu đề</th>
                     <th>Giá giảm</th>
-                    <!-- <th>Mô tả</th> -->
+                    <th>Lượt sử dụng</th>
                     <th>Trạng thái</th>
                     <th>Thời gian bắt đầu</th>
                     <th>Thời gian kết thúc</th>
@@ -77,7 +77,7 @@
                     <td>${voucher.code}</td>
                     <td>${voucher.title}</td>
                     <td>${formatPrice(voucher.discount)}${voucher.discount_type === "percentage" ? "%" : "đ"}</td>
-                  
+                  <td>${voucher.used}</td>
                     <td>
                         <span class="status-indicator ${status === "visible" ? "visible" : "hidden"}">
                         <i class="fas ${status === "visible" ? "fa-eye" : "fa-eye-slash"}"></i>
@@ -89,7 +89,7 @@
                 <td>
                 <div class="action-cell">
                     <button class="action-button edit" data-id="${voucher.id}"
-                    onclick="window.location.href='/dashboard/editvoucher/${voucher.id}'"
+                    onclick="window.location.href='/dashboard/voucher/editvoucher/${voucher.id}'"
                     title="Chỉnh sửa">
                     <i class="fas fa-edit"></i>
                     </button>

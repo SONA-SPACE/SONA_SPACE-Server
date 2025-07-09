@@ -17,11 +17,11 @@ const isAdmin = (req, res, next) => {
 const checkAuth = (req, res, next) => {
   // Lấy token từ cookie hoặc header Authorization
   const token = req.cookies.token || (req.headers.authorization && req.headers.authorization.split(' ')[1]);
-  
+
   if (!token) {
     return res.redirect('/');
   }
-  
+
   try {
     // Xác thực token và gọi middleware tiếp theo
     authMiddleware.verifyToken(req, res, (err) => {
@@ -152,25 +152,27 @@ router.get("/orders/view/:id", (req, res) => {
   });
 });
 
+
+
 // View order invoice
 router.get("/orders/invoice/:id", async (req, res) => {
   try {
     const orderId = req.params.id;
     let order = null;
     let items = [];
-    
+
     // Kết nối với database để lấy thông tin đơn hàng
     const db = require('../config/database');
-    
+
     try {
       // Lấy thông tin đơn hàng
       const [orders] = await db.query(`
         SELECT * FROM orders WHERE order_id = ?
       `, [orderId]);
-      
+
       if (orders.length > 0) {
         order = orders[0];
-        
+
         // Lấy thông tin chi tiết đơn hàng
         const [orderItems] = await db.query(`
           SELECT oi.*, p.product_name, vp.variant_name, vp.variant_product_price, vp.variant_product_price_sale
@@ -179,16 +181,16 @@ router.get("/orders/invoice/:id", async (req, res) => {
           JOIN product p ON vp.product_id = p.product_id
           WHERE oi.order_id = ?
         `, [orderId]);
-        
+
         items = orderItems;
-        
+
         // Tính toán các giá trị tổng
         const subtotal = items.reduce((sum, item) => sum + (item.product_price * item.quantity), 0);
         const shippingFee = order.shipping_fee || 0;
         const discount = order.order_discount || 0;
         const tax = subtotal * 0.08; // Giả sử thuế VAT 8%
         const total = subtotal + shippingFee + tax - discount;
-        
+
         // Thêm các thông tin tính toán vào order
         order.items = items;
         order.subtotal = subtotal;
@@ -196,14 +198,14 @@ router.get("/orders/invoice/:id", async (req, res) => {
         order.discount = discount;
         order.tax = tax;
         order.total_amount = total;
-        
+
         // Lấy thông tin khách hàng
         if (order.user_id) {
           const [users] = await db.query(`
             SELECT user_name as customer_name, user_gmail as customer_email, user_number as customer_phone, user_address as shipping_address
             FROM user WHERE user_id = ?
           `, [order.user_id]);
-          
+
           if (users.length > 0) {
             // Ưu tiên thông tin mới nếu có
             order.customer_name = order.order_name_new || users[0].customer_name;
@@ -274,7 +276,7 @@ router.get("/orders/invoice/:id", async (req, res) => {
         total_amount: 21360000
       };
     }
-    
+
     res.render("dashboard/orders/order-invoice", {
       title: "Order Invoice",
       layout: false, // Không sử dụng layout để in hóa đơn dễ dàng
@@ -289,8 +291,14 @@ router.get("/orders/invoice/:id", async (req, res) => {
 
 // Users management
 router.get("/users", (req, res) => {
-  res.render("dashboard/users", {
+  res.render("dashboard/users/users", {
     title: "Users Management",
+    layout: "layouts/dashboard",
+  });
+});
+router.get("/users/edit", (req, res) => {
+  res.render("dashboard/users/edit", {
+    title: "Sona Space - Chỉnh sửa thông tin người dùng",
     layout: "layouts/dashboard",
   });
 });

@@ -105,7 +105,7 @@ app.use("/api/debug", debugRouter);
 app.use("/api/orders-id", ordersIdRouter);
 app.use("/api/wishlists-id", wishlistsIdRouter);
 // API routes - protected
-app.use("/api/users", authMiddleware.verifyToken, usersRouter);
+app.use("/api/users", usersRouter);
 app.use("/api/wishlists", authMiddleware.verifyToken, wishlistsRouter);
 app.use("/api/orders", authMiddleware.verifyToken, ordersRouter);
 app.use("/api/order-status", authMiddleware.verifyToken, orderStatusRouter);
@@ -129,7 +129,7 @@ app.use(function (err, req, res, next) {
     return res.status(err.status || 500).json({
       error: {
         message: err.message,
-        status: err.status || 500,  
+        status: err.status || 500,
       },
     });
   }

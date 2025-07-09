@@ -1,0 +1,25 @@
+input.readonly-field {
+    background-color: #f0f0f0 !important;
+    color: #666 !important;
+    cursor: not-allowed;
+    font-style: italic;
+}
+
+.remove-avatar-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: #333333;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.avatar-preview {
+    position: relative;
+    display: inline-block;
+}

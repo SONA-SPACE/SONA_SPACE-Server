@@ -1,0 +1,185 @@
+<!-- Trang Quản lý Người dùng -->
+
+<!-- Tiêu đề và Thanh công cụ -->
+<div class="dashboard-header-row">
+    <h2 class="dashboard-title">Quản lý người dùng</h2>
+    <div class="action-buttons">
+        <button class="add-product-btn" onclick="window.location.href='/dashboard/products/add'">
+            <i class="fas fa-plus"></i> Thêm người dùng
+        </button>
+    </div>
+</div>
+
+<!-- Bộ lọc và Tìm kiếm -->
+<div class="filter-row">
+    <div class="search-container">
+        <i class="fas fa-search search-icon"></i>
+        <input type="text" class="search-input" placeholder="Search" />
+    </div>
+    <div class="date-range">
+        <i class="far fa-calendar-alt"></i>
+        <span>1/05/2025 - 31/5/2025</span>
+    </div>
+    <div class="results-info">Hiển thị 1-6 trong tổng số 500</div>
+</div>
+
+<!-- Bảng và Checkbox -->
+<!-- <div class="product-controls">
+    <label class="select-all">
+        <input type="checkbox" id="selectAll" />
+        <span>Người dùng</span>
+    </label>
+
+    <div class="product-filters">
+        <div class="filter-dropdown">
+            <button class="filter-btn">
+                Email/ Số điện thoại <i class="fas fa-chevron-down"></i>
+            </button>
+        </div>
+        <div class="filter-dropdown">
+            <button class="filter-btn">
+                Giá <i class="fas fa-chevron-down"></i>
+            </button>
+        </div>
+        <div class="filter-dropdown">
+            <button class="filter-btn">
+                Số lượng <i class="fas fa-chevron-down"></i>
+            </button>
+        </div>
+        <div class="filter-dropdown">
+            <button class="filter-btn">
+                Đã bán <i class="fas fa-chevron-down"></i>
+            </button>
+        </div>
+        <div class="filter-dropdown">
+            <button class="filter-btn">
+                Đánh giá <i class="fas fa-chevron-down"></i>
+            </button>
+        </div>
+        <div class="filter-dropdown">
+            <button class="filter-btn">
+                Lượt xem <i class="fas fa-chevron-down"></i>
+            </button>
+        </div>
+        <div class="filter-dropdown">
+            <button class="filter-btn">
+                Trạng thái <i class="fas fa-chevron-down"></i>
+            </button>
+        </div>
+        <div class="filter-dropdown">
+            <button class="filter-btn">
+                Ngày tạo <i class="fas fa-chevron-down"></i>
+            </button>
+        </div>
+        <div class="filter-dropdown">
+            <button class="filter-btn">
+                Ngày cập nhật <i class="fas fa-chevron-down"></i>
+            </button>
+        </div>
+    </div>
+</div> -->
+
+<!-- Bảng Người dùng -->
+<div class="product-table-container">
+    <table class="product-table" id="productsTable">
+        <thead>
+            <tr>
+                <th class="checkbox-cell">
+                    <input type="checkbox" />
+                </th>
+                <th data-sortable="true">Người dùng</th>
+                <th data-sortable="true">Email/ Số điện thoại</th>
+                <th data-sortable="true">Quyền </th>
+                <th data-sortable="true">Sản phẩm đã mua</th>
+                <th data-sortable="true">Phân loại</th>
+                <th data-sortable="true">Ngày sinh</th>
+                <!-- <th data-sortable="true">Lượt xem</th> -->
+                <th data-sortable="true">Trạng thái</th>
+                <th data-sortable="true">Thứ tự</th>
+                <th data-sortable="true">Ngày tạo</th>
+                <th data-sortable="true">Ngày cập nhật</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody id="usersTableBody">
+            <!-- Dữ liệu sẽ được render bằng JavaScript -->
+        </tbody>
+    </table>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        fetch('/api/users/admin')
+            .then(res => res.json())
+            .then(data => {
+                const users = data.users || [];
+                const tbody = document.getElementById('usersTableBody');
+                tbody.innerHTML = '';
+                users.forEach((user, idx) => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+        <td class="checkbox-cell"><input type="checkbox" /></td>
+        <td>
+            <div class="product-info">
+                <div class="avatar-image">
+                    <img src="${user.user_image || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}" alt="${user.user_name || ''}" />
+                </div>
+                <div class="product-name">
+                    <a href="#">${user.user_name || ''}</a>
+                </div>
+            </div>
+        </td>
+        <td>
+            <div class="product-price">
+                <div class="sale-price">${user.user_number || ''}</div>
+                <div class="sale-price">${user.user_gmail || ''}</div>
+            </div>
+        </td>
+        <td>
+            <div class="product-price">
+                <div class="sale-price">${user.user_role || ''}</div>
+            </div>
+        </td>
+        <td>${user.purchasedProducts || 0}</td>
+        <td>${user.user_category || ''}</td>
+        <td>${user.user_birth || ''}</td>
+        <td>
+            <span class="status-indicator visible">
+                <i class="fas fa-circle"></i> Hiển thị
+            </span>
+        </td>
+        <td>${idx + 1}</td>
+        <td>${user.created_at ? new Date(user.created_at).toLocaleDateString() : ''}</td>
+        <td>${user.updated_at ? new Date(user.updated_at).toLocaleDateString() : ''}</td>
+        <td>
+            <div class="action-cell">
+                <button class="action-button edit" data-id="${user.user_id}" title="Chỉnh sửa">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="action-button visibility" data-id="${user.user_id}" data-status="visible"
+                    title="Ẩn Người dùng">
+                    <i class="fas fa-eye-slash"></i>
+                </button>
+                <button class="action-button delete" data-id="${user.user_id}" data-name="${user.user_name || ''}"
+                    title="Xóa Người dùng">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </td>
+    `;
+                    tbody.appendChild(tr);
+                });
+
+
+                tbody.querySelectorAll('.action-button.edit').forEach(btn => {
+                    btn.addEventListener('click', function () {
+                        const userId = this.getAttribute('data-id');
+                        window.location.href = '/dashboard/users/edit?id=' + userId;
+                    });
+                });
+            })
+            .catch(err => {
+                document.getElementById('usersTableBody').innerHTML = '<tr><td colspan="12">Không thể tải dữ liệu người dùng.</td></tr>';
+            });
+    });
+</script>

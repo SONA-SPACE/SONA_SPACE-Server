@@ -277,6 +277,13 @@
                 border-radius: 20px;
                 font-size: 12px;
                 font-weight: 500;
+                cursor: pointer;
+                transition: all 0.3s ease;
+
+                &:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+                }
 
                 &.paid {
                     background-color: #e6f7ee;
@@ -304,6 +311,11 @@
                 }
 
                 &.cancelled {
+                    background-color: #ffe6e6;
+                    color: #ff3b30;
+                }
+
+                &.failed {
                     background-color: #ffe6e6;
                     color: #ff3b30;
                 }
@@ -419,4 +431,135 @@
 .badge-danger {
     background-color: #dc3545;
     color: #fff;
+}
+
+/* Styles cho select trạng thái đơn hàng */
+.order-status-select {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    border: none;
+    background-color: #f5f5f5;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: none;
+    width: auto;
+    min-width: 120px;
+    text-align: left;
+    position: relative;
+    display: flex;
+    align-items: center;
+    
+    &:hover, &:focus {
+        outline: none;
+        opacity: 0.9;
+    }
+    
+    /* Màu sắc dựa trên giá trị được chọn */
+    &[data-current-status="PENDING"] {
+        color: #4a6cf7;
+        background-color: rgba(74, 108, 247, 0.1);
+        
+        &:before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #4a6cf7;
+            margin-right: 8px;
+        }
+    }
+    
+    &[data-current-status="CONFIRMED"] {
+        color: #0abb75;
+        background-color: rgba(10, 187, 117, 0.1);
+        
+        &:before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #0abb75;
+            margin-right: 8px;
+        }
+    }
+    
+    &[data-current-status="SHIPPING"] {
+        color: #4a6cf7;
+        background-color: rgba(74, 108, 247, 0.1);
+        
+        &:before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #4a6cf7;
+            margin-right: 8px;
+        }
+    }
+    
+    &[data-current-status="SUCCESS"] {
+        color: #0abb75;
+        background-color: rgba(10, 187, 117, 0.1);
+        
+        &:before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #0abb75;
+            margin-right: 8px;
+        }
+    }
+    
+    &[data-current-status="FAILED"] {
+        color: #ff3b30;
+        background-color: rgba(255, 59, 48, 0.1);
+        
+        &:before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #ff3b30;
+            margin-right: 8px;
+        }
+    }
+    
+    &[data-current-status="CANCELLED"] {
+        color: #ff3b30;
+        background-color: rgba(255, 59, 48, 0.1);
+        
+        &:before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #ff3b30;
+            margin-right: 8px;
+        }
+    }
+}
+
+/* Keyframes cho hiệu ứng pulse */
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(74, 108, 247, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 6px rgba(74, 108, 247, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(74, 108, 247, 0);
+    }
 }

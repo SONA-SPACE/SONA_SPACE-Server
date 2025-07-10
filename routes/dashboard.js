@@ -151,13 +151,13 @@ router.get("/voucher", (req, res) => {
     layout: "layouts/dashboard",
   });
 });
-router.get("/addvoucher", (req, res) => {
+router.get("/voucher/addvoucher", (req, res) => {
   res.render("dashboard/voucher/addvoucher", {
     title: "Orders Management",
     layout: "layouts/dashboard",
   });
 });
-router.get("/editvoucher/:id", (req, res) => {
+router.get("/voucher/editvoucher/:id", (req, res) => {
   res.render("dashboard/voucher/editvoucher", {
     title: "Orders Management",
     layout: "layouts/dashboard",
@@ -332,14 +332,14 @@ router.get("/news", (req, res) => {
   });
 });
 
-router.get("/addnews", (req, res) => {
+router.get("/news/addnews", (req, res) => {
   res.render("dashboard/news/addnews", {
     title: "Sona Space - Quản lý tin tức",
     layout: "layouts/dashboard",
   });
 });
 
-router.get("/editnews/:slug", (req, res) => {
+router.get("/news/editnews/:slug", (req, res) => {
   res.render("dashboard/news/editnews", {
     title: "Sona Space - Chỉnh sửa tin tức",
     layout: "layouts/dashboard",
@@ -353,14 +353,14 @@ router.get("/Categorynews", (req, res) => {
     layout: "layouts/dashboard",
   });
 });
-router.get("/addcategorynews", (req, res) => {
+router.get("/Categorynews/addcategorynews", (req, res) => {
   res.render("dashboard/Categorynews/addcategorynews", {
     title: "Sona Space - Quản lý tin tức",
     layout: "layouts/dashboard",
   });
 });
 
-router.get("/editcategorynews/:slug", (req, res) => {
+router.get("/Categorynews/editcategorynews/:slug", (req, res) => {
   res.render("dashboard/Categorynews/editcategorynews", {
     title: "Sona Space - Chỉnh sửa tin tức",
     layout: "layouts/dashboard",
@@ -393,7 +393,7 @@ router.get("/banners", (req, res) => {
 
 // Add banner
 router.get("/banners/add", (req, res) => {
-  res.render("dashboard/banner/add-banner", {
+  res.render("dashboard/banner/add", {
     title: "Sona Space - Thêm Banner mới",
     layout: "layouts/dashboard",
   });
@@ -401,7 +401,7 @@ router.get("/banners/add", (req, res) => {
 
 // Edit banner
 router.get("/banners/edit/:id", (req, res) => {
-  res.render("dashboard/banner/edit-banner", {
+  res.render("dashboard/banner/edit", {
     title: "Sona Space - Chỉnh sửa Banner",
     layout: "layouts/dashboard",
     bannerId: req.params.id,

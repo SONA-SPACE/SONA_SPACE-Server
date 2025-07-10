@@ -1,4 +1,3 @@
-
 <div class="dashboard-header-row">
     <h2 class="dashboard-title">Thêm Voucher</h2>
 </div>
@@ -24,15 +23,20 @@
                     <label for="voucherprice">Giá giảm</label>
                     <input type="number" id="voucherprice" class="form-control" placeholder="Nhập giá giảm" />
                 </div>
+
                 <div class="form-group">
                     <label for="vouchertype">Kiểu giảm</label>
                     <div class="select-wrapper">
                         <select id="vouchertype" class="form-control">
-                            <option value="1">Phần trăm</option>
-                            <option value="0">Cố định</option>
+                            <option value="1">Phần trăm (%)</option>
+                            <option value="0">Cố định (VND)</option>
                         </select>
                         <i class="fas fa-chevron-down"></i>
                     </div>
+                </div>
+                <div class="form-group">
+                    <label for="voucherused">Lượt sử dụng</label>
+                    <input type="number" id="voucherused" class="form-control" placeholder="Nhập số lượt sử dụng" min="1" value="1" />
                 </div>
             </div>
 
@@ -102,6 +106,7 @@
         const status = parseInt(document.getElementById("voucherStatus").value);
         const start_time = document.getElementById("voucherStart").value;
         const exp_time = document.getElementById("voucherEnd").value;
+        const used = parseInt(document.getElementById("voucherused").value);
 
         const saveBtn = document.querySelector(".btn-save");
         saveBtn.disabled = true;
@@ -124,6 +129,7 @@
             exp_time,
             is_flash_sale,
             status,
+            used,
         };
 
         try {

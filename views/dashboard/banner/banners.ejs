@@ -21,26 +21,45 @@
   <div class="results-info">Đang tải dữ liệu...</div>
 </div>
 
-<!-- Bảng Banner -->
-<div class="category-table-container">
-  <table class="category-table" id="bannersTable">
-    <thead>
-      <tr>
-        <th style="width: 50px">ID</th>
-        <th style="width: 100px">Hình ảnh</th>
-        <th>Tiêu đề</th>
-        <th>Phụ đề</th>
-        <th>Liên kết</th>
-        <th style="width: 80px">Vị trí</th>
-        <th style="width: 100px">Trạng thái</th>
-        <th style="width: 150px">Thao tác</th>
-      </tr>
-    </thead>
-    <tbody>
-      <!-- Dữ liệu sẽ được JS đổ vào -->
-    </tbody>
-  </table>
+<!-- Accordion cho các nhóm banner -->
+<div class="accordion" id="bannerAccordion">
+  <!-- Các nhóm banner sẽ được JS đổ vào đây -->
 </div>
+
+<!-- Template cho mỗi nhóm banner -->
+<template id="bannerGroupTemplate">
+  <div class="accordion-item">
+    <h2 class="accordion-header">
+      <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="">
+        <span class="page-name"></span>
+        <span class="badge bg-primary ms-2"></span>
+      </button>
+    </h2>
+    <div class="accordion-collapse collapse show">  
+      <div class="accordion-body p-0">
+        <div class="banner-group-content">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr>
+                <th style="width: 50px">STT</th>
+                <th style="width: 100px">Hình ảnh</th>
+                <th>Tiêu đề</th>
+                <th>Phụ đề</th>
+                <th>Liên kết</th>
+                <th style="width: 80px">Vị trí</th>
+                <th style="width: 100px">Trạng thái</th>
+                <th style="width: 150px">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody class="banner-table-body">
+              <!-- Dữ liệu sẽ được JS đổ vào -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
 
 <!-- Modal xác nhận xóa -->
 <div class="modal fade" id="delete-banner-modal" tabindex="-1" role="dialog" aria-labelledby="delete-banner-modal-label"
@@ -69,12 +88,34 @@
     // Khởi tạo biến lưu ID banner cần xóa
     let bannerIdToDelete = null;
 
+    // Định nghĩa các trang có banner
+    const pageTypes = [
+      { id: 'home', name: 'Trang chủ' },
+      { id: 'danh-muc', name: 'Danh mục' },
+      { id: 'san-pham', name: 'Sản phẩm' },
+      { id: 'gio-hang', name: 'Giỏ hàng' },
+      { id: 'thanh-toan', name: 'Thanh toán' },
+      { id: 'dat-hang-thanh-cong', name: 'Đặt hàng thành công' },
+      { id: 'khong-gian', name: 'Không gian' },
+      { id: 'dich-vu-thiet-ke', name: 'Dịch vụ thiết kế' },
+      { id: 'ho-so-kien-truc', name: 'Hồ sơ kiến trúc' },
+      { id: 'lien-he', name: 'Liên hệ' },
+      { id: 'dang-ky', name: 'Đăng ký' },
+      { id: 'dang-nhap', name: 'Đăng nhập' },
+      { id: 'quen-mat-khau', name: 'Quên mật khẩu' },
+      { id: 'tai-khoan', name: 'Tài khoản' },
+      { id: 'chi-tiet-don-hang', name: 'Chi tiết đơn hàng' },
+      { id: 'dieu-khoan-su-dung', name: 'Điều khoản sử dụng' },
+      { id: 'chinh-sach-bao-mat', name: 'Chính sách bảo mật' },
+      { id: 'tin-tuc', name: 'Tin tức' }
+    ];
+
     // Hàm để lấy danh sách banner từ API
     function getBanners() {
       fetch("/api/banners")
         .then((response) => response.json())
         .then((data) => {
-          renderBanners(data);
+          renderBannersByPage(data);
         })
         .catch((error) => {
           console.error("Lỗi khi tải banner:", error);
@@ -83,66 +124,147 @@
         });
     }
 
-    // Hàm để hiển thị danh sách banner
-    function renderBanners(banners) {
-      const tableBody = document.querySelector("#bannersTable tbody");
-      tableBody.innerHTML = "";
-
-      if (banners.length === 0) {
-        tableBody.innerHTML = `
-          <tr>
-            <td colspan="8" class="text-center">
-              Chưa có banner nào. <a href="/dashboard/banners/add">Thêm banner mới</a>
-            </td>
-          </tr>
-        `;
-        document.querySelector(".results-info").textContent = "Hiển thị 0 kết quả";
-        return;
-      }
-
-      banners.forEach((banner) => {
-        const row = document.createElement("tr");
-
-        // Gán mặc định nếu không có status
-        const status = banner.status === 'active' ? "visible" : "hidden";
-
-        row.innerHTML = `
-          <td>${banner.id}</td>
-          <td>
-            <div class="category-image">
-              <img src="${banner.image_url || "/images/no-image.png"}" alt="${banner.title}" style="max-height: 80px;">
-            </div>
-          </td>
-          <td>${banner.title}</td>
-          <td>${banner.subtitle || "-"}</td>
-          <td>${banner.link_url || "-"}</td>
-          <td>${banner.position || 0}</td>
-          <td>
-            <span class="status-indicator ${status === "visible" ? "visible" : "hidden"}">
-              <i class="fas ${status === "visible" ? "fa-eye" : "fa-eye-slash"}"></i>
-              ${status === "visible" ? "Hiển thị" : "Ẩn"}
-            </span>
-          </td>
-          <td>
-            <div class="action-cell">
-              <button class="action-button edit" onclick="window.location.href='/dashboard/banners/edit/${banner.id}'" title="Chỉnh sửa">
-                <i class="fas fa-edit"></i>
-              </button>
-              <button class="action-button visibility" data-id="${banner.id}" data-status="${status}" title="${status === "visible" ? "Ẩn banner" : "Hiển thị banner"}">
-                <i class="fas ${status === "visible" ? "fa-eye-slash" : "fa-eye"}"></i>
-              </button>
-              <button class="action-button delete" data-id="${banner.id}" data-title="${banner.title}" title="Xóa banner">
-                <i class="fas fa-trash"></i>
-              </button>
-            </div>
-          </td>
-        `;
-
-        tableBody.appendChild(row);
+    // Hàm để nhóm banner theo trang
+    function groupBannersByPage(banners) {
+      const groups = {};
+      
+      // Khởi tạo nhóm cho mỗi loại trang
+      pageTypes.forEach(page => {
+        groups[page.id] = {
+          name: page.name,
+          banners: []
+        };
       });
+      
+      // Phân loại banner vào các nhóm
+      banners.forEach(banner => {
+        // Nếu banner không có page_type, mặc định là 'home'
+        const pageType = banner.page_type || 'home';
+        
+        if (groups[pageType]) {
+          groups[pageType].banners.push(banner);
+        } else {
+          // Nếu không thuộc nhóm nào đã định nghĩa, thêm vào home
+          console.log(`Banner with unknown page_type: ${pageType}, adding to home`, banner);
+          groups['home'].banners.push(banner);
+        }
+      });
+      
+      // Log để debug
+      console.log("Banner groups:", Object.keys(groups).map(key => ({
+        page: key,
+        count: groups[key].banners.length
+      })));
+      
+      return groups;
+    }
 
+    // Hàm để hiển thị banner theo nhóm trang
+    function renderBannersByPage(banners) {
+      const accordionContainer = document.getElementById('bannerAccordion');
+      accordionContainer.innerHTML = '';
+      
+      const bannerGroups = groupBannersByPage(banners);
+      const template = document.getElementById('bannerGroupTemplate');
+      
+      // Tạo accordion cho mỗi nhóm trang
+      let totalVisibleBanners = 0;
+      
+      // Hiển thị tất cả các trang, ngay cả khi chưa có banner
+      pageTypes.forEach((pageType, groupIndex) => {
+        const group = bannerGroups[pageType.id] || { name: pageType.name, banners: [] };
+        const bannersList = group.banners;
+        
+        totalVisibleBanners += bannersList.length;
+        
+        // Tạo một bản sao của template
+        const groupElement = template.content.cloneNode(true);
+        
+        // Cập nhật nội dung
+        const accordionButton = groupElement.querySelector('.accordion-button');
+        const accordionCollapse = groupElement.querySelector('.accordion-collapse');
+        const pageNameSpan = groupElement.querySelector('.page-name');
+        const badgeSpan = groupElement.querySelector('.badge');
+        const tableBody = groupElement.querySelector('.banner-table-body');
+        
+        // Set ID và target
+        const accordionId = `accordion-${pageType.id}`;
+        accordionButton.setAttribute('data-bs-target', `#${accordionId}`);
+        accordionCollapse.id = accordionId;
+        
+        // Chỉ mở accordion đầu tiên
+        if (groupIndex > 0) {
+          accordionButton.classList.add('collapsed');
+          accordionCollapse.classList.remove('show');
+        }
+        
+        // Cập nhật tên và số lượng banner
+        pageNameSpan.textContent = group.name;
+        badgeSpan.textContent = bannersList.length;
+        
+        // Thêm các banner vào bảng
+        if (bannersList.length === 0) {
+          tableBody.innerHTML = `
+            <tr>
+              <td colspan="8" class="text-center py-4">
+                <div class="text-muted">
+                  <i class="fas fa-image fa-2x mb-2"></i>
+                  <p>Chưa có banner nào cho trang này</p>
+                  <a href="/dashboard/banners/add" class="btn btn-sm btn-primary">
+                    <i class="fas fa-plus"></i> Thêm banner mới
+                  </a>
+                </div>
+              </td>
+            </tr>
+          `;
+        } else {
+          bannersList.forEach((banner, index) => {
+            const row = document.createElement("tr");
+            row.className = "banner-row";
+            row.setAttribute('data-banner-id', banner.id);
+
+            const status = banner.status === 'active' ? "visible" : "hidden";
+            
+            row.innerHTML = `
+              <td>${index + 1}</td>
+              <td>
+                <img src="${banner.image_url || "/images/no-image.png"}" alt="${banner.title}" style="width: 80px; height: 60px; object-fit: cover; border-radius: 4px;">
+              </td>
+              <td>${banner.title}</td>
+              <td>${banner.subtitle || "-"}</td>
+              <td>${banner.link_url || "-"}</td>
+              <td>${banner.position || 0}</td>
+              <td>
+                <span class="badge ${status === 'visible' ? 'bg-success' : 'bg-secondary'}">
+                  <i class="fas ${status === 'visible' ? 'fa-eye' : 'fa-eye-slash'}"></i>
+                  ${status === 'visible' ? 'Hiển thị' : 'Ẩn'}
+                </span>
+              </td>
+              <td>
+                <div class="d-flex gap-2">
+                  <button class="btn btn-sm btn-outline-primary edit" onclick="window.location.href='/dashboard/banners/edit/${banner.id}'" title="Chỉnh sửa">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="btn btn-sm btn-outline-${status === 'visible' ? 'warning' : 'success'} visibility" data-id="${banner.id}" data-status="${status}" title="${status === 'visible' ? 'Ẩn banner' : 'Hiển thị banner'}">
+                    <i class="fas fa-${status === 'visible' ? 'eye-slash' : 'eye'}"></i>
+                  </button>
+                  <button class="btn btn-sm btn-outline-danger delete" data-id="${banner.id}" data-title="${banner.title}" title="Xóa banner">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </td>
+            `;
+
+            tableBody.appendChild(row);
+          });
+        }
+        
+        // Thêm nhóm vào accordion
+        accordionContainer.appendChild(groupElement);
+      });
+      
       // Thêm event listeners cho các nút xóa
-      document.querySelectorAll(".action-button.delete").forEach((btn) => {
+      document.querySelectorAll(".delete").forEach((btn) => {
         btn.addEventListener("click", () => {
           bannerIdToDelete = btn.getAttribute("data-id");
           const bannerTitle = btn.getAttribute("data-title");
@@ -152,7 +274,7 @@
       });
 
       // Thêm event listeners cho các nút thay đổi trạng thái hiển thị
-      document.querySelectorAll(".action-button.visibility").forEach((btn) => {
+      document.querySelectorAll(".visibility").forEach((btn) => {
         btn.addEventListener("click", () => {
           const bannerId = btn.getAttribute("data-id");
           const currentStatus = btn.getAttribute("data-status");
@@ -162,8 +284,67 @@
         });
       });
 
-      document.querySelector(".results-info").textContent = `Hiển thị ${banners.length} kết quả`;
+      document.querySelector(".results-info").textContent = `Hiển thị ${totalVisibleBanners} kết quả`;
     }
+
+    // Hàm tìm kiếm banner
+    document.getElementById("searchInput").addEventListener("input", function () {
+      const searchTerm = this.value.toLowerCase();
+      const accordionItems = document.querySelectorAll(".accordion-item");
+      
+      let visibleCount = 0;
+      
+      // Đặt lại tất cả các nhóm
+      accordionItems.forEach(item => {
+        const button = item.querySelector('.accordion-button');
+        const collapse = item.querySelector('.accordion-collapse');
+        const badge = item.querySelector('.badge');
+        const bannerRows = item.querySelectorAll('.banner-row');
+        let groupVisibleCount = 0;
+        
+        // Kiểm tra từng hàng banner trong nhóm
+        bannerRows.forEach(row => {
+          const title = row.cells[2].textContent.toLowerCase(); // Cột tiêu đề
+          const subtitle = row.cells[3].textContent.toLowerCase(); // Cột phụ đề
+          
+          if (title.includes(searchTerm) || subtitle.includes(searchTerm)) {
+            row.style.display = "";
+            visibleCount++;
+            groupVisibleCount++;
+          } else {
+            row.style.display = "none";
+          }
+        });
+        
+        // Cập nhật badge và hiển thị/ẩn nhóm
+        badge.textContent = groupVisibleCount;
+        
+        // Nếu không có banner hoặc không có kết quả tìm kiếm
+        const emptyMessage = item.querySelector('td[colspan="8"]');
+        if (groupVisibleCount === 0 && !emptyMessage) {
+          item.style.display = "none";
+        } else {
+          item.style.display = "";
+          // Mở rộng nhóm nếu có kết quả tìm kiếm
+          if (searchTerm && groupVisibleCount > 0) {
+            button.classList.remove('collapsed');
+            collapse.classList.add('show');
+          } else if (!searchTerm) {
+            // Khi không tìm kiếm, chỉ mở nhóm đầu tiên
+            const isFirstGroup = item === accordionItems[0];
+            if (isFirstGroup) {
+              button.classList.remove('collapsed');
+              collapse.classList.add('show');
+            } else {
+              button.classList.add('collapsed');
+              collapse.classList.remove('show');
+            }
+          }
+        }
+      });
+      
+      document.querySelector(".results-info").textContent = `Hiển thị ${visibleCount} kết quả`;
+    });
 
     // Hàm cập nhật trạng thái banner
     async function updateBannerStatus(bannerId, newStatus) {
@@ -233,28 +414,6 @@
       }
     });
 
-    // Hàm tìm kiếm banner
-    document.getElementById("searchInput").addEventListener("input", function () {
-      const searchTerm = this.value.toLowerCase();
-      const rows = document.querySelectorAll("#bannersTable tbody tr");
-
-      let visibleCount = 0;
-
-      rows.forEach(row => {
-        const title = row.cells[2].textContent.toLowerCase();
-        const subtitle = row.cells[3].textContent.toLowerCase();
-
-        if (title.includes(searchTerm) || subtitle.includes(searchTerm)) {
-          row.style.display = "";
-          visibleCount++;
-        } else {
-          row.style.display = "none";
-        }
-      });
-
-      document.querySelector(".results-info").textContent = `Hiển thị ${visibleCount} kết quả`;
-    });
-
     // Hàm hiển thị thông báo
     function showToast(message, type = "success") {
       let toastContainer = document.getElementById("toastContainer");
@@ -290,3 +449,159 @@
     getBanners();
   });
 </script>
+
+<style>
+  /* Styles cho accordion banner */
+  .accordion-item {
+    margin-bottom: 1rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  
+  .accordion-header {
+    margin: 0;
+  }
+  
+  .accordion-button {
+    padding: 1rem 1.25rem;
+    font-weight: 600;
+    font-size: 16px;
+    background-color: #f8f9fa;
+    color: #333;
+  }
+  
+  .accordion-button:not(.collapsed) {
+    background-color: #edf2ff;
+    color: #4a6cf7;
+    box-shadow: none;
+  }
+  
+  .accordion-button:focus {
+    box-shadow: none;
+    border-color: #e0e0e0;
+  }
+  
+  .accordion-button::after {
+    width: 1.25rem;
+    height: 1.25rem;
+    background-size: 1.25rem;
+  }
+  
+  .badge {
+    font-size: 12px;
+    padding: 0.25em 0.6em;
+  }
+
+  /* Styles cho bảng banner */
+  .banner-group-content {
+    overflow-x: auto;
+  }
+
+  .banner-group-content table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .banner-group-content thead th {
+    background-color: #f8f9fa;
+    font-weight: 500;
+    color: #333;
+    font-size: 14px;
+    padding: 12px 15px;
+    border-bottom: 2px solid #e0e0e0;
+    text-align: left;
+  }
+
+  .banner-group-content tbody td {
+    padding: 12px 15px;
+    vertical-align: middle;
+    border-bottom: 1px solid #e0e0e0;
+  }
+
+  .banner-group-content tbody tr:hover {
+    background-color: #f8f9fa;
+  }
+
+  .banner-group-content img {
+    border-radius: 4px;
+    object-fit: cover;
+  }
+
+  /* API Documentation Styles */
+  .api-docs {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background-color: #f8f9fa;
+  }
+  
+  .api-docs h3 {
+    margin-bottom: 1rem;
+    color: #333;
+  }
+  
+  .api-endpoint {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  
+  .api-endpoint:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+  
+  .endpoint-title {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+  
+  .method {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-right: 0.5rem;
+  }
+  
+  .get {
+    background-color: #e3f2fd;
+    color: #0d6efd;
+  }
+  
+  .post {
+    background-color: #e8f5e9;
+    color: #198754;
+  }
+  
+  .endpoint-url {
+    font-family: monospace;
+    font-weight: 500;
+  }
+  
+  .endpoint-description {
+    margin-bottom: 0.5rem;
+    color: #555;
+  }
+  
+  .code-example {
+    background-color: #272822;
+    color: #f8f8f2;
+    padding: 1rem;
+    border-radius: 4px;
+    font-family: monospace;
+    overflow-x: auto;
+    margin-top: 0.5rem;
+  }
+
+  /* Responsive */
+  @media (max-width: 992px) {
+    .banner-group-content {
+      overflow-x: auto;
+    }
+  }
+</style>

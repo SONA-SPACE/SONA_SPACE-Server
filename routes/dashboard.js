@@ -393,7 +393,7 @@ router.get("/banners", (req, res) => {
 
 // Add banner
 router.get("/banners/add", (req, res) => {
-  res.render("dashboard/banner/add-banner", {
+  res.render("dashboard/banner/add", {
     title: "Sona Space - Thêm Banner mới",
     layout: "layouts/dashboard",
   });
@@ -401,7 +401,7 @@ router.get("/banners/add", (req, res) => {
 
 // Edit banner
 router.get("/banners/edit/:id", (req, res) => {
-  res.render("dashboard/banner/edit-banner", {
+  res.render("dashboard/banner/edit", {
     title: "Sona Space - Chỉnh sửa Banner",
     layout: "layouts/dashboard",
     bannerId: req.params.id,

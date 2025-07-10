@@ -362,6 +362,100 @@ router.get("/admin", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch admin product list" });
   }
 });
+
+router.get('/related/by-room/:productId', optionalAuth, async (req, res) => {
+  const { productId } = req.params;
+  const userId = req.user?.id || 0;
+
+  try {
+    const [relatedProducts] = await db.query(
+      `
+      SELECT 
+        p.product_id AS id,
+        p.product_name AS name,
+        p.product_slug AS slug,
+        p.product_image AS image,
+        p.category_id,
+        cat.category_name,
+
+        (
+          SELECT vp.variant_product_price
+          FROM variant_product vp
+          WHERE vp.product_id = p.product_id
+          ORDER BY vp.variant_id ASC
+          LIMIT 1
+        ) AS price,
+
+        (
+          SELECT vp.variant_product_price_sale
+          FROM variant_product vp
+          WHERE vp.product_id = p.product_id
+          AND vp.variant_product_price_sale > 0
+          ORDER BY vp.variant_id ASC
+          LIMIT 1
+        ) AS price_sale,
+
+        (
+          SELECT vp.variant_id
+          FROM variant_product vp
+          WHERE vp.product_id = p.product_id
+          ORDER BY vp.variant_id ASC
+          LIMIT 1
+        ) AS variant_id,
+
+        IFNULL(JSON_ARRAYAGG(DISTINCT col.color_hex), JSON_ARRAY()) AS color_hex,
+
+        (
+          SELECT COUNT(*) FROM comment WHERE product_id = p.product_id
+        ) AS comment_count,
+
+        (
+          SELECT EXISTS (
+            SELECT 1
+            FROM wishlist w
+            JOIN variant_product vp ON w.variant_id = vp.variant_id
+            WHERE vp.product_id = p.product_id
+              AND w.user_id = ?
+              AND w.status = 1
+          )
+        ) AS isWishlist
+
+      FROM room_product rp1
+      JOIN room_product rp2 ON rp1.room_id = rp2.room_id
+      JOIN product p ON p.product_id = rp2.product_id
+      LEFT JOIN category cat ON p.category_id = cat.category_id
+      LEFT JOIN variant_product vp ON p.product_id = vp.product_id
+      LEFT JOIN color col ON vp.color_id = col.color_id
+      WHERE rp1.product_id = ? AND rp2.product_id != ?
+      GROUP BY p.product_id
+      LIMIT 4
+      `,
+      [userId, productId, productId]
+    );
+
+    const result = relatedProducts.map((item) => ({
+      id: item.id,
+      name: item.name,
+      slug: item.slug,
+      image: item.image,
+      category_id: item.category_id,
+      category_name: item.category_name,
+      variant_id: item.variant_id,
+      price: item.price ?? 0,
+      price_sale: item.price_sale ?? 0,
+      color_hex: JSON.parse(item.color_hex || "[]"),
+      comment_count: item.comment_count ?? 0,
+      isWishlist: item.isWishlist === 1,
+    }));
+
+    res.json({ related_products: result });
+  } catch (err) {
+    console.error("Error fetching related products by room:", err);
+    res.status(500).json({ error: "Lỗi lấy sản phẩm liên quan theo room" });
+  }
+});
+
+
 /**
  * @route   GET /api/products/newest
  * @desc    Lấy danh sách sản phẩm mới nhất

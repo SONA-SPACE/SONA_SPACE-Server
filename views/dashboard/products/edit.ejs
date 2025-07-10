@@ -196,14 +196,11 @@
   </div>
 </div>
 
-<!-- ===== Nút hành động ===== -->
 <div class="form-actions">
   <button type="button" class="btn btn-cancel">Hủy</button>
   <button type="button" class="btn btn-save">Lưu</button>
 </div>
 
-
-<!-- Hiển thị sản phẩm theo id -->
 <script>
   function showFieldError(input, message) {
     if (!input) return;
@@ -227,14 +224,13 @@
 
   const API_URL = "http://localhost:3501";
   const slug = window.location.pathname.split("/").pop();
-  let globalColors = []; // Thêm biến toàn cục lưu danh sách màu
+  let globalColors = [];
 
-  // ==== DOM elements ====
   const productNameInput = document.getElementById("productName");
   const productSlugInput = document.getElementById("productSlug");
   const productStatusSelect = document.getElementById("productStatus");
   const productCategorySelect = document.getElementById("productCategory");
-  const productRoomsSelect = document.getElementById("productRooms"); // Nếu có
+  const productRoomsSelect = document.getElementById("productRooms");
   const productDescriptionTextarea = document.getElementById("productDescription");
   const productDepthInput = document.getElementById("productDepth");
   const productWidthInput = document.getElementById("productWidth");
@@ -332,7 +328,7 @@
         clone.style.display = "block";
         clone.removeAttribute("id");
         clone.setAttribute("data-id", variant.variant_id);
-        clone.classList.add("variant-item"); // ✅ THÊM DÒNG NÀY
+        clone.classList.add("variant-item");
 
         // Tiêu đề
         clone.querySelector(".variant-title").textContent = variant.color_name || `Biến thể ${idx + 1}`;
@@ -407,8 +403,11 @@
       ).join("");
 
       // ===== Rooms select =====
+      // productRoomsSelect.innerHTML = rooms.map(r =>
+      //   `<option value="${r.room_id}" ${r.room_id == selectedRoomIds ? "selected" : ""}>${r.room_name}</option>`
+      // ).join("");
       productRoomsSelect.innerHTML = rooms.map(r =>
-        `<option value="${r.room_id}" ${r.room_id == selectedRoomIds ? "selected" : ""}>${r.room_name}</option>`
+        `<option value="${r.room_id}" ${selectedRoomIds?.includes(r.room_id) ? "selected" : ""}>${r.room_name}</option>`
       ).join("");
 
       // Không cần render dropdown màu ở đây nữa, sẽ render ở loadProductDetail cho từng biến thể
@@ -1031,7 +1030,7 @@
     const formData = new FormData();
     formData.append("image", file);
     formData.append("folder", "SonaSpace/Product");
-    formData.append("subfolder", "variant"); // dùng thư mục riêng cho mỗi variant
+    formData.append("subfolder", "variant");
 
     try {
       console.log(">> Gửi file:", file);

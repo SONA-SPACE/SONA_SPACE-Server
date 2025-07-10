@@ -1,326 +1,515 @@
 <!-- Tiêu đề -->
 <div class="dashboard-header-row">
-    <h2 class="dashboard-title">Sửa tin tức</h2>
+  <h2 class="dashboard-title">Sửa tin tức</h2>
 </div>
 
 <!-- Layout -->
 <div class="add-room-container">
-    <!-- Form -->
-    <div class="room-form-column">
-        <div class="form-section">
-            <h3 class="section-title">Thông tin tin tức</h3>
+  <!-- Form -->
+  <div class="room-form-column">
+    <div class="form-section">
+      <h3 class="section-title">Thông tin</h3>
 
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="roomName">Tên tin tức</label>
-                    <input type="text" id="newsTitle" class="form-control" placeholder="Nhập tên tin tức" />
-
-                </div>
-                <div class="form-group">
-                    <label for="roomSlug">Slug</label>
-                    <input type="text" id="newsSlug" class="form-control" placeholder="nhap-slug-cho-tin-tuc" />
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="newsCategory">Danh mục</label>
-                    <div class="select-wrapper">
-                        <select id="newsCategory" class="form-control">
-                        </select>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="roomStatus">Trạng thái</label>
-                    <div class="select-wrapper">
-                        <select id="newsStatus" class="form-control">
-                            <option value="1">Hiển thị</option>
-                            <option value="0">Ẩn</option>
-                        </select>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group full-width">
-                    <label for="newsContent">Nội dung tin tức</label>
-                    <textarea id="newsContent" class="form-control" placeholder="Mô tả ngắn về tin tức"></textarea>
-                </div>
-            </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="newsTitle">Tên tin tức</label>
+          <input
+            type="text"
+            id="newsTitle"
+            class="form-control"
+            placeholder="Nhập tên tin tức"
+          />
         </div>
-
-        <!-- Nút -->
-        <div class="form-actions">
-            <button type="button" class="btn btn-cancel">Hủy</button>
-            <button type="button" class="btn btn-save">Lưu</button>
+        <div class="form-group">
+          <label for="newsSlug">Slug</label>
+          <input
+            type="text"
+            id="newsSlug"
+            class="form-control"
+            placeholder="nhap-slug-cho-tin-tuc: co the tu tao"
+          />
         </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="newsCategory">Danh mục</label>
+          <div class="select-wrapper">
+            <select id="newsCategory" class="form-control"></select>
+            <i class="fas fa-chevron-down"></i>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="newsStatus">Trạng thái</label>
+          <div class="select-wrapper">
+            <select id="newsStatus" class="form-control">
+              <option value="1">Hiển thị</option>
+              <option value="0">Ẩn</option>
+            </select>
+            <i class="fas fa-chevron-down"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group full-width">
+          <label for="newsContent">Nội dung tin tức</label>
+          <textarea
+            id="newsContent"
+            class="form-control"
+            placeholder="Nội dung tin tức"
+          ></textarea>
+        </div>
+      </div>
     </div>
 
-    <!-- Cột phải: Upload ảnh -->
-    <div class="image-upload-column">
-        <div class="image-upload-container">
-            <div class="main-upload-area">
-                <div class="upload-placeholder2" id="thumb1">
-                    <i class="far fa-image"></i>
-                    <p>Drop your image here, or browse</p>
-                    <p class="upload-hint">jpeg, png are allowed</p>
-                </div>
-            </div>
-
-            <div class="thumbnail-upload-grid1">
-                <div class="thumbnail-upload-item">
-                    <div class="upload-placeholder2" id="thumb2">
-                        <i class="far fa-image"></i>
-                    </div>
-                </div>
-                <div class="thumbnail-upload-item">
-                    <div class="upload-placeholder2" id="thumb3">
-                        <i class="far fa-image"></i>
-                    </div>
-                </div>
-                <div class="thumbnail-upload-item">
-                    <div class="upload-placeholder2" id="thumb4">
-                        <i class="far fa-image"></i>
-                    </div>
-                </div>
-                <div class="thumbnail-upload-item">
-                    <div class="upload-placeholder2" id="thumb5">
-                        <i class="far fa-image"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <!-- Nút -->
+    <div class="form-actions">
+      <button type="button" class="btn btn-cancel">Hủy</button>
+      <button type="button" class="btn btn-save">Lưu</button>
     </div>
+  </div>
+
+  <!-- Cột phải: Upload ảnh -->
+  <div class="image-upload-column">
+    <div class="image-upload-container">
+      <div class="main-upload-area">
+        <div class="upload-placeholder3" id="avatarDropArea">
+          <i class="far fa-image"></i>
+          <p>Drop your image here, or browse</p>
+          <p class="upload-hint">jpeg, png are allowed</p>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- JS xử lý -->
+<script src="/tinymce/tinymce.min.js"></script>
 <script>
-    let avatarFile = null;
-    let thumbnailFiles = [null, null, null, null, null];
-    let newsId = null;
+  let avatarFile = null;
+  let newsId = null;
 
-    document.addEventListener("DOMContentLoaded", async () => {
-        const urlParts = window.location.pathname.split("/");
-        const slug = urlParts[urlParts.length - 1];
-        newsId = slug;
+  async function loadNewsData(slug) {
+    try {
+      const res = await fetch(`http://localhost:3501/api/news/${slug}`);
+      const data = await res.json();
 
-        await loadNewsCategories();
-        await loadNewsData(newsId);
+      if (data) {
+        document.getElementById("newsTitle").value = data.title || "";
+        document.getElementById("newsSlug").value = data.slug || "";
+        document.getElementById("newsContent").value = data.content || "";
+        document.getElementById("newsStatus").value = data.status;
+        document.getElementById("newsCategory").value = data.category_id;
+        bindUpload("#avatarDropArea", (file) => (avatarFile = file));
+        avatarFile = data.thumbnail;
+      }
+    } catch (err) {
+      console.error("Lỗi tải tin tức:", err);
+      showToast("Không thể tải tin tức", "danger");
+    }
+  }
 
-        bindUpload("#thumb1", (file) => (thumbnailFiles[0] = file));
-        bindUpload("#thumb2", (file) => (thumbnailFiles[1] = file));
-        bindUpload("#thumb3", (file) => (thumbnailFiles[2] = file));
-        bindUpload("#thumb4", (file) => (thumbnailFiles[3] = file));
-        bindUpload("#thumb5", (file) => (thumbnailFiles[4] = file));
+  document.addEventListener("DOMContentLoaded", async () => {
+    const urlParts = window.location.pathname.split("/");
+    const slug = urlParts[urlParts.length - 1];
+    newsId = slug;
 
-        document.querySelector(".btn-save").addEventListener("click", handleUpdateNews);
+    await loadNewsCategories();
+    await loadNewsData(newsId);
+
+    tinymce.init({
+      selector: "#newsContent",
+      license_key: "gpl",
+      height: 1000,
+      plugins: "image link lists media",
+      toolbar:
+        "undo redo | formatselect | bold italic underline | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent |link media ",
+      automatic_uploads: true,
+      file_picker_types: "image",
+      extended_valid_elements:
+        "iframe[src|frameborder|style|scrolling|class|width|height|name|align|allowfullscreen|allow|referrerpolicy]",
+      valid_children: "+body[iframe]",
+      setup: function (editor) {
+        editor.on("Paste", function (e) {
+          const youtubeRegex =
+            /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]{11})/;
+          const match = youtubeRegex.exec(e.clipboardData.getData("text"));
+          if (match) {
+            const embedHtml = `<iframe width="560" height="315" src="https://www.youtube.com/embed/${match[1]}" frameborder="0" allowfullscreen></iframe>`;
+            editor.insertContent(embedHtml);
+            e.preventDefault();
+          }
+        });
+      },
+    });
+    bindUpload("#avatarDropArea", (file) => (avatarFile = file));
+
+    document
+      .querySelector(".btn-save")
+      .addEventListener("click", handleUpdateNews);
+  });
+
+  // Upload ảnh khi nhấn vào drop area
+  function bindUpload(selector, setter) {
+    const dropArea = document.querySelector(selector);
+    dropArea.addEventListener("click", () => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "image/*";
+      input.click();
+      input.onchange = () => {
+        const file = input.files[0];
+        if (file) {
+          setter(file);
+          dropArea.innerHTML = `<img src="${URL.createObjectURL(
+            file
+          )}" border-radius:6px;">`;
+        }
+      };
+    });
+  }
+
+  // Upload ảnh lên cloud ( api: /api/upload/news)
+  async function uploadImage(file, folder = "", subfolder = "") {
+    if (!file) return null;
+    const formData = new FormData();
+    formData.append("image", file);
+    formData.append("folder", folder);
+    if (subfolder) formData.append("subfolder", subfolder);
+
+    const res = await fetch("http://localhost:3501/api/upload/news", {
+      method: "POST",
+      body: formData,
+    });
+    const data = await res.json();
+    return data.url || null;
+  }
+
+  // Upload tất cả ảnh trong nội dung tin tức
+  async function uploadAllImagesInContent(content) {
+    // 1. Parse HTML string ra DOM
+    const wrapper = document.createElement("div");
+    wrapper.innerHTML = content;
+
+    // 2. Lấy ra tất cả img chưa upload (base64)
+    const images = wrapper.querySelectorAll("img");
+    for (let img of images) {
+      if (img.src.startsWith("data:image/")) {
+        // Chuyển base64 về file object
+        const file = dataURLtoFile(img.src, "content-image.png");
+        // Upload lên server hoặc cloud
+        const url = await uploadImage(file, "SonaSpace", "News/Content");
+        if (url) {
+          img.src = url;
+        }
+      }
+    }
+    // 3. Trả về HTML đã thay thế link ảnh
+    return wrapper.innerHTML;
+  }
+
+  // Helper chuyển base64 sang File object
+  function dataURLtoFile(dataurl, filename) {
+    var arr = dataurl.split(","),
+      mime = arr[0].match(/:(.*?);/)[1],
+      bstr = atob(arr[1]),
+      n = bstr.length,
+      u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new File([u8arr], filename, { type: mime });
+  }
+
+  // Lưu tin tức
+  async function handleUpdateNews() {
+    const title = document.getElementById("newsTitle").value.trim();
+    const slug = document.getElementById("newsSlug").value.trim();
+    let content = tinymce.get("newsContent").getContent().trim();
+    const status = parseInt(document.getElementById("newsStatus").value);
+    const category_id = parseInt(document.getElementById("newsCategory").value);
+
+    const saveBtn = document.querySelector(".btn-save");
+    saveBtn.disabled = true;
+    saveBtn.innerText = "Đang lưu...";
+
+    if (!title || !category_id || !content || !avatarFile) {
+      showToast("Vui lòng nhập đầy đủ thông tin", "danger");
+      saveBtn.disabled = false;
+      saveBtn.innerText = "Lưu";
+      return;
+    }
+
+    try {
+      content = await uploadAllImagesInContent(content);
+      let imageUrl = null;
+      if (avatarFile) {
+        imageUrl = await uploadImage(avatarFile, "SonaSpace", "News/News");
+        if (!imageUrl) {
+          showToast("Upload ảnh thất bại", "danger");
+          saveBtn.disabled = false;
+          saveBtn.innerText = "Lưu";
+          return;
+        }
+      }
+      console.log(imageUrl);
+      const payload = {
+        title,
+        slug,
+        content,
+        status,
+        category_id,
+        images: imageUrl,
+      };
+
+      const token = localStorage.getItem("token");
+
+      const res = await fetch(`http://localhost:3501/api/news/${newsId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      console.log(data);
+      if (data.error) {
+        showToast(data.error, "danger");
+      } else {
+        showToast("Cập nhật tin tức thành công", "success");
+        setTimeout(() => (window.location.href = "/dashboard/news"), 1000);
+      }
+    } catch (err) {
+      console.error("Error:", err);
+      showToast("Có lỗi khi cập nhật tin tức", "danger");
+    }
+
+    saveBtn.disabled = false;
+    saveBtn.innerText = "Lưu";
+  }
+
+  async function loadNewsCategories() {
+    const select = document.getElementById("newsCategory");
+    try {
+      const res = await fetch("http://localhost:3501/api/news-categories");
+      const categories = await res.json();
+
+      select.innerHTML = `<option value="">Chọn danh mục</option>`;
+      categories.forEach((cat) => {
+        const option = document.createElement("option");
+        option.value = cat.id;
+        option.textContent = cat.name;
+        select.appendChild(option);
+      });
+    } catch (err) {
+      console.error("Lỗi tải danh mục:", err);
+      showToast("Không thể tải danh mục", "danger");
+    }
+  }
+
+  function showToast(message, type = "success") {
+    let toastContainer = document.getElementById("toastContainer");
+    if (!toastContainer) {
+      toastContainer = document.createElement("div");
+      toastContainer.id = "toastContainer";
+      toastContainer.className = "position-fixed top-0 end-0 p-3";
+      toastContainer.style.zIndex = "1050";
+      document.body.appendChild(toastContainer);
+    }
+
+    const toast = document.createElement("div");
+    toast.className = `toast align-items-center text-white bg-${type} border-0`;
+    toast.setAttribute("role", "alert");
+    toast.setAttribute("aria-live", "assertive");
+    toast.setAttribute("aria-atomic", "true");
+
+    toast.innerHTML = `
+            <div class="d-flex">
+              <div class="toast-body">${message}</div>
+              <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>`;
+
+    toastContainer.appendChild(toast);
+    const bsToast = new bootstrap.Toast(toast, { delay: 3000 });
+    bsToast.show();
+
+    toast.addEventListener("hidden.bs.toast", () => toast.remove());
+  }
+</script>
+<!-- <script>
+  let newsId = null;
+
+  document.addEventListener("DOMContentLoaded", async () => {
+    const urlParts = window.location.pathname.split("/");
+    const slug = urlParts[urlParts.length - 1];
+    newsId = slug;
+
+    await loadNewsCategories();
+    await loadNewsData(newsId);
+
+    document
+      .querySelector(".btn-save")
+      .addEventListener("click", handleUpdateNews);
+  });
+
+  async function loadNewsCategories() {
+    const select = document.getElementById("newsCategory");
+    try {
+      const res = await fetch("http://localhost:3501/api/news-categories");
+      const categories = await res.json();
+
+      select.innerHTML = `<option value="">Chọn danh mục</option>`;
+      categories.forEach((cat) => {
+        const option = document.createElement("option");
+        option.value = cat.id;
+        option.textContent = cat.name;
+        select.appendChild(option);
+      });
+    } catch (err) {
+      console.error("Lỗi tải danh mục:", err);
+      showToast("Không thể tải danh mục", "danger");
+    }
+  }
+
+  async function handleUpdateNews() {
+    const title = document.getElementById("newsTitle").value.trim();
+    const slug = document.getElementById("newsSlug").value.trim();
+    const content = document.getElementById("newsContent").value.trim();
+    const status = parseInt(document.getElementById("newsStatus").value);
+    const category_id = parseInt(document.getElementById("newsCategory").value);
+
+    const saveBtn = document.querySelector(".btn-save");
+    saveBtn.disabled = true;
+    saveBtn.innerText = "Đang lưu...";
+
+    if (!title || !content) {
+      showToast("Vui lòng nhập đầy đủ thông tin", "danger");
+      saveBtn.disabled = false;
+      saveBtn.innerText = "Lưu";
+      return;
+    }
+
+    try {
+      let mainImage = null;
+      if (avatarFile instanceof File) {
+        mainImage = await uploadImage(avatarFile, "SonaSpace/News");
+      } else if (typeof avatarFile === "string") {
+        mainImage = avatarFile;
+      }
+
+      const uploadedImages = [];
+      for (const file of thumbnailFiles) {
+        if (file instanceof File) {
+          const url = await uploadImage(file, "SonaSpace/News");
+          if (url) uploadedImages.push(url);
+        } else if (typeof file === "string") {
+          uploadedImages.push(file);
+        }
+      }
+
+      const payload = {
+        title,
+        slug,
+        content,
+        status,
+        category_id,
+        images: uploadedImages,
+      };
+
+      const token = localStorage.getItem("token");
+      const res = await fetch(`http://localhost:3501/api/news/${newsId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (data.error) {
+        showToast(data.error, "danger");
+      } else {
+        showToast("Cập nhật thành công", "success");
+        setTimeout(() => (window.location.href = "/dashboard/news"), 1000);
+      }
+    } catch (err) {
+      console.error("Error:", err);
+      showToast("Có lỗi khi cập nhật tin tức", "danger");
+    }
+
+    saveBtn.disabled = false;
+    saveBtn.innerText = "Lưu";
+  }
+
+  function bindUpload(selector, callback) {
+    const dropArea = document.querySelector(selector);
+    if (!dropArea) return;
+
+    const newDropArea = dropArea.cloneNode(true);
+    dropArea.parentNode.replaceChild(newDropArea, dropArea);
+
+    newDropArea.addEventListener("click", () => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "image/*";
+      input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          callback(file);
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            newDropArea.innerHTML = `<img src="${e.target.result}" />`;
+          };
+          reader.readAsDataURL(file);
+        }
+      };
+      input.click();
     });
 
-    async function loadNewsCategories() {
-        const select = document.getElementById("newsCategory");
-        try {
-            const res = await fetch("http://localhost:3501/api/news-categories");
-            const categories = await res.json();
+    newDropArea.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      newDropArea.classList.add("dragover");
+    });
 
-            select.innerHTML = `<option value="">Chọn danh mục</option>`;
-            categories.forEach((cat) => {
-                const option = document.createElement("option");
-                option.value = cat.id;
-                option.textContent = cat.name;
-                select.appendChild(option);
-            });
-        } catch (err) {
-            console.error("Lỗi tải danh mục:", err);
-            showToast("Không thể tải danh mục", "danger");
-        }
-    }
+    newDropArea.addEventListener("dragleave", () => {
+      newDropArea.classList.remove("dragover");
+    });
 
-    async function loadNewsData(slug) {
-        try {
-            const res = await fetch(`http://localhost:3501/api/news/${slug}`);
-            const data = await res.json();
+    newDropArea.addEventListener("drop", (e) => {
+      e.preventDefault();
+      newDropArea.classList.remove("dragover");
+      const file = e.dataTransfer.files[0];
+      if (file) {
+        callback(file);
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          newDropArea.innerHTML = `<img src="${e.target.result}" />`;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
 
-            if (data) {
-                document.getElementById("newsTitle").value = data.title || "";
-                document.getElementById("newsSlug").value = data.slug || "";
-                document.getElementById("newsContent").value = data.content || "";
-                document.getElementById("newsStatus").value = data.status;
-                document.getElementById("newsCategory").value = data.category_id;
+  // Hàm upload ảnh mẫu
+  async function uploadImage(file, folder = "SonaSpace/News", type = "main") {
+    if (!file || typeof file === "string") return file;
 
-                if (data.thumbnail) {
-                    document.getElementById("thumb1").innerHTML = `<img src="${data.thumbnail}" />`;
-                    avatarFile = data.thumbnail; // Gán lại để giữ ảnh cũ nếu không thay đổi
-                }
+    const formData = new FormData();
+    formData.append("image", file);
+    formData.append("folder", folder);
+    formData.append("type", type);
 
-                if (Array.isArray(data.images)) {
-                    data.images.forEach((img, index) => {
-                        if (index < 4) {
-                            document.getElementById(`thumb${index + 1}`).innerHTML = `<img src="${img}" />`;
-                            thumbnailFiles[index] = img;
-                        }
-                    });
-                }
+    const res = await fetch("http://localhost:3501/api/upload/news", {
+      method: "POST",
+      body: formData,
+    });
 
-                // Gắn lại upload sau khi innerHTML
-                bindUpload("#avatarDropArea", (file) => (avatarFile = file));
-                bindUpload("#thumb1", (file) => (thumbnailFiles[0] = file));
-                if (Array.isArray(data.images)) {
-                    data.images.forEach((img, index) => {
-                        if (index < 5) {
-                            document.getElementById(`thumb${index + 1}`).innerHTML = `<img src="${img}" />`;
-                            thumbnailFiles[index] = img;
-                        }
-                    });
-                }
-                bindUpload("#thumb1", (file) => (thumbnailFiles[0] = file));
-                bindUpload("#thumb2", (file) => (thumbnailFiles[1] = file));
-                bindUpload("#thumb3", (file) => (thumbnailFiles[2] = file));
-                bindUpload("#thumb4", (file) => (thumbnailFiles[3] = file));
-                bindUpload("#thumb5", (file) => (thumbnailFiles[4] = file));
-            }
-        } catch (err) {
-            console.error("Lỗi tải tin tức:", err);
-            showToast("Không thể tải tin tức", "danger");
-        }
-    }
-
-    async function handleUpdateNews() {
-        const title = document.getElementById("newsTitle").value.trim();
-        const slug = document.getElementById("newsSlug").value.trim();
-        const content = document.getElementById("newsContent").value.trim();
-        const status = parseInt(document.getElementById("newsStatus").value);
-        const category_id = parseInt(document.getElementById("newsCategory").value);
-
-        const saveBtn = document.querySelector(".btn-save");
-        saveBtn.disabled = true;
-        saveBtn.innerText = "Đang lưu...";
-
-        if (!title  || !content) {
-            showToast("Vui lòng nhập đầy đủ thông tin", "danger");
-            saveBtn.disabled = false;
-            saveBtn.innerText = "Lưu";
-            return;
-        }
-
-        try {
-            let mainImage = null;
-            if (avatarFile instanceof File) {
-                mainImage = await uploadImage(avatarFile, "SonaSpace/News");
-            } else if (typeof avatarFile === "string") {
-                mainImage = avatarFile;
-            }
-
-            const uploadedImages = [];
-            for (const file of thumbnailFiles) {
-                if (file instanceof File) {
-                    const url = await uploadImage(file, "SonaSpace/News");
-                    if (url) uploadedImages.push(url);
-                } else if (typeof file === "string") {
-                    uploadedImages.push(file);
-                }
-            }
-
-            const payload = {
-                title,
-                slug,
-                content,
-                status,
-                category_id,
-                images: uploadedImages
-            };
-
-            const token = localStorage.getItem("token");
-            const res = await fetch(`http://localhost:3501/api/news/${newsId}`, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`
-                },
-                body: JSON.stringify(payload)
-            });
-
-            const data = await res.json();
-
-            if (data.error) {
-                showToast(data.error, "danger");
-            } else {
-                showToast("Cập nhật thành công", "success");
-                setTimeout(() => (window.location.href = "/dashboard/news"), 1000);
-            }
-        } catch (err) {
-            console.error("Error:", err);
-            showToast("Có lỗi khi cập nhật tin tức", "danger");
-        }
-
-        saveBtn.disabled = false;
-        saveBtn.innerText = "Lưu";
-    }
-
-    function bindUpload(selector, callback) {
-        const dropArea = document.querySelector(selector);
-        if (!dropArea) return;
-
-        const newDropArea = dropArea.cloneNode(true);
-        dropArea.parentNode.replaceChild(newDropArea, dropArea);
-
-        newDropArea.addEventListener("click", () => {
-            const input = document.createElement("input");
-            input.type = "file";
-            input.accept = "image/*";
-            input.onchange = (e) => {
-                const file = e.target.files[0];
-                if (file) {
-                    callback(file);
-                    const reader = new FileReader();
-                    reader.onload = function (e) {
-                        newDropArea.innerHTML = `<img src="${e.target.result}" />`;
-                    };
-                    reader.readAsDataURL(file);
-                }
-            };
-            input.click();
-        });
-
-        newDropArea.addEventListener("dragover", (e) => {
-            e.preventDefault();
-            newDropArea.classList.add("dragover");
-        });
-
-        newDropArea.addEventListener("dragleave", () => {
-            newDropArea.classList.remove("dragover");
-        });
-
-        newDropArea.addEventListener("drop", (e) => {
-            e.preventDefault();
-            newDropArea.classList.remove("dragover");
-            const file = e.dataTransfer.files[0];
-            if (file) {
-                callback(file);
-                const reader = new FileReader();
-                reader.onload = function (e) {
-                    newDropArea.innerHTML = `<img src="${e.target.result}" />`;
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-    }
-
-    // Hàm upload ảnh mẫu
-    async function uploadImage(file, folder = "SonaSpace/News", type = "main") {
-        if (!file || typeof file === "string") return file;
-
-        const formData = new FormData();
-        formData.append("image", file);
-        formData.append("folder", folder);
-        formData.append("type", type);
-
-        const res = await fetch("http://localhost:3501/api/upload/news", {
-            method: "POST",
-            body: formData
-        });
-
-        const data = await res.json();
-        return data.url || null;
-    }
-</script>
+    const data = await res.json();
+    return data.url || null;
+  }
+</script> -->

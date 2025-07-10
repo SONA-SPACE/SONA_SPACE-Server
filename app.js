@@ -81,6 +81,12 @@ app.get("/health", function (req, res) {
   });
 });
 
+// tinymce
+app.use(
+  "/tinymce",
+  express.static(path.join(__dirname, "node_modules", "tinymce"))
+);
+
 // Base routes
 app.get("/", (req, res) => {
   res.render("main", {

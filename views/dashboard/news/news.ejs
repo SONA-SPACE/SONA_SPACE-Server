@@ -50,7 +50,7 @@
         const URL_API = "http://localhost:3501/api";
 
         function getNews() {
-            fetch(URL_API + "/news/simple")
+            fetch(URL_API + "/news/admin")
                 .then((response) => response.json())
                 .then((data) => {
                     renderNews(data.news);
@@ -73,14 +73,6 @@
                 const status = news.news_status === 1 ? "visible" : "hidden";
                 const imageUrl = news.news_image || "/images/default.jpg";
 
-                // try {
-                //     const images = JSON.parse(news.news_image);
-                //     if (Array.isArray(images) && images.length > 0) {
-                //         imageUrl = images[0];
-                //     }
-                // } catch (e) {
-                //     console.warn("Không thể parse ảnh:", news.news_image);
-                // }
                 row.innerHTML = `
                     <td>
                         <div class="room-info">

@@ -372,7 +372,6 @@ router.get('/', verifyToken, isAdmin, async (req, res) => {
 
 router.get('/:id', verifyToken, async (req, res) => {
   try {
-    console.log('Đang truy cập GET /api/orders/:id với id =', req.params.id);
     const orderId = Number(req.params.id);
 
     if (isNaN(orderId)) {
@@ -380,20 +379,16 @@ router.get('/:id', verifyToken, async (req, res) => {
     }
 
     // Lấy thông tin đơn hàng
-    console.log('Executing order query...');
     const orderQuery = `
       SELECT 
         o.*,
-        os.order_status_name as status_name,
         u.user_gmail as user_email,
         u.user_name as user_name,
         u.user_number as user_phone
       FROM \`orders\` o
-      LEFT JOIN current_status os ON o.order_status_id = os.order_status_id
       LEFT JOIN user u ON o.user_id = u.user_id
       WHERE o.order_id = ?
     `;
-    console.log('Order query:', orderQuery);
 
     let orders;
     try {
@@ -417,7 +412,6 @@ router.get('/:id', verifyToken, async (req, res) => {
 
     try {
       // Lấy chi tiết đơn hàng (sản phẩm)
-      console.log('Executing order items query...');
       const orderItemsQuery = `
         SELECT 
           oi.*,
@@ -428,7 +422,6 @@ router.get('/:id', verifyToken, async (req, res) => {
         LEFT JOIN product p ON oi.product_id = p.product_id
         WHERE oi.order_id = ?
       `;
-      console.log('Order items query:', orderItemsQuery);
 
       let orderItems;
       try {
@@ -444,10 +437,8 @@ router.get('/:id', verifyToken, async (req, res) => {
       console.log('Executing status logs query...');
       const statusLogsQuery = `
         SELECT 
-          osl.*,
-          os.order_status_name as status_name
+          osl.*
         FROM order_status_log osl
-        LEFT JOIN order_status os ON osl.order_status_id = os.order_status_id
         WHERE osl.order_id = ?
         ORDER BY osl.created_at ASC
       `;
@@ -465,7 +456,6 @@ router.get('/:id', verifyToken, async (req, res) => {
 
       res.json(order);
     } catch (error) {
-      console.error('Error fetching order details:', error);
       res.status(500).json({ error: 'Failed to fetch order details', details: error.message });
     }
   } catch (error) {

@@ -1,160 +1,388 @@
-<!-- Tiêu đề và Thanh công cụ -->
+<!-- Tiêu đề -->
 <div class="dashboard-header-row">
-  <h2 class="dashboard-title">Thêm Banner Mới</h2>
-  <div class="action-buttons">
-    <button class="btn btn-outline-secondary" onclick="window.location.href='/dashboard/banners'">
-      <i class="fas fa-arrow-left"></i> Quay lại
-    </button>
-  </div>
+  <h2 class="dashboard-title">Thêm banner mới</h2>
 </div>
 
-<!-- Form thêm banner -->
-<div class="card">
-  <div class="card-body">
-    <form id="addBannerForm" enctype="multipart/form-data">
-      <div class="row">
-        <div class="col-md-8">
-          <div class="mb-3">
-            <label for="title" class="form-label">Tiêu đề <span class="text-danger">*</span></label>
-            <input type="text" class="form-control" id="title" name="title" required>
-          </div>
-          
-          <div class="mb-3">
-            <label for="subtitle" class="form-label">Phụ đề</label>
-            <input type="text" class="form-control" id="subtitle" name="subtitle">
-          </div>
-          
-          <div class="mb-3">
-            <label for="link_url" class="form-label">Liên kết</label>
-            <input type="text" class="form-control" id="link_url" name="link_url" placeholder="https://">
-          </div>
-          
-          <div class="row">
-            <div class="col-md-6">
-              <div class="mb-3">
-                <label for="position" class="form-label">Vị trí</label>
-                <input type="number" class="form-control" id="position" name="position" min="0" value="0">
-              </div>
-            </div>
-            
-            <div class="col-md-6">
-              <div class="mb-3">
-                <label for="status" class="form-label">Trạng thái</label>
-                <select class="form-select" id="status" name="status">
-                  <option value="active" selected>Hiển thị</option>
-                  <option value="inactive">Ẩn</option>
-                </select>
-              </div>
-            </div>
-          </div>
-          
-          <div class="mb-3">
-            <label for="page_type" class="form-label">Trang hiển thị <span class="text-danger">*</span></label>
-            <select class="form-select" id="page_type" name="page_type" required>
+<!-- Layout -->
+<div class="add-category-container">
+  <!-- Form -->
+  <div class="category-form-column">
+    <div class="form-section">
+      <h3 class="section-title">Thông tin banner</h3>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="title">Tiêu đề</label>
+          <input type="text" id="title" class="form-control" placeholder="Nhập tiêu đề banner" />
+        </div>
+        <div class="form-group">
+          <label for="subtitle">Phụ đề</label>
+          <input type="text" id="subtitle" class="form-control" placeholder="Nhập phụ đề (nếu có)" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="link_url">Liên kết</label>
+          <input type="text" id="link_url" class="form-control" placeholder="https://" />
+        </div>
+        <div class="form-group">
+          <label for="position">Vị trí</label>
+          <input type="number" id="position" class="form-control" placeholder="Thứ tự hiển thị" value="0" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="page_type">Trang hiển thị</label>
+          <div class="select-wrapper">
+            <select id="page_type" class="form-control">
               <option value="home">Trang chủ</option>
-              <option value="product">Sản phẩm</option>
-              <option value="space">Không gian</option>
-              <option value="blog">Blog</option>
-              <option value="about">Về chúng tôi</option>
-              <option value="login">Đăng nhập</option>
-              <option value="register">Đăng ký</option>
+              <option value="danh-muc">Danh mục</option>
+              <option value="san-pham">Sản phẩm</option>
+              <option value="gio-hang">Giỏ hàng</option>
+              <option value="thanh-toan">Thanh toán</option>
+              <option value="dat-hang-thanh-cong">Đặt hàng thành công</option>
+              <option value="khong-gian">Không gian</option>
+              <option value="dich-vu-thiet-ke">Dịch vụ thiết kế</option>
+              <option value="ho-so-kien-truc">Hồ sơ kiến trúc</option>
+              <option value="lien-he">Liên hệ</option>
+              <option value="dang-ky">Đăng ký</option>
+              <option value="dang-nhap">Đăng nhập</option>
+              <option value="quen-mat-khau">Quên mật khẩu</option>
+              <option value="tai-khoan">Tài khoản</option>
+              <option value="chi-tiet-don-hang">Chi tiết đơn hàng</option>
+              <option value="dieu-khoan-su-dung">Điều khoản sử dụng</option>
+              <option value="chinh-sach-bao-mat">Chính sách bảo mật</option>
+              <option value="tin-tuc">Tin tức</option>
             </select>
-            <div class="form-text">Chọn trang sẽ hiển thị banner này</div>
+            <i class="fas fa-chevron-down"></i>
           </div>
         </div>
-        
-        <div class="col-md-4">
-          <div class="mb-3">
-            <label for="image" class="form-label">Hình ảnh <span class="text-danger">*</span></label>
-            <div class="image-preview-container">
-              <div class="image-preview">
-                <img id="imagePreview" src="/images/no-image.png" alt="Preview">
-              </div>
-              <div class="mt-2">
-                <input type="file" class="form-control" id="image" name="image" accept="image/*" required>
-              </div>
-            </div>
+        <div class="form-group">
+          <label for="status">Trạng thái</label>
+          <div class="select-wrapper">
+            <select id="status" class="form-control">
+              <option value="active">Hiển thị</option>
+              <option value="inactive">Ẩn</option>
+            </select>
+            <i class="fas fa-chevron-down"></i>
           </div>
         </div>
       </div>
-      
-      <div class="d-flex justify-content-end mt-3">
-        <button type="button" class="btn btn-secondary me-2" onclick="window.location.href='/dashboard/banners'">Hủy</button>
-        <button type="submit" class="btn btn-primary">Lưu banner</button>
+    </div>
+
+    <!-- Nút -->
+    <div class="form-actions">
+      <button type="button" class="btn btn-cancel" onclick="window.location.href='/dashboard/banners'">Hủy</button>
+      <button type="button" class="btn btn-save" id="saveBannerBtn">Lưu</button>
+    </div>
+  </div>
+
+  <!-- Cột phải: Upload ảnh -->
+  <div class="image-upload-column">
+    <div class="image-upload-container">
+      <div class="upload-title">Hình ảnh banner</div>
+      <div class="main-upload-area">
+        <div class="upload-placeholder" id="bannerImageDropArea">
+          <i class="far fa-image"></i>
+          <p>Drop banner image here, or browse</p>
+          <p class="upload-hint">jpeg, png - kích thước ngang</p>
+        </div>
       </div>
-    </form>
+    </div>
   </div>
 </div>
 
+<!-- JS xử lý -->
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    // Preview hình ảnh khi chọn file
-    document.getElementById('image').addEventListener('change', function(e) {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          document.getElementById('imagePreview').src = e.target.result;
-        }
-        reader.readAsDataURL(file);
-      }
-    });
-    
-    // Xử lý submit form
-    document.getElementById('addBannerForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          alert('Bạn cần đăng nhập để thực hiện thao tác này');
-          return;
-        }
-        
-        const formData = new FormData(this);
-        
-        const response = await fetch('/api/banners', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          },
-          body: formData
-        });
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Không thể tạo banner');
-        }
-        
-        alert('Tạo banner thành công!');
-        window.location.href = '/dashboard/banners';
-      } catch (error) {
-        console.error('Error creating banner:', error);
-        alert(error.message);
-      }
-    });
+  let bannerImageFile = null;
+
+  document.addEventListener("DOMContentLoaded", () => {
+    bindUpload("#bannerImageDropArea", (file) => (bannerImageFile = file));
+    document.getElementById("saveBannerBtn").addEventListener("click", handleSaveBanner);
   });
+
+  function bindUpload(selector, setter) {
+    const dropArea = document.querySelector(selector);
+    dropArea.addEventListener("click", () => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "image/*";
+      input.click();
+      input.onchange = () => {
+        const file = input.files[0];
+        if (file) {
+          setter(file); // chỉ lưu file vào biến toàn cục
+          dropArea.innerHTML = `<img src="${URL.createObjectURL(file)}" style="width:100%; border-radius:6px;">`;
+        }
+      };
+    });
+  }
+
+  async function handleSaveBanner() {
+    const title = document.getElementById("title").value.trim();
+    const subtitle = document.getElementById("subtitle").value.trim();
+    const link_url = document.getElementById("link_url").value.trim();
+    const position = parseInt(document.getElementById("position").value) || 0;
+    const page_type = document.getElementById("page_type").value;
+    const status = document.getElementById("status").value;
+    const saveBtn = document.getElementById("saveBannerBtn");
+    
+    saveBtn.disabled = true;
+    saveBtn.innerText = "Đang lưu...";
+
+    if (!title) {
+      showToast("Vui lòng nhập tiêu đề banner", "danger");
+      saveBtn.disabled = false;
+      saveBtn.innerText = "Lưu";
+      return;
+    }
+
+    if (!bannerImageFile) {
+      showToast("Vui lòng chọn hình ảnh cho banner", "danger");
+      saveBtn.disabled = false;
+      saveBtn.innerText = "Lưu";
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        showToast("Bạn cần đăng nhập để thực hiện thao tác này", "danger");
+        saveBtn.disabled = false;
+        saveBtn.innerText = "Lưu";
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("title", title);
+      formData.append("subtitle", subtitle);
+      formData.append("link_url", link_url);
+      formData.append("position", position);
+      formData.append("page_type", page_type);
+      formData.append("status", status);
+      formData.append("image", bannerImageFile);
+
+      const response = await fetch("/api/banners", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Không thể tạo banner");
+      }
+
+      showToast("Tạo banner thành công", "success");
+      setTimeout(() => {
+        window.location.href = "/dashboard/banners";
+      }, 1500);
+    } catch (error) {
+      console.error("Error creating banner:", error);
+      showToast(error.message, "danger");
+      saveBtn.disabled = false;
+      saveBtn.innerText = "Lưu";
+    }
+  }
+
+  function showToast(message, type = "success") {
+    let toastContainer = document.getElementById("toastContainer");
+    if (!toastContainer) {
+      toastContainer = document.createElement("div");
+      toastContainer.id = "toastContainer";
+      toastContainer.className = "position-fixed top-0 end-0 p-3";
+      toastContainer.style.zIndex = "1050";
+      document.body.appendChild(toastContainer);
+    }
+
+    const toast = document.createElement("div");
+    toast.className = `toast align-items-center text-white bg-${type} border-0`;
+    toast.setAttribute("role", "alert");
+    toast.setAttribute("aria-live", "assertive");
+    toast.setAttribute("aria-atomic", "true");
+
+    toast.innerHTML = `
+      <div class="d-flex">
+        <div class="toast-body">${message}</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    `;
+
+    toastContainer.appendChild(toast);
+    const bsToast = new bootstrap.Toast(toast, { delay: 3000 });
+    bsToast.show();
+
+    toast.addEventListener("hidden.bs.toast", () => toast.remove());
+  }
 </script>
 
 <style>
-  .image-preview-container {
-    border: 1px dashed #ccc;
-    padding: 1rem;
-    border-radius: 4px;
-    text-align: center;
+  /* Layout container */
+  .add-category-container {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 24px;
+    margin-top: 24px;
   }
-  
-  .image-preview {
-    margin-bottom: 1rem;
-    min-height: 150px;
+
+  /* Form column */
+  .category-form-column {
     display: flex;
-    align-items: center;
-    justify-content: center;
+    flex-direction: column;
+    gap: 24px;
   }
-  
-  .image-preview img {
-    max-width: 100%;
-    max-height: 200px;
-    object-fit: contain;
+
+  .form-section {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    padding: 24px;
   }
-</style> 
+
+  .section-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 24px;
+    color: #333;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .form-group {
+    margin-bottom: 16px;
+  }
+
+  .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #333;
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+
+  .select-wrapper {
+    position: relative;
+  }
+
+  .select-wrapper i {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #666;
+    pointer-events: none;
+  }
+
+  /* Image upload column */
+  .image-upload-column {
+    align-self: flex-start;
+  }
+
+  .image-upload-container {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    padding: 24px;
+  }
+
+  .upload-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: #333;
+  }
+
+  .main-upload-area {
+    margin-bottom: 24px;
+  }
+
+  .upload-placeholder {
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    padding: 32px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .upload-placeholder:hover {
+    border-color: #4a6cf7;
+    background-color: rgba(74, 108, 247, 0.05);
+  }
+
+  .upload-placeholder i {
+    font-size: 32px;
+    color: #999;
+    margin-bottom: 12px;
+  }
+
+  .upload-placeholder p {
+    margin: 0;
+    color: #666;
+  }
+
+  .upload-hint {
+    font-size: 12px;
+    color: #999;
+    margin-top: 8px;
+  }
+
+  /* Form actions */
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 0;
+  }
+
+  .btn {
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+  }
+
+  .btn-cancel {
+    background-color: #f8f9fa;
+    color: #333;
+    border: 1px solid #ddd;
+  }
+
+  .btn-cancel:hover {
+    background-color: #e9ecef;
+  }
+
+  .btn-save {
+    background-color: #4a6cf7;
+    color: #fff;
+  }
+
+  .btn-save:hover {
+    background-color: #3a5bd9;
+  }
+
+  /* Responsive */
+  @media (max-width: 992px) {
+    .add-category-container {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

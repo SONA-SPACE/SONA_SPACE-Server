@@ -1,14 +1,7 @@
-// Function này để trích xuất public_id từ URL của ảnh
-// function extractPublicIdFromUrl(url) {
-//   const matches = url.match(
-//     /\/upload\/(?:v\d+\/)?([^\.]+)\.(jpg|jpeg|png|webp|gif)/
-//   );
-//   return matches ? matches[1] : null;
-// }
-
 const express = require("express");
 const router = express.Router();
 const db = require("../config/database");
+const cloudinary = require("../config/cloudinary");
 const { verifyToken, isAdmin, optionalAuth } = require("../middleware/auth");
 const LIMIT_PER_PAGE = 8;
 
@@ -219,12 +212,9 @@ router.get("/", optionalAuth, async (req, res) => {
   LIMIT ? OFFSET ?
 `;
 
-    const [products] = await db.query(query, [
-      ...params,
-      userId,
-      limit,
-      offset,
-    ]);
+    const finalParams = [userId, ...params, limit, offset];
+
+    const [products] = await db.query(query, finalParams);
 
     // 7. Chuẩn hóa dữ liệu đầu ra
     const result = products.map((item) => ({
@@ -1026,22 +1016,25 @@ router.put("/:id", async (req, res) => {
 router.delete("/:slug", async (req, res) => {
   const slug = req.params.slug;
   if (!slug) return res.status(400).json({ message: "Slug không hợp lệ" });
-
   try {
-    // Hàm trích xuất public_id từ URL ảnh Cloudinary
     function extractPublicIdFromUrl(url) {
-      try {
-        const withoutDomain = url.split("upload/")[1];
-        if (!withoutDomain) return null;
-        const parts = withoutDomain.split(".");
-        parts.pop(); // remove file extension
-        return parts.join(".");
-      } catch (err) {
-        return null;
+      if (!url) return null;
+
+      // https://res.cloudinary.com/your_cloud_name/image/upload/v12345/folder/subfolder/image_name.jpg
+      // folder/subfolder/image_name
+      const match = url.match(
+        /\/upload\/(?:v\d+\/)?(.+?)(?:\.\w{3,4})?(?:\?.*)?$/
+      );
+      if (match && match[1]) {
+        let publicId = match[1];
+        const lastDotIndex = publicId.lastIndexOf(".");
+        if (lastDotIndex > -1 && publicId.substring(lastDotIndex).length <= 5) {
+          publicId = publicId.substring(0, lastDotIndex);
+        }
+        return publicId;
       }
+      return null;
     }
-
-
 
     // Lấy product_id từ slug
     const [existingProduct] = await db.query(
@@ -1065,49 +1058,88 @@ router.delete("/:slug", async (req, res) => {
     // 🔐 Kiểm tra đơn hàng nếu có -> không cho xoá
     if (variantIds.length > 0) {
       const [orderItems] = await db.query(
-        `SELECT order_item_id FROM order_items WHERE variant_id IN (${variantIds.map(() => '?').join(',')}) LIMIT 1`,
+        `SELECT order_item_id FROM order_items WHERE variant_id IN (${variantIds
+          .map(() => "?")
+          .join(",")}) LIMIT 1`,
         variantIds
       );
       if (orderItems.length > 0) {
-        await db.query("UPDATE product SET product_status = 0 WHERE product_id = ?", [product_id]);
-        return res.json({ message: "Sản phẩm đang được mua trong đơn hàng, không thể xoá. Trạng thái đã được chuyển sang 'ẩn'." });
-
+        await db.query(
+          "UPDATE product SET product_status = 0 WHERE product_id = ?",
+          [product_id]
+        );
+        return res.json({
+          message:
+            "Sản phẩm đang được mua trong đơn hàng, không thể xoá. Trạng thái đã được chuyển sang 'ẩn'.",
+        });
       }
     }
 
     // 🔥 Xoá ảnh biến thể
     for (const variant of variants) {
-      const imageUrls = variant.variant_product_list_image?.split(",") || [];
+      // Đảm bảo variant_product_list_image là chuỗi và không rỗng
+      const imageUrls = variant.variant_product_list_image
+        ? variant.variant_product_list_image.split(",")
+        : [];
       for (const url of imageUrls) {
-        const publicId = extractPublicIdFromUrl(url);
+        const trimmedUrl = url.trim(); // Cắt khoảng trắng thừa
+        const publicId = extractPublicIdFromUrl(trimmedUrl);
         if (publicId) {
           try {
+            console.log(`Đang xóa ảnh variant: ${publicId}`);
             await cloudinary.uploader.destroy(publicId);
+            console.log(`Đã xóa ảnh variant: ${publicId}`);
           } catch (err) {
-            console.warn("Không thể xoá ảnh variant:", publicId, err.message);
+            console.error(
+              "Lỗi khi xoá ảnh variant:",
+              publicId,
+              err.message,
+              err.http_code
+            );
           }
+        } else {
+          console.warn(
+            `Không thể trích xuất publicId từ URL variant: ${trimmedUrl}`
+          );
         }
       }
     }
 
     // 🔥 Xoá ảnh chính sản phẩm
     if (product_image) {
-      const publicId = extractPublicIdFromUrl(product_image);
+      const publicId = extractPublicIdFromUrl(product_image.trim()); // Cắt khoảng trắng thừa
       if (publicId) {
         try {
+          console.log(`Đang xóa ảnh chính sản phẩm: ${publicId}`); // Log để debug
           await cloudinary.uploader.destroy(publicId);
+          console.log(`Đã xóa ảnh chính sản phẩm: ${publicId}`); // Log thành công
         } catch (err) {
-          console.warn("Không thể xoá ảnh sản phẩm chính:", publicId, err.message);
+          console.error(
+            "Lỗi khi xoá ảnh sản phẩm chính:",
+            publicId,
+            err.message,
+            err.http_code
+          ); // Log chi tiết lỗi
         }
+      } else {
+        console.warn(
+          `Không thể trích xuất publicId từ URL ảnh chính sản phẩm: ${product_image.trim()}`
+        );
       }
     }
 
-    // 🔄 Xoá liên kết
-    await db.query("DELETE FROM variant_product WHERE product_id = ?", [product_id]);
-    await db.query("DELETE FROM room_product WHERE product_id = ?", [product_id]);
+    // 🔄 Xoá liên kết trong database
+    await db.query("DELETE FROM variant_product WHERE product_id = ?", [
+      product_id,
+    ]);
+    await db.query("DELETE FROM room_product WHERE product_id = ?", [
+      product_id,
+    ]);
     if (variantIds.length > 0) {
       await db.query(
-        `DELETE FROM wishlist WHERE variant_id IN (${variantIds.map(() => "?").join(",")})`,
+        `DELETE FROM wishlist WHERE variant_id IN (${variantIds
+          .map(() => "?")
+          .join(",")})`,
         variantIds
       );
     }
@@ -1122,8 +1154,6 @@ router.delete("/:slug", async (req, res) => {
     res.status(500).json({ error: "Failed to delete product" });
   }
 });
-
-
 
 /**
  * @route   GET /api/products/featured
@@ -1471,9 +1501,8 @@ router.post("/add", async (req, res) => {
  * @desc    Cập nhật sản phẩm
  *    @access  Private (Admin only)
  */
-
 router.put("/admin/:slug", async (req, res) => {
-  const { slug } = req.params;
+  const { slug: currentSlug } = req.params; // Đổi tên để tránh nhầm lẫn với slug mới từ body
   const {
     name,
     description,
@@ -1488,6 +1517,7 @@ router.put("/admin/:slug", async (req, res) => {
     main_image,
     room_ids,
     removedImages = [],
+    slug, // Đây là slug mới từ req.body
   } = req.body;
 
   // === VALIDATION ===
@@ -1505,9 +1535,24 @@ router.put("/admin/:slug", async (req, res) => {
       message: "Mô tả sản phẩm là bắt buộc",
     });
   }
+  // === THÊM VALIDATION CHO SLUG MỚI ===
   if (isEmpty(slug)) {
     errors.push({ field: "slug", message: "Slug là bắt buộc" });
   }
+  // === KIỂM TRA DUY NHẤT CỦA SLUG (TÙY CHỌN NHƯNG NÊN CÓ) ===
+  if (!isEmpty(slug)) {
+    const [existingSlug] = await db.query(
+      `SELECT product_id FROM product WHERE product_slug = ? AND product_id <> (SELECT product_id FROM product WHERE product_slug = ?)`,
+      [slug, currentSlug]
+    );
+    if (existingSlug.length > 0) {
+      errors.push({
+        field: "slug",
+        message: "Slug đã tồn tại. Vui lòng chọn slug khác.",
+      });
+    }
+  }
+
   if (isEmpty(category_id)) {
     errors.push({ field: "category_id", message: "Danh mục là bắt buộc" });
   }
@@ -1559,7 +1604,7 @@ router.put("/admin/:slug", async (req, res) => {
     return res.status(400).json({ error: "Dữ liệu không hợp lệ", errors });
   }
 
-  // === XÓA ẢNH CLOUDINARY ===
+  // === XÓA ẢNH CLOUDINARY (Đoạn này đã đúng) ===
   if (removedImages.length) {
     for (const imageUrl of removedImages) {
       const matches = imageUrl.match(
@@ -1587,18 +1632,39 @@ router.put("/admin/:slug", async (req, res) => {
 
   try {
     const [productRows] = await connection.query(
-      `SELECT product_id FROM product WHERE product_slug = ?`,
-      [slug]
+      `SELECT product_id, product_priority FROM product WHERE product_slug = ?`, // Lấy cả product_priority
+      [currentSlug]
     );
     if (!productRows.length) {
       await connection.rollback();
       return res.status(404).json({ error: "Product not found" });
     }
     const productId = productRows[0].product_id;
+    const currentPriority = productRows[0].product_priority; // Lấy ưu tiên hiện tại
 
+    let newPriority = currentPriority; // Mặc định giữ ưu tiên hiện tại
+
+    // === TÍNH TOÁN ĐỘ ƯU TIÊN MỚI NẾU product_priority HIỆN TẠI LÀ 0 ===
+    if (currentPriority === 0) {
+      const [maxPriorityResult] = await connection.query(
+        `SELECT MAX(product_priority) AS max_priority FROM product`
+      );
+      const maxPriority = maxPriorityResult[0].max_priority || 0; // Nếu không có sản phẩm nào, max_priority là 0
+      newPriority = maxPriority + 1;
+      console.log(
+        `Debug: Product ID ${productId}, currentPriority was 0, newPriority calculated: ${newPriority}`
+      );
+    } else {
+      console.log(
+        `Debug: Product ID ${productId}, currentPriority is ${currentPriority}, not recalculating priority.`
+      );
+    }
+
+    // CẬP NHẬT CÂU TRUY VẤN VÀ THAM SỐ
     await connection.query(
       `UPDATE product SET
         product_name = ?,
+        product_slug = ?,
         product_description = ?,
         category_id = ?,
         product_status = ?,
@@ -1608,10 +1674,12 @@ router.put("/admin/:slug", async (req, res) => {
         variant_depth = ?,
         variant_seating_height = ?,
         variant_maximum_weight_load = ?,
-        product_image = ?
+        product_image = ?,
+        product_priority = ? -- ĐÃ THÊM product_priority
       WHERE product_id = ?`,
       [
         name,
+        slug,
         description,
         category_id,
         status,
@@ -1622,10 +1690,12 @@ router.put("/admin/:slug", async (req, res) => {
         seating_height,
         max_weight_load,
         main_image,
+        newPriority, // TRUYỀN GIÁ TRỊ newPriority VÀO ĐÂY
         productId,
       ]
     );
 
+    // ... (Phần cập nhật room_product vẫn giữ nguyên) ...
     await connection.query(`DELETE FROM room_product WHERE product_id = ?`, [
       productId,
     ]);
@@ -1640,7 +1710,7 @@ router.put("/admin/:slug", async (req, res) => {
     await connection.commit();
 
     const [product] = await db.query(
-      `SELECT 
+      `SELECT
         p.*,
         c.category_name
       FROM product p
@@ -1664,7 +1734,6 @@ router.put("/admin/:slug", async (req, res) => {
     connection.release();
   }
 });
-
 /* * @route   GET /api/products/admin/:slug
  * @desc    Lấy thông tin chi tiết sản phẩm (Admin)
  * @access  Private (Admin only)

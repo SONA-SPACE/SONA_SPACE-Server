@@ -9,7 +9,6 @@
 <div class="add-product-container">
   <!-- Cột trái: Form thông tin sản phẩm -->
   <div class="product-form-column">
-
     <!-- ===== Thông tin sản phẩm cơ bản ===== -->
     <div class="form-section">
       <h3 class="section-title">Thông tin sản phẩm</h3>
@@ -62,7 +61,6 @@
           <textarea id="productDescription" class="form-control" rows="5" placeholder="Nhập mô tả"></textarea>
           <div class="invalid-feedback"></div>
         </div>
-
       </div>
     </div>
 
@@ -113,7 +111,7 @@
     <!-- ===== Ảnh chính ===== -->
     <div class="form-section">
       <h3 class="section-title">Ảnh chính sản phẩm</h3>
-      <div class="main-image-upload" id="mainImageUpload" style="display: none;">
+      <div class="main-image-upload" id="mainImageUpload" style="display: none">
         <div class="upload-zone">
           <i class="fas fa-cloud-upload-alt"></i>
           <p>Kéo thả hoặc click để tải ảnh</p>
@@ -141,8 +139,12 @@
           <div class="variant-header">
             <h4 class="variant-title">Biến thể mới</h4>
             <div class="variant-actions">
-              <button class="btn-toggle-variant"><i class="fas fa-chevron-down"></i></button>
-              <button class="btn-remove-variant"><i class="fas fa-trash"></i></button>
+              <button class="btn-toggle-variant">
+                <i class="fas fa-chevron-down"></i>
+              </button>
+              <button class="btn-remove-variant">
+                <i class="fas fa-trash"></i>
+              </button>
             </div>
           </div>
 
@@ -163,9 +165,7 @@
                 <input type="text" class="form-control variant-slug" placeholder="Tự động tạo nếu để trống" />
                 <div class="invalid-feedback"></div>
               </div>
-
             </div>
-
 
             <div class="form-row">
               <div class="form-group">
@@ -215,7 +215,6 @@
     feedback.textContent = message;
   }
 
-
   function clearFieldError(input) {
     if (!input) return;
     input.classList.remove("is-invalid");
@@ -231,7 +230,8 @@
   const productStatusSelect = document.getElementById("productStatus");
   const productCategorySelect = document.getElementById("productCategory");
   const productRoomsSelect = document.getElementById("productRooms");
-  const productDescriptionTextarea = document.getElementById("productDescription");
+  const productDescriptionTextarea =
+    document.getElementById("productDescription");
   const productDepthInput = document.getElementById("productDepth");
   const productWidthInput = document.getElementById("productWidth");
   const productHeightInput = document.getElementById("productHeight");
@@ -242,33 +242,36 @@
   const mainImagePreview = document.querySelector(".main-image-preview img");
   const mainImageContainer = document.querySelector(".main-image-preview");
   const mainImageUpload = document.getElementById("mainImageUpload");
-  const mainImageUploadInput = mainImageUpload.querySelector('input[type="file"]');
+  const mainImageUploadInput =
+    mainImageUpload.querySelector('input[type="file"]');
 
   const variantTemplate = document.getElementById("variantTemplate");
   const variantsList = document.getElementById("variantsList");
   let removedImages = [];
 
   function extractPublicIdFromUrl(url) {
-    const matches = url.match(/upload\/(?:v\d+\/)?([^\.]+)\.(jpg|jpeg|png|webp|gif)/);
+    const matches = url.match(
+      /upload\/(?:v\d+\/)?([^\.]+)\.(jpg|jpeg|png|webp|gif)/
+    );
     if (!matches || !matches[1]) return null;
     return matches[1];
   }
 
-
-
   // Xử lý xóa ảnh chính
-  mainImageContainer.querySelector(".remove-image")?.addEventListener("click", () => {
-    const publicId = extractPublicIdFromUrl(mainImagePreview.src);
-    if (publicId) {
-      removedImages.push(publicId);
-      console.log("[REMOVE IMAGE] Đã đánh dấu xóa ảnh chính:", publicId);
-    }
-    mainImagePreview.src = "";
-    mainImageContainer.style.display = "none";
-    // Hiện lại box upload ảnh chính
-    mainImageUpload.style.display = "block";
-    mainImageUploadInput.value = "";
-  });
+  mainImageContainer
+    .querySelector(".remove-image")
+    ?.addEventListener("click", () => {
+      const publicId = extractPublicIdFromUrl(mainImagePreview.src);
+      if (publicId) {
+        removedImages.push(publicId);
+        console.log("[REMOVE IMAGE] Đã đánh dấu xóa ảnh chính:", publicId);
+      }
+      mainImagePreview.src = "";
+      mainImageContainer.style.display = "none";
+      // Hiện lại box upload ảnh chính
+      mainImageUpload.style.display = "block";
+      mainImageUploadInput.value = "";
+    });
 
   // Xử lý upload ảnh chính mới
   mainImageUpload.addEventListener("click", () => mainImageUploadInput.click());
@@ -317,7 +320,12 @@
       }
 
       // Load danh sách select boxes (phải gọi ở đây vì cần category_id và room_ids)
-      await loadProductSelectBoxes(slug, product.category_id, data.rooms?.map(r => r.room_id), null);
+      await loadProductSelectBoxes(
+        slug,
+        product.category_id,
+        data.rooms?.map((r) => r.room_id),
+        null
+      );
 
       // === Danh sách biến thể ===
       // Xóa hết biến thể cũ trước khi render lại
@@ -331,21 +339,26 @@
         clone.classList.add("variant-item");
 
         // Tiêu đề
-        clone.querySelector(".variant-title").textContent = variant.color_name || `Biến thể ${idx + 1}`;
+        clone.querySelector(".variant-title").textContent =
+          variant.color_name || `Biến thể ${idx + 1}`;
 
         // Render lại danh sách màu cho select box này
         const colorSelect = clone.querySelector(".variant-color");
-        colorSelect.innerHTML = globalColors.map(
-          (color) =>
-            `<option value="${color.color_id}" ${color.color_id == variant.color_id ? "selected" : ""}>${color.color_name}</option>`
-        ).join("");
+        colorSelect.innerHTML = globalColors
+          .map(
+            (color) =>
+              `<option value="${color.color_id}" ${color.color_id == variant.color_id ? "selected" : ""
+              }>${color.color_name}</option>`
+          )
+          .join("");
 
         // Gán dữ liệu khác
         colorSelect.value = variant.color_id;
         clone.querySelector(".variant-slug").value = variant.slug || "";
         clone.querySelector(".variant-quantity").value = variant.quantity ?? 0;
         clone.querySelector(".variant-price").value = variant.price ?? 0;
-        clone.querySelector(".variant-sale-price").value = variant.price_sale ?? 0;
+        clone.querySelector(".variant-sale-price").value =
+          variant.price_sale ?? 0;
 
         // Lưu lại dữ liệu variant vào node để submit
         clone.variantData = {
@@ -355,9 +368,12 @@
           price: variant.price ?? 0,
           price_sale: variant.price_sale ?? 0,
           // http...,http...,http...
-          list_image: typeof variant.list_image === "string"
-            ? variant.list_image.split(",")
-            : (Array.isArray(variant.list_image) ? variant.list_image : []),
+          list_image:
+            typeof variant.list_image === "string"
+              ? variant.list_image.split(",")
+              : Array.isArray(variant.list_image)
+                ? variant.list_image
+                : [],
         };
 
         variantsList.appendChild(clone);
@@ -366,11 +382,14 @@
 
       // Nếu muốn render lại dropdown màu cho các select còn lại (ví dụ khi thêm mới biến thể)
       document.querySelectorAll(".variant-color").forEach((select) => {
-        if (!select.value) { // chỉ render nếu chưa có giá trị
-          select.innerHTML = globalColors.map(
-            (color) =>
-              `<option value="${color.color_id}">${color.color_name}</option>`
-          ).join("");
+        if (!select.value) {
+          // chỉ render nếu chưa có giá trị
+          select.innerHTML = globalColors
+            .map(
+              (color) =>
+                `<option value="${color.color_id}">${color.color_name}</option>`
+            )
+            .join("");
         }
       });
     } catch (err) {
@@ -380,7 +399,12 @@
     // setupAllVariantEvents();
   }
 
-  async function loadProductSelectBoxes(slug, selectedCategoryId, selectedRoomIds, selectedColorId) {
+  async function loadProductSelectBoxes(
+    slug,
+    selectedCategoryId,
+    selectedRoomIds,
+    selectedColorId
+  ) {
     try {
       // Gọi đồng thời 3 API
       const [categoryRes, roomsRes, colorsRes] = await Promise.all([
@@ -395,22 +419,24 @@
         colorsRes.json(),
       ]);
 
-      globalColors = colors; // Lưu lại danh sách màu cho các nơi khác dùng
+      globalColors = colors;
 
       // ===== Category select =====
-      productCategorySelect.innerHTML = categories.map(c =>
-        `<option value="${c.category_id}" ${c.category_id == selectedCategoryId ? "selected" : ""}>${c.category_name}</option>`
-      ).join("");
+      productCategorySelect.innerHTML = categories
+        .map(
+          (c) =>
+            `<option value="${c.category_id}" ${c.category_id == selectedCategoryId ? "selected" : ""
+            }>${c.category_name}</option>`
+        )
+        .join("");
 
-      // ===== Rooms select =====
-      // productRoomsSelect.innerHTML = rooms.map(r =>
-      //   `<option value="${r.room_id}" ${r.room_id == selectedRoomIds ? "selected" : ""}>${r.room_name}</option>`
-      // ).join("");
-      productRoomsSelect.innerHTML = rooms.map(r =>
-        `<option value="${r.room_id}" ${selectedRoomIds?.includes(r.room_id) ? "selected" : ""}>${r.room_name}</option>`
-      ).join("");
-
-      // Không cần render dropdown màu ở đây nữa, sẽ render ở loadProductDetail cho từng biến thể
+      productRoomsSelect.innerHTML = rooms
+        .map(
+          (r) =>
+            `<option value="${r.room_id}" ${selectedRoomIds?.includes(r.room_id) ? "selected" : ""
+            }>${r.room_name}</option>`
+        )
+        .join("");
     } catch (error) {
       console.error("Lỗi khi tải select boxes:", error);
       showToast("Lỗi khi tải thông tin danh mục / phòng / màu sắc", "danger");
@@ -448,7 +474,6 @@
     return uploadBox;
   }
 
-
   // Hàm thêm box ảnh đã upload thành công vào grid
   function addLoadedImageBox(imgUrl, imageGrid, uploadBox, file) {
     const loadedBox = document.createElement("div");
@@ -470,22 +495,23 @@
       hiddenInput.files = dataTransfer.files;
     }
 
-    loadedBox.querySelector(".remove-image").addEventListener("click", function (ev) {
-      ev.stopPropagation();
-      loadedBox.remove();
-      if (!imageGrid.querySelector('.variant-upload-box')) {
-        imageGrid.appendChild(createUploadBox(imageGrid));
-      }
-    });
+    loadedBox
+      .querySelector(".remove-image")
+      .addEventListener("click", function (ev) {
+        ev.stopPropagation();
+        loadedBox.remove();
+        if (!imageGrid.querySelector(".variant-upload-box")) {
+          imageGrid.appendChild(createUploadBox(imageGrid));
+        }
+      });
 
     imageGrid.insertBefore(loadedBox, uploadBox);
     uploadBox.querySelector('input[type="file"]').value = "";
 
-    if (imageGrid.querySelectorAll('.variant-image-item.loaded').length >= 7) {
+    if (imageGrid.querySelectorAll(".variant-image-item.loaded").length >= 7) {
       uploadBox.style.display = "none";
     }
   }
-
 
   // Sửa lại setupVariantImageUpload để truyền variantId cho createUploadBox
   function setupVariantImageUpload(variantElement) {
@@ -506,18 +532,27 @@
       <img src="${imgUrl}" alt="Preview" style="width:80px;margin:5px;">
       <button class="remove-image"><i class="fas fa-times"></i></button>
     `;
-      imgBox.querySelector(".remove-image").addEventListener("click", function (ev) {
-        ev.stopPropagation();
-        const publicId = extractPublicIdFromUrl(imgUrl);
-        if (publicId) {
-          removedImages.push(publicId);
-          console.log("[REMOVE IMAGE] Đã đánh dấu xóa ảnh biến thể:", publicId);
-        }
-        imgBox.remove();
-        if (!imageGrid.querySelector('.variant-upload-box') && imageGrid.querySelectorAll('.variant-image-item.loaded').length < maxImages) {
-          imageGrid.appendChild(createUploadBox(imageGrid, variantId));
-        }
-      });
+      imgBox
+        .querySelector(".remove-image")
+        .addEventListener("click", function (ev) {
+          ev.stopPropagation();
+          const publicId = extractPublicIdFromUrl(imgUrl);
+          if (publicId) {
+            removedImages.push(publicId);
+            console.log(
+              "[REMOVE IMAGE] Đã đánh dấu xóa ảnh biến thể:",
+              publicId
+            );
+          }
+          imgBox.remove();
+          if (
+            !imageGrid.querySelector(".variant-upload-box") &&
+            imageGrid.querySelectorAll(".variant-image-item.loaded").length <
+            maxImages
+          ) {
+            imageGrid.appendChild(createUploadBox(imageGrid, variantId));
+          }
+        });
       imageGrid.appendChild(imgBox);
     });
 
@@ -543,17 +578,31 @@
       productWidthInput,
       productHeightInput,
       productSeatHeightInput,
-      productMaxLoadInput
+      productMaxLoadInput,
     ];
 
-
-    allInputs.forEach(input => {
+    allInputs.forEach((input) => {
       if (!input) return;
       input.addEventListener("input", () => clearFieldError(input));
       input.addEventListener("change", () => clearFieldError(input));
     });
   });
-
+  productNameInput.addEventListener("input", function () {
+    const productName = this.value.trim();
+    if (productName) {
+      productSlugInput.value = productName
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[đĐ]/g, "d")
+        .replace(/[^a-z0-9\s-]/g, "")
+        .replace(/\s+/g, "-")
+        .replace(/^-+|-+$/g, "");
+    } else {
+      productSlugInput.value = "";
+    }
+    clearFieldError(productSlugInput);
+  });
 
   async function deleteVariant(variantId) {
     try {
@@ -562,7 +611,10 @@
       });
       const result = await res.json();
       if (!res.ok) {
-        showToast(`Xoá biến thể ${variantId} thất bại: ` + (result.error || ""), "danger");
+        showToast(
+          `Xoá biến thể ${variantId} thất bại: ` + (result.error || ""),
+          "danger"
+        );
         console.error("Lỗi xoá biến thể:", result);
         return;
       }
@@ -573,16 +625,301 @@
     }
   }
 
-
   // ==== Xử lý sự kiện nút lưu (chỉ cập nhật thông tin chung sản phẩm) ====
+  // document.querySelector(".btn-save").addEventListener("click", async () => {
+  //   try {
+  //     // ===== LẤY DỮ LIỆU FORM =====
+  //     const name = productNameInput.value.trim();
+  //     const slugValue = productSlugInput.value.trim() || name.toLowerCase().replace(/\s+/g, "-");
+  //     const status = parseInt(productStatusSelect.value);
+  //     const category_id = parseInt(productCategorySelect.value);
+  //     const room_ids = Array.from(productRoomsSelect.selectedOptions).map(opt => parseInt(opt.value));
+  //     const description = productDescriptionTextarea.value.trim();
+  //     const depth = parseFloat(productDepthInput.value) || null;
+  //     const width = parseFloat(productWidthInput.value) || null;
+  //     const height = parseFloat(productHeightInput.value) || null;
+  //     const max_weight_load = parseFloat(productMaxLoadInput.value) || null;
+  //     const seating_height = parseFloat(productSeatHeightInput.value) || null;
+  //     const materials = productMaterialInput.value.trim();
+
+  //     // Ảnh chính
+  //     let mainImageUrl = mainImagePreview?.src || null;
+  //     if (mainImageUrl && mainImageUrl.startsWith("data:image/")) {
+  //       try {
+  //         const formData = new FormData();
+  //         const res = await fetch(mainImageUrl);
+  //         const blob = await res.blob();
+  //         formData.append("image", blob, "main-image.png");
+  //         formData.append("folder", "SonaSpace/Product");
+  //         formData.append("subfolder", "main");
+  //         const uploadRes = await fetch(`${API_URL}/api/upload/product`, {
+  //           method: "POST",
+  //           body: formData,
+  //         });
+  //         const uploadData = await uploadRes.json();
+  //         mainImageUrl = uploadData.url || mainImageUrl;
+  //       } catch (err) {
+  //         showToast("Lỗi upload ảnh chính", "danger");
+  //       }
+  //     }
+
+  //     // XÓA CÁC ẢNH ĐÃ ẤN DẤU ❌
+  //     if (removedImages.length > 0) {
+  //       for (const publicId of removedImages) {
+  //         try {
+  //           const res = await fetch(`${API_URL}/api/upload/${publicId}`, {
+  //             method: "DELETE",
+  //           });
+  //           const result = await res.json();
+  //           if (!res.ok) {
+  //             console.warn("❌ Lỗi xoá ảnh:", result);
+  //           } else {
+  //             console.log("🗑️ Đã xoá ảnh:", publicId);
+  //           }
+  //           console.log("[REMOVE IMAGE] Đã gửi yêu cầu xóa ảnh trên server:", publicId);
+  //         } catch (err) {
+  //           console.error("❌ Lỗi kết nối khi xoá ảnh:", err);
+  //         }
+  //       }
+
+  //       // Xóa mảng sau khi xử lý xong
+  //       removedImages = [];
+  //     }
+
+  //     // Chỉ gửi thông tin chung sản phẩm
+  //     const payload = {
+  //       name: productNameInput.value.trim(),
+  //       slug: productSlugInput.value.trim() || productNameInput.value.trim().toLowerCase().replace(/\s+/g, "-"),
+  //       description: productDescriptionTextarea.value.trim(),
+  //       category_id: parseInt(productCategorySelect.value),
+  //       status: parseInt(productStatusSelect.value),
+  //       materials: productMaterialInput.value.trim(),
+  //       height: parseFloat(productHeightInput.value) || null,
+  //       width: parseFloat(productWidthInput.value) || null,
+  //       depth: parseFloat(productDepthInput.value) || null,
+  //       seating_height: parseFloat(productSeatHeightInput.value) || null,
+  //       max_weight_load: parseFloat(productMaxLoadInput.value) || null,
+  //       main_image: mainImageUrl,
+  //       room_ids: Array.from(productRoomsSelect.selectedOptions).map(opt => parseInt(opt.value)),
+  //     };
+  //     console.log("[PRODUCT PAYLOAD]", payload);
+
+  //     // Cập nhật sản phẩm trước
+  //     const res = await fetch(`${API_URL}/api/products/admin/${slug}`, {
+  //       method: "PUT",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify(payload)
+  //     });
+  //     const result = await res.json();
+  //     if (!res.ok) {
+  //       if (result.errors && Array.isArray(result.errors)) {
+  //         result.errors.forEach((err) => {
+  //           const field = err.field;
+  //           const message = err.message;
+
+  //           // ===== Lỗi của sản phẩm chung =====
+  //           if (field === "name") {
+  //             showFieldError(productNameInput, message);
+  //           } else if (field === "slug") {
+  //             showFieldError(productSlugInput, message);
+  //           } else if (field === "category_id") {
+  //             showFieldError(productCategorySelect, message);
+  //           } else if (field === "status") {
+  //             showFieldError(productStatusSelect, message);
+  //           } else if (field === "description") {
+  //             showFieldError(productDescriptionTextarea, message);
+  //           } else if (field === "height") {
+  //             showFieldError(productHeightInput, message);
+  //           } else if (field === "width") {
+  //             showFieldError(productWidthInput, message);
+  //           } else if (field === "depth") {
+  //             showFieldError(productDepthInput, message);
+  //           } else if (field === "seating_height") {
+  //             showFieldError(productSeatHeightInput, message);
+  //           } else if (field === "max_weight_load") {
+  //             showFieldError(productMaxLoadInput, message);
+  //           } else if (field === "materials") {
+  //             showFieldError(productMaterialInput, message);
+  //           }
+
+  //           // ===== Lỗi của biến thể =====
+  //           else if (field.startsWith("variants[")) {
+  //             const match = field.match(/variants\[(\d+)\]\.(.+)/);
+
+  //             if (match) {
+  //               const index = parseInt(match[1], 10);
+  //               const fieldName = match[2];
+
+  //               const variantEl = document.querySelectorAll("#variantsList .variant-item")[index];
+  //               if (variantEl) {
+  //                 let input;
+  //                 if (fieldName === "slug") {
+  //                   input = variantEl.querySelector(".variant-slug");
+  //                 } else if (fieldName === "quantity") {
+  //                   input = variantEl.querySelector(".variant-quantity");
+  //                   console.log("[VALIDATE] Tìm thấy input quantity:", input);
+  //                 } else if (fieldName === "price") {
+  //                   input = variantEl.querySelector(".variant-price");
+  //                 } else if (fieldName === "price_sale") {
+  //                   input = variantEl.querySelector(".variant-sale-price");
+  //                 } else if (fieldName === "color_id") {
+  //                   input = variantEl.querySelector(".variant-color");
+  //                 } else if (fieldName === "list_image") {
+  //                   // Nếu muốn hiện lỗi ảnh, có thể thêm alert/tooltip gần khung ảnh
+  //                   const imageGrid = variantEl.querySelector(".variant-image-grid");
+  //                   if (imageGrid) {
+  //                     const existingError = imageGrid.querySelector(".invalid-feedback");
+  //                     if (!existingError) {
+  //                       const errorBox = document.createElement("div");
+  //                       errorBox.className = "invalid-feedback";
+  //                       errorBox.style.display = "block";
+  //                       errorBox.style.fontSize = "13px";
+  //                       errorBox.style.color = "#dc3545";
+  //                       errorBox.textContent = message;
+  //                       imageGrid.appendChild(errorBox);
+  //                     }
+  //                   }
+  //                   return;
+  //                 }
+
+  //                 if (input) {
+  //                   showFieldError(input, message);
+  //                 }
+
+  //               }
+  //             }
+  //           }
+  //         });
+  //       }
+
+  //       showToast("Lỗi khi cập nhật sản phẩm", "danger");
+  //       return;
+  //     }
+
+  //     showToast("Cập nhật sản phẩm thành công!", "success");
+
+  //     // === Cập nhật hoặc xóa các biến thể đã có (KHÔNG tạo mới ở đây) ===
+  //     const productId = result.product?.id || result.product?.product_id || result.product_id;
+  //     const variantElements = document.querySelectorAll("#variantsList .variant-item");
+  //     // XÓA: console.log("== VARIANT ELEMENTS =="";
+  //     // XÓA: variantElements.forEach(el => { console.log("data-id:", el.getAttribute("data-id")); });
+
+  //     // Xử lý xóa các biến thể đã bị remove khỏi DOM
+  //     const currentIds = Array.from(variantElements)
+  //       .map(el => el.getAttribute("data-id"))
+  //       .filter(Boolean);
+  //     const loadedIds = Array.from(document.querySelectorAll("#variantsList .variant-item[data-id]"))
+  //       .map(el => el.getAttribute("data-id"));
+  //     const deletedIds = loadedIds.filter(id => !currentIds.includes(id));
+  //     for (const delId of deletedIds) {
+  //       if (delId) {
+  //         await deleteVariant(delId);
+  //       }
+  //     }
+
+  //     for (const variantEl of variantElements) {
+  //       let variantId = variantEl.getAttribute("data-id");
+  //       const color_id = parseInt(variantEl.querySelector(".variant-color")?.value || 0);
+  //       const slug = variantEl.querySelector(".variant-slug")?.value.trim();
+  //       const quantity = parseInt(variantEl.querySelector(".variant-quantity")?.value || 0);
+  //       const price = parseFloat(variantEl.querySelector(".variant-price")?.value || 0);
+  //       const price_sale = parseFloat(variantEl.querySelector(".variant-sale-price")?.value || 0);
+
+  //       let finalVariantId = variantId;
+  //       let list_image = [];
+
+  //       const loadedImageBoxes = Array.from(
+  //         variantEl.querySelectorAll(".variant-image-item.loaded")
+  //       );
+
+  //       // Nếu là biến thể mới, tạo trước khi upload ảnh
+  //       if (!finalVariantId) {
+  //         const created = await addVariant(productId, {
+  //           color_id,
+  //           slug,
+  //           quantity,
+  //           price,
+  //           price_sale,
+  //           list_image: "", // Tạo tạm, ảnh sẽ thêm sau
+  //         });
+
+  //         if (!created || !created.variant_id) {
+  //           showToast("Không thể tạo biến thể mới", "danger");
+  //           continue;
+  //         }
+
+  //         finalVariantId = created.variant_id;
+  //         variantEl.setAttribute("data-id", finalVariantId);
+  //       }
+
+  //       // Upload ảnh nếu là ảnh base64
+  //       for (const box of loadedImageBoxes) {
+  //         const img = box.querySelector("img");
+  //         const input = box.querySelector('input[type="file"]');
+  //         if (!img) continue;
+
+  //         const src = img.src;
+
+  //         if (src.startsWith("http")) {
+  //           list_image.push(src); // Ảnh cũ giữ nguyên
+  //         } else if (src.startsWith("data:image/") && input?.files?.[0]) {
+  //           const uploadedUrl = await uploadVariantImageToServer(finalVariantId, input.files[0]);
+  //           if (uploadedUrl) {
+  //             list_image.push(uploadedUrl);
+  //             img.src = uploadedUrl;
+  //             input.value = "";
+  //           }
+  //         }
+  //       }
+
+  //       // Cập nhật lại list_image trong DOM và variantData
+  //       variantEl.variantData = {
+  //         color_id,
+  //         slug,
+  //         quantity,
+  //         price,
+  //         price_sale,
+  //         list_image,
+  //       };
+
+  //       setupVariantImageUpload(variantEl); // Cập nhật lại box ảnh
+
+  //       // Gửi request cập nhật biến thể với ảnh đã upload
+  //       await updateVariant(finalVariantId, {
+  //         color_id,
+  //         slug,
+  //         quantity,
+  //         price,
+  //         price_sale,
+  //         list_image: list_image.join(","), // backend yêu cầu dạng chuỗi
+  //       });
+  //     }
+  //     showToast("Cập nhật biến thể thành công!", "success");
+  //   } catch (err) {
+  //     console.error("Lỗi khi lưu sản phẩm:", err);
+  //     showToast("Lỗi khi lưu sản phẩm", "danger");
+  //   }
+  // });
   document.querySelector(".btn-save").addEventListener("click", async () => {
+    const saveButton = document.querySelector(".btn-save");
+    const originalButtonText = saveButton.textContent;
+
     try {
+      // Vô hiệu hóa nút và đổi chữ thành "Saving..."
+      saveButton.disabled = true;
+      saveButton.textContent = "Đang lưu...";
+      saveButton.classList.add("btn-loading"); // Tùy chọn: Thêm class cho kiểu hiển thị đang tải
+
       // ===== LẤY DỮ LIỆU FORM =====
       const name = productNameInput.value.trim();
-      const slugValue = productSlugInput.value.trim() || name.toLowerCase().replace(/\s+/g, "-");
+      const slugValue =
+        productSlugInput.value.trim() ||
+        name.toLowerCase().replace(/\s+/g, "-");
       const status = parseInt(productStatusSelect.value);
       const category_id = parseInt(productCategorySelect.value);
-      const room_ids = Array.from(productRoomsSelect.selectedOptions).map(opt => parseInt(opt.value));
+      const room_ids = Array.from(productRoomsSelect.selectedOptions).map(
+        (opt) => parseInt(opt.value)
+      );
       const description = productDescriptionTextarea.value.trim();
       const depth = parseFloat(productDepthInput.value) || null;
       const width = parseFloat(productWidthInput.value) || null;
@@ -625,12 +962,14 @@
             } else {
               console.log("🗑️ Đã xoá ảnh:", publicId);
             }
-            console.log("[REMOVE IMAGE] Đã gửi yêu cầu xóa ảnh trên server:", publicId);
+            console.log(
+              "[REMOVE IMAGE] Đã gửi yêu cầu xóa ảnh trên server:",
+              publicId
+            );
           } catch (err) {
             console.error("❌ Lỗi kết nối khi xoá ảnh:", err);
           }
         }
-
         // Xóa mảng sau khi xử lý xong
         removedImages = [];
       }
@@ -638,7 +977,9 @@
       // Chỉ gửi thông tin chung sản phẩm
       const payload = {
         name: productNameInput.value.trim(),
-        slug: productSlugInput.value.trim() || productNameInput.value.trim().toLowerCase().replace(/\s+/g, "-"),
+        slug:
+          productSlugInput.value.trim() ||
+          productNameInput.value.trim().toLowerCase().replace(/\s+/g, "-"),
         description: productDescriptionTextarea.value.trim(),
         category_id: parseInt(productCategorySelect.value),
         status: parseInt(productStatusSelect.value),
@@ -649,7 +990,9 @@
         seating_height: parseFloat(productSeatHeightInput.value) || null,
         max_weight_load: parseFloat(productMaxLoadInput.value) || null,
         main_image: mainImageUrl,
-        room_ids: Array.from(productRoomsSelect.selectedOptions).map(opt => parseInt(opt.value)),
+        room_ids: Array.from(productRoomsSelect.selectedOptions).map((opt) =>
+          parseInt(opt.value)
+        ),
       };
       console.log("[PRODUCT PAYLOAD]", payload);
 
@@ -657,9 +1000,11 @@
       const res = await fetch(`${API_URL}/api/products/admin/${slug}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       });
       const result = await res.json();
+
+      // KIỂM TRA ĐIỀU NÀY ĐẦU TIÊN!
       if (!res.ok) {
         if (result.errors && Array.isArray(result.errors)) {
           result.errors.forEach((err) => {
@@ -690,24 +1035,21 @@
             } else if (field === "materials") {
               showFieldError(productMaterialInput, message);
             }
-
-
             // ===== Lỗi của biến thể =====
             else if (field.startsWith("variants[")) {
               const match = field.match(/variants\[(\d+)\]\.(.+)/);
-
               if (match) {
                 const index = parseInt(match[1], 10);
                 const fieldName = match[2];
-
-                const variantEl = document.querySelectorAll("#variantsList .variant-item")[index];
+                const variantEl = document.querySelectorAll(
+                  "#variantsList .variant-item"
+                )[index];
                 if (variantEl) {
                   let input;
                   if (fieldName === "slug") {
                     input = variantEl.querySelector(".variant-slug");
                   } else if (fieldName === "quantity") {
                     input = variantEl.querySelector(".variant-quantity");
-                    console.log("[VALIDATE] Tìm thấy input quantity:", input);
                   } else if (fieldName === "price") {
                     input = variantEl.querySelector(".variant-price");
                   } else if (fieldName === "price_sale") {
@@ -715,10 +1057,12 @@
                   } else if (fieldName === "color_id") {
                     input = variantEl.querySelector(".variant-color");
                   } else if (fieldName === "list_image") {
-                    // Nếu muốn hiện lỗi ảnh, có thể thêm alert/tooltip gần khung ảnh
-                    const imageGrid = variantEl.querySelector(".variant-image-grid");
+                    const imageGrid = variantEl.querySelector(
+                      ".variant-image-grid"
+                    );
                     if (imageGrid) {
-                      const existingError = imageGrid.querySelector(".invalid-feedback");
+                      const existingError =
+                        imageGrid.querySelector(".invalid-feedback");
                       if (!existingError) {
                         const errorBox = document.createElement("div");
                         errorBox.className = "invalid-feedback";
@@ -731,11 +1075,9 @@
                     }
                     return;
                   }
-
                   if (input) {
                     showFieldError(input, message);
                   }
-
                 }
               }
             }
@@ -743,39 +1085,52 @@
         }
 
         showToast("Lỗi khi cập nhật sản phẩm", "danger");
-        return;
+        // QUAN TRỌNG: Nếu cập nhật sản phẩm chính thất bại, dừng lại ở đây.
+        return; // Điều này đảm bảo không có thông báo thành công hoặc logic biến thể nào được chạy
       }
 
+      // Nếu mã đến được đây, nghĩa là cập nhật sản phẩm chính đã thành công.
       showToast("Cập nhật sản phẩm thành công!", "success");
 
-
       // === Cập nhật hoặc xóa các biến thể đã có (KHÔNG tạo mới ở đây) ===
-      const productId = result.product?.id || result.product?.product_id || result.product_id;
-      const variantElements = document.querySelectorAll("#variantsList .variant-item");
-      // XÓA: console.log("== VARIANT ELEMENTS =="";
-      // XÓA: variantElements.forEach(el => { console.log("data-id:", el.getAttribute("data-id")); });
+      const productId =
+        result.product?.id || result.product?.product_id || result.product_id;
+      const variantElements = document.querySelectorAll(
+        "#variantsList .variant-item"
+      );
 
-      // Xử lý xóa các biến thể đã bị remove khỏi DOM
+      // Xử lý xóa các biến thể đã bị loại bỏ khỏi DOM
       const currentIds = Array.from(variantElements)
-        .map(el => el.getAttribute("data-id"))
+        .map((el) => el.getAttribute("data-id"))
         .filter(Boolean);
-      const loadedIds = Array.from(document.querySelectorAll("#variantsList .variant-item[data-id]"))
-        .map(el => el.getAttribute("data-id"));
-      const deletedIds = loadedIds.filter(id => !currentIds.includes(id));
+      const loadedIds = Array.from(
+        document.querySelectorAll("#variantsList .variant-item[data-id]")
+      ).map((el) => el.getAttribute("data-id"));
+      const deletedIds = loadedIds.filter((id) => !currentIds.includes(id));
       for (const delId of deletedIds) {
         if (delId) {
           await deleteVariant(delId);
         }
       }
 
+      // Biến cờ để theo dõi xem tất cả các biến thể có được cập nhật thành công không
+      let allVariantsUpdatedSuccessfully = true;
 
       for (const variantEl of variantElements) {
         let variantId = variantEl.getAttribute("data-id");
-        const color_id = parseInt(variantEl.querySelector(".variant-color")?.value || 0);
+        const color_id = parseInt(
+          variantEl.querySelector(".variant-color")?.value || 0
+        );
         const slug = variantEl.querySelector(".variant-slug")?.value.trim();
-        const quantity = parseInt(variantEl.querySelector(".variant-quantity")?.value || 0);
-        const price = parseFloat(variantEl.querySelector(".variant-price")?.value || 0);
-        const price_sale = parseFloat(variantEl.querySelector(".variant-sale-price")?.value || 0);
+        const quantity = parseInt(
+          variantEl.querySelector(".variant-quantity")?.value || 0
+        );
+        const price = parseFloat(
+          variantEl.querySelector(".variant-price")?.value || 0
+        );
+        const price_sale = parseFloat(
+          variantEl.querySelector(".variant-sale-price")?.value || 0
+        );
 
         let finalVariantId = variantId;
         let list_image = [];
@@ -784,7 +1139,7 @@
           variantEl.querySelectorAll(".variant-image-item.loaded")
         );
 
-        // Nếu là biến thể mới, tạo trước khi upload ảnh
+        // Nếu là biến thể mới, tạo nó trước khi tải ảnh lên
         if (!finalVariantId) {
           const created = await addVariant(productId, {
             color_id,
@@ -792,19 +1147,20 @@
             quantity,
             price,
             price_sale,
-            list_image: "", // Tạo tạm, ảnh sẽ thêm sau
+            list_image: "", // Tạo tạm thời, ảnh sẽ được thêm sau
           });
 
           if (!created || !created.variant_id) {
             showToast("Không thể tạo biến thể mới", "danger");
-            continue;
+            allVariantsUpdatedSuccessfully = false; // Đánh dấu thất bại
+            continue; // Chuyển sang biến thể tiếp theo
           }
 
           finalVariantId = created.variant_id;
           variantEl.setAttribute("data-id", finalVariantId);
         }
 
-        // Upload ảnh nếu là ảnh base64
+        // Tải ảnh lên nếu chúng là base64
         for (const box of loadedImageBoxes) {
           const img = box.querySelector("img");
           const input = box.querySelector('input[type="file"]');
@@ -813,18 +1169,23 @@
           const src = img.src;
 
           if (src.startsWith("http")) {
-            list_image.push(src); // Ảnh cũ giữ nguyên
+            list_image.push(src); // Giữ lại ảnh cũ
           } else if (src.startsWith("data:image/") && input?.files?.[0]) {
-            const uploadedUrl = await uploadVariantImageToServer(finalVariantId, input.files[0]);
+            const uploadedUrl = await uploadVariantImageToServer(
+              finalVariantId,
+              input.files[0]
+            );
             if (uploadedUrl) {
               list_image.push(uploadedUrl);
               img.src = uploadedUrl;
               input.value = "";
+            } else {
+              allVariantsUpdatedSuccessfully = false; // Đánh dấu thất bại nếu tải ảnh lên lỗi
             }
           }
         }
 
-        // Cập nhật lại list_image trong DOM và variantData
+        // Cập nhật list_image trong DOM và variantData
         variantEl.variantData = {
           color_id,
           slug,
@@ -834,26 +1195,55 @@
           list_image,
         };
 
-        setupVariantImageUpload(variantEl); // Cập nhật lại box ảnh
+        setupVariantImageUpload(variantEl); // Cập nhật khung ảnh
 
-        // Gửi request cập nhật biến thể với ảnh đã upload
-        await updateVariant(finalVariantId, {
+        // Gửi yêu cầu cập nhật biến thể với các ảnh đã tải lên
+        const variantUpdateSuccess = await updateVariant(finalVariantId, {
           color_id,
           slug,
           quantity,
           price,
           price_sale,
-          list_image: list_image.join(","), // backend yêu cầu dạng chuỗi
+          list_image: list_image.join(","), // Backend yêu cầu định dạng chuỗi
         });
+
+        if (!variantUpdateSuccess) {
+          allVariantsUpdatedSuccessfully = false; // Đánh dấu thất bại nếu cập nhật biến thể lỗi
+        }
       }
-      showToast("Cập nhật biến thể thành công!", "success");
+
+      // Chỉ hiển thị thông báo thành công cho biến thể nếu tất cả đều OK
+      if (allVariantsUpdatedSuccessfully) {
+        showToast("Cập nhật biến thể thành công!", "success");
+      } else {
+        showToast(
+          "Có lỗi xảy ra khi cập nhật một số biến thể. Vui lòng kiểm tra lại.",
+          "danger"
+        );
+      }
+
+      // Chuyển hướng sau khi lưu thành công (chỉ khi sản phẩm và biến thể được xử lý thành công)
+      setTimeout(() => {
+        window.location.href = "/dashboard/products";
+      }, 1500); // Chuyển hướng sau 1.5 giây
     } catch (err) {
       console.error("Lỗi khi lưu sản phẩm:", err);
       showToast("Lỗi khi lưu sản phẩm", "danger");
+    } finally {
+      // Kích hoạt lại nút và khôi phục văn bản
+      saveButton.disabled = false;
+      saveButton.textContent = originalButtonText;
+      saveButton.classList.remove("btn-loading"); // Tùy chọn: Xóa class hiển thị đang tải
     }
   });
   window.addEventListener("DOMContentLoaded", () => {
-    [productNameInput, productSlugInput, productCategorySelect, productStatusSelect, productDescriptionTextarea].forEach(input => {
+    [
+      productNameInput,
+      productSlugInput,
+      productCategorySelect,
+      productStatusSelect,
+      productDescriptionTextarea,
+    ].forEach((input) => {
       input.addEventListener("input", () => clearFieldError(input));
     });
   });
@@ -908,22 +1298,27 @@
       return null;
     }
   }
-  document.querySelector(".btn-add-variant").addEventListener("click", async function () {
-    const newVariant = variantTemplate.cloneNode(true);
-    newVariant.style.display = "block";
-    newVariant.removeAttribute("id");
-    newVariant.classList.add("variant-item");
+  document
+    .querySelector(".btn-add-variant")
+    .addEventListener("click", async function () {
+      const newVariant = variantTemplate.cloneNode(true);
+      newVariant.style.display = "block";
+      newVariant.removeAttribute("id");
+      newVariant.classList.add("variant-item");
 
-    // Render dropdown màu
-    const colorSelect = newVariant.querySelector(".variant-color");
-    colorSelect.innerHTML = globalColors.map(
-      (color) => `<option value="${color.color_id}">${color.color_name}</option>`
-    ).join("");
+      // Render dropdown màu
+      const colorSelect = newVariant.querySelector(".variant-color");
+      colorSelect.innerHTML = globalColors
+        .map(
+          (color) =>
+            `<option value="${color.color_id}">${color.color_name}</option>`
+        )
+        .join("");
 
-    // Setup event
-    setupVariantEvents(newVariant);
-    variantsList.appendChild(newVariant);
-  });
+      // Setup event
+      setupVariantEvents(newVariant);
+      variantsList.appendChild(newVariant);
+    });
 
   // Đảm bảo định nghĩa setupVariantEvents trước khi gọi trong loadProductDetail
   function setupVariantEvents(variantElement) {
@@ -958,11 +1353,13 @@
           }
 
           // Dù là mới hay cũ cũng xoá khỏi DOM
-          console.log("[REMOVE VARIANT] Đã xóa biến thể khỏi DOM:", variantId || "new (chưa có ID)");
+          console.log(
+            "[REMOVE VARIANT] Đã xóa biến thể khỏi DOM:",
+            variantId || "new (chưa có ID)"
+          );
           variantElement.remove();
         }
       });
-
 
     // Tự động tạo slug khi chọn màu
     const colorSelect = variantElement.querySelector(".variant-color");
@@ -971,16 +1368,21 @@
       colorSelect.addEventListener("change", () => {
         const selectedOption = colorSelect.options[colorSelect.selectedIndex];
         const colorName = selectedOption?.textContent?.trim() || "";
-        if (colorName && !slugInput.value) {
+
+        if (colorName) {
           slugInput.value = colorName
             .toLowerCase()
             .normalize("NFD")
             .replace(/[\u0300-\u036f]/g, "")
             .replace(/[đĐ]/g, "d")
-            .replace(/[^a-z0-9]/g, "-")
+            .replace(/[^a-z0-9\s-]/g, "")
+            .replace(/\s+/g, "-")
             .replace(/-+/g, "-")
             .replace(/^-+|-+$/g, "");
+        } else {
+          slugInput.value = "";
         }
+        clearFieldError(slugInput);
       });
     }
 
@@ -1007,18 +1409,23 @@
             <img src="${imgUrl}" alt="Preview" style="width:80px;margin:5px;">
             <button class="remove-image"><i class="fas fa-times"></i></button>
           `;
-        imgBox.querySelector(".remove-image").addEventListener("click", function (ev) {
-          ev.stopPropagation();
-          const publicId = extractPublicIdFromUrl(imgUrl);
-          if (publicId) {
-            removedImages.push(publicId);
-            console.log("[REMOVE IMAGE] Đã đánh dấu xóa ảnh biến thể:", publicId);
-          }
-          imgBox.remove();
-          if (!imageGrid.querySelector('.variant-upload-box')) {
-            imageGrid.appendChild(createUploadBox(imageGrid));
-          }
-        });
+        imgBox
+          .querySelector(".remove-image")
+          .addEventListener("click", function (ev) {
+            ev.stopPropagation();
+            const publicId = extractPublicIdFromUrl(imgUrl);
+            if (publicId) {
+              removedImages.push(publicId);
+              console.log(
+                "[REMOVE IMAGE] Đã đánh dấu xóa ảnh biến thể:",
+                publicId
+              );
+            }
+            imgBox.remove();
+            if (!imageGrid.querySelector(".variant-upload-box")) {
+              imageGrid.appendChild(createUploadBox(imageGrid));
+            }
+          });
         imageGrid.appendChild(imgBox);
       });
       imageGrid.appendChild(createUploadBox(imageGrid));
@@ -1056,9 +1463,8 @@
   }
 </script>
 
-<div id="toastContainer" class="position-fixed top-0 end-0 p-3" style="z-index:1050"></div>
+<div id="toastContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 1050"></div>
 <script>
-
   function showToast(message, type = "success") {
     let toastContainer = document.getElementById("toastContainer");
     if (!toastContainer) {
@@ -1088,10 +1494,7 @@
 
     toast.addEventListener("hidden.bs.toast", () => toast.remove());
   }
-
 </script>
-
-
 
 <!-- API -->
 

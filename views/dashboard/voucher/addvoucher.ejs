@@ -16,6 +16,7 @@
                     <label for="vouchercode">Mã giảm giá</label>
                     <input type="text" id="vouchercode" class="form-control" placeholder="Nhập mã giảm giá" />
                 </div>
+
             </div>
 
             <div class="form-row">
@@ -36,7 +37,8 @@
                 </div>
                 <div class="form-group">
                     <label for="voucherused">Lượt sử dụng</label>
-                    <input type="number" id="voucherused" class="form-control" placeholder="Nhập số lượt sử dụng" min="1" value="1" />
+                    <input type="number" id="voucherused" class="form-control" placeholder="Nhập số lượt sử dụng"
+                        min="1" value="1" />
                 </div>
             </div>
 
@@ -51,6 +53,7 @@
                         <i class="fas fa-chevron-down"></i>
                     </div>
                 </div>
+
                 <div class="form-group">
                     <label for="voucherStatus">Trạng thái</label>
                     <div class="select-wrapper">
@@ -61,6 +64,30 @@
                         <i class="fas fa-chevron-down"></i>
                     </div>
                 </div>
+                <div class="form-group">
+                    <label for="minOrder">Đơn hàng tối thiểu</label>
+                    <input type="number" id="minOrder" class="form-control"
+                        placeholder="Nhập giá trị tối thiểu (VND)" />
+                </div>
+
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="applyToAll">Áp dụng cho:</label>
+                    <div class="select-wrapper">
+                        <select id="applyToAll" class="form-control">
+                            <option value="all">Tất cả người dùng</option>
+                            <option value="custom">Chỉ định người dùng</option>
+                        </select>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </div>
+
+                <div class="form-group" id="userIdInput" style="display: none;">
+                    <label for="userIdList">ID người dùng</label>
+                    <select id="userIdList" class="form-control select2" multiple></select>
+                </div>
+
             </div>
 
             <div class="form-row">
@@ -80,6 +107,7 @@
                     <input type="text" id="voucherdescription" class="form-control" placeholder="Nhập mô tả" />
                 </div>
             </div>
+
         </div>
 
         <div class="form-actionss">
@@ -95,6 +123,14 @@
             .querySelector(".btn-save")
             .addEventListener("click", handlesavevoucher);
     });
+    document.getElementById("applyToAll").addEventListener("change", function () {
+        const selected = this.value;
+        document.getElementById("userIdInput").style.display = selected === "custom" ? "block" : "none";
+    });
+    document.addEventListener("DOMContentLoaded", async () => {
+        await loadUserOptions();
+        document.querySelector(".btn-save").addEventListener("click", handlesavevoucher);
+    });
 
     async function handlesavevoucher() {
         const title = document.getElementById("vouchertitle").value.trim();
@@ -107,6 +143,15 @@
         const start_time = document.getElementById("voucherStart").value;
         const exp_time = document.getElementById("voucherEnd").value;
         const used = parseInt(document.getElementById("voucherused").value);
+        const min_order = parseFloat(document.getElementById("minOrder").value) || 0;
+
+        const applyTo = document.getElementById("applyToAll").value;
+        let user_ids = null;
+        if (applyTo === "custom") {
+            const select = document.getElementById("userIdList");
+            user_ids = Array.from(select.selectedOptions).map(opt => parseInt(opt.value));
+        }
+
 
         const saveBtn = document.querySelector(".btn-save");
         saveBtn.disabled = true;
@@ -130,6 +175,8 @@
             is_flash_sale,
             status,
             used,
+            user_ids,
+            min_order,
         };
 
         try {
@@ -187,4 +234,37 @@
 
         toast.addEventListener("hidden.bs.toast", () => toast.remove());
     }
+    async function loadUserOptions() {
+        try {
+            const res = await fetch("http://localhost:3501/api/users/simple", {
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                },
+            });
+            const data = await res.json();
+
+            const select = document.getElementById("userIdList");
+            select.innerHTML = "";
+
+            data.forEach(user => {
+                const option = document.createElement("option");
+                option.value = user.id;
+                option.textContent = `${user.id} - ${user.name} - ${user.email}`;
+                select.appendChild(option);
+            });
+
+            // ✅ Khởi tạo Select2 sau khi đã gán option
+            $("#userIdList").select2({
+                width: "100%", // tùy chỉnh cho full width
+                placeholder: "Chọn người dùng",
+                allowClear: true
+            });
+
+        } catch (err) {
+            console.error("Lỗi khi tải danh sách người dùng:", err);
+            showToast("Không thể tải danh sách người dùng", "danger");
+        }
+    }
+
+
 </script>

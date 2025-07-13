@@ -394,6 +394,7 @@ router.get("/:slug/products", async (req, res) => {
  * @desc    Thêm sản phẩm vào phòng
  * @access  Private (Admin only)
  * Chưa làm trường hợp nếu sản phẩm đã tồn tại trong phòng thì không thêm vào
+ * /admin
  */
 router.post("/:slug/products", verifyToken, isAdmin, async (req, res) => {
   try {

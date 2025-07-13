@@ -606,9 +606,9 @@ router.get("/variants", async (req, res) => {
       slug: v.variant_product_slug,
       first_image: v.list_image
         ? v.list_image
-          .split(",")[0]
-          .trim()
-          .replace(/^['"]+|['"]+$/g, "")
+            .split(",")[0]
+            .trim()
+            .replace(/^['"]+|['"]+$/g, "")
         : null,
     }));
 
@@ -681,8 +681,8 @@ ORDER BY c.color_priority DESC
       slug: v.slug,
       list_image: v.list_image
         ? v.list_image
-          .split(",")
-          .map((img) => img.trim().replace(/^['\"]+|['\"]+$/g, ""))
+            .split(",")
+            .map((img) => img.trim().replace(/^['\"]+|['\"]+$/g, ""))
         : [],
     }));
 
@@ -1796,8 +1796,8 @@ router.get("/admin/:slug", async (req, res) => {
       slug: v.slug,
       list_image: v.list_image
         ? v.list_image
-          .split(",")
-          .map((img) => img.trim().replace(/^['"]+|['"]+$/g, ""))
+            .split(",")
+            .map((img) => img.trim().replace(/^['"]+|['"]+$/g, ""))
         : [],
     }));
 

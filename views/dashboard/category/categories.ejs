@@ -49,13 +49,15 @@
   </table>
 </div>
 
+<button id="testConfirm">Test showConfirm</button>
+
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     // Initialize table sorting
     const URL_API = "http://localhost:3501/api";
 
     function getCategories() {
-      fetch(URL_API + "/categories")
+      fetch(URL_API + "/categories/admin")
         .then((response) => response.json())
         .then((data) => {
           renderCategories(data);
@@ -125,7 +127,9 @@
                 category.slug
               }" data-name="${
           category.category_name
-        }" title="Xóa danh mục" data-id="${category.category_id}">
+        }" title="Xóa danh mục" data-id="${
+          category.category_id
+        }" data-status="${status}">
                 <i class="fas fa-trash"></i>
               </button>
             </div>
@@ -140,6 +144,14 @@
           const categoryId = btn.getAttribute("data-id");
           const categoryName = btn.getAttribute("data-name");
           deleteCategory(categoryId, categoryName);
+        });
+      });
+
+      document.querySelectorAll(".action-button.visibility").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const categoryId = btn.getAttribute("data-id");
+          const categoryStatus = btn.getAttribute("data-status");
+          changeStatus(categoryId, categoryStatus);
         });
       });
 
@@ -176,6 +188,27 @@
         });
     }
 
+    function changeStatus(categoryId, categoryStatus) {
+      const token = localStorage.getItem("token");
+      fetch(`/api/categories/${categoryId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: categoryStatus === "visible" ? 0 : 1 }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.error) {
+            showToast(data.error, "danger");
+          } else {
+            showToast("Cập nhật trạng thái thành công", "success");
+            setTimeout(() => location.reload(), 1500);
+          }
+        });
+    }
+
     function showToast(message, type = "success") {
       let toastContainer = document.getElementById("toastContainer");
       if (!toastContainer) {
@@ -208,4 +241,54 @@
 
     getCategories();
   });
+
+  document.getElementById("testConfirm").onclick = function () {
+    showConfirm({
+      message: "Bạn có chắc chắn muốn xóa danh mục?",
+      confirmText: "Xác nhận",
+      cancelText: "Hủy",
+    });
+  };
+
+  function showConfirm({
+    message = "Are you sure?",
+    confirmText = "Xác nhận",
+    cancelText = "Hủy",
+    onConfirm = () => {},
+    onCancel = () => {},
+  } = {}) {
+    let confirmPopup = document.getElementById("confirmPopup");
+    if (confirmPopup) confirmPopup.remove(); // Remove old popup if exists
+
+    // Create popup container
+    confirmPopup = document.createElement("div");
+    confirmPopup.id = "confirmPopup";
+    confirmPopup.innerHTML = `
+    <div class="confirm-dialog">
+      <div class="confirm-message">${message}</div>
+      <div class="confirm-actions">
+        <button class="btn btn-confirm">${confirmText}</button>
+        <button class="btn btn-cancel">${cancelText}</button>
+      </div>
+    </div>
+    <div class="confirm-overlay"></div>
+  `;
+
+    document.body.appendChild(confirmPopup);
+
+    // Add event listeners
+    confirmPopup.querySelector(".btn-confirm").onclick = () => {
+      confirmPopup.remove();
+      onConfirm();
+    };
+    confirmPopup.querySelector(".btn-cancel").onclick = () => {
+      confirmPopup.remove();
+      onCancel();
+    };
+    // Click overlay to cancel
+    confirmPopup.querySelector(".confirm-overlay").onclick = () => {
+      confirmPopup.remove();
+      onCancel();
+    };
+  }
 </script>

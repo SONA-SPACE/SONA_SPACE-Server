@@ -53,11 +53,49 @@
         </div>
       </div>
     </div>
-
     <!-- Nút -->
     <div class="form-actions">
       <button type="button" class="btn btn-cancel">Hủy</button>
       <button type="button" class="btn btn-save">Lưu</button>
+    </div>
+    
+    <div class="room-products-column">
+      <div class="form-section">
+        <h3 class="section-title">Sản phẩm trong phòng</h3>
+
+        <!-- Form thêm sản phẩm -->
+        <div class="add-product-form">
+          <div class="form-group">
+            <label for="variant-select">Chọn sản phẩm</label>
+            <select id="variant-select" class="form-control">
+              <option value="">Chọn một sản phẩm</option>
+            </select>
+          </div>
+          <button type="button" class="btn btn-add" id="add-product-btn">
+            Thêm
+          </button>
+        </div>
+
+        <!-- Bảng sản phẩm -->
+        <div class="products-table-container">
+          <table class="products-table">
+            <thead>
+              <tr>
+                <th>Ảnh</th>
+                <th>Tên</th>
+                <th style="white-space: nowrap">Số lượng</th>
+                <th style="white-space: nowrap">Giá</th>
+                <th style="white-space: nowrap">Giảm giá</th>
+                <th style="white-space: nowrap">Thành tiền</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="design-products-tbody">
+              <!-- Dữ liệu sẽ được chèn vào đây bằng JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -129,6 +167,7 @@
       body: formData,
     });
     const data = await res.json();
+    console.log(data);
     return data.url || null;
   }
 

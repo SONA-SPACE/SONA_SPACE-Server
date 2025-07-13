@@ -1,19 +1,19 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const bcrypt = require('bcryptjs');
-const db = require('../config/database');
-const { generateToken, verifyToken } = require('../middleware/auth');
-const jwt = require('jsonwebtoken');
+const bcrypt = require("bcryptjs");
+const db = require("../config/database");
+const { generateToken, verifyToken } = require("../middleware/auth");
+const jwt = require("jsonwebtoken");
 
 // Lấy JWT secret từ biến môi trường hoặc sử dụng giá trị mặc định
-const JWT_SECRET = process.env.JWT_SECRET || 'furnitown-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET || "furnitown-secret-key";
 
 /**
  * @route   POST /api/auth/register
  * @desc    Đăng ký người dùng mới
  * @access  Public
  */
-router.post('/register', async (req, res) => {
+router.post("/register", async (req, res) => {
   try {
     const { email, password, full_name, phone, address } = req.body;
 
@@ -21,20 +21,28 @@ router.post('/register', async (req, res) => {
 
     // Validate cơ bản
     if (!email || !password || !full_name) {
-      return res.status(400).json({ error: 'Vui lòng nhập đủ thông tin bắt buộc' });
+      return res
+        .status(400)
+        .json({ error: "Vui lòng nhập đủ thông tin bắt buộc" });
     }
 
     // Kiểm tra email đã tồn tại
-    const [emailCheck] = await db.query('SELECT user_id FROM user WHERE user_gmail = ?', [email]);
+    const [emailCheck] = await db.query(
+      "SELECT user_id FROM user WHERE user_gmail = ?",
+      [email]
+    );
     if (emailCheck.length > 0) {
-      errors.email = 'Email đã được sử dụng.';
+      errors.email = "Email đã được sử dụng.";
     }
 
     // Kiểm tra số điện thoại đã tồn tại
     if (phone) {
-      const [phoneCheck] = await db.query('SELECT user_id FROM user WHERE user_number = ?', [phone]);
+      const [phoneCheck] = await db.query(
+        "SELECT user_id FROM user WHERE user_number = ?",
+        [phone]
+      );
       if (phoneCheck.length > 0) {
-        errors.phone = 'Số điện thoại đã được sử dụng';
+        errors.phone = "Số điện thoại đã được sử dụng";
       }
     }
 
@@ -48,29 +56,28 @@ router.post('/register', async (req, res) => {
 
     // Lưu người dùng
     const result = await db.query(
-      'INSERT INTO user (user_gmail, user_password, user_name, user_number, user_address, user_role, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())',
-      [email, hashedPassword, full_name, phone || null, address || null, 'user']
+      "INSERT INTO user (user_gmail, user_password, user_name, user_number, user_address, user_role, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())",
+      [email, hashedPassword, full_name, phone || null, address || null, "user"]
     );
 
     const userId = result[0].insertId;
     const token = generateToken(userId);
 
     res.status(201).json({
-      message: 'Đăng ký thành công',
+      message: "Đăng ký thành công",
       token,
       user: {
         id: userId,
         email,
         full_name,
-        role: 'user'
-      }
+        role: "user",
+      },
     });
   } catch (error) {
-    console.error('Lỗi đăng ký:', error);
-    res.status(500).json({ error: 'Lỗi máy chủ khi đăng ký' });
+    console.error("Lỗi đăng ký:", error);
+    res.status(500).json({ error: "Lỗi máy chủ khi đăng ký" });
   }
 });
-
 
 /**
  * @route   POST /api/auth/login
@@ -140,34 +147,40 @@ router.post('/register', async (req, res) => {
 //     res.status(500).json({ error: 'Server error during login' });
 //   }
 // });
-router.post('/login', async (req, res) => {
+router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
     // Kiểm tra có nhập không
     if (!email || !password) {
-      return res.status(400).json({ error: 'Vui lòng nhập email và mật khẩu.' });
+      return res
+        .status(400)
+        .json({ error: "Vui lòng nhập email và mật khẩu." });
     }
 
     // Kiểm tra định dạng email đơn giản (regex cơ bản)
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return res.status(400).json({ error: 'Email không hợp lệ.' });
+      return res.status(400).json({ error: "Email không hợp lệ." });
     }
 
     // Kiểm tra độ dài mật khẩu
     if (password.length < 6) {
-      return res.status(400).json({ error: 'Mật khẩu phải có ít nhất 6 ký tự.' });
+      return res
+        .status(400)
+        .json({ error: "Mật khẩu phải có ít nhất 6 ký tự." });
     }
 
     // Truy vấn người dùng
     const [users] = await db.query(
-      'SELECT user_id, user_gmail, user_password, user_name, user_role, user_number, user_address FROM user WHERE user_gmail = ?',
+      "SELECT user_id, user_gmail, user_password, user_name, user_role, user_number, user_address FROM user WHERE user_gmail = ?",
       [email]
     );
 
     if (users.length === 0) {
-      return res.status(401).json({ error: 'Thông tin đăng nhập không chính xác.' });
+      return res
+        .status(401)
+        .json({ error: "Thông tin đăng nhập không chính xác." });
     }
 
     const user = users[0];
@@ -176,14 +189,16 @@ router.post('/login', async (req, res) => {
     const isPasswordValid = await bcrypt.compare(password, user.user_password);
 
     if (!isPasswordValid) {
-      return res.status(401).json({ error: 'Thông tin đăng nhập không chính xác.' });
+      return res
+        .status(401)
+        .json({ error: "Thông tin đăng nhập không chính xác." });
     }
 
     // Tạo JWT token
     const token = generateToken(user.user_id);
 
     res.json({
-      message: 'Đăng nhập thành công.',
+      message: "Đăng nhập thành công.",
       token,
       user: {
         id: user.user_id,
@@ -191,31 +206,30 @@ router.post('/login', async (req, res) => {
         full_name: user.user_name,
         role: user.user_role,
         phone: user.user_number,
-        address: user.user_address
-      }
+        address: user.user_address,
+      },
     });
   } catch (error) {
-    console.error('Lỗi đăng nhập:', error);
-    res.status(500).json({ error: 'Lỗi máy chủ trong quá trình đăng nhập.' });
+    console.error("Lỗi đăng nhập:", error);
+    res.status(500).json({ error: "Lỗi máy chủ trong quá trình đăng nhập." });
   }
 });
-
 
 /**
  * @route   GET /api/auth/profile
  * @desc    Lấy thông tin người dùng hiện tại
  * @access  Private
  */
-router.get('/profile', verifyToken, async (req, res) => {
+router.get("/profile", verifyToken, async (req, res) => {
   try {
     // Middleware auth.verifyToken đã đính kèm thông tin người dùng vào req.user
     const [users] = await db.query(
-      'SELECT user_id, user_gmail, user_name, user_number, user_address, user_role, created_at FROM user WHERE user_id = ?',
+      "SELECT user_id, user_gmail, user_name, user_number, user_address, user_role, created_at FROM user WHERE user_id = ?",
       [req.user.id]
     );
 
     if (users.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: "User not found" });
     }
 
     res.json({
@@ -226,12 +240,12 @@ router.get('/profile', verifyToken, async (req, res) => {
         phone: users[0].user_number,
         address: users[0].user_address,
         role: users[0].user_role,
-        created_at: users[0].created_at
-      }
+        created_at: users[0].created_at,
+      },
     });
   } catch (error) {
-    console.error('Profile fetch error:', error);
-    res.status(500).json({ error: 'Server error while fetching profile' });
+    console.error("Profile fetch error:", error);
+    res.status(500).json({ error: "Server error while fetching profile" });
   }
 });
 
@@ -240,28 +254,32 @@ router.get('/profile', verifyToken, async (req, res) => {
  * @desc    Đổi mật khẩu người dùng
  * @access  Private
  */
-router.post('/change-password', verifyToken, async (req, res) => {
+router.post("/change-password", verifyToken, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
 
     // Kiểm tra các trường bắt buộc
     if (!currentPassword || !newPassword) {
-      return res.status(400).json({ error: 'Please provide current password and new password' });
+      return res
+        .status(400)
+        .json({ error: "Please provide current password and new password" });
     }
 
     // Kiểm tra mật khẩu mới có đủ độ dài không
     if (newPassword.length < 6) {
-      return res.status(400).json({ error: 'New password must be at least 6 characters long' });
+      return res
+        .status(400)
+        .json({ error: "New password must be at least 6 characters long" });
     }
 
     // Lấy thông tin người dùng từ database
     const [users] = await db.query(
-      'SELECT user_id, user_password FROM user WHERE user_id = ?',
+      "SELECT user_id, user_password FROM user WHERE user_id = ?",
       [req.user.id]
     );
 
     if (users.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: "User not found" });
     }
 
     const user = users[0];
@@ -271,18 +289,24 @@ router.post('/change-password', verifyToken, async (req, res) => {
 
     // Thử so sánh với bcrypt trước
     try {
-      isCurrentPasswordValid = await bcrypt.compare(currentPassword, user.user_password);
+      isCurrentPasswordValid = await bcrypt.compare(
+        currentPassword,
+        user.user_password
+      );
     } catch (err) {
-      console.log('Password is not bcrypt hashed, doing direct comparison');
+      console.log("Password is not bcrypt hashed, doing direct comparison");
     }
 
     // Nếu bcrypt không thành công, thử so sánh trực tiếp
     if (!isCurrentPasswordValid) {
-      isCurrentPasswordValid = (currentPassword === user.user_password || currentPassword === 'admin123' || currentPassword === '123456');
+      isCurrentPasswordValid =
+        currentPassword === user.user_password ||
+        currentPassword === "admin123" ||
+        currentPassword === "123456";
     }
 
     if (!isCurrentPasswordValid) {
-      return res.status(401).json({ error: 'Current password is incorrect' });
+      return res.status(401).json({ error: "Current password is incorrect" });
     }
 
     // Mã hóa mật khẩu mới
@@ -291,24 +315,24 @@ router.post('/change-password', verifyToken, async (req, res) => {
       const salt = await bcrypt.genSalt(10);
       hashedNewPassword = await bcrypt.hash(newPassword, salt);
     } catch (error) {
-      console.error('Error hashing password:', error);
+      console.error("Error hashing password:", error);
       // Nếu không thể hash, sử dụng mật khẩu gốc (chỉ cho mục đích test)
       hashedNewPassword = newPassword;
     }
 
     // Cập nhật mật khẩu mới vào database
-    await db.query(
-      'UPDATE user SET user_password = ? WHERE user_id = ?',
-      [hashedNewPassword, req.user.id]
-    );
+    await db.query("UPDATE user SET user_password = ? WHERE user_id = ?", [
+      hashedNewPassword,
+      req.user.id,
+    ]);
 
     res.json({
-      message: 'Password changed successfully',
-      user_id: req.user.id
+      message: "Password changed successfully",
+      user_id: req.user.id,
     });
   } catch (error) {
-    console.error('Change password error:', error);
-    res.status(500).json({ error: 'Server error during password change' });
+    console.error("Change password error:", error);
+    res.status(500).json({ error: "Server error during password change" });
   }
 });
 
@@ -317,30 +341,34 @@ router.post('/change-password', verifyToken, async (req, res) => {
  * @desc    Đăng nhập cho admin dashboard
  * @access  Public
  */
-router.post('/admin-login', async (req, res) => {
+router.post("/admin-login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
     // Kiểm tra các trường bắt buộc
     if (!email || !password) {
-      return res.status(400).json({ error: 'Vui lòng nhập email và mật khẩu' });
+      return res.status(400).json({ error: "Vui lòng nhập email và mật khẩu" });
     }
 
     // Tìm người dùng
     const [users] = await db.query(
-      'SELECT user_id, user_gmail, user_password, user_name, user_role FROM user WHERE user_gmail = ?',
+      "SELECT user_id, user_gmail, user_password, user_name, user_role FROM user WHERE user_gmail = ?",
       [email]
     );
 
     if (users.length === 0) {
-      return res.status(401).json({ error: 'Tài Khoản hoặc Mật Khẩu không chính xác' });
+      return res
+        .status(401)
+        .json({ error: "Tài Khoản hoặc Mật Khẩu không chính xác" });
     }
 
     const user = users[0];
 
     // Kiểm tra role - chỉ cho phép admin đăng nhập
-    if (!user.user_role || user.user_role.toLowerCase() !== 'admin') {
-      return res.status(403).json({ error: 'Bạn không có quyền truy cập vào trang quản trị' });
+    if (!user.user_role || user.user_role.toLowerCase() !== "admin") {
+      return res
+        .status(403)
+        .json({ error: "Bạn không có quyền truy cập vào trang quản trị" });
     }
 
     // Kiểm tra mật khẩu
@@ -351,56 +379,65 @@ router.post('/admin-login', async (req, res) => {
       isPasswordValid = await bcrypt.compare(password, user.user_password);
     } catch (err) {
       // If bcrypt fails, it means the password is not hashed
-      console.log('Password is not bcrypt hashed, doing direct comparison');
+      console.log("Password is not bcrypt hashed, doing direct comparison");
     }
 
     // If bcrypt compare failed, do a direct comparison (for testing only)
     if (!isPasswordValid) {
-      isPasswordValid = (password === user.user_password || password === 'admin123' || password === '123456');
+      isPasswordValid =
+        password === user.user_password ||
+        password === "admin123" ||
+        password === "123456";
     }
 
     if (!isPasswordValid) {
-      return res.status(401).json({ error: 'Tài Khoản hoặc Mật Khẩu không chính xác' });
+      return res
+        .status(401)
+        .json({ error: "Tài Khoản hoặc Mật Khẩu không chính xác" });
     }
 
     // Tạo và trả về token với role admin
-    const token = jwt.sign({
-      id: user.user_id,
-      role: 'admin'
-    }, JWT_SECRET, { expiresIn: '24h' });
+    const token = jwt.sign(
+      {
+        id: user.user_id,
+        role: "admin",
+      },
+      JWT_SECRET,
+      { expiresIn: "24h" }
+    );
 
     // Lưu token vào cookie
-    res.cookie('token', token, {
+    res.cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 24 * 60 * 60 * 1000 // 24 giờ
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 24 * 60 * 60 * 1000, // 24 giờ
     });
 
     // Lưu token vào database và cập nhật thời gian updated_at
     try {
       await db.query(
-        'UPDATE user SET user_token = ?, updated_at = NOW() WHERE user_id = ?',
+        "UPDATE user SET user_token = ?, updated_at = NOW() WHERE user_id = ?",
         [token, user.user_id]
       );
-      console.log('Token đã được lưu vào database cho user_id:', user.user_id);
+      console.log("Token đã được lưu vào database cho user_id:", user.user_id);
     } catch (dbError) {
-      console.error('Lỗi khi lưu token vào database:', dbError);
+      console.error("Lỗi khi lưu token vào database:", dbError);
       // Tiếp tục xử lý đăng nhập ngay cả khi không thể lưu token vào database
     }
 
     res.json({
-      message: 'Đăng nhập thành công',
+      message: "Đăng nhập thành công",
       token,
       user: {
         id: user.user_id,
         email: user.user_gmail,
         full_name: user.user_name,
-        role: user.user_role
-      }
+        role: user.user_role,
+      },
     });
   } catch (error) {
-    console.error('Admin login error:', error);
-    res.status(500).json({ error: 'Lỗi server khi đăng nhập' });
+    console.error("Admin login error:", error);
+    res.status(500).json({ error: "Lỗi server khi đăng nhập" });
   }
 });
 
@@ -409,21 +446,25 @@ router.post('/admin-login', async (req, res) => {
  * @desc    Kiểm tra thông tin token của người dùng đang đăng nhập
  * @access  Private (Admin)
  */
-router.get('/check-token', verifyToken, async (req, res) => {
+router.get("/check-token", verifyToken, async (req, res) => {
   try {
     // Kiểm tra xem người dùng có quyền admin không
-    if (req.user.role !== 'admin') {
-      return res.status(403).json({ error: 'Chỉ admin mới có quyền truy cập API này' });
+    if (req.user.role !== "admin") {
+      return res
+        .status(403)
+        .json({ error: "Chỉ admin mới có quyền truy cập API này" });
     }
 
     // Lấy thông tin token từ database
     const [users] = await db.query(
-      'SELECT user_id, user_gmail, user_name, user_role, user_token, updated_at FROM user WHERE user_id = ?',
+      "SELECT user_id, user_gmail, user_name, user_role, user_token, updated_at FROM user WHERE user_id = ?",
       [req.user.id]
     );
 
     if (users.length === 0) {
-      return res.status(404).json({ error: 'Không tìm thấy thông tin người dùng' });
+      return res
+        .status(404)
+        .json({ error: "Không tìm thấy thông tin người dùng" });
     }
 
     const user = users[0];
@@ -435,12 +476,14 @@ router.get('/check-token', verifyToken, async (req, res) => {
       full_name: user.user_name,
       role: user.user_role,
       token_exists: !!user.user_token,
-      token_preview: user.user_token ? `${user.user_token.substring(0, 20)}...` : null,
-      updated_at: user.updated_at
+      token_preview: user.user_token
+        ? `${user.user_token.substring(0, 20)}...`
+        : null,
+      updated_at: user.updated_at,
     });
   } catch (error) {
-    console.error('Lỗi khi kiểm tra token:', error);
-    res.status(500).json({ error: 'Lỗi server khi kiểm tra token' });
+    console.error("Lỗi khi kiểm tra token:", error);
+    res.status(500).json({ error: "Lỗi server khi kiểm tra token" });
   }
 });
 
@@ -449,22 +492,22 @@ router.get('/check-token', verifyToken, async (req, res) => {
  * @desc    Đăng xuất và xóa token khỏi database
  * @access  Private
  */
-router.post('/logout', verifyToken, async (req, res) => {
+router.post("/logout", verifyToken, async (req, res) => {
   try {
     // Xóa token khỏi database
     await db.query(
-      'UPDATE user SET user_token = NULL, updated_at = NOW() WHERE user_id = ?',
+      "UPDATE user SET user_token = NULL, updated_at = NOW() WHERE user_id = ?",
       [req.user.id]
     );
 
     // Xóa cookie token nếu có
-    res.clearCookie('token');
+    res.clearCookie("token");
 
-    res.json({ message: 'Đăng xuất thành công' });
+    res.json({ message: "Đăng xuất thành công" });
   } catch (error) {
-    console.error('Lỗi khi đăng xuất:', error);
-    res.status(500).json({ error: 'Lỗi server khi đăng xuất' });
+    console.error("Lỗi khi đăng xuất:", error);
+    res.status(500).json({ error: "Lỗi server khi đăng xuất" });
   }
 });
 
-module.exports = router; 
+module.exports = router;

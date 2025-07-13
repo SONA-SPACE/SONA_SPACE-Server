@@ -71,7 +71,19 @@ router.get('/', isAdmin, async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch users' });
   }
 });
-
+router.get("/simple", verifyToken, isAdmin, async (req, res) => {
+  try {
+    const [users] = await db.query(`
+      SELECT user_id AS id, user_name AS name, user_gmail AS email
+      FROM user
+      WHERE user_role = 'user'
+    `);
+    res.json(users);
+  } catch (error) {
+    console.error("Lỗi khi lấy danh sách user:", error);
+    res.status(500).json({ error: "Lỗi máy chủ khi lấy danh sách người dùng" });
+  }
+});
 // 💥 Đặt trước route chứa /:id
 router.get('/admin', async (req, res) => {
   try {

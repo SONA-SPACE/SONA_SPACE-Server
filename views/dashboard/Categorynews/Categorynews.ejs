@@ -116,7 +116,7 @@
         `;
                 tableBody.appendChild(row);
             });
-           document.querySelectorAll(".action-button.delete").forEach((btn) => {
+            document.querySelectorAll(".action-button.delete").forEach((btn) => {
                 btn.addEventListener("click", () => {
                     const categoryId = btn.getAttribute("data-id");
                     const categoryName = btn.getAttribute("data-title");
@@ -150,9 +150,17 @@
                     }
                 })
                 .catch(err => {
-                    console.error("Lỗi khi xóa:", err);
-                    showToast("Xảy ra lỗi khi xóa bài viết", "danger");
+                    err.json().then(errorData => {
+                        if (errorData?.error?.includes("bài viết đang sử dụng")) {
+                            showToast(errorData.error, "warning");
+                        } else {
+                            showToast("Xảy ra lỗi khi xóa bài viết", "danger");
+                        }
+                    }).catch(() => {
+                        showToast("Xảy ra lỗi khi xóa bài viết", "danger");
+                    });
                 });
+
         }
         function formatDate(dateStr) {
             if (!dateStr) return "-";

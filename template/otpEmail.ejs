@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+
+        .header {
+            background-color: #007bff;
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+        .otp-code {
+            font-size: 2.5em;
+            font-weight: bold;
+            text-align: center;
+            margin: 25px 0;
+            color: #007bff;
+            letter-spacing: 3px;
+            background-color: #e9f5ff;
+            padding: 15px;
+            border-radius: 5px;
+        }
+
+        .footer {
+            font-size: 0.85em;
+            color: #777;
+            text-align: center;
+            padding: 15px 20px;
+            border-top: 1px solid #eee;
+            margin-top: 25px;
+        }
+
+        .button {
+            display: inline-block;
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Yêu cầu đặt lại mật khẩu của bạn</h2>
+        </div>
+        <div class="content">
+            <p>Xin chào,</p>
+            <p>Bạn đã yêu cầu đặt lại mật khẩu cho tài khoản của mình. Vui lòng sử dụng mã xác minh (OTP) dưới đây để
+                tiếp tục:</p>
+            <div class="otp-code">
+                <%= otp %>
+            </div>
+            <p>Mã này sẽ hết hạn vào lúc: <strong>
+                    <%= expiresAt %>
+                </strong>.</p>
+            <p>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này hoặc liên hệ với bộ phận hỗ trợ của
+                chúng tôi ngay lập tức.</p>
+            <p>Trân trọng,<br>Đội ngũ Furnitown</p>
+            <p style="text-align: center;">
+                <a href="#" class="button">Truy cập Furnitown</a>
+            </p>
+        </div>
+        <div class="footer">
+            <p>&copy; <%= new Date().getFullYear() %> Furnitown. Tất cả quyền được bảo lưu.</p>
+            <p>Địa chỉ: 123 Đường XYZ, Thành phố ABC</p>
+        </div>
+    </div>
+</body>
+
+</html>

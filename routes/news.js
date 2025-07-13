@@ -557,7 +557,7 @@ router.get("/:slug", async (req, res) => {
     const [result] = await db.query(
       `SELECT 
         news_id, news_title AS title, news_slug AS slug, news_content AS content, 
-        news_description AS excerpt, news_image AS thumbnail,
+        news_description AS excerpt, news_image AS images,
         news_category_id AS category_id, news_status AS status
       FROM news WHERE news_slug = ?`,
       [slug]
@@ -568,23 +568,6 @@ router.get("/:slug", async (req, res) => {
     }
 
     const newsItem = result[0];
-
-    // Parse ảnh phụ nếu dùng nhiều ảnh
-    if (newsItem.thumbnail) {
-      try {
-        const parsed = JSON.parse(newsItem.thumbnail);
-        if (Array.isArray(parsed)) {
-          newsItem.thumbnail = parsed[0] || null;
-          newsItem.images = parsed;
-        } else {
-          newsItem.images = [newsItem.thumbnail];
-        }
-      } catch (e) {
-        newsItem.images = [newsItem.thumbnail];
-      }
-    } else {
-      newsItem.images = [];
-    }
 
     res.json(newsItem);
   } catch (err) {

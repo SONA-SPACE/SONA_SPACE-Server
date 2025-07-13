@@ -312,3 +312,177 @@
     toast.addEventListener("hidden.bs.toast", () => toast.remove());
   }
 </script>
+<!-- <script>
+  let newsId = null;
+
+  document.addEventListener("DOMContentLoaded", async () => {
+    const urlParts = window.location.pathname.split("/");
+    const slug = urlParts[urlParts.length - 1];
+    newsId = slug;
+
+    await loadNewsCategories();
+    await loadNewsData(newsId);
+
+    document
+      .querySelector(".btn-save")
+      .addEventListener("click", handleUpdateNews);
+  });
+
+  async function loadNewsCategories() {
+    const select = document.getElementById("newsCategory");
+    try {
+      const res = await fetch("http://localhost:3501/api/news-categories");
+      const categories = await res.json();
+
+      select.innerHTML = `<option value="">Chọn danh mục</option>`;
+      categories.forEach((cat) => {
+        const option = document.createElement("option");
+        option.value = cat.id;
+        option.textContent = cat.name;
+        select.appendChild(option);
+      });
+    } catch (err) {
+      console.error("Lỗi tải danh mục:", err);
+      showToast("Không thể tải danh mục", "danger");
+    }
+  }
+
+  async function handleUpdateNews() {
+    const title = document.getElementById("newsTitle").value.trim();
+    const slug = document.getElementById("newsSlug").value.trim();
+    const content = document.getElementById("newsContent").value.trim();
+    const status = parseInt(document.getElementById("newsStatus").value);
+    const category_id = parseInt(document.getElementById("newsCategory").value);
+
+    const saveBtn = document.querySelector(".btn-save");
+    saveBtn.disabled = true;
+    saveBtn.innerText = "Đang lưu...";
+
+    if (!title || !content) {
+      showToast("Vui lòng nhập đầy đủ thông tin", "danger");
+      saveBtn.disabled = false;
+      saveBtn.innerText = "Lưu";
+      return;
+    }
+
+    try {
+      let mainImage = null;
+      if (avatarFile instanceof File) {
+        mainImage = await uploadImage(avatarFile, "SonaSpace/News");
+      } else if (typeof avatarFile === "string") {
+        mainImage = avatarFile;
+      }
+
+      const uploadedImages = [];
+      for (const file of thumbnailFiles) {
+        if (file instanceof File) {
+          const url = await uploadImage(file, "SonaSpace/News");
+          if (url) uploadedImages.push(url);
+        } else if (typeof file === "string") {
+          uploadedImages.push(file);
+        }
+      }
+
+      const payload = {
+        title,
+        slug,
+        content,
+        status,
+        category_id,
+        images: uploadedImages,
+      };
+
+      const token = localStorage.getItem("token");
+      const res = await fetch(`http://localhost:3501/api/news/${newsId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (data.error) {
+        showToast(data.error, "danger");
+      } else {
+        showToast("Cập nhật thành công", "success");
+        setTimeout(() => (window.location.href = "/dashboard/news"), 1000);
+      }
+    } catch (err) {
+      console.error("Error:", err);
+      showToast("Có lỗi khi cập nhật tin tức", "danger");
+    }
+
+    saveBtn.disabled = false;
+    saveBtn.innerText = "Lưu";
+  }
+
+  function bindUpload(selector, callback) {
+    const dropArea = document.querySelector(selector);
+    if (!dropArea) return;
+
+    const newDropArea = dropArea.cloneNode(true);
+    dropArea.parentNode.replaceChild(newDropArea, dropArea);
+
+    newDropArea.addEventListener("click", () => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "image/*";
+      input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          callback(file);
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            newDropArea.innerHTML = `<img src="${e.target.result}" />`;
+          };
+          reader.readAsDataURL(file);
+        }
+      };
+      input.click();
+    });
+
+    newDropArea.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      newDropArea.classList.add("dragover");
+    });
+
+    newDropArea.addEventListener("dragleave", () => {
+      newDropArea.classList.remove("dragover");
+    });
+
+    newDropArea.addEventListener("drop", (e) => {
+      e.preventDefault();
+      newDropArea.classList.remove("dragover");
+      const file = e.dataTransfer.files[0];
+      if (file) {
+        callback(file);
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          newDropArea.innerHTML = `<img src="${e.target.result}" />`;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  // Hàm upload ảnh mẫu
+  async function uploadImage(file, folder = "SonaSpace/News", type = "main") {
+    if (!file || typeof file === "string") return file;
+
+    const formData = new FormData();
+    formData.append("image", file);
+    formData.append("folder", folder);
+    formData.append("type", type);
+
+    const res = await fetch("http://localhost:3501/api/upload/news", {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await res.json();
+    return data.url || null;
+  }
+</script> -->

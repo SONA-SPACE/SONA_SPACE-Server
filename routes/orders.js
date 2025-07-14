@@ -103,11 +103,12 @@ router.get('/hash/:orderHash', optionalAuth, async (req, res) => {
         u.user_name AS order_name_old,
         u.user_gmail AS order_email_old,
         cc.code AS coupon_code,
-        cc.value_price AS coupon_value
+        cc.value_price AS coupon_value,
+          p.status AS payment_status
       FROM orders o
       LEFT JOIN user u ON o.user_id = u.user_id
       LEFT JOIN couponcode cc ON o.couponcode_id = cc.couponcode_id
-      
+      LEFT JOIN payments p ON o.order_id = p.order_id
       WHERE o.order_hash = ?
     `, [orderHash]);
 
@@ -176,7 +177,7 @@ router.get('/hash/:orderHash', optionalAuth, async (req, res) => {
         order_address_new: order.order_address_new || "",
         order_number1: order.order_number1 || "",
         order_number2: order.order_number2 || "",
-
+        paymentStatus: order.payment_status,
         subtotal: order.order_total,
         shippingFee: Number(order.shipping_fee) || 0,
         discount: Number(order.order_discount) || 0,
@@ -207,8 +208,6 @@ router.get('/hash/:orderHash', optionalAuth, async (req, res) => {
     return res.status(500).json({ success: false, message: 'Lỗi máy chủ', error: error.message });
   }
 });
-
-
 
 // GET /api/orders/admin
 router.get('/admin', verifyToken, isAdmin, async (req, res) => {
@@ -593,7 +592,7 @@ router.post('/', verifyToken, async (req, res) => {
 
     const orderId = orderRow.order_id;
 
-    // ✅ Lưu order_items
+    //  Lưu order_items
     for (const item of cart_items) {
       const { variant_id, quantity, name: product_name, price: product_price } = item;
 
@@ -776,7 +775,153 @@ router.post('/', verifyToken, async (req, res) => {
   }
 });
 
+// router.post('/payment/momo', async (req, res) => {
+//   try {
+//     const {
+//       partnerCode,
+//       orderId,
+//       requestId,
+//       amount,
+//       resultCode,
+//       message,
+//       orderInfo
+//     } = req.body;
 
+//     console.log("🔔 MoMo IPN:", req.body);
+
+//     if (resultCode === 0) {
+//       // Thanh toán thành công
+//       const [[payment]] = await db.query(`SELECT * FROM payments WHERE transaction_code = ?`, [orderId]);
+
+//       if (!payment) return res.status(404).json({ error: "Không tìm thấy thanh toán" });
+
+//       // Kiểm tra xem đã xử lý chưa
+//       if (payment.status === 'SUCCESS') {
+//         return res.status(200).json({ message: "Đã xử lý trước đó" });
+//       }
+
+//       const orderIdDb = payment.order_id;
+
+//       // Cập nhật trạng thái thanh toán
+//       await db.query(`UPDATE payments SET status = 'SUCCESS' WHERE transaction_code = ?`, [orderId]);
+
+//       // Cập nhật đơn hàng
+//       await db.query(`UPDATE orders SET current_status = 'PENDING' WHERE order_id = ?`, [orderIdDb]);
+
+//       // Ghi log trạng thái
+//       await db.query(`
+//         INSERT INTO order_status_log (order_id, from_status, to_status, trigger_by, step, created_at)
+//         VALUES (?, NULL, 'PENDING', 'system', 'IPN MoMo xác nhận', NOW())
+//       `, [orderIdDb]);
+
+//       // Gửi mail xác nhận
+//       const [[order]] = await db.query(`
+//         SELECT * FROM orders WHERE order_id = ?
+//       `, [orderIdDb]);
+
+//       const [items] = await db.query(`
+//         SELECT * FROM order_items WHERE order_id = ?
+//       `, [orderIdDb]);
+
+//       const emailData = {
+//         name: order.order_name_new || order.order_name_old,
+//         email: order.order_email_new || order.order_email_old,
+//         phone: order.order_number2 || order.order_number1,
+//         address: order.order_address_new || order.order_address_old,
+//         amount,
+//         method: 'MOMO',
+//         order_id: order.order_hash,
+//         created_at: new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" }),
+//         current_status: order.current_status,
+//         order_total_final: Number(amount).toLocaleString("vi-VN") + "đ",
+//         products: items.map(item => ({
+//           name: item.product_name,
+//           quantity: item.quantity,
+//           price: Number(item.product_price).toLocaleString("vi-VN") + "đ",
+//           total: (item.product_price * item.quantity).toLocaleString("vi-VN") + "đ",
+//           image: item.image || "/images/default.jpg"
+//         }))
+//       };
+
+//       await sendEmail1(emailData.email, "Xác nhận đơn hàng MoMo", emailData);
+
+//       return res.status(200).json({ message: "Cập nhật đơn hàng thành công" });
+//     } else {
+//       console.log("❌ Thanh toán thất bại từ MoMo:", resultCode, message);
+//       return res.status(400).json({ message: "Thanh toán thất bại từ MoMo" });
+//     }
+//   } catch (error) {
+//     console.error("Lỗi IPN MoMo:", error);
+//     res.status(500).json({ error: "Lỗi máy chủ khi xử lý IPN MoMo" });
+//   }
+// });
+// router.get('/payment/vnpay', async (req, res) => {
+//   try {
+//     const query = req.query;
+
+//     const secureSecret = 'NXM2DJWRF8RLC4R5VBK85OJZS1UE9KI6F';
+//     const vnpay = new VNPay({ tmnCode: 'DHF21S3V', secureSecret, hashAlgorithm: 'SHA512' });
+
+//     const isValid = vnpay.validateReturnUrl(query);
+
+//     if (!isValid) {
+//       return res.status(400).json({ error: "Chữ ký không hợp lệ" });
+//     }
+
+//     const vnp_ResponseCode = query.vnp_ResponseCode;
+//     const vnp_TxnRef = query.vnp_TxnRef;
+
+//     const [[payment]] = await db.query(`SELECT * FROM payments WHERE transaction_code = ?`, [vnp_TxnRef]);
+
+//     if (!payment) return res.status(404).json({ error: "Không tìm thấy thanh toán" });
+
+//     const orderId = payment.order_id;
+
+//     if (vnp_ResponseCode === "00") {
+//       // Thanh toán thành công
+//       await db.query(`UPDATE payments SET status = 'SUCCESS' WHERE transaction_code = ?`, [vnp_TxnRef]);
+
+//       await db.query(`UPDATE orders SET current_status = 'PENDING' WHERE order_id = ?`, [orderId]);
+
+//       await db.query(`
+//         INSERT INTO order_status_log (order_id, from_status, to_status, trigger_by, step, created_at)
+//         VALUES (?, NULL, 'PENDING', 'system', 'IPN VNPay xác nhận', NOW())
+//       `, [orderId]);
+
+//       const [[order]] = await db.query(`SELECT * FROM orders WHERE order_id = ?`, [orderId]);
+//       const [items] = await db.query(`SELECT * FROM order_items WHERE order_id = ?`, [orderId]);
+
+//       const emailData = {
+//         name: order.order_name_new || order.order_name_old,
+//         email: order.order_email_new || order.order_email_old,
+//         phone: order.order_number2 || order.order_number1,
+//         address: order.order_address_new || order.order_address_old,
+//         amount: payment.amount,
+//         method: 'VNPAY',
+//         order_id: order.order_hash,
+//         created_at: new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" }),
+//         current_status: order.current_status,
+//         order_total_final: Number(payment.amount).toLocaleString("vi-VN") + "đ",
+//         products: items.map(item => ({
+//           name: item.product_name,
+//           quantity: item.quantity,
+//           price: Number(item.product_price).toLocaleString("vi-VN") + "đ",
+//           total: (item.product_price * item.quantity).toLocaleString("vi-VN") + "đ",
+//           image: item.image || "/images/default.jpg"
+//         }))
+//       };
+
+//       await sendEmail1(emailData.email, "Xác nhận đơn hàng VNPay", emailData);
+
+//       return res.redirect(`http://localhost:5173/dat-hang-thanh-cong/${order.order_hash}`);
+//     } else {
+//       return res.redirect("http://localhost:5173/thanh-toan");
+//     }
+//   } catch (error) {
+//     console.error("Lỗi IPN VNPay:", error);
+//     res.status(500).json({ error: "Lỗi máy chủ khi xử lý IPN VNPay" });
+//   }
+// });
 /**
  * @route   PUT /api/orders/:id/status
  * @desc    Cập nhật trạng thái đơn hàng

@@ -624,6 +624,202 @@ router.get("/variants", async (req, res) => {
  * @desc    Lấy thông tin chi tiết một sản phẩm
  * @access  Public
  */
+router.get("/test/:slug", async (req, res) => {
+  const slug = req.params.slug;
+  if (!slug) return res.status(400).json({ message: "Slug không hợp lệ" });
+
+  try {
+    // 1. Lấy thông tin sản phẩm chính
+    const [productRows] = await db.query(
+      `
+      SELECT
+        p.*, c.category_name
+      FROM product p
+      LEFT JOIN category c ON p.category_id = c.category_id
+      WHERE p.product_slug = ? AND p.product_status = 1
+      `,
+      [slug]
+    );
+
+    if (!productRows.length) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+    const product = productRows[0];
+
+    // 2. Lấy danh sách tất cả biến thể + màu sắc (để tìm biến thể mặc định và danh sách màu)
+    const [variants] = await db.query(
+      `
+      SELECT
+        vp.variant_id,
+        vp.product_id,
+        c.color_id,
+        c.color_name,
+        c.color_hex,
+        c.color_priority,
+        vp.variant_product_price AS price,
+        vp.variant_product_price_sale AS price_sale,
+        vp.variant_product_quantity AS quantity,
+        vp.variant_product_slug AS slug,
+        vp.variant_product_list_image AS list_image
+      FROM variant_product vp
+      JOIN color c ON vp.color_id = c.color_id
+      WHERE vp.product_id = ?
+      ORDER BY c.color_priority DESC
+      `,
+      [product.product_id]
+    );
+
+    const variantsFull = variants.map((v) => ({
+      variant_id: v.variant_id,
+      product_id: v.product_id,
+      color_id: v.color_id,
+      color_name: v.color_name,
+      color_hex: v.color_hex,
+      quantity: v.quantity,
+      price: v.price,
+      price_sale: v.price_sale,
+      slug: v.slug,
+      list_image: v.list_image
+        ? v.list_image
+          .split(",")
+          .map((img) => img.trim().replace(/^['"]+|['"]+$/g, ""))
+        : [],
+    }));
+
+    // 3. Tìm biến thể mặc định (ưu tiên color_priority = 1)
+    let defaultVariant = variants.find((v) => v.color_priority === 1);
+    if (!defaultVariant && variants.length > 0) {
+      defaultVariant = variants[0];
+    }
+
+    // 4. Danh sách các màu sắc (nhẹ, không cần ảnh/giá)
+    const colors = variants.map((v) => ({
+      colorId: v.color_id,
+      colorName: v.color_name,
+      colorHex: v.color_hex,
+      slug: v.slug,
+    }));
+
+    // --- PHẦN ĐIỀU CHỈNH ĐỂ LẤY VÀ HIỂN THỊ THUỘC TÍNH THEO DANH MỤC ---
+
+    // Lấy TẤT CẢ các thuộc tính được định nghĩa cho danh mục của sản phẩm
+    const [categoryAttributesDefinitions] = await db.query(
+      `
+      SELECT
+          attribute_id,
+          attribute_name,
+          unit,
+          is_required
+      FROM
+          attributes
+      WHERE
+          category_id = ?
+      ORDER BY
+          attribute_name; -- Hoặc sử dụng một cột 'display_order' nếu có
+      `,
+      [product.category_id]
+    );
+
+    // Lấy các giá trị thuộc tính thực tế đã được gán cho sản phẩm
+    const [productAttributeValues] = await db.query(
+      `
+      SELECT
+          pav.attribute_id,
+          CASE
+              WHEN pav.value IS NOT NULL AND pav.value != '' THEN pav.value
+              WHEN m.material_name IS NOT NULL THEN m.material_name
+              ELSE NULL
+          END AS value
+      FROM
+          product_attribute_value AS pav
+      LEFT JOIN
+          materials AS m ON pav.material_id = m.material_id
+      WHERE
+          pav.product_id = ?;
+      `,
+      [product.product_id]
+    );
+
+    // Kết hợp định nghĩa thuộc tính với giá trị thực tế của sản phẩm
+    // Điều này đảm bảo tất cả thuộc tính của danh mục đều được trả về, dù có giá trị hay chưa.
+    const finalAttributes = categoryAttributesDefinitions.map(definedAttr => {
+      const productValue = productAttributeValues.find(
+        pav => pav.attribute_id === definedAttr.attribute_id
+      );
+      return {
+        name: definedAttr.attribute_name,
+        value: productValue ? productValue.value : null, // Trả về giá trị nếu có, nếu không là null
+        unit: definedAttr.unit,
+        is_required: definedAttr.is_required,
+      };
+    });
+
+    // --- KẾT THÚC PHẦN ĐIỀU CHỈNH ---
+
+    // 5. Lấy sản phẩm liên quan
+    const [relatedProducts] = await db.query(
+      `
+      SELECT
+        p.product_id,
+        p.product_name,
+        p.product_slug
+      FROM product p
+      WHERE p.category_id = ? AND p.product_id != ? AND p.product_status = 1
+      LIMIT 4
+      `,
+      [product.category_id, product.product_id]
+    );
+
+    return res.json({
+      product: {
+        id: product.product_id,
+        name: product.product_name,
+        description: product.product_description,
+        slug: product.product_slug,
+        sold: product.product_sold,
+        view: product.product_view,
+        rating: product.product_rating,
+        // **KHUYẾN NGHỊ: LOẠI BỎ CÁC CỘT CŨ NÀY**
+        // materials: product.variant_materials,
+        // height: product.variant_height,
+        // width: product.variant_width,
+        // depth: product.variant_depth,
+        // seating_height: product.variant_seating_height,
+        // max_weight_load: product.variant_maximum_weight_load,
+        status: product.product_status,
+        category_id: product.category_id,
+        category_name: product.category_name,
+        created_at: product.created_at,
+        updated_at: product.updated_at,
+        defaultPrice: defaultVariant?.price ?? null,
+        defaultPriceSale: defaultVariant?.price_sale ?? null,
+        defaultImages:
+          defaultVariant?.list_image
+            ?.split(",")
+            .map((img) => img.trim().replace(/^['"]+|['"]+$/g, "")) ?? [],
+        main_image: product.product_image
+          ? product.product_image.trim().replace(/^['"]+|['"]+$/g, "")
+          : "",
+        defaultSlug: defaultVariant?.slug ?? null,
+        defaultColorName: defaultVariant?.color_name ?? null,
+        defaultColorHex: defaultVariant?.color_hex ?? null,
+        defaultQuantity: defaultVariant?.quantity ?? null,
+        variants: variantsFull,
+        // --- Sử dụng mảng thuộc tính đã kết hợp ở đây ---
+        attributes: finalAttributes,
+      },
+      colors,
+      related_products: relatedProducts.map((rp) => ({
+        id: rp.product_id,
+        name: rp.product_name,
+        slug: rp.product_slug,
+      })),
+    });
+  } catch (error) {
+    console.error("Error fetching product details:", error);
+    res.status(500).json({ error: "Failed to fetch product details" });
+  }
+});
 
 router.get("/:slug", async (req, res) => {
   const slug = req.params.slug;
@@ -761,6 +957,9 @@ ORDER BY c.color_priority DESC
     res.status(500).json({ error: "Failed to fetch product details" });
   }
 });
+
+
+
 
 /**
  * @route   POST /api/products

@@ -49,8 +49,6 @@
   </table>
 </div>
 
-<button id="testConfirm">Test showConfirm</button>
-
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     // Initialize table sorting
@@ -166,26 +164,32 @@
     }
 
     function deleteCategory(categoryId, categoryName) {
-      if (!confirm(`Bạn có chắc chắn muốn xóa danh mục "${categoryName}"?`)) {
-        return;
-      }
-
-      fetch(`/api/categories/${categoryId}`, {
-        method: "DELETE",
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.error) {
-            showToast(data.error, "danger");
-          } else {
-            showToast("Xóa danh mục thành công", "success");
-            setTimeout(() => location.reload(), 1000);
-          }
-        })
-        .catch((err) => {
-          console.error("Lỗi khi xóa:", err);
-          showToast("Xảy ra lỗi khi xóa danh mục", "danger");
-        });
+      showConfirm({
+        message: `Bạn có chắc chắn muốn xóa danh mục "${categoryName}"?`,
+        confirmText: "Xác nhận",
+        cancelText: "Hủy",
+        onConfirm: () => {
+          fetch(`${URL_API}/categories/${categoryId}`, {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          })
+            .then((res) => res.json())
+            .then((data) => {
+              if (data.error) {
+                showToast(data.error, "danger");
+              } else {
+                showToast("Xóa danh mục thành công", "success");
+                setTimeout(() => location.reload(), 1000);
+              }
+            })
+            .catch((err) => {
+              console.error("Lỗi khi xóa:", err);
+              showToast("Xảy ra lỗi khi xóa danh mục", "danger");
+            });
+        },
+      });
     }
 
     function changeStatus(categoryId, categoryStatus) {
@@ -241,14 +245,6 @@
 
     getCategories();
   });
-
-  document.getElementById("testConfirm").onclick = function () {
-    showConfirm({
-      message: "Bạn có chắc chắn muốn xóa danh mục?",
-      confirmText: "Xác nhận",
-      cancelText: "Hủy",
-    });
-  };
 
   function showConfirm({
     message = "Are you sure?",

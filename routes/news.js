@@ -198,7 +198,7 @@ router.get("/simple", async (req, res) => {
 
 router.get("/admin", verifyToken, isAdmin, async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1; 
+    const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
 
@@ -554,11 +554,14 @@ router.get("/:slug", async (req, res) => {
   try {
     const slug = req.params.slug;
 
+    // Tăng view trước khi lấy dữ liệu
+    await db.query(
+      `UPDATE news SET news_view = news_view + 1 WHERE news_slug = ?`,
+      [slug]
+    );
+
     const [result] = await db.query(
-      `SELECT 
-        news_id, news_title AS title, news_slug AS slug, news_content AS content, 
-        news_description AS excerpt, news_image AS images,
-        news_category_id AS category_id, news_status AS status
+      `SELECT *
       FROM news WHERE news_slug = ?`,
       [slug]
     );

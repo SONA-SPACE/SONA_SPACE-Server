@@ -81,6 +81,16 @@ app.get("/health", function (req, res) {
   });
 });
 
+// tom select
+app.use(
+  "/tom-select",
+  express.static(path.join(__dirname, "node_modules", "tom-select"))
+);
+app.use(
+  "/tom-select/dist/css/tom-select.bootstrap5.min.css",
+  express.static(path.join(__dirname, "node_modules", "tom-select", "dist", "css", "tom-select.bootstrap5.min.css"))
+);
+
 // tinymce
 app.use(
   "/tinymce",

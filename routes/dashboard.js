@@ -2,16 +2,11 @@ const express = require("express");
 const router = express.Router();
 const authMiddleware = require("../middleware/auth");
 const { route } = require("./upload");
+const fetch = require('node-fetch'); // Add this line
+const { isAdmin } = require('../middleware/auth');
 
 // Middleware to check if user is admin
-const isAdmin = (req, res, next) => {
-  if (req.user && req.user.role === "admin") {
-    next();
-  } else {
-    // Chuyển hướng về trang đăng nhập nếu không phải admin
-    res.redirect('/');
-  }
-};
+// Removed duplicate isAdmin middleware
 
 // Middleware để kiểm tra xác thực cho dashboard
 const checkAuth = (req, res, next) => {
@@ -173,6 +168,121 @@ router.get("/orders/view/:id", (req, res) => {
   });
 });
 
+// Route for order details
+router.get('/orders/detail/:id', isAdmin, async (req, res) => {
+  try {
+    const orderId = req.params.id;
+    
+    // Fetch order data from API
+    const response = await fetch(`http://localhost:3501/api/orders/${orderId}`, {
+      headers: {
+        'Authorization': `Bearer ${req.cookies.token}`
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch order details');
+    }
+    
+    const order = await response.json();
+    
+    // Helper functions for template
+    const helpers = {
+      mapPaymentStatus: (status) => {
+        switch (status) {
+          case 'PENDING': return 'Chờ thanh toán';
+          case 'PROCESSING': return 'Đang xử lý';
+          case 'SUCCESS': return 'Đã thanh toán';
+          case 'FAILED': return 'Thanh toán thất bại';
+          case 'CANCELLED': return 'Đã hủy';
+          default: return status || 'Chờ thanh toán';
+        }
+      },
+      mapStatus: (status) => {
+        switch (status) {
+          case 'PENDING': return 'Chờ xác nhận';
+          case 'CONFIRMED': return 'Đã xác nhận';
+          case 'SHIPPING': return 'Đang giao';
+          case 'SUCCESS': return 'Giao hàng thành công';
+          case 'FAILED': return 'Thất bại';
+          case 'CANCELLED': return 'Đã hủy';
+          default: return status || 'Chờ xác nhận';
+        }
+      },
+      mapShippingStatus: (status) => {
+        switch (status) {
+          case 'pending': return 'Chờ lấy hàng';
+          case 'picking_up': return 'Đang đi lấy hàng';
+          case 'picked_up': return 'Đã lấy hàng';
+          case 'in_transit': return 'Đang vận chuyển';
+          case 'delivered': return 'Đã giao hàng';
+          case 'delivery_failed': return 'Giao hàng thất bại';
+          case 'returning': return 'Đang hoàn trả';
+          case 'returned': return 'Đã hoàn trả';
+          case 'canceled': return 'Đã hủy';
+          default: return status || 'Chờ lấy hàng';
+        }
+      },
+      mapShippingStatusClass: (status) => {
+        switch (status) {
+          case 'pending': return 'badge-secondary';
+          case 'picking_up': return 'badge-info';
+          case 'picked_up': return 'badge-primary';
+          case 'in_transit': return 'badge-primary';
+          case 'delivered': return 'badge-success';
+          case 'delivery_failed': return 'badge-danger';
+          case 'returning': return 'badge-warning';
+          case 'returned': return 'badge-warning';
+          case 'canceled': return 'badge-dark';
+          default: return 'badge-secondary';
+        }
+      },
+      mapShippingStatusIcon: (status) => {
+        switch (status) {
+          case 'pending': return 'fa-clock';
+          case 'picking_up': return 'fa-people-carry';
+          case 'picked_up': return 'fa-box';
+          case 'in_transit': return 'fa-truck';
+          case 'delivered': return 'fa-check-circle';
+          case 'delivery_failed': return 'fa-times-circle';
+          case 'returning': return 'fa-undo';
+          case 'returned': return 'fa-box-open';
+          case 'canceled': return 'fa-ban';
+          default: return 'fa-clock';
+        }
+      },
+      formatPrice: (price) => {
+        if (!price) return '0';
+        try {
+          return parseFloat(price).toLocaleString('vi-VN');
+        } catch (error) {
+          console.error('Error formatting price:', error);
+          return '0';
+        }
+      }
+    };
+    
+    res.render('dashboard/orders/order-detail', {
+      title: `Chi tiết đơn hàng #${orderId}`,
+      layout: "layouts/dashboard",
+      orderId,
+      order: order.data || order,
+      mapPaymentStatus: helpers.mapPaymentStatus,
+      mapStatus: helpers.mapStatus,
+      mapShippingStatus: helpers.mapShippingStatus,
+      mapShippingStatusClass: helpers.mapShippingStatusClass,
+      mapShippingStatusIcon: helpers.mapShippingStatusIcon,
+      formatPrice: helpers.formatPrice
+    });
+  } catch (error) {
+    console.error('Error loading order details:', error);
+    res.status(500).render('error', { 
+      message: 'Không thể tải thông tin đơn hàng',
+      error: { status: 500, stack: error.stack },
+      layout: "layouts/dashboard"
+    });
+  }
+});
 
 
 // View order invoice

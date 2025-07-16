@@ -3,9 +3,8 @@
   <div class="container">
     <div class="order-card">
       <div class="order-header">
-        <h2>Mã đơn hàng: ORD-<%= orderId %>
-        </h2>
-        <div class="order-date">Ngày đặt đơn: 26/01/2025 lúc 08:50</div>
+        <h2>Mã đơn hàng: <%= order.order_hash || 'ORD-' + orderId %></h2>
+        <div class="order-date">Ngày đặt đơn: <%= new Date(order.created_at).toLocaleDateString('vi-VN') %> lúc <%= new Date(order.created_at).toLocaleTimeString('vi-VN') %></div>
         <div class="order-status">
           <div class="status-item">
             <div class="status-label">Trạng thái thanh toán:</div>
@@ -36,92 +35,44 @@
 
         <div class="col-md-8">
           <div class="product-section">
-            <div class="product-item">
-              <div class="product-image">
-                <img src="/images/products/wardrobe.png" alt="Sofa Modena">
-              </div>
-              <div class="product-details">
-                <div class="product-name">Sofa Modena 2,5 seater</div>
-                <div class="product-type">Sofa</div>
-                <div class="price-row">
-                  <div class="price-label">Thành tiền:</div>
-                  <div class="price-value">15.190.000đ</div>
-                </div>
-                <div class="wrapper">
-                  <div class="price-row">
-                    <div class="price-label">Màu</div>
-                    <div class="price-value">
-                      <span class="color-dot"></span>
+            <% if (order.items && order.items.length > 0) { %>
+              <% order.items.forEach(item => { %>
+                <div class="product-item">
+                  <div class="product-image">
+                    <img src="<%= item.product_image || '/images/products/default.png' %>" alt="<%= item.product_name %>">
+                  </div>
+                  <div class="product-details">
+                    <div class="product-name"><%= item.product_name %></div>
+                    <div class="product-type"><%= item.product_sku || 'Sản phẩm' %></div>
+                    <div class="price-row">
+                      <div class="price-label">Thành tiền:</div>
+                      <div class="price-value"><%= formatPrice(item.product_price * item.quantity) %>đ</div>
+                    </div>
+                    <div class="wrapper">
+                      <div class="price-row">
+                        <div class="price-label">Màu</div>
+                        <div class="price-value">
+                          <% if (item.color_hex) { %>
+                            <span class="color-dot" data-color="<%= item.color_hex %>"></span>
+                          <% } else { %>
+                            -
+                          <% } %>
+                        </div>
+                      </div>
+                      <div class="price-row">
+                        <div class="price-label">Số lượng:</div>
+                        <div class="price-value"><%= item.quantity %></div>
+                      </div>
+                    </div>
+                    <div class="price-row">
+                      <a href="#" class="price-label">Xem chi tiết</a>
                     </div>
                   </div>
-                  <div class="price-row">
-                    <div class="price-label">Số lượng:</div>
-                    <div class="price-value">1</div>
-                  </div>
                 </div>
-                <div class="price-row">
-                  <a href="#" class="price-label">Xem chi tiết</a>
-                </div>
-              </div>
-            </div>
-
-            <div class="product-item">
-              <div class="product-image">
-                <img src="/images/products/sofa.png" alt="Sofa Modena">
-              </div>
-              <div class="product-details">
-                <div class="product-name">Sofa Modena 2,5 seater</div>
-                <div class="product-type">Bàn</div>
-                <div class="price-row">
-                  <div class="price-label">Thành tiền:</div>
-                  <div class="price-value">15.190.000đ</div>
-                </div>
-                <div class="wrapper">
-                  <div class="price-row">
-                    <div class="price-label">Màu</div>
-                    <div class="price-value">
-                      <span class="color-dot"></span>
-                    </div>
-                  </div>
-                  <div class="price-row">
-                    <div class="price-label">Số lượng:</div>
-                    <div class="price-value">1</div>
-                  </div>
-                </div>
-                <div class="price-row">
-                  <a href="#" class="price-label">Xem chi tiết</a>
-                </div>
-              </div>
-            </div>
-
-            <div class="product-item">
-              <div class="product-image">
-                <img src="/images/products/table.png" alt="Sofa Modena">
-              </div>
-              <div class="product-details">
-                <div class="product-name">Sofa Modena 2,5 seater</div>
-                <div class="product-type">Tủ</div>
-                <div class="price-row">
-                  <div class="price-label">Thành tiền:</div>
-                  <div class="price-value">15.190.000đ</div>
-                </div>
-                <div class="wrapper">
-                  <div class="price-row">
-                    <div class="price-label">Màu</div>
-                    <div class="price-value">
-                      <span class="color-dot"></span>
-                    </div>
-                  </div>
-                  <div class="price-row">
-                    <div class="price-label">Số lượng:</div>
-                    <div class="price-value">1</div>
-                  </div>
-                </div>
-                <div class="price-row">
-                  <a href="#" class="price-label">Xem chi tiết</a>
-                </div>
-              </div>
-            </div>
+              <% }); %>
+            <% } else { %>
+              <div class="no-products">Không có sản phẩm nào</div>
+            <% } %>
           </div>
         </div>
 
@@ -131,32 +82,32 @@
 
             <div class="info-row">
               <div class="info-label">Tên khách hàng</div>
-              <div class="info-value">Nguyễn Văn A</div>
+              <div class="info-value"><%= order.order_name_new || order.order_name_old || order.user_name || 'Không có thông tin' %></div>
             </div>
 
             <div class="info-row">
               <div class="info-label">Số điện thoại</div>
-              <div class="info-value">084444000</div>
+              <div class="info-value"><%= order.order_number2 || order.order_number1 || order.user_phone || 'Không có thông tin' %></div>
             </div>
 
             <div class="info-row">
               <div class="info-label">Email</div>
-              <div class="info-value">a.nguyen@gmail.com</div>
+              <div class="info-value"><%= order.order_email_new || order.order_email_old || order.user_email || 'Không có thông tin' %></div>
             </div>
 
             <div class="info-row">
               <div class="info-label">Địa chỉ giao hàng</div>
-              <div class="info-value">50 D. Hồ Tùng Mậu, Bến Nghé, Quận 1, Hồ Chí Minh</div>
+              <div class="info-value"><%= order.order_address_new || order.order_address_old || 'Không có thông tin' %></div>
             </div>
 
             <div class="info-row">
               <div class="info-label">Phương thức thanh toán</div>
-              <div class="info-value">Thanh toán khi nhận hàng</div>
+              <div class="info-value"><%= order.payment_method || 'Không có thông tin' %></div>
             </div>
 
             <div class="info-row">
               <div class="info-label">Ghi chú</div>
-              <textarea class="info-value" readonly>Giao nhanh dùm</textarea>
+              <textarea class="info-value" readonly><%= order.note || '' %></textarea>
             </div>
           </div>
 
@@ -165,33 +116,35 @@
 
             <div class="summary-row">
               <div class="summary-label">Thành tiền</div>
-              <div class="summary-value">500.000</div>
+              <div class="summary-value"><%= formatPrice(order.order_total || 0) %>đ</div>
             </div>
 
             <div class="summary-row">
               <div class="summary-label">Vận chuyển</div>
-              <div class="summary-value">30.000</div>
+              <div class="summary-value"><%= formatPrice(order.shipping_fee || 0) %>đ</div>
             </div>
 
             <div class="summary-row">
               <div class="summary-label">Giảm giá</div>
-              <div class="summary-value discount">-10%</div>
+              <div class="summary-value discount"><%= formatPrice(order.order_discount || 0) %>đ</div>
             </div>
 
+            <% if (order.couponcode_id) { %>
             <div class="summary-row">
               <div class="summary-label">Mã giảm giá</div>
-              <div class="summary-value">NEW10</div>
+              <div class="summary-value"><%= order.coupon_code || 'Đã áp dụng' %></div>
             </div>
+            <% } %>
 
             <div class="summary-row">
               <div class="summary-label">Tổng cộng</div>
-              <div class="summary-value">500.000</div>
+              <div class="summary-value"><%= formatPrice(order.order_total_final || 0) %>đ</div>
             </div>
           </div>
 
           <div class="action-buttons">
-            <button class="btn btn-cancel">Hủy</button>
-            <button class="btn btn-save">Lưu</button>
+            <a href="/dashboard/orders" class="btn btn-cancel">Quay lại</a>
+            <button class="btn btn-save" id="update-status-btn">Cập nhật</button>
             <a href="/dashboard/orders/invoice/<%= orderId %>" target="_blank" class="btn btn-save" style="background-color: #4CAF50; margin-left: 10px;">Xem hóa đơn</a>
           </div>
         </div>
@@ -201,103 +154,94 @@
 </div>
 
 <script>
-  function mapPaymentStatus(status) {
-    switch (status) {
-      case 'PENDING': return 'Chờ thanh toán';
-      case 'PROCESSING': return 'Đang xử lý';
-      case 'SUCCESS': return 'Đã thanh toán';
-      case 'FAILED': return 'Thanh toán thất bại';
-      case 'CANCELLED': return 'Đã hủy';
-      default: return status || 'Chờ thanh toán';
-    }
-  }
-
-  function mapStatus(status) {
-    switch (status) {
-      case 'PENDING': return 'Chờ xác nhận';
-      case 'CONFIRMED': return 'Đã xác nhận';
-      case 'SHIPPING': return 'Đang giao';
-      case 'SUCCESS': return 'Giao hàng thành công';
-      case 'FAILED': return 'Thất bại';
-      case 'CANCELLED': return 'Đã hủy';
-      default: return status || 'Chờ xác nhận';
-    }
-  }
-
-  function mapShippingStatus(status) {
-    switch (status) {
-      case 'pending': return 'Chờ lấy hàng';
-      case 'picking_up': return 'Đang đi lấy hàng';
-      case 'picked_up': return 'Đã lấy hàng';
-      case 'in_transit': return 'Đang vận chuyển';
-      case 'delivered': return 'Đã giao hàng';
-      case 'delivery_failed': return 'Giao hàng thất bại';
-      case 'returning': return 'Đang hoàn trả';
-      case 'returned': return 'Đã hoàn trả';
-      case 'canceled': return 'Đã hủy';
-      default: return status || 'Chờ lấy hàng';
-    }
-  }
-
-  function mapShippingStatusClass(status) {
-    switch (status) {
-      case 'pending': return 'badge-secondary';
-      case 'picking_up': return 'badge-info';
-      case 'picked_up': return 'badge-primary';
-      case 'in_transit': return 'badge-primary';
-      case 'delivered': return 'badge-success';
-      case 'delivery_failed': return 'badge-danger';
-      case 'returning': return 'badge-warning';
-      case 'returned': return 'badge-warning';
-      case 'canceled': return 'badge-dark';
-      default: return 'badge-secondary';
-    }
-  }
-
-  function mapShippingStatusIcon(status) {
-    switch (status) {
-      case 'pending': return 'fa-clock';
-      case 'picking_up': return 'fa-people-carry';
-      case 'picked_up': return 'fa-box';
-      case 'in_transit': return 'fa-truck';
-      case 'delivered': return 'fa-check-circle';
-      case 'delivery_failed': return 'fa-times-circle';
-      case 'returning': return 'fa-undo';
-      case 'returned': return 'fa-box-open';
-      case 'canceled': return 'fa-ban';
-      default: return 'fa-clock';
-    }
-  }
-
-  document.addEventListener('DOMContentLoaded', function () {
-    // Xử lý sự kiện khi click vào dropdown trạng thái
-    const statusDropdown = document.querySelector('.dropdown-toggle');
-    if (statusDropdown) {
-      statusDropdown.addEventListener('click', function () {
-        // Hiển thị dropdown menu với các trạng thái đơn hàng
-        console.log('Status dropdown clicked');
-        // Đây là nơi để thêm code hiển thị dropdown menu
-      });
-    }
-
-    // Xử lý sự kiện khi click vào nút Hủy
-    const cancelButton = document.querySelector('.btn-cancel');
-    if (cancelButton) {
-      cancelButton.addEventListener('click', function () {
-        // Quay lại trang danh sách đơn hàng
-        window.location.href = '/dashboard/orders';
-      });
-    }
-
-    // Xử lý sự kiện khi click vào nút Lưu
-    const saveButton = document.querySelector('.btn-save');
-    if (saveButton) {
-      saveButton.addEventListener('click', function () {
-        // Lưu thay đổi và quay lại trang danh sách đơn hàng
-        console.log('Save changes');
-        // Đây là nơi để thêm code lưu thay đổi
-        // Sau khi lưu thành công, chuyển hướng về trang danh sách đơn hàng
-        // window.location.href = '/dashboard/orders';
+  document.addEventListener('DOMContentLoaded', function() {
+    // Set background color for color dots from data attribute
+    document.querySelectorAll('.color-dot').forEach(dot => {
+      const color = dot.getAttribute('data-color');
+      if (color) {
+        dot.style.backgroundColor = color;
+      }
+    });
+    
+    // Xử lý sự kiện khi click vào nút Cập nhật
+    const updateButton = document.getElementById('update-status-btn');
+    if (updateButton) {
+      updateButton.addEventListener('click', function() {
+        // Hiển thị modal hoặc form cập nhật trạng thái
+        if (window.antd && window.antd.Modal) {
+          window.antd.Modal.confirm({
+            title: 'Cập nhật trạng thái đơn hàng',
+            content: 'Bạn có chắc chắn muốn cập nhật trạng thái đơn hàng này?',
+            okText: 'Cập nhật',
+            cancelText: 'Hủy',
+            onOk: async () => {
+              try {
+                // Gọi API cập nhật trạng thái
+                const response = await fetch(`/api/orders/<%= orderId %>/status`, {
+                  method: 'PUT',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + localStorage.getItem('token')
+                  },
+                  body: JSON.stringify({ new_status: 'CONFIRMED' }) // Cần thay đổi tùy theo trạng thái hiện tại
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                  window.antd.notification.success({
+                    message: 'Thành công',
+                    description: 'Đã cập nhật trạng thái đơn hàng',
+                    placement: 'topRight'
+                  });
+                  
+                  // Reload trang sau 1 giây
+                  setTimeout(() => {
+                    window.location.reload();
+                  }, 1000);
+                } else {
+                  window.antd.notification.error({
+                    message: 'Lỗi',
+                    description: data.message || 'Không thể cập nhật trạng thái đơn hàng',
+                    placement: 'topRight'
+                  });
+                }
+              } catch (error) {
+                console.error('Lỗi khi cập nhật trạng thái:', error);
+                window.antd.notification.error({
+                  message: 'Lỗi',
+                  description: 'Đã xảy ra lỗi khi cập nhật trạng thái đơn hàng',
+                  placement: 'topRight'
+                });
+              }
+            }
+          });
+        } else {
+          if (confirm('Bạn có chắc chắn muốn cập nhật trạng thái đơn hàng này?')) {
+            // Xử lý cập nhật trạng thái
+            fetch(`/api/orders/<%= orderId %>/status`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + localStorage.getItem('token')
+              },
+              body: JSON.stringify({ new_status: 'CONFIRMED' }) // Cần thay đổi tùy theo trạng thái hiện tại
+            })
+            .then(response => response.json())
+            .then(data => {
+              if (data.success) {
+                alert('Đã cập nhật trạng thái đơn hàng');
+                window.location.reload();
+              } else {
+                alert('Lỗi: ' + data.message);
+              }
+            })
+            .catch(error => {
+              console.error('Lỗi khi cập nhật trạng thái:', error);
+              alert('Đã xảy ra lỗi khi cập nhật trạng thái đơn hàng');
+            });
+          }
+        }
       });
     }
   });
@@ -355,4 +299,13 @@
   .order-status .badge-danger { background-color: #c82333; }
   .order-status .badge-warning { background-color: #e0a800; }
   .order-status .badge-dark { background-color: #23272b; }
+  
+  /* Color dot style */
+  .color-dot {
+    display: inline-block;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background-color: attr(data-color);
+  }
 </style>

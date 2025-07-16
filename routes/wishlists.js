@@ -264,22 +264,28 @@ router.delete('/clearid', verifyToken, async (req, res) => {
     const userId = req.user.id;
     const { selectedItemIds = [] } = req.body;
 
+    console.log(">> Xóa giỏ hàng với userId:", userId);
+    console.log(">> selectedItemIds:", selectedItemIds);
+
     if (!Array.isArray(selectedItemIds) || selectedItemIds.length === 0) {
       return res.status(400).json({ error: 'Danh sách sản phẩm cần xóa không hợp lệ.' });
     }
 
-    const [result] = await db.query(
-      `DELETE FROM wishlist 
-       WHERE user_id = ? AND status = 0 AND wishlist_id IN (?)`,
-      [userId, selectedItemIds]
-    );
+    const placeholders = selectedItemIds.map(() => '?').join(', ');
+    const sql = `DELETE FROM wishlist WHERE user_id = ? AND status = 0 AND wishlist_id IN (${placeholders})`;
 
-    res.status(200).json({ message: 'Đã xóa các sản phẩm đã chọn khỏi giỏ hàng' });
+    console.log(">> SQL:", sql);
+    const [result] = await db.query(sql, [userId, ...selectedItemIds]);
+
+    console.log(">> Xóa thành công:", result);
+    return res.status(200).json({ message: 'Đã xóa các sản phẩm đã chọn khỏi giỏ hàng' });
   } catch (error) {
-    console.error('Error clearing selected items from wishlist:', error);
-    res.status(500).json({ error: 'Đã xảy ra lỗi khi xóa giỏ hàng' });
+    console.error('❌ Lỗi khi xóa sản phẩm đã chọn khỏi wishlist:', error);
+    return res.status(500).json({ error: 'Đã xảy ra lỗi khi xóa giỏ hàng' });
   }
 });
+
+
 
 // routes/wishlist.js
 router.delete('/:id', verifyToken, async (req, res) => {

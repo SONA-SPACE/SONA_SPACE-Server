@@ -33,7 +33,7 @@ router.get("/", async (req, res) => {
         c.*,
         (SELECT COUNT(*) FROM product WHERE category_id = c.category_id) as product_count
       FROM category c WHERE category_status = 1
-      ORDER BY c.category_name ASC
+      ORDER BY c.category_priority ASC
     `;
 
     console.log("SQL Query:", sql);
@@ -75,7 +75,7 @@ router.get("/admin", verifyToken, isAdmin, async (req, res) => {
         c.*,
         (SELECT COUNT(*) FROM product WHERE category_id = c.category_id) as product_count
       FROM category c
-      ORDER BY c.category_name ASC
+      ORDER BY c.category_priority ASC
     `;
 
     console.log("SQL Query:", sql);

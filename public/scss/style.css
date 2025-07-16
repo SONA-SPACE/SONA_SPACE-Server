@@ -2517,11 +2517,11 @@ body {
   transition: background 0.15s;
 }
 #confirmPopup .confirm-dialog .confirm-actions .btn-confirm {
-  background: #0d6efd;
+  background: var(--primary-color);
   color: #fff;
 }
 #confirmPopup .confirm-dialog .confirm-actions .btn-confirm:hover {
-  background: #0254c1;
+  background: color-mix(in srgb, var(--primary-color) 80%, transparent);
 }
 #confirmPopup .confirm-dialog .confirm-actions .btn-cancel {
   background: #f3f4f6;

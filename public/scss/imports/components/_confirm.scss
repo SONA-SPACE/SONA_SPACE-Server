@@ -51,10 +51,10 @@
         transition: background 0.15s;
       }
       .btn-confirm {
-        background: #0d6efd;
+        background: var(--primary-color);
         color: #fff;
         &:hover {
-          background: #0254c1;
+          background: color-mix(in srgb, var(--primary-color) 80%, transparent);
         }
       }
       .btn-cancel {

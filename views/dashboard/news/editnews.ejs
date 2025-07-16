@@ -92,18 +92,23 @@
 
   async function loadNewsData(slug) {
     try {
-      const res = await fetch(`http://localhost:3501/api/news/${slug}`);
+      const res = await fetch(`/api/news/${slug}`);
       const data = await res.json();
+      console.log(data);
 
       if (data) {
-        document.getElementById("newsTitle").value = data.title || "";
-        document.getElementById("newsSlug").value = data.slug || "";
-        document.getElementById("newsContent").value = data.content || "";
-        document.getElementById("newsStatus").value = data.status;
-        document.getElementById("newsCategory").value = data.category_id;
+        document.getElementById("newsTitle").value = data.news_title || "";
+        document.getElementById("newsSlug").value = data.news_slug || "";
+        if (tinymce.get("newsContent")) {
+          tinymce.get("newsContent").setContent(data.news_content || "");
+        } else {
+          document.getElementById("newsContent").value = data.news_content || "";
+        }
+        document.getElementById("newsStatus").value = data.news_status;
+        document.getElementById("newsCategory").value = data.news_category_id || "";
 
         bindUpload("#avatarDropArea", (file) => (avatarFile = file));
-        avatarFile = data.images;
+        avatarFile = data.news_image;
         if (avatarFile) {
           document.querySelector(
             "#avatarDropArea"

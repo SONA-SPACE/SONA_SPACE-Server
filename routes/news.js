@@ -755,24 +755,36 @@ router.put("/:slug", verifyToken, async (req, res) => {
  * @desc    Xóa bài viết
  * @access  Private (Admin only)
  */
+// Hàm lấy ảnh trong nội dung
+function getImageInContent(content) {
+  const imgRegex = /<img[^>]+src=['"]([^'"]+)['"]/g;
+  let matches;
+  const links = [];
+  while ((matches = imgRegex.exec(content)) !== null) {
+    links.push(matches[1]);
+  }
+  return links;
+}
+
 router.delete("/:id", verifyToken, isAdmin, async (req, res) => {
   try {
     const id = Number(req.params.id);
     if (isNaN(id)) {
-      return res.status(400).json({ error: "Invalid news ID" });
+      return res.status(400).json({ error: "ID tin tức không hợp lệ" });
     }
 
     const [existingNews] = await db.query(
       "SELECT * FROM news WHERE news_id = ?",
       [id]
     );
+
     if (existingNews.length === 0) {
-      return res.status(404).json({ error: "News article not found" });
+      return res.status(404).json({ error: "Không tìm thấy tin tức" });
     }
 
-    const { news_image } = existingNews[0];
-
+    const { news_image, news_content } = existingNews[0];
     let imageUrl = news_image;
+    let imagesInContent = getImageInContent(news_content);
 
     try {
       const arr = JSON.parse(news_image);
@@ -781,24 +793,37 @@ router.delete("/:id", verifyToken, isAdmin, async (req, res) => {
       }
     } catch (err) {}
 
+    // Hàm lấy publicId Cloudinary
     const getCloudinaryPublicId = (url) => {
       if (!url) return null;
       const match = url.match(/\/upload\/v\d+\/(.+?)\.(jpg|jpeg|png|webp)$/i);
       return match ? match[1] : null;
     };
 
+    // Xóa ảnh cover (nếu có)
     const publicId = getCloudinaryPublicId(imageUrl);
     if (publicId) {
       await cloudinary.uploader.destroy(publicId);
-      console.log("Đã xóa ảnh Cloudinary:", publicId);
+      // console.log("Đã xóa ảnh Cloudinary:", publicId);
+    }
+
+    // Xóa ảnh trong nội dung
+    if(Array.isArray(imagesInContent)) {
+      for(const url of imagesInContent) {
+        const publicIdInContent = getCloudinaryPublicId(url);
+        if (publicIdInContent) {
+          await cloudinary.uploader.destroy(publicIdInContent);
+          // console.log("Đã xóa ảnh Cloudinary trong nội dung:", publicIdInContent);
+        }
+      }
     }
 
     await db.query("DELETE FROM news WHERE news_id = ?", [id]);
 
-    res.json({ message: "News article deleted successfully" });
+    res.json({ message: "Xóa tin tức thành công" });
   } catch (error) {
-    console.error("Error deleting news article:", error);
-    res.status(500).json({ error: "Failed to delete news article" });
+    console.error("Lỗi xóa tin tức:", error);
+    res.status(500).json({ error: "Lỗi xóa tin tức" });
   }
 });
 

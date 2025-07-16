@@ -9,12 +9,23 @@
         <div class="order-status">
           <div class="status-item">
             <div class="status-label">Trạng thái thanh toán:</div>
-            <div class="status-value paid">Đã thanh toán</div>
+            <div class="status-value <%= order.payment_status ? order.payment_status.toLowerCase() : 'pending' %>">
+              <%= mapPaymentStatus(order.payment_status) %>
+            </div>
           </div>
           <div class="status-item">
             <div class="status-label">Trạng thái đơn hàng:</div>
-            <div class="status-value shipping">
-              Đang giao
+            <div class="status-value <%= order.current_status ? order.current_status.toLowerCase() : 'pending' %>">
+              <%= mapStatus(order.current_status) %>
+            </div>
+          </div>
+          <div class="status-item">
+            <div class="status-label">Trạng thái vận chuyển:</div>
+            <div class="status-value">
+              <span class="badge <%= mapShippingStatusClass(order.shipping_status) %>">
+                <i class="fas <%= mapShippingStatusIcon(order.shipping_status) %> mr-1"></i>
+                <%= mapShippingStatus(order.shipping_status) %>
+              </span>
             </div>
           </div>
         </div>
@@ -190,6 +201,74 @@
 </div>
 
 <script>
+  function mapPaymentStatus(status) {
+    switch (status) {
+      case 'PENDING': return 'Chờ thanh toán';
+      case 'PROCESSING': return 'Đang xử lý';
+      case 'SUCCESS': return 'Đã thanh toán';
+      case 'FAILED': return 'Thanh toán thất bại';
+      case 'CANCELLED': return 'Đã hủy';
+      default: return status || 'Chờ thanh toán';
+    }
+  }
+
+  function mapStatus(status) {
+    switch (status) {
+      case 'PENDING': return 'Chờ xác nhận';
+      case 'CONFIRMED': return 'Đã xác nhận';
+      case 'SHIPPING': return 'Đang giao';
+      case 'SUCCESS': return 'Giao hàng thành công';
+      case 'FAILED': return 'Thất bại';
+      case 'CANCELLED': return 'Đã hủy';
+      default: return status || 'Chờ xác nhận';
+    }
+  }
+
+  function mapShippingStatus(status) {
+    switch (status) {
+      case 'pending': return 'Chờ lấy hàng';
+      case 'picking_up': return 'Đang đi lấy hàng';
+      case 'picked_up': return 'Đã lấy hàng';
+      case 'in_transit': return 'Đang vận chuyển';
+      case 'delivered': return 'Đã giao hàng';
+      case 'delivery_failed': return 'Giao hàng thất bại';
+      case 'returning': return 'Đang hoàn trả';
+      case 'returned': return 'Đã hoàn trả';
+      case 'canceled': return 'Đã hủy';
+      default: return status || 'Chờ lấy hàng';
+    }
+  }
+
+  function mapShippingStatusClass(status) {
+    switch (status) {
+      case 'pending': return 'badge-secondary';
+      case 'picking_up': return 'badge-info';
+      case 'picked_up': return 'badge-primary';
+      case 'in_transit': return 'badge-primary';
+      case 'delivered': return 'badge-success';
+      case 'delivery_failed': return 'badge-danger';
+      case 'returning': return 'badge-warning';
+      case 'returned': return 'badge-warning';
+      case 'canceled': return 'badge-dark';
+      default: return 'badge-secondary';
+    }
+  }
+
+  function mapShippingStatusIcon(status) {
+    switch (status) {
+      case 'pending': return 'fa-clock';
+      case 'picking_up': return 'fa-people-carry';
+      case 'picked_up': return 'fa-box';
+      case 'in_transit': return 'fa-truck';
+      case 'delivered': return 'fa-check-circle';
+      case 'delivery_failed': return 'fa-times-circle';
+      case 'returning': return 'fa-undo';
+      case 'returned': return 'fa-box-open';
+      case 'canceled': return 'fa-ban';
+      default: return 'fa-clock';
+    }
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
     // Xử lý sự kiện khi click vào dropdown trạng thái
     const statusDropdown = document.querySelector('.dropdown-toggle');
@@ -245,4 +324,35 @@
       border: 1px solid #ddd !important;
     }
   }
+  
+  /* Styles cho shipping status badge trong trang chi tiết đơn hàng */
+  .order-status .badge {
+    padding: 6px 12px;
+    font-size: 13px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  
+  .order-status .badge i {
+    margin-right: 6px;
+    font-size: 14px;
+  }
+  
+  /* Hiệu ứng hover cho badge trong trang chi tiết */
+  .order-status .badge:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    transition: all 0.3s ease;
+  }
+  
+  /* Màu sắc đậm hơn cho badge trong trang chi tiết */
+  .order-status .badge-secondary { background-color: #5a6268; }
+  .order-status .badge-info { background-color: #138496; }
+  .order-status .badge-primary { background-color: #0069d9; }
+  .order-status .badge-success { background-color: #218838; }
+  .order-status .badge-danger { background-color: #c82333; }
+  .order-status .badge-warning { background-color: #e0a800; }
+  .order-status .badge-dark { background-color: #23272b; }
 </style>

@@ -170,7 +170,7 @@ router.delete('/:id', verifyToken, isAdmin, async (req, res) => {
     }
     
     // Kiểm tra xem có đơn hàng nào đang sử dụng trạng thái này không
-    const [usingOrders] = await db.query('SELECT COUNT(*) as count FROM `order` WHERE order_status_id = ?', [statusId]);
+    const [usingOrders] = await db.query('SELECT COUNT(*) as count FROM `orders` WHERE order_status_id = ?', [statusId]);
     
     if (usingOrders[0].count > 0) {
       return res.status(400).json({

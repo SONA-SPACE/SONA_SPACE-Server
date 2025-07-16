@@ -42,7 +42,7 @@ router.get('/admin', verifyToken, isAdmin, async (req, res) => {
 // Endpoint để kiểm tra truy vấn cơ sở dữ liệu đơn giản
 router.get('/query-test', verifyToken, async (req, res) => {
   try {
-    const [result] = await db.query('SELECT COUNT(*) as count FROM `order`');
+    const [result] = await db.query('SELECT COUNT(*) as count FROM `orders`');
     res.json({ 
       message: 'Truy vấn cơ sở dữ liệu hoạt động',
       result: result[0]

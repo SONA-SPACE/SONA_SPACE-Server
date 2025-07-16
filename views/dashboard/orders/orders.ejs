@@ -20,54 +20,54 @@
             </button>
           </div>
         </div>
-        
+
         <div class="search-bar">
           <div class="search-input">
             <i class="fas fa-search search-icon"></i>
             <input type="text" placeholder="Tìm kiếm đơn hàng..." id="search-orders">
           </div>
-          
+
           <div class="date-range">
             <i class="far fa-calendar-alt calendar-icon"></i>
             <span>1/05/2025 - 31/5/2025</span>
           </div>
-          
+
           <div class="filter-btn">
             <span>Hiển thị 6 trên tổng số 500</span>
           </div>
         </div>
-        
+
         <div class="orders-summary">
           <div class="summary-card">
             <div class="card-title">Tổng đơn hàng</div>
             <div class="card-value">20</div>
           </div>
-          
+
           <div class="summary-card">
             <div class="card-title">Đơn hàng</div>
             <div class="card-subtitle">Đơn hàng đang chờ xử lý</div>
             <div class="card-value">20</div>
           </div>
-          
+
           <div class="summary-card">
             <div class="card-title">Đang vận chuyển</div>
             <div class="card-subtitle">Tổng đơn hàng đang vận chuyển</div>
             <div class="card-value">2</div>
           </div>
-          
+
           <div class="summary-card">
             <div class="card-title">Hoàn trả đơn hàng</div>
             <div class="card-subtitle">Đơn hàng được yêu cầu trả hàng</div>
             <div class="card-value">0</div>
           </div>
-          
+
           <div class="summary-card">
             <div class="card-title">Hủy đơn hàng</div>
             <div class="card-subtitle">Đơn hàng được yêu cầu hủy</div>
             <div class="card-value">0</div>
           </div>
         </div>
-        
+
         <div class="orders-table">
           <div class="table-header">
             <div class="bulk-actions">
@@ -76,7 +76,7 @@
                 <button class="dropdown-toggle">Mã đơn <i class="fas fa-chevron-down"></i></button>
               </div>
             </div>
-            
+
             <div class="table-filters">
               <div class="filter">
                 <button class="filter-toggle">Ngày đặt đơn</button>
@@ -107,7 +107,7 @@
               </div>
             </div>
           </div>
-          
+
           <table>
             <tbody id="orders-list">
               <!-- Dữ liệu đơn hàng mẫu -->
@@ -264,7 +264,7 @@
               </tr> -->
             </tbody>
           </table>
-          
+
           <div class="table-footer">
             <div class="showing-info">Hiển thị 1-8 trên tổng số 20 đơn hàng</div>
             <div class="pagination">
@@ -282,7 +282,8 @@
 </div>
 
 <!-- Modal xem chi tiết đơn hàng -->
-<div class="modal fade" id="order-detail-modal" tabindex="-1" role="dialog" aria-labelledby="orderDetailModalLabel" aria-hidden="true">
+<div class="modal fade" id="order-detail-modal" tabindex="-1" role="dialog" aria-labelledby="orderDetailModalLabel"
+  aria-hidden="true">
   <div class="modal-dialog modal-lg" role="document">
     <div class="modal-content">
       <div class="modal-header">
@@ -305,98 +306,98 @@
 <!-- Xóa modal thay đổi trạng thái đơn hàng vì đã không cần thiết nữa -->
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  // Xử lý sự kiện chọn tất cả checkbox
-  const selectAllCheckbox = document.querySelector('.table-header .checkbox');
-  const rowCheckboxes = document.querySelectorAll('tbody .checkbox');
-  
-  if (selectAllCheckbox) {
-    selectAllCheckbox.addEventListener('change', function() {
-      const isChecked = this.checked;
-      rowCheckboxes.forEach(checkbox => {
-        checkbox.checked = isChecked;
+  document.addEventListener('DOMContentLoaded', function () {
+    // Xử lý sự kiện chọn tất cả checkbox
+    const selectAllCheckbox = document.querySelector('.table-header .checkbox');
+    const rowCheckboxes = document.querySelectorAll('tbody .checkbox');
+
+    if (selectAllCheckbox) {
+      selectAllCheckbox.addEventListener('change', function () {
+        const isChecked = this.checked;
+        rowCheckboxes.forEach(checkbox => {
+          checkbox.checked = isChecked;
+        });
+      });
+    }
+
+    // Xử lý sự kiện khi click vào dropdown filters
+    const filterToggles = document.querySelectorAll('.filter-toggle');
+
+    filterToggles.forEach(toggle => {
+      toggle.addEventListener('click', function () {
+        // Đây là nơi để thêm logic hiển thị dropdown filter
+        console.log('Filter clicked:', this.textContent.trim());
       });
     });
-  }
-  
-  // Xử lý sự kiện khi click vào dropdown filters
-  const filterToggles = document.querySelectorAll('.filter-toggle');
-  
-  filterToggles.forEach(toggle => {
-    toggle.addEventListener('click', function() {
-      // Đây là nơi để thêm logic hiển thị dropdown filter
-      console.log('Filter clicked:', this.textContent.trim());
+
+    // Xử lý sự kiện khi click vào nút chỉnh sửa
+    const editButtons = document.querySelectorAll('.action-btn.edit');
+
+    editButtons.forEach(button => {
+      button.addEventListener('click', function () {
+        const row = this.closest('tr');
+        const orderId = row.querySelector('.order-id').textContent;
+        console.log('Edit order:', orderId);
+        // Chuyển hướng đến trang chỉnh sửa đơn hàng
+        // window.location.href = `/dashboard/orders/edit/${orderId}`;
+      });
     });
+
+    // Xử lý sự kiện khi click vào nút xóa
+    const deleteButtons = document.querySelectorAll('.action-btn.delete');
+
+    deleteButtons.forEach(button => {
+      button.addEventListener('click', function () {
+        const row = this.closest('tr');
+        const orderId = row.querySelector('.order-id').textContent;
+
+        if (confirm(`Bạn có chắc chắn muốn xóa đơn hàng ${orderId}?`)) {
+          console.log('Delete order:', orderId);
+          // Gọi API xóa đơn hàng
+          // fetch(`/api/orders/${orderId}`, { method: 'DELETE' })
+          //   .then(response => response.json())
+          //   .then(data => {
+          //     if (data.success) {
+          //       row.remove();
+          //     }
+          //   });
+        }
+      });
+    });
+
+    // Xử lý sự kiện tìm kiếm
+    const searchInput = document.getElementById('search-orders');
+
+    if (searchInput) {
+      searchInput.addEventListener('keyup', function (e) {
+        if (e.key === 'Enter') {
+          const searchTerm = this.value.trim();
+          console.log('Search term:', searchTerm);
+          // Thực hiện tìm kiếm
+          // loadOrders(1, searchTerm);
+        }
+      });
+    }
   });
-  
-  // Xử lý sự kiện khi click vào nút chỉnh sửa
-  const editButtons = document.querySelectorAll('.action-btn.edit');
-  
-  editButtons.forEach(button => {
-    button.addEventListener('click', function() {
-      const row = this.closest('tr');
-      const orderId = row.querySelector('.order-id').textContent;
-      console.log('Edit order:', orderId);
-      // Chuyển hướng đến trang chỉnh sửa đơn hàng
-      // window.location.href = `/dashboard/orders/edit/${orderId}`;
-    });
-  });
-  
-  // Xử lý sự kiện khi click vào nút xóa
-  const deleteButtons = document.querySelectorAll('.action-btn.delete');
-  
-  deleteButtons.forEach(button => {
-    button.addEventListener('click', function() {
-      const row = this.closest('tr');
-      const orderId = row.querySelector('.order-id').textContent;
-      
-      if (confirm(`Bạn có chắc chắn muốn xóa đơn hàng ${orderId}?`)) {
-        console.log('Delete order:', orderId);
-        // Gọi API xóa đơn hàng
-        // fetch(`/api/orders/${orderId}`, { method: 'DELETE' })
-        //   .then(response => response.json())
-        //   .then(data => {
-        //     if (data.success) {
-        //       row.remove();
-        //     }
-        //   });
-      }
-    });
-  });
-  
-  // Xử lý sự kiện tìm kiếm
-  const searchInput = document.getElementById('search-orders');
-  
-  if (searchInput) {
-    searchInput.addEventListener('keyup', function(e) {
-      if (e.key === 'Enter') {
-        const searchTerm = this.value.trim();
-        console.log('Search term:', searchTerm);
-        // Thực hiện tìm kiếm
-        // loadOrders(1, searchTerm);
-      }
-    });
-  }
-});
-</script> 
+</script>
 <script>
-async function loadOrders() {
-  try {
-    const res = await fetch('/api/orders/admin', {
-      headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
-    });
-    const data = await res.json();
-    console.log("Orders data:", data);
+  async function loadOrders() {
+    try {
+      const res = await fetch('/api/orders/admin', {
+        headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+      });
+      const data = await res.json();
+      console.log("Orders data:", data);
 
-    if (!data.success) throw new Error(data.message);
+      if (!data.success) throw new Error(data.message);
 
-    const orders = data.orders;
-    const tbody = document.getElementById('orders-list');
-    tbody.innerHTML = ''; // Clear cũ
+      const orders = data.orders;
+      const tbody = document.getElementById('orders-list');
+      tbody.innerHTML = ''; // Clear cũ
 
-    orders.forEach(order => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
+      orders.forEach(order => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
         <td><input type="checkbox" class="checkbox"></td>
         <td class="order-id">${order.order_hash}</td>
         <td>${formatDate(order.created_at)}</td>
@@ -413,20 +414,20 @@ async function loadOrders() {
               { status: 'Giao hàng thành công', class: 'badge-success', icon: 'fa-check-circle' },
               { status: 'Giao hàng thất bại', class: 'badge-danger', icon: 'fa-times-circle' }
             ];
-            
+
             // Lấy trạng thái dựa trên index của đơn hàng
             const statusIndex = order.order_id % 4;
             const currentStatus = shippingStatuses[statusIndex];
-            
+
             return `<span class="badge ${currentStatus.class}"><i class="fas ${currentStatus.icon} mr-1"></i>${currentStatus.status}</span>`;
           })()}
         </td>
         <td>
           <select class="order-status-select" data-order-id="${order.order_id}" data-current-status="${order.current_status}" onchange="confirmStatusChange(this)">
-            <option value="PENDING" ${order.current_status === 'PENDING' ? 'selected' : ''}>Chờ xác nhận</option>
-            <option value="CONFIRMED" ${order.current_status === 'CONFIRMED' ? 'selected' : ''}>Đã xác nhận</option>
-            <option value="SHIPPING" ${order.current_status === 'SHIPPING' ? 'selected' : ''}>Đang giao</option>
-            <option value="SUCCESS" ${order.current_status === 'SUCCESS' ? 'selected' : ''}>Giao hàng thành công</option>
+            <option value="PENDING" ${order.current_status === 'PENDING' ? 'selected' : ''} ${order.current_status !== 'PENDING' ? 'disabled' : ''}>Chờ xác nhận</option>
+            <option value="CONFIRMED" ${order.current_status === 'CONFIRMED' ? 'selected' : ''} ${(order.current_status !== 'PENDING' && order.current_status !== 'CONFIRMED') ? 'disabled' : ''}>Đã xác nhận</option>
+            <option value="SHIPPING" ${order.current_status === 'SHIPPING' ? 'selected' : ''} ${(order.current_status !== 'CONFIRMED' && order.current_status !== 'SHIPPING') ? 'disabled' : ''}>Đang giao</option>
+            <option value="SUCCESS" ${order.current_status === 'SUCCESS' ? 'selected' : ''} ${(order.current_status !== 'SHIPPING' && order.current_status !== 'SUCCESS') ? 'disabled' : ''}>Giao hàng thành công</option>
             <option value="FAILED" ${order.current_status === 'FAILED' ? 'selected' : ''}>Thất bại</option>
             <option value="CANCELLED" ${order.current_status === 'CANCELLED' ? 'selected' : ''}>Đã hủy</option>
           </select>
@@ -439,189 +440,219 @@ async function loadOrders() {
           </div>
         </td>
       `;
-      tbody.appendChild(tr);
-    });
-  } catch (err) {
-    console.error("Lỗi khi load orders:", err);
-  }
-}
-
-function formatDate(dateStr) {
-  const d = new Date(dateStr);
-  return `${d.getHours()}:${d.getMinutes()}:${d.getSeconds()} ${d.getDate()}-${d.getMonth() + 1}-${d.getFullYear()}`;
-}
-
-function formatPrice(price) {
-  const numeric = parseFloat(price);
-  const integerPart = Math.floor(numeric);
-  return integerPart.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-}
-
-
-function mapStatus(status) {
-  switch (status) {
-    case 'PENDING': return 'Chờ xác nhận';
-    case 'CONFIRMED': return 'Đã xác nhận';
-    case 'SHIPPING': return 'Đang giao';
-    case 'SUCCESS': return 'Giao hàng thành công';
-    case 'FAILED': return 'Thất bại';
-    case 'CANCELLED': return 'Đã hủy';
-    default: return status;
-  }
-}
-
-function showStatusDropdown(element) {
-  // Xóa hàm này vì không cần thiết nữa
-}
-
-function confirmStatusChange(selectElement) {
-  const orderId = selectElement.getAttribute('data-order-id');
-  const previousStatus = selectElement.getAttribute('data-current-status');
-  const newStatus = selectElement.value;
-  
-  // Nếu trạng thái không thay đổi, không làm gì cả
-  if (previousStatus === newStatus) {
-    return;
-  }
-  
-  // Lấy tên trạng thái để hiển thị
-  const previousStatusText = mapStatus(previousStatus);
-  const newStatusText = mapStatus(newStatus);
-  
-  // Sử dụng Ant Design Modal để xác nhận
-  if (window.antd && window.antd.Modal) {
-    window.antd.Modal.confirm({
-      title: 'Xác nhận thay đổi trạng thái',
-      content: `Bạn có chắc chắn muốn thay đổi trạng thái đơn hàng từ "${previousStatusText}" sang "${newStatusText}"?`,
-      okText: 'Xác nhận',
-      cancelText: 'Hủy',
-      onOk: () => updateOrderStatus(orderId, newStatus),
-      onCancel: () => {
-        // Khôi phục giá trị cũ
-        selectElement.value = previousStatus;
-      }
-    });
-  } else {
-    // Fallback nếu không có Ant Design
-    if (confirm(`Bạn có chắc chắn muốn thay đổi trạng thái đơn hàng từ "${previousStatusText}" sang "${newStatusText}"?`)) {
-      updateOrderStatus(orderId, newStatus);
-    } else {
-      // Khôi phục giá trị cũ
-      selectElement.value = previousStatus;
+        tbody.appendChild(tr);
+      });
+    } catch (err) {
+      console.error("Lỗi khi load orders:", err);
     }
   }
-}
 
-async function updateOrderStatus(orderId, newStatus) {
-  try {
-    const response = await fetch(`/api/orders/${orderId}/status`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + localStorage.getItem('token')
-      },
-      body: JSON.stringify({ new_status: newStatus })
-    });
-    
-    const data = await response.json();
-    
-    if (data.success) {
-      // Hiển thị thông báo thành công sử dụng Ant Design
-      if (window.antd && window.antd.notification) {
-        window.antd.notification.success({
-          message: 'Thành công',
-          description: data.message,
-          placement: 'topRight'
-        });
-      } else {
-        // Fallback nếu không có Ant Design
-        alert(data.message);
-      }
-      
-      // Cập nhật lại danh sách đơn hàng
-      loadOrders();
-    } else {
+  function formatDate(dateStr) {
+    const d = new Date(dateStr);
+    return `${d.getHours()}:${d.getMinutes()}:${d.getSeconds()} ${d.getDate()}-${d.getMonth() + 1}-${d.getFullYear()}`;
+  }
+
+  function formatPrice(price) {
+    const numeric = parseFloat(price);
+    const integerPart = Math.floor(numeric);
+    return integerPart.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  }
+
+
+  function mapStatus(status) {
+    switch (status) {
+      case 'PENDING': return 'Chờ xác nhận';
+      case 'CONFIRMED': return 'Đã xác nhận';
+      case 'SHIPPING': return 'Đang giao';
+      case 'SUCCESS': return 'Giao hàng thành công';
+      case 'FAILED': return 'Thất bại';
+      case 'CANCELLED': return 'Đã hủy';
+      default: return status;
+    }
+  }
+
+  function showStatusDropdown(element) {
+    // Xóa hàm này vì không cần thiết nữa
+  }
+
+  function confirmStatusChange(selectElement) {
+    const orderId = selectElement.getAttribute('data-order-id');
+    const previousStatus = selectElement.getAttribute('data-current-status');
+    const newStatus = selectElement.value;
+
+    // Nếu trạng thái không thay đổi, không làm gì cả
+    if (previousStatus === newStatus) {
+      return;
+    }
+
+    // Định nghĩa thứ tự các trạng thái
+    const statusOrder = {
+      'PENDING': 1,
+      'CONFIRMED': 2,
+      'SHIPPING': 3,
+      'SUCCESS': 4,
+      'FAILED': 5,
+      'CANCELLED': 6
+    };
+
+    // Kiểm tra xem có đang cố gắng lùi step không
+    // Cho phép chuyển sang FAILED hoặc CANCELLED từ bất kỳ trạng thái nào
+    if (newStatus !== 'FAILED' && newStatus !== 'CANCELLED' && 
+        statusOrder[newStatus] < statusOrder[previousStatus]) {
       // Hiển thị thông báo lỗi
       if (window.antd && window.antd.notification) {
         window.antd.notification.error({
-          message: 'Lỗi',
-          description: data.message,
+          message: 'Không được phép',
+          description: 'Không thể lùi trạng thái đơn hàng về bước trước đó',
           placement: 'topRight'
         });
       } else {
-        alert('Lỗi: ' + data.message);
+        alert('Không thể lùi trạng thái đơn hàng về bước trước đó');
       }
       
+      // Khôi phục giá trị cũ
+      selectElement.value = previousStatus;
+      return;
+    }
+
+    // Lấy tên trạng thái để hiển thị
+    const previousStatusText = mapStatus(previousStatus);
+    const newStatusText = mapStatus(newStatus);
+
+    // Sử dụng Ant Design Modal để xác nhận
+    if (window.antd && window.antd.Modal) {
+      window.antd.Modal.confirm({
+        title: 'Xác nhận thay đổi trạng thái',
+        content: `Bạn có chắc chắn muốn thay đổi trạng thái đơn hàng từ "${previousStatusText}" sang "${newStatusText}"?`,
+        okText: 'Xác nhận',
+        cancelText: 'Hủy',
+        onOk: () => updateOrderStatus(orderId, newStatus),
+        onCancel: () => {
+          // Khôi phục giá trị cũ
+          selectElement.value = previousStatus;
+        }
+      });
+    } else {
+      // Fallback nếu không có Ant Design
+      if (confirm(`Bạn có chắc chắn muốn thay đổi trạng thái đơn hàng từ "${previousStatusText}" sang "${newStatusText}"?`)) {
+        updateOrderStatus(orderId, newStatus);
+      } else {
+        // Khôi phục giá trị cũ
+        selectElement.value = previousStatus;
+      }
+    }
+  }
+
+  async function updateOrderStatus(orderId, newStatus) {
+    try {
+      const response = await fetch(`/api/orders/${orderId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+        body: JSON.stringify({ new_status: newStatus })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Hiển thị thông báo thành công sử dụng Ant Design
+        if (window.antd && window.antd.notification) {
+          window.antd.notification.success({
+            message: 'Thành công',
+            description: data.message,
+            placement: 'topRight'
+          });
+        } else {
+          // Fallback nếu không có Ant Design
+          alert(data.message);
+        }
+
+        // Cập nhật lại danh sách đơn hàng
+        loadOrders();
+      } else {
+        // Hiển thị thông báo lỗi
+        if (window.antd && window.antd.notification) {
+          window.antd.notification.error({
+            message: 'Lỗi',
+            description: data.message,
+            placement: 'topRight'
+          });
+        } else {
+          alert('Lỗi: ' + data.message);
+        }
+
+        // Cập nhật lại danh sách đơn hàng để đảm bảo hiển thị trạng thái chính xác
+        loadOrders();
+      }
+    } catch (error) {
+      console.error('Lỗi khi cập nhật trạng thái:', error);
+
+      if (window.antd && window.antd.notification) {
+        window.antd.notification.error({
+          message: 'Lỗi',
+          description: 'Đã xảy ra lỗi khi cập nhật trạng thái đơn hàng',
+          placement: 'topRight'
+        });
+      } else {
+        alert('Đã xảy ra lỗi khi cập nhật trạng thái đơn hàng');
+      }
+
       // Cập nhật lại danh sách đơn hàng để đảm bảo hiển thị trạng thái chính xác
       loadOrders();
     }
-  } catch (error) {
-    console.error('Lỗi khi cập nhật trạng thái:', error);
-    
-    if (window.antd && window.antd.notification) {
-      window.antd.notification.error({
-        message: 'Lỗi',
-        description: 'Đã xảy ra lỗi khi cập nhật trạng thái đơn hàng',
-        placement: 'topRight'
-      });
-    } else {
-      alert('Đã xảy ra lỗi khi cập nhật trạng thái đơn hàng');
-    }
-    
-    // Cập nhật lại danh sách đơn hàng để đảm bảo hiển thị trạng thái chính xác
-    loadOrders();
   }
-}
 
-document.addEventListener('DOMContentLoaded', function () {
-  loadOrders(); // 🚀 Load đơn hàng khi vào trang
-  
-  // Xóa xử lý sự kiện cập nhật trạng thái cũ
-  
-  // Xử lý sự kiện đóng modal
-  const closeButtons = document.querySelectorAll('[data-dismiss="modal"]');
-  closeButtons.forEach(button => {
-    button.addEventListener('click', function() {
-      const modalId = this.closest('.modal').id;
-      
-      if (typeof $ !== 'undefined') {
-        $(`#${modalId}`).modal('hide');
-      } else {
-        const modal = document.getElementById(modalId);
-        modal.classList.remove('show');
-        modal.style.display = 'none';
-        modal.setAttribute('aria-hidden', 'true');
-        document.body.classList.remove('modal-open');
-        
-        // Xóa backdrop
-        const backdrop = document.querySelector('.modal-backdrop');
-        if (backdrop) {
-          backdrop.parentNode.removeChild(backdrop);
+  document.addEventListener('DOMContentLoaded', function () {
+    loadOrders(); // 🚀 Load đơn hàng khi vào trang
+
+    // Xóa xử lý sự kiện cập nhật trạng thái cũ
+
+    // Xử lý sự kiện đóng modal
+    const closeButtons = document.querySelectorAll('[data-dismiss="modal"]');
+    closeButtons.forEach(button => {
+      button.addEventListener('click', function () {
+        const modalId = this.closest('.modal').id;
+
+        if (typeof $ !== 'undefined') {
+          $(`#${modalId}`).modal('hide');
+        } else {
+          const modal = document.getElementById(modalId);
+          modal.classList.remove('show');
+          modal.style.display = 'none';
+          modal.setAttribute('aria-hidden', 'true');
+          document.body.classList.remove('modal-open');
+
+          // Xóa backdrop
+          const backdrop = document.querySelector('.modal-backdrop');
+          if (backdrop) {
+            backdrop.parentNode.removeChild(backdrop);
+          }
         }
+      });
+    });
+
+    // Khởi tạo Ant Design nếu cần
+    if (window.antd) {
+      console.log('Ant Design loaded successfully');
+
+      // Có thể thêm các cấu hình khác cho Ant Design ở đây
+      if (window.antd.message) {
+        window.antd.message.config({
+          top: 60,
+          duration: 2,
+          maxCount: 3,
+        });
+      }
+    }
+
+    // Cập nhật màu sắc của select khi thay đổi giá trị
+    document.addEventListener('change', function (e) {
+      if (e.target && e.target.classList.contains('order-status-select')) {
+        // Cập nhật data-current-status để CSS có thể áp dụng màu sắc mới
+        e.target.setAttribute('data-current-status', e.target.value);
       }
     });
   });
-  
-  // Khởi tạo Ant Design nếu cần
-  if (window.antd) {
-    console.log('Ant Design loaded successfully');
-    
-    // Có thể thêm các cấu hình khác cho Ant Design ở đây
-    if (window.antd.message) {
-      window.antd.message.config({
-        top: 60,
-        duration: 2,
-        maxCount: 3,
-      });
-    }
-  }
-  
-  // Cập nhật màu sắc của select khi thay đổi giá trị
-  document.addEventListener('change', function(e) {
-    if (e.target && e.target.classList.contains('order-status-select')) {
-      // Cập nhật data-current-status để CSS có thể áp dụng màu sắc mới
-      e.target.setAttribute('data-current-status', e.target.value);
-    }
-  });
-});
 </script>

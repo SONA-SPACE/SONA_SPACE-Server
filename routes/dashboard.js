@@ -219,22 +219,12 @@ router.get("/orders/invoice/:id", async (req, res) => {
         order.discount = discount;
         order.tax = tax;
         order.total_amount = total;
-
-        // Lấy thông tin khách hàng
-        if (order.user_id) {
-          const [users] = await db.query(`
-            SELECT user_name as customer_name, user_gmail as customer_email, user_number as customer_phone, user_address as shipping_address
-            FROM user WHERE user_id = ?
-          `, [order.user_id]);
-
-          if (users.length > 0) {
-            // Ưu tiên thông tin mới nếu có
-            order.customer_name = order.order_name_new || users[0].customer_name;
-            order.customer_email = order.order_email_new || users[0].customer_email;
-            order.customer_phone = order.order_number2 || order.order_number1 || users[0].customer_phone;
-            order.shipping_address = order.order_address_new || order.order_address_old || users[0].shipping_address;
-          }
-        }
+        order.customer_name = order.order_name_new || order.order_name_old;
+        order.customer_email = order.order_email_new || order.order_email_old;
+        order.customer_phone = order.order_number2 || order.order_number1;
+        order.shipping_address = order.order_address_new || order.order_address_old;
+        // Đảm bảo payment_status có sẵn trong dữ liệu
+        order.payment_status = order.payment_status || 'PENDING';
       } else {
         console.log(`Không tìm thấy đơn hàng với ID: ${orderId}`);
         // Tạo dữ liệu mẫu nếu không tìm thấy đơn hàng
@@ -245,6 +235,8 @@ router.get("/orders/invoice/:id", async (req, res) => {
           customer_email: "customer@example.com",
           customer_phone: "0123456789",
           shipping_address: "Địa chỉ mẫu, Quận 1, TP HCM",
+          payment_status: "PENDING",
+          shipping_status: "pending",
           items: [
             {
               product_name: "Sofa Modena 2,5 seater",
@@ -276,6 +268,8 @@ router.get("/orders/invoice/:id", async (req, res) => {
         customer_email: "customer@example.com",
         customer_phone: "0123456789",
         shipping_address: "Địa chỉ mẫu, Quận 1, TP HCM",
+        payment_status: "PENDING",
+        shipping_status: "pending",
         items: [
           {
             product_name: "Sofa Modena 2,5 seater",

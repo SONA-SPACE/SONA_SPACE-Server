@@ -5157,6 +5157,12 @@ textarea.form-control {
 }
 .orders-page .orders-table .table-header .table-filters .filter {
   position: relative;
+  /* Removing hover behavior completely */
+  /*
+  &:hover .filter-dropdown {
+      display: none;
+  }
+  */
 }
 .orders-page .orders-table .table-header .table-filters .filter:nth-child(2) {
   margin-left: 10px;
@@ -5184,6 +5190,40 @@ textarea.form-control {
   border-right: 5px solid transparent;
   border-top: 5px solid #6c757d;
   margin-left: 5px;
+}
+.orders-page .orders-table .table-header .table-filters .filter .filter-toggle:hover {
+  color: #4a6cf7;
+}
+.orders-page .orders-table .table-header .table-filters .filter .filter-toggle:hover:after {
+  border-top-color: #4a6cf7;
+}
+.orders-page .orders-table .table-header .table-filters .filter .filter-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1000;
+  display: none;
+  min-width: 180px;
+  padding: 8px 0;
+  margin: 5px 0 0;
+  background-color: #fff;
+  border-radius: 4px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+.orders-page .orders-table .table-header .table-filters .filter .filter-dropdown .filter-item {
+  display: block;
+  padding: 8px 16px;
+  color: #333;
+  text-decoration: none;
+  font-size: 13px;
+}
+.orders-page .orders-table .table-header .table-filters .filter .filter-dropdown .filter-item:hover {
+  background-color: #f8f9fa;
+  color: #4a6cf7;
+}
+.orders-page .orders-table .table-header .table-filters .filter .filter-dropdown.active {
+  display: block !important; /* Force display when active */
+  animation: fadeIn 0.2s ease-in-out;
 }
 .orders-page .orders-table table {
   width: 100%;
@@ -5224,6 +5264,7 @@ textarea.form-control {
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 .orders-page .orders-table table .status:hover {
   transform: translateY(-2px);
@@ -5326,17 +5367,28 @@ textarea.form-control {
 /* Styles cho các badge trạng thái vận chuyển */
 .badge {
   display: inline-block;
-  padding: 5px 10px;
+  padding: 10px 10px;
   border-radius: 4px;
   font-size: 12px;
   font-weight: 600;
   text-align: center;
   white-space: nowrap;
   vertical-align: middle;
+  width: 150px;
 }
 
 .badge-primary {
   background-color: #007bff;
+  color: #fff;
+}
+
+.badge-secondary {
+  background-color: #6c757d;
+  color: #fff;
+}
+
+.badge-info {
+  background-color: #17a2b8;
   color: #fff;
 }
 
@@ -5353,6 +5405,23 @@ textarea.form-control {
 .badge-danger {
   background-color: #dc3545;
   color: #fff;
+}
+
+.badge-dark {
+  background-color: #343a40;
+  color: #fff;
+}
+
+/* Thêm hiệu ứng hover cho badge */
+.badge:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  transition: all 0.2s ease;
+}
+
+/* Thêm style cho icon trong badge */
+.badge i {
+  margin-right: 4px;
 }
 
 /* Styles cho select trạng thái đơn hàng */
@@ -5375,6 +5444,7 @@ textarea.form-control {
   position: relative;
   display: flex;
   align-items: center;
+  text-align: center;
   /* Màu sắc dựa trên giá trị được chọn */
 }
 .order-status-select:hover, .order-status-select:focus {
@@ -5470,6 +5540,59 @@ textarea.form-control {
   }
   100% {
     box-shadow: 0 0 0 0 rgba(74, 108, 247, 0);
+  }
+}
+/* Styles for dropdown in bulk actions */
+.bulk-actions .dropdown {
+  position: relative;
+  /* Removing hover behavior completely */
+  /*
+  &:hover .dropdown-menu {
+      display: none;
+  }
+  */
+}
+.bulk-actions .dropdown .dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1000;
+  display: none;
+  min-width: 160px;
+  padding: 8px 0;
+  margin: 5px 0 0;
+  background-color: #fff;
+  border-radius: 4px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+.bulk-actions .dropdown .dropdown-menu .dropdown-item {
+  display: block;
+  padding: 8px 16px;
+  color: #333;
+  text-decoration: none;
+  font-size: 13px;
+}
+.bulk-actions .dropdown .dropdown-menu .dropdown-item:hover {
+  background-color: #f8f9fa;
+  color: #4a6cf7;
+}
+.bulk-actions .dropdown .dropdown-menu.active {
+  display: block !important; /* Force display when active */
+  animation: fadeIn 0.2s ease-in-out;
+}
+.bulk-actions .dropdown .dropdown-toggle:hover {
+  color: #4a6cf7;
+}
+
+/* Animation cho dropdown */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 .order-detail-page {

@@ -151,7 +151,7 @@ router.post('/', verifyToken, async (req, res) => {
     }
 
     // Kiểm tra đơn hàng tồn tại
-    const [orders] = await db.query('SELECT * FROM `order` WHERE order_id = ?', [order_id]);
+    const [orders] = await db.query('SELECT * FROM `orders` WHERE order_id = ?', [order_id]);
     if (orders.length === 0) {
       return res.status(404).json({ error: 'Order not found' });
     }

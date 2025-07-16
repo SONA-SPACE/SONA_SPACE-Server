@@ -89,6 +89,7 @@ router.get('/hash/:orderHash', optionalAuth, async (req, res) => {
         o.order_hash,
         o.created_at,
         o.current_status,
+        o.shipping_status,
         o.order_address_old,
         o.order_address_new,
         o.order_number1,
@@ -104,7 +105,7 @@ router.get('/hash/:orderHash', optionalAuth, async (req, res) => {
         u.user_gmail AS order_email_old,
         cc.code AS coupon_code,
         cc.value_price AS coupon_value,
-          p.status AS payment_status
+        p.status AS payment_status
       FROM orders o
       LEFT JOIN user u ON o.user_id = u.user_id
       LEFT JOIN couponcode cc ON o.couponcode_id = cc.couponcode_id
@@ -178,6 +179,7 @@ router.get('/hash/:orderHash', optionalAuth, async (req, res) => {
         order_number1: order.order_number1 || "",
         order_number2: order.order_number2 || "",
         paymentStatus: order.payment_status,
+        shippingStatus: order.shipping_status || "pending",
         subtotal: order.order_total,
         shippingFee: Number(order.shipping_fee) || 0,
         discount: Number(order.order_discount) || 0,
@@ -218,6 +220,8 @@ router.get('/admin', verifyToken, isAdmin, async (req, res) => {
         o.order_hash,
         o.created_at,
         o.current_status,
+        o.payment_status,
+        o.shipping_status,
         o.order_total_final,
         o.order_name_new,
         o.order_name_old,
@@ -242,26 +246,34 @@ router.get('/admin', verifyToken, isAdmin, async (req, res) => {
 
 router.get('/count', async (req, res) => {
   try {
+    // Lấy số lượng đơn hàng theo trạng thái
     const [result] = await db.query(`
-      SELECT order_status_id, COUNT(*) as count
-      FROM \`order\`
-      GROUP BY order_status_id
+      SELECT current_status, COUNT(*) as count
+      FROM \`orders\`
+      GROUP BY current_status
     `);
 
-    // Lấy danh sách tất cả trạng thái
-    const [statuses] = await db.query('SELECT order_status_id, order_status_name FROM order_status');
+    // Lấy danh sách các trạng thái có thể có
+    const statuses = [
+      { status: 'PENDING', name: 'Chờ xác nhận' },
+      { status: 'CONFIRMED', name: 'Đã xác nhận' },
+      { status: 'SHIPPING', name: 'Đang giao' },
+      { status: 'SUCCESS', name: 'Giao hàng thành công' },
+      { status: 'FAILED', name: 'Thất bại' },
+      { status: 'CANCELLED', name: 'Đã hủy' }
+    ];
 
-    // Kết hợp số lượng đơn hàng với tên trạng thái
-    const statusCounts = statuses.map(status => {
-      const count = result.find(r => r.order_status_id === status.order_status_id);
+    // Tạo đối tượng thống kê
+    const statistics = statuses.map(status => {
+      const count = result.find(r => r.current_status === status.status);
       return {
-        status_id: status.order_status_id,
-        status_name: status.order_status_name,
+        status: status.status,
+        status_name: status.name,
         count: count ? count.count : 0
       };
     });
 
-    res.json({ status_counts: statusCounts });
+    res.json(statistics);
   } catch (error) {
     console.error('Error counting orders by status:', error);
     res.status(500).json({ error: 'Failed to count orders' });
@@ -281,18 +293,19 @@ router.get('/', verifyToken, isAdmin, async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
-    const status_id = req.query.status_id;
+    const status = req.query.status; // Changed from status_id to status
     const search = req.query.search;
 
-    console.log('Query params:', { page, limit, offset, status_id, search });
+    console.log('Query params:', { page, limit, offset, status, search });
 
     // Xây dựng điều kiện tìm kiếm
     let conditions = [];
     let params = [];
 
-    if (status_id) {
-      conditions.push('o.order_status_id = ?');
-      params.push(status_id);
+    // Lọc theo trạng thái
+    if (status) {
+      conditions.push('o.current_status = ?');
+      params.push(status);
     }
 
     if (search) {
@@ -308,7 +321,7 @@ router.get('/', verifyToken, isAdmin, async (req, res) => {
     console.log('Executing count query...');
     const countQuery = `
       SELECT COUNT(*) as total 
-      FROM \`order\` o
+      FROM \`orders\` o
       LEFT JOIN user u ON o.user_id = u.user_id
       ${whereClause}
     `;
@@ -326,11 +339,9 @@ router.get('/', verifyToken, isAdmin, async (req, res) => {
       const ordersQuery = `
         SELECT 
           o.*,
-          os.order_status_name as status_name,
           u.user_gmail as user_email,
           u.user_name as user_name
-        FROM \`order\` o
-        LEFT JOIN order_status os ON o.order_status_id = os.order_status_id
+        FROM \`orders\` o
         LEFT JOIN user u ON o.user_id = u.user_id
         ${whereClause}
         ORDER BY o.created_at DESC
@@ -984,8 +995,8 @@ router.delete('/:id', async (req, res) => {
 
     // Kiểm tra đơn hàng tồn tại
     const [existingOrder] = await db.query(`
-      SELECT order_id, user_id, order_status_id, created_at 
-      FROM \`order\` WHERE order_id = ?
+      SELECT order_id, user_id, current_status, created_at 
+      FROM \`orders\` WHERE order_id = ?
     `, [orderId]);
 
     if (existingOrder.length === 0) {
@@ -999,8 +1010,8 @@ router.delete('/:id', async (req, res) => {
       return res.status(403).json({ error: 'You do not have permission to cancel this order' });
     }
 
-    // Chỉ cho phép hủy đơn hàng ở trạng thái mới tạo hoặc chờ xác nhận
-    if (order.order_status_id > 2 && req.user.role !== 'admin') {
+    // Chỉ cho phép hủy đơn hàng ở trạng thái PENDING hoặc CONFIRMED
+    if (order.current_status !== 'PENDING' && order.current_status !== 'CONFIRMED' && req.user.role !== 'admin') {
       return res.status(400).json({ error: 'Cannot cancel order in current status' });
     }
 
@@ -1043,15 +1054,16 @@ router.delete('/:id', async (req, res) => {
 
       // Cập nhật trạng thái đơn hàng sang "Đã hủy"
       await connection.query(
-        'UPDATE `order` SET order_status_id = 6, updated_at = NOW() WHERE order_id = ?',
+        'UPDATE \`orders\` SET current_status = "CANCELLED", updated_at = NOW() WHERE order_id = ?',
         [orderId]
       );
 
       // Thêm vào lịch sử trạng thái
       await connection.query(`
-        INSERT INTO order_status_log (order_id, order_status_id, note, created_at)
-        VALUES (?, 6, ?, NOW())
-      `, [orderId, 'Order cancelled by ' + (req.user.role === 'admin' ? 'admin' : 'customer')]);
+        INSERT INTO order_status_log (
+          order_id, from_status, to_status, trigger_by, step, created_at
+        ) VALUES (?, ?, 'CANCELLED', ?, ?, NOW())
+      `, [orderId, order.current_status, req.user.role === 'admin' ? 'admin' : 'customer', 'Đơn hàng đã bị hủy']);
 
       // Commit transaction
       await connection.commit();
@@ -1078,25 +1090,32 @@ router.delete('/:id', async (req, res) => {
 router.get('/status/count', isAdmin, async (req, res) => {
   try {
     const [result] = await db.query(`
-      SELECT order_status_id, COUNT(*) as count
-      FROM \`order\`
-      GROUP BY order_status_id
+      SELECT current_status, COUNT(*) as count
+      FROM \`orders\`
+      GROUP BY current_status
     `);
 
-    // Lấy danh sách tất cả trạng thái
-    const [statuses] = await db.query('SELECT order_status_id, order_status_name FROM order_status');
+    // Lấy danh sách các trạng thái có thể có
+    const statuses = [
+      { status: 'PENDING', name: 'Chờ xác nhận' },
+      { status: 'CONFIRMED', name: 'Đã xác nhận' },
+      { status: 'SHIPPING', name: 'Đang giao' },
+      { status: 'SUCCESS', name: 'Giao hàng thành công' },
+      { status: 'FAILED', name: 'Thất bại' },
+      { status: 'CANCELLED', name: 'Đã hủy' }
+    ];
 
-    // Kết hợp số lượng đơn hàng với tên trạng thái
-    const statusCounts = statuses.map(status => {
-      const count = result.find(r => r.order_status_id === status.order_status_id);
+    // Tạo đối tượng thống kê
+    const statistics = statuses.map(status => {
+      const count = result.find(r => r.current_status === status.status);
       return {
-        status_id: status.order_status_id,
-        status_name: status.order_status_name,
+        status: status.status,
+        status_name: status.name,
         count: count ? count.count : 0
       };
     });
 
-    res.json(statusCounts);
+    res.json(statistics);
   } catch (error) {
     console.error('Error fetching order status counts:', error);
     res.status(500).json({ error: 'Failed to fetch order status counts' });

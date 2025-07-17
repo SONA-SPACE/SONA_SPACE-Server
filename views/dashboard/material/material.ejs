@@ -1,0 +1,43 @@
+<!-- Tiêu đề và Thanh công cụ -->
+<div class="dashboard-header-row">
+    <h2 class="dashboard-title">Danh mục vật liệu</h2>
+    <div class="action-buttons">
+        <button class="add-category-btn" onclick="window.location.href='/'">
+            <i class="fas fa-plus"></i> Thêm vật liệu
+        </button>
+    </div>
+</div>
+
+<!-- Bộ lọc và Tìm kiếm -->
+<div class="filter-row">
+    <div class="search-container">
+        <i class="fas fa-search search-icon"></i>
+        <input type="text" class="search-input" placeholder="Tìm kiếm danh mục..." />
+    </div>
+    <div class="date-range">
+        <i class="far fa-calendar-alt"></i>
+        <span>01/04/2023 - 30/04/2023</span>
+    </div>
+    <div class="results-info">Đang tải dữ liệu...</div>
+</div>
+
+<!-- Bảng Danh mục -->
+<div class="category-table-container">
+    <table class="category-table" id="categoriesTable">
+        <thead>
+            <tr>
+                <th>Danh mục</th>
+                <th>Sản phẩm</th>
+                <th>Trạng thái</th>
+                <th>Vị trí</th>
+                <th>Ngày tạo</th>
+                <th>Ngày cập nhật</th>
+                <th>Slug</th>
+                <th>Thao tác</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Dữ liệu sẽ được JS đổ vào -->
+        </tbody>
+    </table>
+</div>

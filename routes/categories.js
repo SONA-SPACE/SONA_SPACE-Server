@@ -61,6 +61,76 @@ router.get("/", async (req, res) => {
   }
 });
 
+router.get("/:categoryId", async (req, res) => {
+  try {
+    const categoryId = req.params.categoryId;
+    if (!categoryId || isNaN(categoryId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "ID danh mục không hợp lệ." });
+    }
+
+    const sql = `
+      SELECT
+        attribute_id,
+        attribute_name,
+        unit,
+        is_required
+      FROM attributes
+      WHERE category_id = ?
+      ORDER BY attribute_name ASC
+    `;
+    const [attributes] = await db.query(sql, [categoryId]);
+
+    res.status(200).json(attributes);
+  } catch (err) {
+    console.error("Error fetching category attributes:", err);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi máy chủ khi lấy danh sách thuộc tính danh mục.",
+    });
+  }
+});
+
+router.get("/:categoryId/attributes", async (req, res) => {
+  const { categoryId } = req.params;
+
+  if (!categoryId) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Category ID là bắt buộc." });
+  }
+
+  try {
+    const sql = `
+      SELECT
+          attribute_id,
+          attribute_name,
+          value_type, -- Lấy trực tiếp từ cột value_type
+          unit,
+          is_required
+      FROM
+          attributes
+      WHERE
+          category_id = ?
+      ORDER BY attribute_name;
+    `;
+    const [attributes] = await db.query(sql, [categoryId]);
+
+    if (attributes.length === 0) {
+      return res.status(200).json([]);
+    }
+
+    res.status(200).json(attributes);
+  } catch (err) {
+    console.error(`Error fetching attributes for category ${categoryId}:`, err);
+    res.status(500).json({
+      success: false,
+      message: `Lỗi máy chủ khi lấy danh sách thuộc tính cho danh mục ID ${categoryId}.`,
+    });
+  }
+});
+
 /**
  * @route   GET /api/categories
  * @desc    Lấy tất cả danh mục sản phẩm
@@ -139,7 +209,7 @@ router.get("/:slug", async (req, res) => {
  * @desc    Tạo danh mục mới
  * @access  Private (Admin only)
  */
-// verifyToken, isAdmin;
+
 router.post("/", verifyToken, isAdmin, async (req, res) => {
   try {
     const { name, image, banner, slug, status, priority } = req.body;
@@ -163,7 +233,14 @@ router.post("/", verifyToken, isAdmin, async (req, res) => {
     // Tạo danh mục mới
     await db.query(
       "INSERT INTO category (category_name, category_image, category_banner, category_status, category_priority, created_at, slug) VALUES (?, ?, ?, ?, ?, NOW(), ?)",
-      [name, image || null, banner || null, typeof status === "number" ? status : 1, typeof priority === "number" ? priority : 0, slug]
+      [
+        name,
+        image || null,
+        banner || null,
+        typeof status === "number" ? status : 1,
+        typeof priority === "number" ? priority : 0,
+        slug,
+      ]
     );
 
     // Lấy thông tin danh mục vừa tạo
@@ -187,7 +264,7 @@ router.post("/", verifyToken, isAdmin, async (req, res) => {
  * @desc    Cập nhật thông tin danh mục
  * @access  Private (Admin only)
  */
-// verifyToken, isAdmin,
+
 router.put("/:slug", verifyToken, isAdmin, async (req, res) => {
   const slug = req.params.slug;
   if (!slug) return res.status(400).json({ message: "Slug is required" });
@@ -251,10 +328,20 @@ router.put("/:slug", verifyToken, isAdmin, async (req, res) => {
         updated_at = NOW()
       WHERE slug = ?
       `,
-      [name || null, image || null, banner || null, priority || 0, status ?? 1, slug]
+      [
+        name || null,
+        image || null,
+        banner || null,
+        priority || 0,
+        status ?? 1,
+        slug,
+      ]
     );
 
-    const [updatedCategory] = await db.query("SELECT * FROM category WHERE slug = ?", [slug]);
+    const [updatedCategory] = await db.query(
+      "SELECT * FROM category WHERE slug = ?",
+      [slug]
+    );
 
     res.json({
       message: "Category updated successfully",
@@ -271,7 +358,7 @@ router.put("/:slug", verifyToken, isAdmin, async (req, res) => {
  * @desc    Xóa danh mục
  * @access  Private (Admin only)
  */
-// verifyToken, isAdmin,
+
 router.delete("/:slug", verifyToken, isAdmin, async (req, res) => {
   const slug = req.params.slug;
   if (!slug) return res.status(400).json({ message: "Slug is required" });
@@ -423,7 +510,7 @@ router.get("/:slug/products", async (req, res) => {
       let colorHex = [];
       try {
         colorHex = JSON.parse(product.color_hex || "[]");
-      } catch { }
+      } catch {}
 
       return {
         id: product.id,
@@ -466,13 +553,15 @@ router.get("/by-product/:slug", async (req, res) => {
   if (!slug) return res.status(400).json({ message: "Slug is required" });
 
   try {
-    const [rows] = await db.query(`
+    const [rows] = await db.query(
+      `
       SELECT c.category_id, c.category_name, c.slug
       FROM category c
       JOIN product p ON c.category_id = p.category_id
       WHERE p.product_slug = ?
-    `, [slug]);
-
+    `,
+      [slug]
+    );
 
     if (!rows.length) {
       return res.status(404).json({ error: "Category not found" });
@@ -484,7 +573,5 @@ router.get("/by-product/:slug", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch categories by product" });
   }
 });
-
-
 
 module.exports = router;

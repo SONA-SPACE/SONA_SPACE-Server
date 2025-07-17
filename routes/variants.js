@@ -175,7 +175,8 @@ router.post("/:productId", async (req, res) => {
   const errors = [];
   const variantIndex = 0;
 
-  const isEmpty = (val) => val === undefined || val === null || String(val).trim() === '';
+  const isEmpty = (val) =>
+    val === undefined || val === null || String(val).trim() === "";
   const isNumber = (val) => !isEmpty(val) && !isNaN(Number(val));
   const addError = (field, message) => {
     errors.push({ field: `variants[${variantIndex}].${field}`, message });
@@ -203,16 +204,6 @@ router.post("/:productId", async (req, res) => {
     addError("price", "Giá không hợp lệ");
   }
 
-  if (!Array.isArray(list_image) || list_image.length === 0) {
-    addError("list_image", "Cần ít nhất một ảnh");
-  } else {
-    list_image.forEach((img, i) => {
-      if (typeof img !== "string" || !img.startsWith("http")) {
-        addError(`list_image[${i}]`, `Ảnh ${i + 1} không hợp lệ`);
-      }
-    });
-  }
-
   if (errors.length > 0) {
     return res.status(400).json({ error: "Dữ liệu không hợp lệ", errors });
   }
@@ -228,7 +219,8 @@ router.post("/:productId", async (req, res) => {
 
     const formatImageList = (input) => {
       if (Array.isArray(input)) return input.filter(Boolean).join(",");
-      if (typeof input === "string") return input.split(",").filter(Boolean).join(",");
+      if (typeof input === "string")
+        return input.split(",").filter(Boolean).join(",");
       return "";
     };
 
@@ -269,8 +261,6 @@ router.post("/:productId", async (req, res) => {
   }
 });
 
-
-
 /**
  * @route   PUT /api/variants/:variantId
  * @desc    Cập nhật thông tin biến thể
@@ -289,7 +279,9 @@ router.put("/:variantId", async (req, res) => {
 
   // ==== Kiểm tra rỗng trước ====
   if (!variantId || isNaN(variantId)) {
-    return res.status(400).json([{ field: "variantId", message: "Thiếu ID biến thể." }]);
+    return res
+      .status(400)
+      .json([{ field: "variantId", message: "Thiếu ID biến thể." }]);
   }
 
   if (color_id === undefined || color_id === null || color_id === "") {
@@ -302,7 +294,10 @@ router.put("/:variantId", async (req, res) => {
     addError("slug", "Slug không được để trống.");
   }
   if (quantity === null || isNaN(quantity)) {
-    errors.push({ field: `variants[${index}].quantity`, message: "Số lượng không được để trống." });
+    errors.push({
+      field: `variants[${index}].quantity`,
+      message: "Số lượng không được để trống.",
+    });
   }
 
   if (quantity === undefined || quantity === null || quantity === "") {
@@ -320,7 +315,8 @@ router.put("/:variantId", async (req, res) => {
   // ==== Kiểm tra ảnh ====
   const formatImageList = (input) => {
     if (Array.isArray(input)) return input.filter(Boolean).join(",");
-    if (typeof input === "string") return input.split(",").filter(Boolean).join(",");
+    if (typeof input === "string")
+      return input.split(",").filter(Boolean).join(",");
     return "";
   };
 
@@ -374,8 +370,6 @@ router.put("/:variantId", async (req, res) => {
     variant: updatedVariant[0],
   });
 });
-
-
 
 /**
  * @route   DELETE /api/variants/:variantId

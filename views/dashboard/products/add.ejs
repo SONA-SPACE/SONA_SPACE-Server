@@ -63,42 +63,7 @@
       </div>
       <div class="form-section">
         <h3 class="section-title">Thông tin bổ sung</h3>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="productDepth">Độ sâu (cm)</label>
-            <input type="number" id="productDepth" class="form-control" placeholder="Nhập độ sâu" />
-            <div class="invalid-feedback"></div>
-          </div>
-          <div class="form-group">
-            <label for="productWidth">Chiều rộng (cm)</label>
-            <input type="number" id="productWidth" class="form-control" placeholder="Nhập chiều rộng" />
-            <div class="invalid-feedback"></div>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="productHeight">Chiều cao (cm)</label>
-            <input type="number" id="productHeight" class="form-control" placeholder="Nhập chiều cao" />
-            <div class="invalid-feedback"></div>
-          </div>
-          <div class="form-group">
-            <label for="productMaxLoad">Tải trọng tối đa (kg)</label>
-            <input type="number" id="productMaxLoad" class="form-control" placeholder="Nhập tải trọng" />
-            <div class="invalid-feedback"></div>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="productSeatHeight">Chiều cao chỗ ngồi (cm)</label>
-            <input type="number" id="productSeatHeight" class="form-control" placeholder="Nhập chiều cao chỗ ngồi" />
-            <div class="invalid-feedback"></div>
-          </div>
-          <div class="form-group">
-            <label for="productMaterial">Chất liệu</label>
-            <input type="text" id="productMaterial" class="form-control" placeholder="Nhập chất liệu" />
-            <div class="invalid-feedback"></div>
-          </div>
-        </div>
+        <div id="dynamicAttributesContainer"></div>
       </div>
     </div>
     <div class="right-column">
@@ -196,52 +161,11 @@
   </div>
 </form>
 
-
 <script>
   const API_URL = "http://localhost:3501/api";
-  async function uploadImage(file, folder = "", subfolder = "") {
-    if (!file) return null;
-    const formData = new FormData();
-    formData.append("image", file);
-    formData.append("folder", folder);
-    if (subfolder) formData.append("subfolder", subfolder);
+  let mainImageInput;
+  let mainImageUpload;
 
-    const res = await fetch(`${API_URL}/upload/product`, {
-      method: "POST",
-      body: formData,
-    });
-    const data = await res.json();
-    return data.url || null;
-  }
-
-  function generateSlug(str) {
-    return str
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "") // Xoá dấu tiếng Việt
-      .replace(/[đĐ]/g, "d")
-      .replace(/[^a-z0-9]/g, "-") // Thay ký tự đặc biệt bằng dấu -
-      .replace(/-+/g, "-") // Loại bỏ dấu - liên tiếp
-      .replace(/^-+|-+$/g, ""); // Xoá - ở đầu và cuối
-  }
-
-  // Hàm gọi API và xử lý dữ liệu
-  async function fetchAPI(endpoint) {
-    try {
-      const response = await fetch(`${API_URL}${endpoint}`);
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error("Error fetching from " + endpoint + ":", error);
-      showToast("Lỗi khi tải dữ liệu: " + error.message, "danger");
-      return null;
-    }
-  }
-
-  // Hàm hiển thị thông báo
   function showToast(message, type = "success") {
     let toastContainer = document.getElementById("toastContainer");
     if (!toastContainer) {
@@ -259,18 +183,68 @@
     toast.setAttribute("aria-atomic", "true");
 
     toast.innerHTML = `
-  <div class="d-flex">
-    <div class="toast-body" style="font-size: 24px;">${message}</div>
-    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-  </div>
+ <div class="d-flex">
+  <div class="toast-body" style="font-size: 24px;">${message}</div>
+  <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+ </div>
 `;
-
 
     toastContainer.appendChild(toast);
     const bsToast = new bootstrap.Toast(toast, { delay: 3000 });
     bsToast.show();
 
     toast.addEventListener("hidden.bs.toast", () => toast.remove());
+  }
+
+  async function uploadImage(file, folder = "", subfolder = "") {
+    if (!file) return null;
+    const formData = new FormData();
+    formData.append("image", file);
+    formData.append("folder", folder);
+    if (subfolder) formData.append("subfolder", subfolder);
+
+    try {
+      const res = await fetch(`${API_URL}/upload/product`, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      return data.url || null;
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      showToast("Lỗi khi tải ảnh lên: " + error.message, "danger");
+      return null;
+    }
+  }
+
+  // Tạo slug
+  function generateSlug(str) {
+    return str
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[đĐ]/g, "d")
+      .replace(/[^a-z0-9]/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-+|-+$/g, "");
+  }
+
+  async function fetchAPI(endpoint) {
+    try {
+      const response = await fetch(`${API_URL}${endpoint}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `Network response was not ok: ${response.status} ${response.statusText} - ${errorText}`
+        );
+      }
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Error fetching from " + endpoint + ":", error);
+      showToast("Lỗi khi tải dữ liệu: " + error.message, "danger");
+      return null;
+    }
   }
 
   // Hàm load dữ liệu cho select box
@@ -282,12 +256,15 @@
     placeholder = "Chọn..."
   ) {
     const select = document.getElementById(selectId);
-    if (!select) return;
+    if (!select) {
+      console.warn(`Select element with ID '${selectId}' not found.`);
+      return;
+    }
 
     try {
       const data = await fetchAPI(endpoint);
       if (!data || !Array.isArray(data)) {
-        throw new Error("Dữ liệu không hợp lệ");
+        throw new Error("Dữ liệu không hợp lệ hoặc rỗng");
       }
 
       select.innerHTML =
@@ -301,6 +278,10 @@
     } catch (error) {
       console.error(`Error loading ${selectId}:`, error);
       select.innerHTML = `<option value="">Lỗi tải dữ liệu</option>`;
+      showToast(
+        `Lỗi khi tải dữ liệu cho ${placeholder}: ${error.message}`,
+        "danger"
+      );
     }
   }
 
@@ -313,34 +294,38 @@
       }
 
       const colorOptions = `
-            <option value="">Chọn màu</option>
-            ${colors
+   <option value="">Chọn màu</option>
+   ${colors
           .map(
             (color) => `
-                <option value="${color.color_id}" data-hex="${color.color_hex}">
-                    ${color.color_name}
-                </option>
-            `
+  <option value="${color.color_id}" data-hex="${color.color_hex}">
+    ${color.color_name}
+  </option>
+   `
           )
           .join("")}
-        `;
+ `;
 
       document.querySelectorAll(".variant-color").forEach((select) => {
         select.innerHTML = colorOptions;
       });
 
-      // Thêm sự kiện cho variant mới
       document
         .querySelector(".btn-add-variant")
         .addEventListener("click", function () {
           setTimeout(() => {
-            const newVariant = document.querySelector(
+            const newVariantColorSelect = document.querySelector(
               ".variant-item:last-child .variant-color"
             );
-            if (newVariant) {
-              newVariant.innerHTML = colorOptions;
+            if (newVariantColorSelect) {
+              newVariantColorSelect.innerHTML = colorOptions;
+
+              const newVariant = newVariantColorSelect.closest(".variant-item");
+              if (newVariant) {
+                setupVariantEvents(newVariant);
+              }
             }
-          }, 100);
+          }, 50);
         });
     } catch (error) {
       console.error("Error loading colors:", error);
@@ -348,10 +333,105 @@
     }
   }
 
+  let allMaterials = [];
+  async function loadAllMaterials() {
+    try {
+      const materials = await fetchAPI("/materials");
+      if (!materials || !Array.isArray(materials)) {
+        throw new Error("Dữ liệu chất liệu không hợp lệ");
+      }
+      allMaterials = materials;
+    } catch (error) {
+      console.error("Error loading all materials:", error);
+      showToast("Lỗi khi tải danh sách chất liệu.", "danger");
+    }
+  }
+
+  async function loadCategoryAttributes(categoryId) {
+    const dynamicAttributesContainer = document.getElementById(
+      "dynamicAttributesContainer"
+    );
+    dynamicAttributesContainer.innerHTML = "";
+
+    if (!categoryId) return;
+
+    try {
+      const attributes = await fetchAPI(`/categories/${categoryId}`);
+      if (
+        !attributes ||
+        !Array.isArray(attributes) ||
+        attributes.length === 0
+      ) {
+        showToast("Không tìm thấy thuộc tính cho danh mục này.", "info");
+        return;
+      }
+
+      let formRowsHtml = "";
+      let currentFormRow = '<div class="form-row">';
+      let attributesInCurrentRow = 0;
+
+      for (const attr of attributes) {
+        const isRequired = attr.is_required ? "required" : "";
+        const requiredAsterisk = attr.is_required
+          ? '<span class="text-danger">*</span>'
+          : "";
+        let inputHtml = "";
+
+        if (attr.attribute_name.toLowerCase().includes("chất liệu")) {
+          const materialOptions = allMaterials
+            .map(
+              (mat) =>
+                `<option value="${mat.material_id}">${mat.material_name}</option>`
+            )
+            .join("");
+          inputHtml = `
+    <div class="select-wrapper">
+   <select id="attr-${attr.attribute_id}" class="form-control dynamic-attribute" data-attribute-id="${attr.attribute_id}" data-value-type="material_id" ${isRequired}>
+     <option value=""> ${attr.attribute_name}</option>
+     ${materialOptions}
+   </select>
+   <i class="fas fa-chevron-down"></i>
+    </div>
+  `;
+        } else if (attr.unit) {
+          inputHtml = `
+    <input type="number" id="attr-${attr.attribute_id}" class="form-control dynamic-attribute" data-attribute-id="${attr.attribute_id}" data-value-type="value" placeholder="Nhập ${attr.attribute_name}" ${isRequired} />
+  `;
+        } else {
+          inputHtml = `
+    <input type="text" id="attr-${attr.attribute_id}" class="form-control dynamic-attribute" data-attribute-id="${attr.attribute_id}" data-value-type="value" placeholder="Nhập ${attr.attribute_name}" ${isRequired} />
+  `;
+        }
+        currentFormRow += `
+  <div class="form-infor">
+    <label for="attr-${attr.attribute_id}">${attr.attribute_name} ${attr.unit ? `(${attr.unit})` : ""
+          } ${requiredAsterisk}</label>
+    ${inputHtml}
+    <div class="invalid-feedback"></div>
+  </div>
+   `;
+        attributesInCurrentRow++;
+
+        if (
+          attributesInCurrentRow % 2 === 0 ||
+          attributesInCurrentRow === attributes.length
+        ) {
+          currentFormRow += "</div>";
+          formRowsHtml += currentFormRow;
+          currentFormRow = '<div class="form-row">';
+          attributesInCurrentRow = 0;
+        }
+      }
+      dynamicAttributesContainer.innerHTML = formRowsHtml;
+    } catch (error) {
+      console.error("Error loading category attributes:", error);
+      showToast("Lỗi khi tải thuộc tính danh mục: " + error.message, "danger");
+    }
+  }
+
   // Khởi tạo form
   async function initializeForm() {
     try {
-      // Load categories
       await loadSelectData(
         "productCategory",
         "/categories",
@@ -360,7 +440,6 @@
         "Chọn danh mục"
       );
 
-      // Load rooms
       await loadSelectData(
         "productRooms",
         "/rooms/filter",
@@ -369,7 +448,8 @@
         "Chọn phòng"
       );
 
-      // Load colors cho variants
+      await loadAllMaterials();
+
       await loadVariantColors();
 
       // Thêm sự kiện cho nút Cancel
@@ -378,31 +458,116 @@
         .addEventListener("click", function () {
           window.location.href = "/dashboard/products";
         });
+
+      const productCategorySelect = document.getElementById("productCategory");
+      if (productCategorySelect) {
+        productCategorySelect.addEventListener("change", function () {
+          loadCategoryAttributes(this.value);
+        });
+
+        if (productCategorySelect.value) {
+          loadCategoryAttributes(productCategorySelect.value);
+        }
+      } else {
+        console.warn(
+          "Element with ID 'productCategory' not found during initialization."
+        );
+      }
     } catch (error) {
       console.error("Error initializing form:", error);
       showToast("Lỗi khởi tạo form", "danger");
     }
   }
+  document.addEventListener("change", function (e) {
+    // Clear main image validation on file select
+    if (e.target.id === "mainImageFile") {
+      const mainImageUploadZone = document.getElementById("mainImageUpload");
+      mainImageUploadZone.classList.remove("is-invalid");
+      const feedback = mainImageUploadZone.querySelector(".invalid-feedback");
+      if (feedback) feedback.remove();
 
-  // Khởi tạo khi trang load xong
-  document.addEventListener("DOMContentLoaded", function () {
-    initializeForm();
+      const nextSibling = mainImageUploadZone.nextElementSibling;
+      if (nextSibling && nextSibling.classList.contains("invalid-feedback")) {
+        nextSibling.remove();
+      }
+    }
+
+    // Clear variant image validation on file select
+    if (e.target.matches('.variant-image-item input[type="file"]')) {
+      const variantImageGrid = e.target.closest(".variant-image-grid");
+      if (variantImageGrid) {
+        // Đảm bảo có ít nhất 1 ảnh sau khi thay đổi để xóa lỗi
+        const currentImages = variantImageGrid.querySelectorAll(
+          ".variant-image-item.loaded img"
+        ).length;
+        if (currentImages > 0) {
+          variantImageGrid.classList.remove("is-invalid");
+          const feedback = variantImageGrid.querySelector(".invalid-feedback");
+          if (feedback) feedback.remove();
+        }
+      }
+    }
+
+    // General clearing for form-control inputs/selects
+    if (
+      e.target.classList.contains("form-control") &&
+      e.target.classList.contains("is-invalid")
+    ) {
+      e.target.classList.remove("is-invalid");
+      const feedback = e.target
+        .closest(".form-group")
+        ?.querySelector(".invalid-feedback");
+      if (feedback) feedback.textContent = "";
+    }
   });
 
-  // Xử lý thêm biến thể mới
+  document.addEventListener("DOMContentLoaded", function () {
+    initializeForm();
+
+    setupMainImageUpload();
+    setupProductNameSlugGeneration();
+
+    document.querySelectorAll(".variant-item").forEach((variant) => {
+      if (variant.id !== "variantTemplate") {
+        setupVariantEvents(variant);
+      }
+    });
+  });
+
   document
     .querySelector(".btn-add-variant")
     .addEventListener("click", function () {
-      const visibleVariants = [...document.querySelectorAll(".variant-item")].filter(v => v.style.display !== "none");
+      const visibleVariants = [
+        ...document.querySelectorAll(".variant-item"),
+      ].filter((v) => v.style.display !== "none");
       const newIndex = visibleVariants.length;
 
-      const newVariant = document.getElementById("variantTemplate").cloneNode(true);
+      const newVariant = document
+        .getElementById("variantTemplate")
+        .cloneNode(true);
       newVariant.id = `variant-${newIndex + 1}`;
       newVariant.style.display = "block";
-      newVariant.querySelector(".variant-title").textContent = `Biến thể ${newIndex + 1}`;
+      newVariant.querySelector(".variant-title").textContent = `Biến thể ${newIndex + 1
+        }`;
 
+      newVariant
+        .querySelectorAll(".is-invalid")
+        .forEach((el) => el.classList.remove("is-invalid"));
+      newVariant
+        .querySelectorAll(".invalid-feedback")
+        .forEach((el) => (el.textContent = ""));
 
-      // Thêm sự kiện cho nút toggle và remove
+      const clonedImageGrid = newVariant.querySelector(".variant-image-grid");
+      if (
+        clonedImageGrid &&
+        clonedImageGrid.nextElementSibling &&
+        clonedImageGrid.nextElementSibling.classList.contains(
+          "invalid-feedback"
+        )
+      ) {
+        clonedImageGrid.nextElementSibling.remove();
+      }
+
       setupVariantEvents(newVariant);
 
       document.getElementById("variantsList").appendChild(newVariant);
@@ -410,10 +575,9 @@
 
   // Hàm setup các sự kiện cho biến thể
   function setupVariantEvents(variantElement) {
-    // Toggle nội dung biến thể
-    variantElement
-      .querySelector(".btn-toggle-variant")
-      .addEventListener("click", function () {
+    const toggleButton = variantElement.querySelector(".btn-toggle-variant");
+    if (toggleButton) {
+      toggleButton.addEventListener("click", function () {
         const content = variantElement.querySelector(".variant-content");
         const icon = this.querySelector("i");
         if (content.style.display === "none") {
@@ -424,15 +588,18 @@
           icon.classList.replace("fa-chevron-up", "fa-chevron-down");
         }
       });
+    }
 
     // Xóa biến thể
-    variantElement
-      .querySelector(".btn-remove-variant")
-      .addEventListener("click", function () {
+    const removeButton = variantElement.querySelector(".btn-remove-variant");
+    if (removeButton) {
+      removeButton.addEventListener("click", function () {
         if (confirm("Bạn có chắc muốn xóa biến thể này?")) {
           variantElement.remove();
+          // Re-evaluate variant count validation if needed here
         }
       });
+    }
 
     // Tự động tạo slug khi chọn màu
     const colorSelect = variantElement.querySelector(".variant-color");
@@ -448,25 +615,32 @@
       });
     }
 
-    // Xử lý upload ảnh biến thể
     setupVariantImageUpload(variantElement);
   }
 
-  // Hàm xử lý upload ảnh cho variant
   function setupVariantImageUpload(variantElement) {
     const imageGrid = variantElement.querySelector(".variant-image-grid");
-    const maxImages = 7; // Số lượng ảnh tối đa
-    let currentImageCount = 0;
+    const maxImages = 7;
+
+    // Initialize _imageCount only if it's not already set
+    if (typeof variantElement._imageCount === "undefined") {
+      variantElement._imageCount = 0;
+    } else {
+      // Reset for new variants, or if images were pre-loaded for existing ones
+      variantElement._imageCount = imageGrid.querySelectorAll(
+        ".variant-image-item.loaded"
+      ).length;
+    }
 
     function createImageBox() {
       const div = document.createElement("div");
       div.className = "variant-image-item active";
       div.innerHTML = `
-            <div class="upload-placeholder">
-                <i class="fas fa-plus"></i>
-                <input type="file" hidden accept="image/*">
-            </div>
-        `;
+  <div class="upload-placeholder">
+    <i class="fas fa-plus"></i>
+    <input type="file" hidden accept="image/*">
+  </div>
+   `;
       return div;
     }
 
@@ -474,7 +648,6 @@
       const input = imageBox.querySelector('input[type="file"]');
       const placeholder = imageBox.querySelector(".upload-placeholder");
 
-      // Bấm box là chọn ảnh
       imageBox.addEventListener("click", () => input.click());
 
       // Khi chọn file ảnh
@@ -483,13 +656,11 @@
         if (file && file.type.startsWith("image/")) {
           const reader = new FileReader();
           reader.onload = function (e) {
-            // Đánh dấu box đã có ảnh
             imageBox.classList.add("loaded");
+            imageBox.classList.remove("active");
 
-            // Ẩn placeholder
             placeholder.style.display = "none";
 
-            // Hiển thị ảnh preview
             const img = document.createElement("img");
             img.src = e.target.result;
             img.alt = "Preview";
@@ -505,25 +676,27 @@
             removeBtn.addEventListener("click", function (e) {
               e.stopPropagation();
               imageBox.remove();
-              currentImageCount--;
+              variantElement._imageCount--;
 
-              const lastBox = imageGrid.lastElementChild;
-              if (!lastBox || lastBox.classList.contains("loaded")) {
-                if (currentImageCount < maxImages) {
-                  const newBox = createImageBox();
-                  imageGrid.appendChild(newBox);
-                  setupImageBox(newBox);
-                  currentImageCount++;
-                }
+              if (
+                imageGrid.querySelectorAll(".variant-image-item.active")
+                  .length === 0 &&
+                variantElement._imageCount < maxImages
+              ) {
+                const newBox = createImageBox();
+                imageGrid.appendChild(newBox);
+                setupImageBox(newBox);
               }
+
+              input.dispatchEvent(new Event("change", { bubbles: true }));
             });
 
-            // Nếu chưa đủ số ảnh, thêm box mới
-            if (currentImageCount < maxImages) {
-              const newBox = createImageBox();
-              imageGrid.appendChild(newBox);
-              setupImageBox(newBox);
-              currentImageCount++;
+            if (imageGrid.classList.contains("is-invalid")) {
+              imageGrid.classList.remove("is-invalid");
+              const feedback = imageGrid.nextElementSibling;
+              if (feedback && feedback.classList.contains("invalid-feedback")) {
+                feedback.remove();
+              }
             }
           };
           reader.readAsDataURL(file);
@@ -531,153 +704,350 @@
       });
     }
 
-
-    // Xóa tất cả box hiện tại
     imageGrid.innerHTML = "";
+    variantElement._imageCount = 0;
 
-    // Thêm box đầu tiên
     const firstBox = createImageBox();
     imageGrid.appendChild(firstBox);
     setupImageBox(firstBox);
-    currentImageCount++;
+    variantElement._imageCount++;
   }
 
-  // Xử lý upload ảnh chính
-  const mainImageUpload = document.getElementById("mainImageUpload");
-  const mainImageInput = mainImageUpload.querySelector('input[type="file"]');
-  const mainImagePreview = document.querySelector(".main-image-preview");
+  function setupMainImageUpload() {
+    mainImageUpload = document.getElementById("mainImageUpload");
+    mainImageInput = mainImageUpload.querySelector('input[type="file"]');
+    const mainImagePreview = document.querySelector(".main-image-preview");
 
-  mainImageUpload.addEventListener("click", () => mainImageInput.click());
+    if (mainImageUpload && mainImageInput && mainImagePreview) {
+      mainImageUpload.addEventListener("click", () => mainImageInput.click());
 
-  mainImageInput.addEventListener("change", function (e) {
-    const file = e.target.files[0];
-    if (file && file.type.startsWith("image/")) {
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        mainImagePreview.querySelector("img").src = e.target.result;
-        mainImagePreview.style.display = "block";
-        mainImageUpload.style.display = "none";
-      };
-      reader.readAsDataURL(file);
+      mainImageInput.addEventListener("change", function (e) {
+        const file = e.target.files[0];
+        if (file && file.type.startsWith("image/")) {
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            mainImagePreview.querySelector("img").src = e.target.result;
+            mainImagePreview.style.display = "block";
+            mainImageUpload.style.display = "none";
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+
+      const removeMainImageBtn = document.querySelector(
+        ".main-image-preview .remove-image"
+      );
+      if (removeMainImageBtn) {
+        removeMainImageBtn.addEventListener("click", function () {
+          mainImagePreview.style.display = "none";
+          mainImageUpload.style.display = "block";
+          mainImageInput.value = "";
+
+          mainImageInput.dispatchEvent(new Event("change", { bubbles: true }));
+        });
+      }
+    } else {
+      console.warn("Main image upload elements not found.");
     }
-  });
+  }
 
-  // Xử lý xóa ảnh chính
-  document
-    .querySelector(".main-image-preview .remove-image")
-    .addEventListener("click", function () {
-      mainImagePreview.style.display = "none";
-      mainImageUpload.style.display = "block";
-      mainImageInput.value = "";
-    });
+  function setupProductNameSlugGeneration() {
+    const productNameInput = document.getElementById("productName");
+    const productSlugInput = document.getElementById("productSlug");
 
-  // Tự động tạo slug từ tên sản phẩm
-  document.getElementById("productName").addEventListener("input", function () {
-    const slug = this.value
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[đĐ]/g, "d")
-      .replace(/[^a-z0-9]/g, "-")
-      .replace(/-+/g, "-")
-      .replace(/^-+|-+$/g, "");
-    document.getElementById("productSlug").value = slug;
-  });
-</script>
-<script>
-  /* Existing JavaScript code */
+    if (productNameInput && productSlugInput) {
+      productNameInput.addEventListener("input", function () {
+        const slug = generateSlug(this.value);
+        productSlugInput.value = slug;
+      });
+    } else {
+      console.warn("Product name or slug input not found.");
+    }
+  }
 
-  // Add this before your existing event listener for .btn-save
   document.querySelector(".btn-save").addEventListener("click", async () => {
     const saveButton = document.querySelector(".btn-save");
-    const originalButtonText = saveButton.textContent; // Lưu trữ text gốc của nút
+    const originalButtonText = saveButton.textContent;
+    const validationErrors = [];
 
-    // 1. Thay đổi trạng thái nút ngay lập tức
     saveButton.textContent = "Đang lưu...";
     saveButton.disabled = true;
 
-    const form = document.getElementById("addProductForm");
+    document
+      .querySelectorAll(".is-invalid")
+      .forEach((el) => el.classList.remove("is-invalid"));
+    document
+      .querySelectorAll(".invalid-feedback")
+      .forEach((el) => (el.textContent = ""));
 
-    // 2. Kiểm tra validation của form
-    if (!form.checkValidity()) {
-      form.classList.add("was-validated");
-      saveButton.textContent = originalButtonText; // Khôi phục text
-      saveButton.disabled = false; // Bật lại nút
-      showToast("Vui lòng điền đầy đủ các thông tin bắt buộc.", "danger");
-      // Cuộn đến lỗi đầu tiên nếu có
-      const firstInvalid = document.querySelector(".is-invalid");
-      if (firstInvalid) {
-        firstInvalid.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
-      return;
+    document
+      .querySelectorAll(
+        "#mainImageUpload + .invalid-feedback, .variant-image-grid .invalid-feedback"
+      )
+      .forEach((el) => el.remove());
+
+    const name = document.getElementById("productName");
+    const slug = document.getElementById("productSlug");
+    const description = document.getElementById("productDescription");
+    const categorySelect = document.getElementById("productCategory");
+    const statusSelect = document.getElementById("productStatus");
+    const roomSelect = document.getElementById("productRooms");
+
+    const addValidationError = (element, message) => {
+      element.classList.add("is-invalid");
+      const feedbackEl = element
+        .closest(".form-group")
+        ?.querySelector(".invalid-feedback");
+      if (feedbackEl) feedbackEl.textContent = message;
+      validationErrors.push({ element, message });
+    };
+
+    // --- Validate Product Info ---
+    if (!name.value.trim())
+      addValidationError(name, "Tên sản phẩm là bắt buộc");
+    if (!description.value.trim())
+      addValidationError(description, "Mô tả sản phẩm là bắt buộc");
+    if (!categorySelect.value)
+      addValidationError(categorySelect, "Danh mục là bắt buộc");
+    if (!statusSelect.value)
+      addValidationError(statusSelect, "Trạng thái là bắt buộc");
+
+    // --- Validate Main Image ---
+    const mainImageInput = document.getElementById("mainImageFile");
+    const mainImageUploadZone = document.getElementById("mainImageUpload");
+    const mainImageFile = mainImageInput ? mainImageInput.files[0] : null;
+
+    // Xóa feedback cũ và class is-invalid trước khi validate lại
+    let mainImageFeedback =
+      mainImageUploadZone.querySelector(".invalid-feedback");
+    if (mainImageFeedback) mainImageFeedback.remove();
+    mainImageUploadZone.classList.remove("is-invalid");
+
+    // Kiểm tra nếu vùng upload ảnh chính đang hiển thị (chưa có ảnh) VÀ không có file nào được chọn
+    if (mainImageUploadZone.style.display !== "none" && !mainImageFile) {
+      mainImageUploadZone.classList.add("is-invalid");
+      mainImageFeedback = document.createElement("div");
+      mainImageFeedback.className = "invalid-feedback d-block";
+      mainImageFeedback.textContent = "Ảnh chính sản phẩm là bắt buộc.";
+      mainImageUploadZone.parentNode.insertBefore(
+        mainImageFeedback,
+        mainImageUploadZone.nextSibling
+      );
+      validationErrors.push({
+        element: mainImageUploadZone,
+        message: "Vui lòng nhập đầy đủ thông tin cần thiết.",
+      });
     }
 
-    // 3. Lấy dữ liệu từ form
-    const name = document.getElementById("productName").value.trim();
-    const slug = document.getElementById("productSlug").value.trim();
-    const description = document.getElementById("productDescription").value.trim();
-    const category_id = document.getElementById("productCategory").value;
-    const status = document.getElementById("productStatus").value;
-    const materials = document.getElementById("productMaterial").value.trim();
-    const height = document.getElementById("productHeight").value;
-    const width = document.getElementById("productWidth").value;
-    const depth = document.getElementById("productDepth").value;
-    const seating_height = document.getElementById("productSeatHeight").value;
-    const max_weight_load = document.getElementById("productMaxLoad").value;
-
-    const room_ids = [...document.getElementById("productRooms").selectedOptions]
+    // Lấy room_ids từ select box
+    const room_ids = [...roomSelect.selectedOptions]
       .map((opt) => opt.value)
       .filter((val) => val);
-
-    // 4. Tải lên ảnh chính
-    const mainImageFile = mainImageInput.files[0];
-    let main_image = null;
-    try {
-      main_image = await uploadImage(mainImageFile, "SonaSpace/Product", "main");
-      if (!main_image && mainImageFile) { // Nếu có file nhưng không tải lên được URL
-        throw new Error("Không thể lấy URL ảnh chính sau khi tải lên.");
-      }
-    } catch (uploadError) {
-      showToast("Lỗi khi tải ảnh chính: " + uploadError.message, "danger");
-      saveButton.textContent = originalButtonText;
-      saveButton.disabled = false;
-      return; // Dừng lại nếu lỗi tải ảnh chính
+    if (room_ids.length === 0) {
+      addValidationError(roomSelect, "Vui lòng chọn ít nhất một phòng.");
     }
+    // Validate dynamic attributes
+    const dynamicAttributeInputs =
+      document.querySelectorAll(".dynamic-attribute");
+    const attributes = [];
+    dynamicAttributeInputs.forEach((input) => {
+      const attribute_id = input.dataset.attributeId;
+      const valueType = input.dataset.valueType;
+      let value = input.value.trim();
+      let material_id = null;
 
-    // 5. Lấy danh sách các biến thể đang hiển thị
-    const variantElements = [...document.querySelectorAll(".variant-item")].filter(
-      (item) => item.style.display !== "none"
+      if (valueType === "material_id") {
+        material_id = value;
+        value = null;
+      } else {
+        if (input.type === "number") {
+          value = value === "" ? null : parseFloat(value);
+        } else {
+          value = value === "" ? null : value;
+        }
+      }
+
+      if (
+        input.hasAttribute("required") &&
+        (value === null ||
+          value === "" ||
+          material_id === null ||
+          material_id === "")
+      )
+        if (attribute_id) {
+          attributes.push({
+            attribute_id: parseInt(attribute_id),
+            value: value,
+            material_id: material_id,
+          });
+        }
+    });
+
+    const variantElements = [
+      ...document.querySelectorAll(".variant-item"),
+    ].filter(
+      (item) => item.style.display !== "none" && item.id !== "variantTemplate"
     );
 
     if (variantElements.length === 0) {
-      showToast("Sản phẩm phải có ít nhất 1 biến thể!", "danger");
+      const sectionTitle = [
+        ...document.querySelectorAll(".section-title"),
+      ].find((el) => el.textContent.includes("Biến thể"));
+
+      validationErrors.push({
+        element: sectionTitle || document.querySelector(".btn-add-variant"),
+        message: "Sản phẩm phải có ít nhất 1 biến thể!",
+      });
+    }
+
+    const variants = [];
+    // Validate individual variants only if there are variants to check
+    if (variantElements.length > 0) {
+      for (const item of variantElements) {
+        const color_id_el = item.querySelector(".variant-color");
+        const variant_slug_el = item.querySelector(".variant-slug");
+        const quantity_el = item.querySelector(".variant-quantity");
+        const price_el = item.querySelector(".variant-price");
+        const price_sale_el = item.querySelector(".variant-sale-price");
+
+        if (!color_id_el.value)
+          addValidationError(color_id_el, "Màu sắc là bắt buộc.");
+
+        if (
+          isNaN(parseInt(quantity_el.value)) ||
+          parseInt(quantity_el.value) < 0
+        )
+          addValidationError(quantity_el, "Số lượng không hợp lệ.");
+        if (isNaN(parseFloat(price_el.value)) || parseFloat(price_el.value) < 0)
+          addValidationError(price_el, "Giá là bắt buộc.");
+
+        // --- Validate Variant Images ---
+        const variantImageGrid = item.querySelector(".variant-image-grid");
+        let imageGridFeedback =
+          variantImageGrid.querySelector(".invalid-feedback");
+
+        if (imageGridFeedback) imageGridFeedback.remove();
+        variantImageGrid.classList.remove("is-invalid");
+
+        const list_image_items_loaded = [
+          ...item.querySelectorAll(".variant-image-item.loaded"),
+        ];
+        if (list_image_items_loaded.length === 0) {
+          variantImageGrid.classList.add("is-invalid");
+          imageGridFeedback = document.createElement("div");
+          imageGridFeedback.className = "invalid-feedback d-block";
+          imageGridFeedback.textContent = "Cần ít nhất 1 ảnh cho biến thể.";
+          variantImageGrid.parentNode.insertBefore(
+            imageGridFeedback,
+            variantImageGrid.nextSibling
+          );
+        }
+
+        variants.push({
+          color_id: color_id_el.value,
+          variant_slug: variant_slug_el.value.trim(),
+          quantity: parseInt(quantity_el.value),
+          price: parseFloat(price_el.value),
+          price_sale: parseFloat(price_sale_el.value) || null,
+          list_image: [],
+        });
+      }
+    }
+
+    if (validationErrors.length > 0) {
+      // Cuộn đến phần tử lỗi đầu tiên
+      validationErrors[0].element.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+      // showToast(
+      //   "Vui lòng điền đầy đủ các thông tin bắt buộc.",
+      //   "danger"
+      // );
+      // Hiển thị từng toast một với độ trễ
+      let delay = 0;
+      for (const error of validationErrors) {
+        let shouldShowToast = true;
+
+        // Kiểm tra nếu lỗi đã được hiển thị inline trên form-control thông thường
+        if (error.element && error.element.classList.contains("form-control")) {
+          const feedbackEl = error.element
+            .closest(".form-group")
+            ?.querySelector(".invalid-feedback");
+          if (feedbackEl && feedbackEl.textContent === error.message) {
+            shouldShowToast = false;
+          }
+        }
+
+        // Kiểm tra nếu lỗi là của mainImageUploadZone
+        if (error.element && error.element.id === "mainImageUpload") {
+          const feedbackEl = error.element.nextElementSibling;
+          if (
+            feedbackEl &&
+            feedbackEl.classList.contains("invalid-feedback") &&
+            feedbackEl.textContent === error.message
+          ) {
+            shouldShowToast = false;
+          }
+        }
+
+        // Kiểm tra nếu lỗi là của variant-image-grid
+        if (
+          error.element &&
+          error.element.classList.contains("variant-image-grid")
+        ) {
+          const feedbackEl = error.element.querySelector(".invalid-feedback");
+          if (feedbackEl && feedbackEl.textContent === error.message) {
+            shouldShowToast = false;
+          }
+        }
+
+        if (shouldShowToast) {
+          setTimeout(() => {
+            showToast(error.message, "danger");
+          }, delay);
+          delay += 500;
+        }
+      }
+
       saveButton.textContent = originalButtonText;
       saveButton.disabled = false;
-      const sectionTitle = [...document.querySelectorAll(".section-title")].find(el =>
-        el.textContent.includes("Biến thể")
-      );
-      if (sectionTitle) {
-        sectionTitle.scrollIntoView({ behavior: "smooth" });
-      }
       return;
     }
 
-    // 6. Xử lý các biến thể (tuần tự để giảm tải mạng/server)
-    const variants = [];
-    for (const item of variantElements) {
-      const color_id = item.querySelector(".variant-color").value;
-      const variant_slug = item.querySelector(".variant-slug").value.trim();
-      const quantity = parseInt(item.querySelector(".variant-quantity").value);
-      const price = parseFloat(item.querySelector(".variant-price").value);
-      const price_sale =
-        parseFloat(item.querySelector(".variant-sale-price").value) || null;
+    let main_image_url = null;
+    try {
+      if (mainImageFile) {
+        main_image_url = await uploadImage(
+          mainImageFile,
+          "SonaSpace/Product",
+          "main"
+        );
+        if (!main_image_url) {
+          throw new Error("Không thể tải ảnh chính lên.");
+        }
+      }
+    } catch (uploadError) {
+      showToast("Lỗi khi tải ảnh chính: " + uploadError.message, "danger");
 
-      const list_image_inputs = [
-        ...item.querySelectorAll('.variant-image-item.loaded input[type="file"]'),
+      saveButton.textContent = originalButtonText;
+      saveButton.disabled = false;
+      return;
+    }
+
+    const finalVariants = [];
+    for (let i = 0; i < variantElements.length; i++) {
+      const item = variantElements[i];
+      const currentVariantData = variants[i];
+
+      const list_image_inputs_to_upload = [
+        ...item.querySelectorAll(
+          '.variant-image-item.loaded input[type="file"]'
+        ),
       ];
       const list_image_urls = [];
 
-      for (const input of list_image_inputs) {
+      for (const input of list_image_inputs_to_upload) {
         const file = input.files[0];
         try {
           const url = await uploadImage(file, "SonaSpace/Product", "variant");
@@ -687,133 +1057,179 @@
             throw new Error("Không thể lấy URL ảnh biến thể sau khi tải lên.");
           }
         } catch (uploadError) {
-          showToast("Lỗi khi tải ảnh biến thể: " + uploadError.message, "danger");
+          showToast(
+            "Lỗi khi tải ảnh biến thể: " + uploadError.message,
+            "danger"
+          );
           saveButton.textContent = originalButtonText;
           saveButton.disabled = false;
           return;
         }
       }
-
-      variants.push({
-        color_id,
-        variant_slug,
-        quantity,
-        price,
-        price_sale,
+      finalVariants.push({
+        ...currentVariantData,
         list_image: list_image_urls,
       });
     }
 
-    // 7. Gửi dữ liệu sản phẩm lên API
     try {
       const res = await fetch(`${API_URL}/products/add`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name,
-          slug,
-          description,
-          category_id,
-          status,
-          materials,
-          height,
-          width,
-          depth,
-          seating_height,
-          max_weight_load,
-          main_image,
-          room_ids,
-          variants,
+          name: name.value.trim(),
+          slug: slug.value.trim(),
+          description: description.value.trim(),
+          category_id: parseInt(categorySelect.value),
+          status: parseInt(statusSelect.value),
+          main_image: main_image_url,
+          room_ids: room_ids.map(Number),
+          attributes: attributes,
+          variants: finalVariants,
         }),
       });
 
       const data = await res.json();
       if (!res.ok) {
-        // Xóa các lỗi cũ
-        document.querySelectorAll(".is-invalid").forEach(el => el.classList.remove("is-invalid"));
-        document.querySelectorAll(".invalid-feedback").forEach(el => el.textContent = "");
-
         if (data.errors && Array.isArray(data.errors)) {
           data.errors.forEach(({ field, message }) => {
             let input = null;
 
-            // Lỗi liên quan đến biến thể
+            if (field.startsWith("attributes")) {
+              const errorElement = document.getElementById(
+                "dynamicAttributesContainer"
+              );
+              if (errorElement) {
+                errorElement.classList.add("is-invalid");
+                showToast(message, "danger");
+              }
+              return;
+            }
+
             if (field.startsWith("variants[")) {
               const match = field.match(/variants\[(\d+)\]\.(.+)/);
               if (match) {
                 const idx = parseInt(match[1]);
                 const key = match[2];
-                const visibleVariants = [...document.querySelectorAll(".variant-item")].filter(v => v.style.display !== "none");
+                const visibleVariants = [
+                  ...document.querySelectorAll(".variant-item"),
+                ].filter(
+                  (v) =>
+                    v.style.display !== "none" && v.id !== "variantTemplate"
+                );
                 const variantEl = visibleVariants[idx];
 
                 if (variantEl) {
-                  if (key === "color_id") input = variantEl.querySelector(".variant-color");
-                  if (key === "variant_slug") input = variantEl.querySelector(".variant-slug");
-                  if (key === "quantity") input = variantEl.querySelector(".variant-quantity");
-                  if (key === "price") input = variantEl.querySelector(".variant-price");
+                  if (key === "color_id")
+                    input = variantEl.querySelector(".variant-color");
+                  else if (key === "variant_slug")
+                    input = variantEl.querySelector(".variant-slug");
+                  else if (key === "quantity")
+                    input = variantEl.querySelector(".variant-quantity");
+                  else if (key === "price")
+                    input = variantEl.querySelector(".variant-price");
 
                   if (input) {
                     input.classList.add("is-invalid");
-                    const feedback = input.closest(".form-group")?.querySelector(".invalid-feedback");
+                    const feedback = input
+                      .closest(".form-group")
+                      ?.querySelector(".invalid-feedback");
                     if (feedback) feedback.textContent = message;
                   }
 
-                  // Xử lý lỗi ảnh biến thể
                   if (key === "list_image") {
-                    const imgSection = variantEl.querySelector(".variant-images");
-                    const oldFeedback = imgSection.querySelector(".invalid-feedback");
-                    if (oldFeedback) oldFeedback.remove();
+                    const imageGrid = variantEl.querySelector(
+                      ".variant-image-grid"
+                    );
+                    const oldFeedback = imageGrid.nextElementSibling;
+                    if (
+                      oldFeedback &&
+                      oldFeedback.classList.contains("invalid-feedback")
+                    )
+                      oldFeedback.remove();
 
+                    imageGrid.classList.add("is-invalid");
                     const feedback = document.createElement("div");
                     feedback.className = "invalid-feedback d-block";
                     feedback.textContent = message;
-                    imgSection.appendChild(feedback);
+                    imageGrid.parentNode.insertBefore(
+                      feedback,
+                      imageGrid.nextSibling
+                    );
                   }
                 }
               }
             } else {
-              // Lỗi trường chung
               const fieldMap = {
                 name: "productName",
                 slug: "productSlug",
                 description: "productDescription",
                 category_id: "productCategory",
                 status: "productStatus",
-                materials: "productMaterial",
-                height: "productHeight",
-                width: "productWidth",
-                depth: "productDepth",
-                seating_height: "productSeatHeight",
-                max_weight_load: "productMaxLoad",
-                main_image: "mainImageFile",
+                main_image: "mainImageUpload",
                 room_ids: "productRooms",
               };
               const id = fieldMap[field];
               if (id) {
                 input = document.getElementById(id);
                 if (input) {
-                  input.classList.add("is-invalid");
-                  const feedback = input.closest(".form-group")?.querySelector(".invalid-feedback");
-                  if (feedback) feedback.textContent = message;
+                  if (field === "main_image") {
+                    input.classList.add("is-invalid");
+
+                    let existingFeedback = input.nextElementSibling;
+                    if (
+                      existingFeedback &&
+                      existingFeedback.classList.contains("invalid-feedback")
+                    ) {
+                      existingFeedback.remove();
+                    }
+                    const feedbackDiv = document.createElement("div");
+                    feedbackDiv.className = "invalid-feedback d-block";
+                    feedbackDiv.textContent = message;
+                    input.parentNode.insertBefore(
+                      feedbackDiv,
+                      input.nextSibling
+                    );
+
+                    input
+                      .closest(".form-section")
+                      ?.scrollIntoView({ behavior: "smooth" });
+                  } else {
+                    input.classList.add("is-invalid");
+                    const feedback = input
+                      .closest(".form-group")
+                      ?.querySelector(".invalid-feedback");
+                    if (feedback) feedback.textContent = message;
+                  }
+                } else {
+                  showToast(`Lỗi trường '${field}`, "danger");
+                  ss;
                 }
+              } else {
+                showToast(`Lỗi trường '${field}`, "danger");
               }
             }
           });
 
-
           const firstInvalid = document.querySelector(".is-invalid");
           if (firstInvalid) {
-            firstInvalid.scrollIntoView({ behavior: "smooth", block: "center" });
+            firstInvalid.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
           }
         } else {
-          showToast(data.error || "Lỗi không xác định khi tạo sản phẩm.", "danger");
+          showToast(
+            data.error || "Lỗi không xác định khi tạo sản phẩm.",
+            "danger"
+          );
         }
+
         saveButton.textContent = originalButtonText;
         saveButton.disabled = false;
         return;
       }
 
-      // 8. Thành công: hiển thị toast và chuyển hướng
       showToast("Tạo sản phẩm thành công");
       setTimeout(() => {
         window.location.href = "/dashboard/products";
@@ -821,25 +1237,62 @@
     } catch (error) {
       console.error(error);
       showToast("Lỗi khi kết nối đến máy chủ: " + error.message, "danger");
+
       saveButton.textContent = originalButtonText;
       saveButton.disabled = false;
     }
   });
   document.addEventListener("input", function (e) {
-    if (e.target.classList.contains("form-control") && e.target.classList.contains("is-invalid")) {
+    if (
+      e.target.classList.contains("form-control") &&
+      e.target.classList.contains("is-invalid")
+    ) {
       e.target.classList.remove("is-invalid");
-      const feedback = e.target.closest(".form-group")?.querySelector(".invalid-feedback");
+      const feedback = e.target
+        .closest(".form-group")
+        ?.querySelector(".invalid-feedback");
       if (feedback) feedback.textContent = "";
     }
   });
 
   document.addEventListener("change", function (e) {
-    if (e.target.classList.contains("form-control") && e.target.classList.contains("is-invalid")) {
+    if (e.target.id === "mainImageFile") {
+      const mainImageUploadZone = document.getElementById("mainImageUpload");
+      mainImageUploadZone.classList.remove("is-invalid");
+      const feedback = variantImageGrid.nextElementSibling;
+      if (feedback && feedback.classList.contains("invalid-feedback")) {
+        feedback.remove();
+      }
+
+      const nextSibling = mainImageUploadZone.nextElementSibling;
+      if (nextSibling && nextSibling.classList.contains("invalid-feedback")) {
+        nextSibling.remove();
+      }
+    }
+
+    if (e.target.matches('.variant-image-item input[type="file"]')) {
+      const variantImageGrid = e.target.closest(".variant-image-grid");
+      if (variantImageGrid) {
+        const currentImages = variantImageGrid.querySelectorAll(
+          ".variant-image-item.loaded img"
+        ).length;
+        if (currentImages > 0) {
+          variantImageGrid.classList.remove("is-invalid");
+          const feedback = variantImageGrid.querySelector(".invalid-feedback");
+          if (feedback) feedback.remove();
+        }
+      }
+    }
+
+    if (
+      e.target.classList.contains("form-control") &&
+      e.target.classList.contains("is-invalid")
+    ) {
       e.target.classList.remove("is-invalid");
-      const feedback = e.target.closest(".form-group")?.querySelector(".invalid-feedback");
+      const feedback = e.target
+        .closest(".form-group")
+        ?.querySelector(".invalid-feedback");
       if (feedback) feedback.textContent = "";
     }
   });
-
-
 </script>

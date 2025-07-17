@@ -198,7 +198,7 @@ router.get("/simple", async (req, res) => {
 
 router.get("/admin", verifyToken, isAdmin, async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1; 
+    const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
 
@@ -554,11 +554,14 @@ router.get("/:slug", async (req, res) => {
   try {
     const slug = req.params.slug;
 
+    // Tăng view trước khi lấy dữ liệu
+    await db.query(
+      `UPDATE news SET news_view = news_view + 1 WHERE news_slug = ?`,
+      [slug]
+    );
+
     const [result] = await db.query(
-      `SELECT 
-        news_id, news_title AS title, news_slug AS slug, news_content AS content, 
-        news_description AS excerpt, news_image AS thumbnail,
-        news_category_id AS category_id, news_status AS status
+      `SELECT *
       FROM news WHERE news_slug = ?`,
       [slug]
     );
@@ -568,23 +571,6 @@ router.get("/:slug", async (req, res) => {
     }
 
     const newsItem = result[0];
-
-    // Parse ảnh phụ nếu dùng nhiều ảnh
-    if (newsItem.thumbnail) {
-      try {
-        const parsed = JSON.parse(newsItem.thumbnail);
-        if (Array.isArray(parsed)) {
-          newsItem.thumbnail = parsed[0] || null;
-          newsItem.images = parsed;
-        } else {
-          newsItem.images = [newsItem.thumbnail];
-        }
-      } catch (e) {
-        newsItem.images = [newsItem.thumbnail];
-      }
-    } else {
-      newsItem.images = [];
-    }
 
     res.json(newsItem);
   } catch (err) {
@@ -769,24 +755,36 @@ router.put("/:slug", verifyToken, async (req, res) => {
  * @desc    Xóa bài viết
  * @access  Private (Admin only)
  */
+// Hàm lấy ảnh trong nội dung
+function getImageInContent(content) {
+  const imgRegex = /<img[^>]+src=['"]([^'"]+)['"]/g;
+  let matches;
+  const links = [];
+  while ((matches = imgRegex.exec(content)) !== null) {
+    links.push(matches[1]);
+  }
+  return links;
+}
+
 router.delete("/:id", verifyToken, isAdmin, async (req, res) => {
   try {
     const id = Number(req.params.id);
     if (isNaN(id)) {
-      return res.status(400).json({ error: "Invalid news ID" });
+      return res.status(400).json({ error: "ID tin tức không hợp lệ" });
     }
 
     const [existingNews] = await db.query(
       "SELECT * FROM news WHERE news_id = ?",
       [id]
     );
+
     if (existingNews.length === 0) {
-      return res.status(404).json({ error: "News article not found" });
+      return res.status(404).json({ error: "Không tìm thấy tin tức" });
     }
 
-    const { news_image } = existingNews[0];
-
+    const { news_image, news_content } = existingNews[0];
     let imageUrl = news_image;
+    let imagesInContent = getImageInContent(news_content);
 
     try {
       const arr = JSON.parse(news_image);
@@ -795,24 +793,37 @@ router.delete("/:id", verifyToken, isAdmin, async (req, res) => {
       }
     } catch (err) {}
 
+    // Hàm lấy publicId Cloudinary
     const getCloudinaryPublicId = (url) => {
       if (!url) return null;
       const match = url.match(/\/upload\/v\d+\/(.+?)\.(jpg|jpeg|png|webp)$/i);
       return match ? match[1] : null;
     };
 
+    // Xóa ảnh cover (nếu có)
     const publicId = getCloudinaryPublicId(imageUrl);
     if (publicId) {
       await cloudinary.uploader.destroy(publicId);
-      console.log("Đã xóa ảnh Cloudinary:", publicId);
+      // console.log("Đã xóa ảnh Cloudinary:", publicId);
+    }
+
+    // Xóa ảnh trong nội dung
+    if(Array.isArray(imagesInContent)) {
+      for(const url of imagesInContent) {
+        const publicIdInContent = getCloudinaryPublicId(url);
+        if (publicIdInContent) {
+          await cloudinary.uploader.destroy(publicIdInContent);
+          // console.log("Đã xóa ảnh Cloudinary trong nội dung:", publicIdInContent);
+        }
+      }
     }
 
     await db.query("DELETE FROM news WHERE news_id = ?", [id]);
 
-    res.json({ message: "News article deleted successfully" });
+    res.json({ message: "Xóa tin tức thành công" });
   } catch (error) {
-    console.error("Error deleting news article:", error);
-    res.status(500).json({ error: "Failed to delete news article" });
+    console.error("Lỗi xóa tin tức:", error);
+    res.status(500).json({ error: "Lỗi xóa tin tức" });
   }
 });
 

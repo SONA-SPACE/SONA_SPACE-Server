@@ -2,16 +2,11 @@ const express = require("express");
 const router = express.Router();
 const authMiddleware = require("../middleware/auth");
 const { route } = require("./upload");
+const fetch = require('node-fetch'); // Add this line
+const { isAdmin } = require('../middleware/auth');
 
 // Middleware to check if user is admin
-const isAdmin = (req, res, next) => {
-  if (req.user && req.user.role === "admin") {
-    next();
-  } else {
-    // Chuyển hướng về trang đăng nhập nếu không phải admin
-    res.redirect('/');
-  }
-};
+// Removed duplicate isAdmin middleware
 
 // Middleware để kiểm tra xác thực cho dashboard
 const checkAuth = (req, res, next) => {
@@ -173,6 +168,121 @@ router.get("/orders/view/:id", (req, res) => {
   });
 });
 
+// Route for order details
+router.get('/orders/detail/:id', isAdmin, async (req, res) => {
+  try {
+    const orderId = req.params.id;
+    
+    // Fetch order data from API
+    const response = await fetch(`http://localhost:3501/api/orders/${orderId}`, {
+      headers: {
+        'Authorization': `Bearer ${req.cookies.token}`
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch order details');
+    }
+    
+    const order = await response.json();
+    
+    // Helper functions for template
+    const helpers = {
+      mapPaymentStatus: (status) => {
+        switch (status) {
+          case 'PENDING': return 'Chờ thanh toán';
+          case 'PROCESSING': return 'Đang xử lý';
+          case 'SUCCESS': return 'Đã thanh toán';
+          case 'FAILED': return 'Thanh toán thất bại';
+          case 'CANCELLED': return 'Đã hủy';
+          default: return status || 'Chờ thanh toán';
+        }
+      },
+      mapStatus: (status) => {
+        switch (status) {
+          case 'PENDING': return 'Chờ xác nhận';
+          case 'CONFIRMED': return 'Đã xác nhận';
+          case 'SHIPPING': return 'Đang giao';
+          case 'SUCCESS': return 'Giao hàng thành công';
+          case 'FAILED': return 'Thất bại';
+          case 'CANCELLED': return 'Đã hủy';
+          default: return status || 'Chờ xác nhận';
+        }
+      },
+      mapShippingStatus: (status) => {
+        switch (status) {
+          case 'pending': return 'Chờ lấy hàng';
+          case 'picking_up': return 'Đang đi lấy hàng';
+          case 'picked_up': return 'Đã lấy hàng';
+          case 'in_transit': return 'Đang vận chuyển';
+          case 'delivered': return 'Đã giao hàng';
+          case 'delivery_failed': return 'Giao hàng thất bại';
+          case 'returning': return 'Đang hoàn trả';
+          case 'returned': return 'Đã hoàn trả';
+          case 'canceled': return 'Đã hủy';
+          default: return status || 'Chờ lấy hàng';
+        }
+      },
+      mapShippingStatusClass: (status) => {
+        switch (status) {
+          case 'pending': return 'badge-secondary';
+          case 'picking_up': return 'badge-info';
+          case 'picked_up': return 'badge-primary';
+          case 'in_transit': return 'badge-primary';
+          case 'delivered': return 'badge-success';
+          case 'delivery_failed': return 'badge-danger';
+          case 'returning': return 'badge-warning';
+          case 'returned': return 'badge-warning';
+          case 'canceled': return 'badge-dark';
+          default: return 'badge-secondary';
+        }
+      },
+      mapShippingStatusIcon: (status) => {
+        switch (status) {
+          case 'pending': return 'fa-clock';
+          case 'picking_up': return 'fa-people-carry';
+          case 'picked_up': return 'fa-box';
+          case 'in_transit': return 'fa-truck';
+          case 'delivered': return 'fa-check-circle';
+          case 'delivery_failed': return 'fa-times-circle';
+          case 'returning': return 'fa-undo';
+          case 'returned': return 'fa-box-open';
+          case 'canceled': return 'fa-ban';
+          default: return 'fa-clock';
+        }
+      },
+      formatPrice: (price) => {
+        if (!price) return '0';
+        try {
+          return parseFloat(price).toLocaleString('vi-VN');
+        } catch (error) {
+          console.error('Error formatting price:', error);
+          return '0';
+        }
+      }
+    };
+    
+    res.render('dashboard/orders/order-detail', {
+      title: `Chi tiết đơn hàng #${orderId}`,
+      layout: "layouts/dashboard",
+      orderId,
+      order: order.data || order,
+      mapPaymentStatus: helpers.mapPaymentStatus,
+      mapStatus: helpers.mapStatus,
+      mapShippingStatus: helpers.mapShippingStatus,
+      mapShippingStatusClass: helpers.mapShippingStatusClass,
+      mapShippingStatusIcon: helpers.mapShippingStatusIcon,
+      formatPrice: helpers.formatPrice
+    });
+  } catch (error) {
+    console.error('Error loading order details:', error);
+    res.status(500).render('error', { 
+      message: 'Không thể tải thông tin đơn hàng',
+      error: { status: 500, stack: error.stack },
+      layout: "layouts/dashboard"
+    });
+  }
+});
 
 
 // View order invoice
@@ -219,22 +329,12 @@ router.get("/orders/invoice/:id", async (req, res) => {
         order.discount = discount;
         order.tax = tax;
         order.total_amount = total;
-
-        // Lấy thông tin khách hàng
-        if (order.user_id) {
-          const [users] = await db.query(`
-            SELECT user_name as customer_name, user_gmail as customer_email, user_number as customer_phone, user_address as shipping_address
-            FROM user WHERE user_id = ?
-          `, [order.user_id]);
-
-          if (users.length > 0) {
-            // Ưu tiên thông tin mới nếu có
-            order.customer_name = order.order_name_new || users[0].customer_name;
-            order.customer_email = order.order_email_new || users[0].customer_email;
-            order.customer_phone = order.order_number2 || order.order_number1 || users[0].customer_phone;
-            order.shipping_address = order.order_address_new || order.order_address_old || users[0].shipping_address;
-          }
-        }
+        order.customer_name = order.order_name_new || order.order_name_old;
+        order.customer_email = order.order_email_new || order.order_email_old;
+        order.customer_phone = order.order_number2 || order.order_number1;
+        order.shipping_address = order.order_address_new || order.order_address_old;
+        // Đảm bảo payment_status có sẵn trong dữ liệu
+        order.payment_status = order.payment_status || 'PENDING';
       } else {
         console.log(`Không tìm thấy đơn hàng với ID: ${orderId}`);
         // Tạo dữ liệu mẫu nếu không tìm thấy đơn hàng
@@ -245,6 +345,8 @@ router.get("/orders/invoice/:id", async (req, res) => {
           customer_email: "customer@example.com",
           customer_phone: "0123456789",
           shipping_address: "Địa chỉ mẫu, Quận 1, TP HCM",
+          payment_status: "PENDING",
+          shipping_status: "pending",
           items: [
             {
               product_name: "Sofa Modena 2,5 seater",
@@ -276,6 +378,8 @@ router.get("/orders/invoice/:id", async (req, res) => {
         customer_email: "customer@example.com",
         customer_phone: "0123456789",
         shipping_address: "Địa chỉ mẫu, Quận 1, TP HCM",
+        payment_status: "PENDING",
+        shipping_status: "pending",
         items: [
           {
             product_name: "Sofa Modena 2,5 seater",

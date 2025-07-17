@@ -54,7 +54,7 @@
     const URL_API = "http://localhost:3501/api";
 
     function getRooms() {
-      fetch(URL_API + "/rooms")
+      fetch(URL_API + "/rooms/admin")
         .then((response) => response.json())
         .then((data) => {
           renderRooms(data);
@@ -111,8 +111,8 @@
         }'" title="Chỉnh sửa">
                   <i class="fas fa-edit"></i>
                 </button>
-                <button class="action-button visibility" data-id="${
-                  room.room_id
+                <button class="action-button visibility" data-slug="${
+                  room.slug
                 }" data-status="${status}" title="${
           status === "visible" ? "Ẩn không gian" : "Hiển thị không gian"
         }">
@@ -120,7 +120,7 @@
                     status === "visible" ? "fa-eye-slash" : "fa-eye"
                   }"></i>
                 </button>
-                <button class="action-button delete" data-id="${
+                <button class="action-button delete" data-slug="${
                   room.slug
                 }" data-name="${room.room_name}" title="Xóa không gian">
                   <i class="fas fa-trash"></i>
@@ -134,9 +134,17 @@
 
       document.querySelectorAll(".action-button.delete").forEach((btn) => {
         btn.addEventListener("click", () => {
-          const roomSlug = btn.getAttribute("data-id");
+          const roomSlug = btn.getAttribute("data-slug");
           const roomName = btn.getAttribute("data-name");
           deleteRoom(roomSlug, roomName);
+        });
+      });
+
+      document.querySelectorAll(".action-button.visibility").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const roomSlug = btn.getAttribute("data-slug");
+          const roomStatus = btn.getAttribute("data-status");
+          changeStatus(roomSlug, roomStatus);
         });
       });
 
@@ -145,27 +153,54 @@
       ).textContent = `Hiển thị ${rooms.length} kết quả`;
     }
 
-    function deleteRoom(roomSlug, roomName) {
-      if (!confirm(`Bạn có chắc chắn muốn xóa không gian "${roomName}"?`)) {
-        return;
-      }
-
-      fetch(`/api/rooms/${roomSlug}`, {
-        method: "DELETE",
+    function changeStatus(roomSlug, roomStatus) {
+      const token = localStorage.getItem("token");
+      fetch(`${URL_API}/rooms/${roomSlug}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: roomStatus === "visible" ? 0 : 1 }),
       })
         .then((res) => res.json())
         .then((data) => {
           if (data.error) {
             showToast(data.error, "danger");
           } else {
-            showToast("Xóa không gian thành công", "success");
-            setTimeout(() => location.reload(), 1000);
+            showToast("Cập nhật trạng thái thành công", "success");
+            setTimeout(() => location.reload(), 1500);
           }
-        })
-        .catch((err) => {
-          console.error("Lỗi khi xóa:", err);
-          showToast("Xảy ra lỗi khi xóa không gian", "danger");
         });
+    }
+
+    function deleteRoom(roomSlug, roomName) {
+      showConfirm({
+        message: `Bạn có chắc chắn muốn xóa không gian "${roomName}"?`,
+        confirmText: "Xác nhận",
+        cancelText: "Hủy",
+        onConfirm: () => {
+          fetch(`${URL_API}/rooms/${roomSlug}`, {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          })
+            .then((res) => res.json())
+            .then((data) => {
+              if (data.error) {
+                showToast(data.error, "danger");
+              } else {
+                showToast("Xóa không gian thành công", "success");
+                setTimeout(() => location.reload(), 1000);
+              }
+            })
+            .catch((err) => {
+              console.error("Lỗi khi xóa:", err);
+              showToast("Xảy ra lỗi khi xóa không gian", "danger");
+            });
+        },
+      });
     }
 
     function formatDate(dateStr) {
@@ -175,4 +210,46 @@
 
     getRooms();
   });
+
+  function showConfirm({
+    message = "Are you sure?",
+    confirmText = "Xác nhận",
+    cancelText = "Hủy",
+    onConfirm = () => {},
+    onCancel = () => {},
+  } = {}) {
+    let confirmPopup = document.getElementById("confirmPopup");
+    if (confirmPopup) confirmPopup.remove(); // Remove old popup if exists
+
+    // Create popup container
+    confirmPopup = document.createElement("div");
+    confirmPopup.id = "confirmPopup";
+    confirmPopup.innerHTML = `
+    <div class="confirm-dialog">
+      <div class="confirm-message">${message}</div>
+      <div class="confirm-actions">
+        <button class="btn btn-confirm">${confirmText}</button>
+        <button class="btn btn-cancel">${cancelText}</button>
+      </div>
+    </div>
+    <div class="confirm-overlay"></div>
+  `;
+
+    document.body.appendChild(confirmPopup);
+
+    // Add event listeners
+    confirmPopup.querySelector(".btn-confirm").onclick = () => {
+      confirmPopup.remove();
+      onConfirm();
+    };
+    confirmPopup.querySelector(".btn-cancel").onclick = () => {
+      confirmPopup.remove();
+      onCancel();
+    };
+    // Click overlay to cancel
+    confirmPopup.querySelector(".confirm-overlay").onclick = () => {
+      confirmPopup.remove();
+      onCancel();
+    };
+  }
 </script>

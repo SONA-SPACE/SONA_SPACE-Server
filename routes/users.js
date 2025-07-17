@@ -424,7 +424,7 @@ router.delete('/:id', isAdmin, async (req, res) => {
     }
 
     // Kiểm tra xem người dùng có đơn hàng không
-    const [orders] = await db.query('SELECT order_id FROM `order` WHERE user_id = ? LIMIT 1', [userId]);
+    const [orders] = await db.query('SELECT order_id FROM `orders` WHERE user_id = ? LIMIT 1', [userId]);
 
     if (orders.length > 0) {
       // Nếu có đơn hàng, đánh dấu là không hoạt động thay vì xóa
@@ -477,7 +477,7 @@ router.get('/:id/orders', async (req, res) => {
       SELECT 
         o.*,
         os.order_status_name as status_name
-      FROM \`order\` o
+      FROM \`orders\` o
       LEFT JOIN order_status os ON o.order_status_id = os.order_status_id
       WHERE o.user_id = ?
       ORDER BY o.created_at DESC

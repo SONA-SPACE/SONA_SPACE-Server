@@ -1,216 +1,431 @@
 <!-- Tiêu đề -->
 <div class="dashboard-header-row">
-    <h2 class="dashboard-title">Chỉnh sửa phòng</h2>
+  <h2 class="dashboard-title">Chỉnh sửa phòng</h2>
 </div>
 
 <!-- Layout -->
 <div class="add-room-container">
-    <!-- Form -->
-    <div class="room-form-column">
-        <div class="form-section">
-            <h3 class="section-title">Thông tin phòng</h3>
+  <!-- Form -->
+  <div class="room-form-column">
+    <div class="form-section">
+      <h3 class="section-title">Thông tin phòng</h3>
 
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="roomName">Tên phòng</label>
-                    <input type="text" id="roomName" class="form-control" placeholder="Nhập tên phòng" />
-                </div>
-                <div class="form-group">
-                    <label for="roomSlug">Slug</label>
-                    <input type="text" id="roomSlug" class="form-control" placeholder="ví dụ: phong-khach, phong-ngu" />
-                </div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="roomPriority">Mức ưu tiên</label>
-                    <input type="number" id="roomPriority" class="form-control" placeholder="Thứ tự ưu tiên (số)" />
-                </div>
-                <div class="form-group">
-                    <label for="roomStatus">Trạng thái</label>
-                    <div class="select-wrapper">
-                        <select id="roomStatus" class="form-control">
-                            <option value="1">Hiển thị</option>
-                            <option value="0">Ẩn</option>
-                        </select>
-                        <i class="fas fa-chevron-down"></i>
-                    </div>
-                </div>
-            </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="roomName">Tên phòng</label>
+          <input
+            type="text"
+            id="roomName"
+            class="form-control"
+            placeholder="Nhập tên phòng"
+          />
         </div>
-
-        <!-- Nút -->
-        <div class="form-actions">
-            <button type="button" class="btn btn-cancel">Hủy</button>
-            <button type="button" class="btn btn-save">Lưu</button>
+        <div class="form-group">
+          <label for="roomSlug">Slug</label>
+          <input
+            type="text"
+            id="roomSlug"
+            class="form-control"
+            placeholder="ví dụ: phong-khach, phong-ngu"
+          />
         </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="roomPriority">Mức ưu tiên</label>
+          <input
+            type="number"
+            id="roomPriority"
+            class="form-control"
+            placeholder="Thứ tự ưu tiên (số)"
+          />
+        </div>
+        <div class="form-group">
+          <label for="roomStatus">Trạng thái</label>
+          <div class="select-wrapper">
+            <select id="roomStatus" class="form-control">
+              <option value="1">Hiển thị</option>
+              <option value="0">Ẩn</option>
+            </select>
+            <i class="fas fa-chevron-down"></i>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- Cột phải: Upload ảnh -->
-    <div class="image-upload-column">
-        <div class="image-upload-container">
-            <div class="upload-title">Ảnh đại diện</div>
-            <div class="main-upload-area">
-                <div class="upload-placeholder" id="avatarDropArea">
-                    <i class="far fa-image"></i>
-                    <p>Drop avatar image here, or browse</p>
-                    <p class="upload-hint">jpeg, png - kích thước vuông</p>
-                </div>
-            </div>
-
-            <div class="upload-title">Ảnh banner</div>
-            <div class="main-upload-area">
-                <div class="upload-placeholder" id="bannerDropArea">
-                    <i class="far fa-image"></i>
-                    <p>Drop banner image here, or browse</p>
-                    <p class="upload-hint">jpeg, png - kích thước ngang</p>
-                </div>
-            </div>
-        </div>
+    <!-- Nút -->
+    <div class="form-actions">
+      <button type="button" class="btn btn-cancel">Hủy</button>
+      <button type="button" class="btn btn-save">Lưu</button>
     </div>
+    <div class="room-products-column">
+      <div class="form-section">
+        <h3 class="section-title">Sản phẩm trong phòng</h3>
+
+        <!-- Form thêm sản phẩm -->
+        <div class="add-product-form">
+          <div class="form-group">
+            <label for="product-select">Chọn sản phẩm</label>
+            <select id="product-select" multiple class="form-control">
+              <option value="">Chọn một sản phẩm</option>
+            </select>
+          </div>
+          <button type="button" class="btn btn-add" id="add-product-btn">
+            Thêm
+          </button>
+        </div>
+
+        <!-- Bảng sản phẩm -->
+        <div class="products-table-container">
+          <table class="products-table">
+            <thead>
+              <tr>
+                <th>Ảnh</th>
+                <th>Tên</th>
+                <th style="white-space: nowrap">Slug</th>
+                <th style="white-space: nowrap">Giá</th>
+                <th style="white-space: nowrap">Giá giảm</th>
+                <th style="white-space: nowrap">Hành động</th>
+              </tr>
+            </thead>
+            <tbody id="room-products-tbody">
+              <!-- Dữ liệu sẽ được chèn vào đây bằng JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cột phải: Upload ảnh -->
+  <div class="image-upload-column">
+    <div class="image-upload-container">
+      <div class="upload-title">Ảnh đại diện</div>
+      <div class="main-upload-area">
+        <div class="upload-placeholder" id="avatarDropArea">
+          <i class="far fa-image"></i>
+          <p>Drop avatar image here, or browse</p>
+          <p class="upload-hint">jpeg, png - kích thước vuông</p>
+        </div>
+      </div>
+
+      <div class="upload-title">Ảnh banner</div>
+      <div class="main-upload-area">
+        <div class="upload-placeholder" id="bannerDropArea">
+          <i class="far fa-image"></i>
+          <p>Drop banner image here, or browse</p>
+          <p class="upload-hint">jpeg, png - kích thước ngang</p>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
-<!-- JS xử lý -->
+<link
+  href="/tom-select/dist/css/tom-select.bootstrap5.min.css"
+  rel="stylesheet"
+/>
+<script src="/tom-select/dist/js/tom-select.complete.min.js"></script>
 <script>
-    let uploadedAvatarURL = null;
-    let uploadedBannerURL = null;
-    let avatarFile = null;
-    let bannerFile = null;
+  let uploadedAvatarURL = null;
+  let uploadedBannerURL = null;
+  let avatarFile = null;
+  let bannerFile = null;
 
-    const slug = window.location.pathname.split("/").pop();
+  const slug = window.location.pathname.split("/").pop();
 
-    document.addEventListener("DOMContentLoaded", () => {
-        fetch(`/api/rooms/${slug}`)
-            .then((res) => res.json())
-            .then((data) => {
-                if (data.error) {
-                    showToast(data.error, "danger");
-                } else {
-                    document.getElementById("roomName").value = data.room_name;
-                    document.getElementById("roomPriority").value = data.room_priority || 0;
-                    document.getElementById("roomStatus").value = data.status;
-                    document.getElementById("roomSlug").value = slug;
+  document.addEventListener("DOMContentLoaded", () => {
+    loadRoom();
+    loadRoomProducts();
+    loadProducts();
 
-                    uploadedAvatarURL = data.room_image;
-                    uploadedBannerURL = data.room_banner;
+    if (uploadedAvatarURL) {
+      document.querySelector(
+        "#avatarDropArea"
+      ).innerHTML = `<img src="${uploadedAvatarURL}" style="width:100%; border-radius:6px;">`;
+    }
+    if (uploadedBannerURL) {
+      document.querySelector(
+        "#bannerDropArea"
+      ).innerHTML = `<img src="${uploadedBannerURL}" style="width:100%; border-radius:6px;">`;
+    }
 
-                    if (uploadedAvatarURL) {
-                        document.querySelector("#avatarDropArea").innerHTML =
-                            `<img src="${uploadedAvatarURL}" style="width:100%; border-radius:6px;">`;
-                    }
-                    if (uploadedBannerURL) {
-                        document.querySelector("#bannerDropArea").innerHTML =
-                            `<img src="${uploadedBannerURL}" style="width:100%; border-radius:6px;">`;
-                    }
-                }
-            });
+    bindUpload("#avatarDropArea", (file) => (avatarFile = file));
+    bindUpload("#bannerDropArea", (file) => (bannerFile = file));
+    document.querySelector(".btn-save").addEventListener("click", handleUpdate);
+    document
+      .getElementById("add-product-btn")
+      .addEventListener("click", handleAddProduct);
+  });
 
-        bindUpload("#avatarDropArea", (file) => (avatarFile = file));
-        bindUpload("#bannerDropArea", (file) => (bannerFile = file));
-        document.querySelector(".btn-save").addEventListener("click", handleUpdate);
+  async function loadRoom() {
+    try {
+      const res = await fetch(`/api/rooms/${slug}`);
+      const data = await res.json();
+      if (data.error) {
+        showToast(data.error, "danger");
+      } else {
+        document.getElementById("roomName").value = data.room_name;
+        document.getElementById("roomPriority").value = data.room_priority || 0;
+        document.getElementById("roomStatus").value = data.status;
+        document.getElementById("roomSlug").value = slug;
+        if (data.room_image) {
+          document.querySelector(
+            "#avatarDropArea"
+          ).innerHTML = `<img src="${data.room_image}" style="width:100%; border-radius:6px;">`;
+        }
+        if (data.room_banner) {
+          document.querySelector(
+            "#bannerDropArea"
+          ).innerHTML = `<img src="${data.room_banner}" style="width:100%; border-radius:6px;">`;
+        }
+      }
+    } catch (error) {
+      showToast("Lỗi khi tải phòng", "danger");
+    }
+  }
+
+  function loadProducts() {
+    fetch(`/api/rooms/products`)
+      .then((res) => res.json())
+      .then((data) => {
+        console.log(data, "data nhận được");
+        const select = document.getElementById("product-select");
+        select.innerHTML = '<option value="">Chọn một sản phẩm</option>';
+        data.forEach((product) => {
+          const option = document.createElement("option");
+          option.value = product.product_id;
+          option.textContent = `${product.product_name} - ${product.slug}`;
+          select.appendChild(option);
+        });
+
+        // Nếu đã có Tom Select instance, destroy trước khi khởi tạo lại (nếu cần)
+        if (select.tomselect) {
+          select.tomselect.destroy();
+        }
+        // Khởi tạo Tom Select
+        new TomSelect("#product-select", {
+          create: false,
+          sortField: "text",
+          placeholder: "Chọn một sản phẩm",
+          allowEmptyOption: true,
+        });
+      });
+  }
+
+  async function loadRoomProducts() {
+    try {
+      const res = await fetch(`/api/rooms/${slug}/products`);
+      const data = await res.json();
+      if (data.error) {
+        showToast(data.error, "danger");
+      } else {
+        const tbody = document.getElementById("room-products-tbody");
+        tbody.innerHTML = "";
+        data.products.forEach((product) => {
+          tbody.innerHTML += `
+            <tr>
+              <td style="white-space: nowrap; min-width: 100px; vertical-align: middle;">
+              <div class="product-image-container">
+                <img src="${product.image}" alt="${
+            product.name
+          }" style="width: 80px; height: 35px;">
+              </div>
+              </td>
+              <td style="white-space: nowrap; vertical-align: middle;">${
+                product.name
+              }</td>
+              <td style="white-space: nowrap; vertical-align: middle;">${
+                product.slug
+              }</td>
+              <td style="white-space: nowrap; vertical-align: middle;">${Number(
+                product.price
+              ).toLocaleString("vi-VN")}đ</td>
+              <td style="white-space: nowrap; vertical-align: middle;">${
+                Number(product.price_sale) !== 0
+                  ? Number(product.price_sale).toLocaleString("vi-VN") + "đ"
+                  : "Không có"
+              }</td>
+              <td><button class="btn-remove-product" onclick="handleRemoveProduct(${
+                product.id
+              })"><i class="fas fa-trash-alt"></i></button></td>
+            `;
+        });
+      }
+    } catch (error) {
+      showToast("Lỗi khi tải sản phẩm", "danger");
+    }
+  }
+
+  async function handleAddProduct() {
+    const productSelect = document.getElementById("product-select");
+    const product_ids = Array.from(productSelect.selectedOptions).map(
+      (o) => o.value
+    );
+
+    const body = { product_ids };
+
+    if (!product_ids.length) {
+      showToast("Vui lòng chọn một sản phẩm.", "danger");
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/rooms/${slug}/products`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify(body),
+      });
+      // data đã gửi đi
+      console.log(body, "data đã gửi đi");
+
+      const data = await res.json();
+      if (res.ok) {
+        showToast("Thêm sản phẩm thành công", "success");
+        loadRoomProducts(); // Tải lại danh sách
+      } else {
+        showToast(data.error || "Có lỗi xảy ra", "danger");
+      }
+    } catch (error) {
+      showToast("Không thể thêm sản phẩm", "danger");
+    }
+  }
+
+  async function handleRemoveProduct(productId) {
+    if (!confirm("Bạn có chắc muốn xóa sản phẩm này?")) return;
+
+    try {
+      const res = await fetch(
+        // /:slug/products/:productId
+        `/api/rooms/${slug}/products/${productId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+
+      const data = await res.json();
+      if (res.ok) {
+        showToast("Xóa sản phẩm thành công", "success");
+        loadRoomProducts(); // Tải lại danh sách
+      } else {
+        showToast(data.error || "Có lỗi xảy ra", "danger");
+      }
+    } catch (error) {
+      showToast("Không thể xóa sản phẩm", "danger");
+    }
+  }
+
+  function bindUpload(selector, setter) {
+    const dropArea = document.querySelector(selector);
+    dropArea.addEventListener("click", () => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "image/*";
+      input.click();
+      input.onchange = () => {
+        const file = input.files[0];
+        if (file) {
+          setter(file);
+          dropArea.innerHTML = `<img src="${URL.createObjectURL(
+            file
+          )}" style="width:100%; border-radius:6px;">`;
+        }
+      };
     });
+  }
 
-    function bindUpload(selector, setter) {
-        const dropArea = document.querySelector(selector);
-        dropArea.addEventListener("click", () => {
-            const input = document.createElement("input");
-            input.type = "file";
-            input.accept = "image/*";
-            input.click();
-            input.onchange = () => {
-                const file = input.files[0];
-                if (file) {
-                    setter(file);
-                    dropArea.innerHTML = `<img src="${URL.createObjectURL(file)}" style="width:100%; border-radius:6px;">`;
-                }
-            };
-        });
+  async function uploadImage(file, folder = "", subfolder = "") {
+    if (!file) return null;
+    const formData = new FormData();
+    formData.append("image", file);
+    formData.append("folder", folder);
+    if (subfolder) formData.append("subfolder", subfolder);
+
+    const res = await fetch("/api/upload/room", {
+      method: "POST",
+      body: formData,
+    });
+    const data = await res.json();
+    return data.url || null;
+  }
+
+  async function handleUpdate() {
+    const saveBtn = document.querySelector(".btn-save");
+    saveBtn.disabled = true;
+    saveBtn.innerText = "Đang lưu...";
+
+    const name = document.getElementById("roomName").value.trim();
+    const slug = document.getElementById("roomSlug").value.trim();
+    const priority =
+      parseInt(document.getElementById("roomPriority").value) || 0;
+    const status = parseInt(document.getElementById("roomStatus").value);
+
+    try {
+      const image = avatarFile
+        ? await uploadImage(avatarFile, "SonaSpace/Rooms")
+        : uploadedAvatarURL;
+
+      const banner = bannerFile
+        ? await uploadImage(bannerFile, "SonaSpace/Rooms", "banner")
+        : uploadedBannerURL;
+
+      const payload = { name, slug, image, banner, priority, status };
+
+      const res = await fetch(`/api/rooms/${slug}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (data.error) {
+        showToast(data.error, "danger");
+      } else {
+        showToast("Cập nhật thành công", "success");
+        setTimeout(() => (window.location.href = "/dashboard/room"), 1500);
+      }
+    } catch (err) {
+      console.error("Update error", err);
+      showToast("Lỗi khi cập nhật", "danger");
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.innerText = "Lưu";
+    }
+  }
+
+  function showToast(message, type = "success") {
+    let toastContainer = document.getElementById("toastContainer");
+    if (!toastContainer) {
+      toastContainer = document.createElement("div");
+      toastContainer.id = "toastContainer";
+      toastContainer.className = "position-fixed top-0 end-0 p-3";
+      toastContainer.style.zIndex = "1050";
+      document.body.appendChild(toastContainer);
     }
 
-    async function uploadImage(file, folder = "", subfolder = "") {
-        if (!file) return null;
-        const formData = new FormData();
-        formData.append("image", file);
-        formData.append("folder", folder);
-        if (subfolder) formData.append("subfolder", subfolder);
+    const toast = document.createElement("div");
+    toast.className = `toast align-items-center text-white bg-${type} border-0`;
+    toast.setAttribute("role", "alert");
+    toast.setAttribute("aria-live", "assertive");
+    toast.setAttribute("aria-atomic", "true");
 
-        const res = await fetch("/api/upload/room", {
-            method: "POST",
-            body: formData,
-        });
-        const data = await res.json();
-        return data.url || null;
-    }
-
-    async function handleUpdate() {
-        const saveBtn = document.querySelector(".btn-save");
-        saveBtn.disabled = true;
-        saveBtn.innerText = "Đang lưu...";
-
-        const name = document.getElementById("roomName").value.trim();
-        const slug = document.getElementById("roomSlug").value.trim();
-        const priority = parseInt(document.getElementById("roomPriority").value) || 0;
-        const status = parseInt(document.getElementById("roomStatus").value);
-
-        try {
-            const image = avatarFile
-                ? await uploadImage(avatarFile, "SonaSpace/Rooms")
-                : uploadedAvatarURL;
-
-            const banner = bannerFile
-                ? await uploadImage(bannerFile, "SonaSpace/Rooms", "banner")
-                : uploadedBannerURL;
-
-            const payload = { name, slug, image, banner, priority, status };
-
-            const res = await fetch(`/api/rooms/${slug}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-            });
-
-            const data = await res.json();
-
-            if (data.error) {
-                showToast(data.error, "danger");
-            } else {
-                showToast("Cập nhật thành công", "success");
-                setTimeout(() => (window.location.href = "/dashboard/room"), 1500);
-            }
-        } catch (err) {
-            console.error("Update error", err);
-            showToast("Lỗi khi cập nhật", "danger");
-        } finally {
-            saveBtn.disabled = false;
-            saveBtn.innerText = "Lưu";
-        }
-    }
-
-    function showToast(message, type = "success") {
-        let toastContainer = document.getElementById("toastContainer");
-        if (!toastContainer) {
-            toastContainer = document.createElement("div");
-            toastContainer.id = "toastContainer";
-            toastContainer.className = "position-fixed top-0 end-0 p-3";
-            toastContainer.style.zIndex = "1050";
-            document.body.appendChild(toastContainer);
-        }
-
-        const toast = document.createElement("div");
-        toast.className = `toast align-items-center text-white bg-${type} border-0`;
-        toast.setAttribute("role", "alert");
-        toast.setAttribute("aria-live", "assertive");
-        toast.setAttribute("aria-atomic", "true");
-
-        toast.innerHTML = `
+    toast.innerHTML = `
       <div class="d-flex">
         <div class="toast-body">${message}</div>
         <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
       </div>`;
 
-        toastContainer.appendChild(toast);
-        const bsToast = new bootstrap.Toast(toast, { delay: 4000 });
-        bsToast.show();
-        toast.addEventListener("hidden.bs.toast", () => toast.remove());
-    }
+    toastContainer.appendChild(toast);
+    const bsToast = new bootstrap.Toast(toast, { delay: 4000 });
+    bsToast.show();
+    toast.addEventListener("hidden.bs.toast", () => toast.remove());
+  }
 </script>

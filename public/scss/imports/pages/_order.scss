@@ -229,7 +229,54 @@
                             border-top: 5px solid #6c757d;
                             margin-left: 5px;
                         }
+                        
+                        &:hover {
+                            color: #4a6cf7;
+                            
+                            &:after {
+                                border-top-color: #4a6cf7;
+                            }
+                        }
                     }
+                    
+                    .filter-dropdown {
+                        position: absolute;
+                        top: 100%;
+                        left: 0;
+                        z-index: 1000;
+                        display: none;
+                        min-width: 180px;
+                        padding: 8px 0;
+                        margin: 5px 0 0;
+                        background-color: #fff;
+                        border-radius: 4px;
+                        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+                        
+                        .filter-item {
+                            display: block;
+                            padding: 8px 16px;
+                            color: #333;
+                            text-decoration: none;
+                            font-size: 13px;
+                            
+                            &:hover {
+                                background-color: #f8f9fa;
+                                color: #4a6cf7;
+                            }
+                        }
+                        
+                        &.active {
+                            display: block !important; /* Force display when active */
+                            animation: fadeIn 0.2s ease-in-out;
+                        }
+                    }
+                    
+                    /* Removing hover behavior completely */
+                    /*
+                    &:hover .filter-dropdown {
+                        display: none;
+                    }
+                    */
                 }
             }
         }
@@ -279,6 +326,7 @@
                 font-weight: 500;
                 cursor: pointer;
                 transition: all 0.3s ease;
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 
                 &:hover {
                     transform: translateY(-2px);
@@ -404,17 +452,28 @@
 /* Styles cho các badge trạng thái vận chuyển */
 .badge {
     display: inline-block;
-    padding: 5px 10px;
+    padding: 10px 10px;
     border-radius: 4px;
     font-size: 12px;
     font-weight: 600;
     text-align: center;
     white-space: nowrap;
     vertical-align: middle;
+    width: 150px;
 }
 
 .badge-primary {
     background-color: #007bff;
+    color: #fff;
+}
+
+.badge-secondary {
+    background-color: #6c757d;
+    color: #fff;
+}
+
+.badge-info {
+    background-color: #17a2b8;
     color: #fff;
 }
 
@@ -431,6 +490,23 @@
 .badge-danger {
     background-color: #dc3545;
     color: #fff;
+}
+
+.badge-dark {
+    background-color: #343a40;
+    color: #fff;
+}
+
+/* Thêm hiệu ứng hover cho badge */
+.badge:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+    transition: all 0.2s ease;
+}
+
+/* Thêm style cho icon trong badge */
+.badge i {
+    margin-right: 4px;
 }
 
 /* Styles cho select trạng thái đơn hàng */
@@ -453,17 +529,19 @@
     position: relative;
     display: flex;
     align-items: center;
-    
-    &:hover, &:focus {
+    text-align: center;
+
+    &:hover,
+    &:focus {
         outline: none;
         opacity: 0.9;
     }
-    
+
     /* Màu sắc dựa trên giá trị được chọn */
     &[data-current-status="PENDING"] {
         color: #4a6cf7;
         background-color: rgba(74, 108, 247, 0.1);
-        
+
         &:before {
             content: '';
             display: inline-block;
@@ -474,11 +552,11 @@
             margin-right: 8px;
         }
     }
-    
+
     &[data-current-status="CONFIRMED"] {
         color: #0abb75;
         background-color: rgba(10, 187, 117, 0.1);
-        
+
         &:before {
             content: '';
             display: inline-block;
@@ -489,11 +567,11 @@
             margin-right: 8px;
         }
     }
-    
+
     &[data-current-status="SHIPPING"] {
         color: #4a6cf7;
         background-color: rgba(74, 108, 247, 0.1);
-        
+
         &:before {
             content: '';
             display: inline-block;
@@ -504,11 +582,11 @@
             margin-right: 8px;
         }
     }
-    
+
     &[data-current-status="SUCCESS"] {
         color: #0abb75;
         background-color: rgba(10, 187, 117, 0.1);
-        
+
         &:before {
             content: '';
             display: inline-block;
@@ -519,11 +597,11 @@
             margin-right: 8px;
         }
     }
-    
+
     &[data-current-status="FAILED"] {
         color: #ff3b30;
         background-color: rgba(255, 59, 48, 0.1);
-        
+
         &:before {
             content: '';
             display: inline-block;
@@ -534,11 +612,11 @@
             margin-right: 8px;
         }
     }
-    
+
     &[data-current-status="CANCELLED"] {
         color: #ff3b30;
         background-color: rgba(255, 59, 48, 0.1);
-        
+
         &:before {
             content: '';
             display: inline-block;
@@ -556,10 +634,76 @@
     0% {
         box-shadow: 0 0 0 0 rgba(74, 108, 247, 0.4);
     }
+
     70% {
         box-shadow: 0 0 0 6px rgba(74, 108, 247, 0);
     }
+
     100% {
         box-shadow: 0 0 0 0 rgba(74, 108, 247, 0);
+    }
+}
+
+/* Styles for dropdown in bulk actions */
+.bulk-actions {
+    .dropdown {
+        position: relative;
+        
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            z-index: 1000;
+            display: none;
+            min-width: 160px;
+            padding: 8px 0;
+            margin: 5px 0 0;
+            background-color: #fff;
+            border-radius: 4px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            
+            .dropdown-item {
+                display: block;
+                padding: 8px 16px;
+                color: #333;
+                text-decoration: none;
+                font-size: 13px;
+                
+                &:hover {
+                    background-color: #f8f9fa;
+                    color: #4a6cf7;
+                }
+            }
+            
+            &.active {
+                display: block !important; /* Force display when active */
+                animation: fadeIn 0.2s ease-in-out;
+            }
+        }
+        
+        /* Removing hover behavior completely */
+        /*
+        &:hover .dropdown-menu {
+            display: none;
+        }
+        */
+        
+        .dropdown-toggle {
+            &:hover {
+                color: #4a6cf7;
+            }
+        }
+    }
+}
+
+/* Animation cho dropdown */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
 }

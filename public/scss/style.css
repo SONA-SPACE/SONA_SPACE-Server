@@ -2464,6 +2464,83 @@ body {
   border: 1px solid #bee5eb;
 }
 
+#confirmPopup {
+  position: fixed;
+  z-index: 99999;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#confirmPopup .confirm-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.18);
+  -webkit-backdrop-filter: blur(2px);
+          backdrop-filter: blur(2px);
+  z-index: 1;
+  cursor: pointer;
+}
+#confirmPopup .confirm-dialog {
+  position: relative;
+  z-index: 2;
+  min-width: 320px;
+  max-width: 90vw;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.16);
+  padding: 28px 26px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  animation: popIn 0.22s cubic-bezier(0.4, 0.7, 0.6, 1.3);
+}
+#confirmPopup .confirm-dialog .confirm-message {
+  font-size: 16px;
+  color: #232323;
+  margin-bottom: 14px;
+  text-align: center;
+  line-height: 1.6;
+}
+#confirmPopup .confirm-dialog .confirm-actions {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+}
+#confirmPopup .confirm-dialog .confirm-actions .btn {
+  padding: 8px 26px;
+  border-radius: 5px;
+  font-weight: 600;
+  font-size: 15px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+#confirmPopup .confirm-dialog .confirm-actions .btn-confirm {
+  background: var(--primary-color);
+  color: #fff;
+}
+#confirmPopup .confirm-dialog .confirm-actions .btn-confirm:hover {
+  background: color-mix(in srgb, var(--primary-color) 80%, transparent);
+}
+#confirmPopup .confirm-dialog .confirm-actions .btn-cancel {
+  background: #f3f4f6;
+  color: #555;
+}
+#confirmPopup .confirm-dialog .confirm-actions .btn-cancel:hover {
+  background: #e2e6ea;
+}
+
+@keyframes popIn {
+  from {
+    transform: scale(0.94) translateY(18px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
 /* Pages */
 /* Header */
 .dashboard-header {
@@ -4602,6 +4679,73 @@ textarea.form-control {
   min-width: 400px;
 }
 
+.room-products-column {
+  width: 100%;
+  margin-top: 24px;
+}
+.room-products-column .add-product-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.room-products-column .add-product-form .form-group {
+  flex: 1;
+}
+.room-products-column .add-product-form .btn-add {
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 4px;
+  cursor: pointer;
+  border: none;
+  background-color: var(--primary-color);
+  color: white;
+  height: -moz-fit-content;
+  height: fit-content;
+}
+.room-products-column .add-product-form .btn-add:hover {
+  background-color: color-mix(in srgb, var(--primary-color) 90%, black 10%);
+}
+.room-products-column .products-table-container {
+  overflow-x: auto;
+}
+.room-products-column .products-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.room-products-column .products-table th,
+.room-products-column .products-table td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+}
+.room-products-column .products-table th {
+  background-color: #f8f9fa;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+.room-products-column .products-table td {
+  color: var(--text-primary);
+}
+.room-products-column .products-table .btn-remove-product {
+  background: none;
+  border: none;
+  color: var(--danger-color);
+  cursor: pointer;
+  font-size: 16px;
+}
+.room-products-column .products-table .btn-remove-product:hover {
+  color: var(--danger-color);
+}
+.room-products-column .total-price-container {
+  margin-top: 20px;
+  text-align: right;
+  font-size: 16px;
+  color: var(--text-primary);
+}
+
 .container-fluid {
   display: flex;
   width: 100%;
@@ -5020,6 +5164,12 @@ textarea.form-control {
 }
 .orders-page .orders-table .table-header .table-filters .filter {
   position: relative;
+  /* Removing hover behavior completely */
+  /*
+  &:hover .filter-dropdown {
+      display: none;
+  }
+  */
 }
 .orders-page .orders-table .table-header .table-filters .filter:nth-child(2) {
   margin-left: 10px;
@@ -5047,6 +5197,40 @@ textarea.form-control {
   border-right: 5px solid transparent;
   border-top: 5px solid #6c757d;
   margin-left: 5px;
+}
+.orders-page .orders-table .table-header .table-filters .filter .filter-toggle:hover {
+  color: #4a6cf7;
+}
+.orders-page .orders-table .table-header .table-filters .filter .filter-toggle:hover:after {
+  border-top-color: #4a6cf7;
+}
+.orders-page .orders-table .table-header .table-filters .filter .filter-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1000;
+  display: none;
+  min-width: 180px;
+  padding: 8px 0;
+  margin: 5px 0 0;
+  background-color: #fff;
+  border-radius: 4px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+.orders-page .orders-table .table-header .table-filters .filter .filter-dropdown .filter-item {
+  display: block;
+  padding: 8px 16px;
+  color: #333;
+  text-decoration: none;
+  font-size: 13px;
+}
+.orders-page .orders-table .table-header .table-filters .filter .filter-dropdown .filter-item:hover {
+  background-color: #f8f9fa;
+  color: #4a6cf7;
+}
+.orders-page .orders-table .table-header .table-filters .filter .filter-dropdown.active {
+  display: block !important; /* Force display when active */
+  animation: fadeIn 0.2s ease-in-out;
 }
 .orders-page .orders-table table {
   width: 100%;
@@ -5087,6 +5271,7 @@ textarea.form-control {
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 .orders-page .orders-table table .status:hover {
   transform: translateY(-2px);
@@ -5189,17 +5374,28 @@ textarea.form-control {
 /* Styles cho các badge trạng thái vận chuyển */
 .badge {
   display: inline-block;
-  padding: 5px 10px;
+  padding: 10px 10px;
   border-radius: 4px;
   font-size: 12px;
   font-weight: 600;
   text-align: center;
   white-space: nowrap;
   vertical-align: middle;
+  width: 150px;
 }
 
 .badge-primary {
   background-color: #007bff;
+  color: #fff;
+}
+
+.badge-secondary {
+  background-color: #6c757d;
+  color: #fff;
+}
+
+.badge-info {
+  background-color: #17a2b8;
   color: #fff;
 }
 
@@ -5216,6 +5412,23 @@ textarea.form-control {
 .badge-danger {
   background-color: #dc3545;
   color: #fff;
+}
+
+.badge-dark {
+  background-color: #343a40;
+  color: #fff;
+}
+
+/* Thêm hiệu ứng hover cho badge */
+.badge:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  transition: all 0.2s ease;
+}
+
+/* Thêm style cho icon trong badge */
+.badge i {
+  margin-right: 4px;
 }
 
 /* Styles cho select trạng thái đơn hàng */
@@ -5238,6 +5451,7 @@ textarea.form-control {
   position: relative;
   display: flex;
   align-items: center;
+  text-align: center;
   /* Màu sắc dựa trên giá trị được chọn */
 }
 .order-status-select:hover, .order-status-select:focus {
@@ -5333,6 +5547,59 @@ textarea.form-control {
   }
   100% {
     box-shadow: 0 0 0 0 rgba(74, 108, 247, 0);
+  }
+}
+/* Styles for dropdown in bulk actions */
+.bulk-actions .dropdown {
+  position: relative;
+  /* Removing hover behavior completely */
+  /*
+  &:hover .dropdown-menu {
+      display: none;
+  }
+  */
+}
+.bulk-actions .dropdown .dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1000;
+  display: none;
+  min-width: 160px;
+  padding: 8px 0;
+  margin: 5px 0 0;
+  background-color: #fff;
+  border-radius: 4px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+.bulk-actions .dropdown .dropdown-menu .dropdown-item {
+  display: block;
+  padding: 8px 16px;
+  color: #333;
+  text-decoration: none;
+  font-size: 13px;
+}
+.bulk-actions .dropdown .dropdown-menu .dropdown-item:hover {
+  background-color: #f8f9fa;
+  color: #4a6cf7;
+}
+.bulk-actions .dropdown .dropdown-menu.active {
+  display: block !important; /* Force display when active */
+  animation: fadeIn 0.2s ease-in-out;
+}
+.bulk-actions .dropdown .dropdown-toggle:hover {
+  color: #4a6cf7;
+}
+
+/* Animation cho dropdown */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 .order-detail-page {
@@ -5505,6 +5772,12 @@ textarea.form-control {
   background-color: #8B6E4E;
   margin-left: 5px;
 }
+.order-detail-page .product-section .no-products {
+  padding: 20px;
+  text-align: center;
+  color: #6c757d;
+  font-style: italic;
+}
 .order-detail-page .customer-info {
   margin-bottom: 30px;
 }
@@ -5570,6 +5843,65 @@ textarea.form-control {
 .order-detail-page .action-buttons .btn.btn-save {
   background-color: #00D078;
   border: none;
+  color: #fff;
+}
+
+/* Styles cho shipping status badge trong trang chi tiết đơn hàng */
+.order-status .badge {
+  padding: 6px 12px;
+  font-size: 13px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: auto;
+}
+
+.order-status .badge i {
+  margin-right: 6px;
+  font-size: 14px;
+}
+
+/* Hiệu ứng hover cho badge trong trang chi tiết */
+.order-status .badge:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+}
+
+/* Màu sắc đậm hơn cho badge trong trang chi tiết */
+.order-status .badge-secondary {
+  background-color: #5a6268;
+  color: #fff;
+}
+
+.order-status .badge-info {
+  background-color: #138496;
+  color: #fff;
+}
+
+.order-status .badge-primary {
+  background-color: #0069d9;
+  color: #fff;
+}
+
+.order-status .badge-success {
+  background-color: #218838;
+  color: #fff;
+}
+
+.order-status .badge-danger {
+  background-color: #c82333;
+  color: #fff;
+}
+
+.order-status .badge-warning {
+  background-color: #e0a800;
+  color: #212529;
+}
+
+.order-status .badge-dark {
+  background-color: #23272b;
   color: #fff;
 }
 

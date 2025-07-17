@@ -9,9 +9,9 @@ router.post("/category", upload.single("image"), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: "Thiếu file ảnh" });
 
     const { folder, subfolder } = req.body;
-    const base64Image = `data:${req.file.mimetype
-      };base64,${req.file.buffer.toString("base64")}`;
-
+    const base64Image = `data:${
+      req.file.mimetype
+    };base64,${req.file.buffer.toString("base64")}`;
 
     const targetFolder = subfolder ? `${folder}/${subfolder}` : folder;
 
@@ -34,9 +34,9 @@ router.post("/room", upload.single("image"), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: "Thiếu file ảnh" });
 
     const { folder, subfolder } = req.body;
-    const base64Image = `data:${req.file.mimetype
-      };base64,${req.file.buffer.toString("base64")}`;
-
+    const base64Image = `data:${
+      req.file.mimetype
+    };base64,${req.file.buffer.toString("base64")}`;
 
     const targetFolder = subfolder ? `${folder}/${subfolder}` : folder;
 
@@ -53,7 +53,6 @@ router.post("/room", upload.single("image"), async (req, res) => {
     res.status(500).json({ error: "Lỗi upload ảnh", detail: error.message });
   }
 });
-
 
 router.post("/product", upload.single("image"), async (req, res) => {
   try {
@@ -75,7 +74,6 @@ router.post("/product", upload.single("image"), async (req, res) => {
       });
     }
 
-
     const maxSize = 5 * 1024 * 1024; // 5MB
     if (req.file.size > maxSize) {
       return res.status(400).json({
@@ -89,8 +87,9 @@ router.post("/product", upload.single("image"), async (req, res) => {
     const subfolder = req.body.subfolder || "";
     const targetFolder = subfolder ? `${folder}/${subfolder}` : folder;
 
-
-    const base64Image = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
+    const base64Image = `data:${
+      req.file.mimetype
+    };base64,${req.file.buffer.toString("base64")}`;
 
     let result;
     try {
@@ -117,7 +116,6 @@ router.post("/product", upload.single("image"), async (req, res) => {
     });
   }
 });
-
 
 /**
  * @route   POST /api/upload/:variantId
@@ -187,8 +185,9 @@ router.post("/news", upload.single("image"), async (req, res) => {
 
     const { folder = "SonaSpace", subfolder = "News" } = req.body;
 
-    const base64Image = `data:${req.file.mimetype
-      };base64,${req.file.buffer.toString("base64")}`;
+    const base64Image = `data:${
+      req.file.mimetype
+    };base64,${req.file.buffer.toString("base64")}`;
 
     const targetFolder = subfolder ? `${folder}/${subfolder}` : folder;
 
@@ -210,8 +209,9 @@ router.post("/newscategorynews", upload.single("image"), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: "Thiếu file ảnh" });
 
     const { folder, subfolder } = req.body;
-    const base64Image = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
-
+    const base64Image = `data:${
+      req.file.mimetype
+    };base64,${req.file.buffer.toString("base64")}`;
 
     // Ghép folder đầy đủ
     const targetFolder = subfolder ? `${folder}/${subfolder}` : folder;
@@ -219,7 +219,6 @@ router.post("/newscategorynews", upload.single("image"), async (req, res) => {
     const result = await cloudinary.uploader.upload(base64Image, {
       folder: targetFolder,
     });
-
 
     res.status(200).json({
       message: "Upload thành công",

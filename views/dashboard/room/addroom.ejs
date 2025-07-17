@@ -53,7 +53,6 @@
         </div>
       </div>
     </div>
-
     <!-- Nút -->
     <div class="form-actions">
       <button type="button" class="btn btn-cancel">Hủy</button>
@@ -129,6 +128,7 @@
       body: formData,
     });
     const data = await res.json();
+    console.log(data);
     return data.url || null;
   }
 

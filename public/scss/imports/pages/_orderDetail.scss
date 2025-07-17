@@ -128,7 +128,8 @@
             margin-bottom: 30px;
 
             .product-image {
-                @include size(65%, 200px);
+                width: 65%;
+                height: 200px;
                 border-radius: 5px;
                 overflow: hidden;
                 margin-right: 20px;
@@ -195,6 +196,13 @@
                     }
                 }
             }
+        }
+        
+        .no-products {
+            padding: 20px;
+            text-align: center;
+            color: #6c757d;
+            font-style: italic;
         }
     }
 
@@ -280,3 +288,35 @@
         }
     }
 }
+
+/* Styles cho shipping status badge trong trang chi tiết đơn hàng */
+.order-status .badge {
+    padding: 6px 12px;
+    font-size: 13px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    width: auto;
+}
+
+.order-status .badge i {
+    margin-right: 6px;
+    font-size: 14px;
+}
+
+/* Hiệu ứng hover cho badge trong trang chi tiết */
+.order-status .badge:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    transition: all 0.3s ease;
+}
+
+/* Màu sắc đậm hơn cho badge trong trang chi tiết */
+.order-status .badge-secondary { background-color: #5a6268; color: #fff; }
+.order-status .badge-info { background-color: #138496; color: #fff; }
+.order-status .badge-primary { background-color: #0069d9; color: #fff; }
+.order-status .badge-success { background-color: #218838; color: #fff; }
+.order-status .badge-danger { background-color: #c82333; color: #fff; }
+.order-status .badge-warning { background-color: #e0a800; color: #212529; }
+.order-status .badge-dark { background-color: #23272b; color: #fff; }

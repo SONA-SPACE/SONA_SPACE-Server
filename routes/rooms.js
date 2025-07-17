@@ -14,6 +14,28 @@ router.get("/", async (req, res) => {
       SELECT 
         r.*, 
         (SELECT COUNT(*) FROM room_product rp WHERE rp.room_id = r.room_id) as product_count
+      FROM room r where r.status = 1
+      ORDER BY r.room_name ASC
+    `);
+
+    res.json(rooms);
+  } catch (error) {
+    console.error("Error fetching rooms:", error);
+    res.status(500).json({ error: "Failed to fetch rooms" });
+  }
+});
+
+/**
+ * @route   GET /api/rooms/admin
+ * @desc    Lấy danh sách phòng
+ * @access  Public
+ */
+router.get("/admin", verifyToken, isAdmin, async (req, res) => {
+  try {
+    const [rooms] = await db.query(`
+      SELECT 
+        r.*, 
+        (SELECT COUNT(*) FROM room_product rp WHERE rp.room_id = r.room_id) as product_count
       FROM room r
       ORDER BY r.room_name ASC
     `);
@@ -38,6 +60,57 @@ router.get("/filter/", async (req, res) => {
   `);
   res.json(rows);
 });
+
+router.get("/products", async (req, res) => {
+  try {
+    const [products] = await db.query(`
+      SELECT
+        p.product_id,
+        p.product_name,
+        vp.variant_id,
+        vp.color_id,
+        vp.variant_product_price AS price,
+        vp.variant_product_price_sale AS price_sale,
+        vp.variant_product_quantity AS quantity,
+        vp.variant_product_slug AS slug,
+        vp.variant_product_list_image AS list_image
+      FROM product p
+      LEFT JOIN (
+          SELECT *
+          FROM variant_product v1
+          WHERE v1.variant_id = (
+              SELECT MIN(v2.variant_id)
+              FROM variant_product v2
+              WHERE v2.product_id = v1.product_id
+          )
+      ) vp ON vp.product_id = p.product_id
+      ORDER BY p.product_id
+    `);
+
+    const result = products.map((v) => ({
+      product_id: v.product_id,
+      product_name: v.product_name,
+      variant_id: v.variant_id,
+      color_id: v.color_id,
+      price: v.price,
+      price_sale: v.price_sale,
+      quantity: v.quantity,
+      slug: v.slug,
+      first_image: v.list_image
+        ? v.list_image
+            .split(",")[0]
+            .trim()
+            .replace(/^['"]+|['"]+$/g, "")
+        : null,
+    }));
+
+    res.json(result);
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    res.status(500).json({ error: "Failed to fetch products" });
+  }
+});
+
 /**
  * @route   GET /api/rooms/:slug
  * @desc    Lấy thông tin một phòng
@@ -88,10 +161,16 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ error: "Room name and slug are required" });
     }
 
-    if (!banner && !image) {
+    if (!image) {
       return res
         .status(400)
-        .json({ error: "Không thể upload phòng không có hình ảnh" });
+        .json({ error: "Không thể upload phòng không có hình ảnh phòng" });
+    }
+
+    if (!banner) {
+      return res
+        .status(400)
+        .json({ error: "Không thể upload phòng không có hình ảnh banner" });
     }
 
     // Kiểm tra tên phòng đã tồn tại chưa
@@ -394,6 +473,7 @@ router.get("/:slug/products", async (req, res) => {
  * @desc    Thêm sản phẩm vào phòng
  * @access  Private (Admin only)
  * Chưa làm trường hợp nếu sản phẩm đã tồn tại trong phòng thì không thêm vào
+ * /admin
  */
 router.post("/:slug/products", verifyToken, isAdmin, async (req, res) => {
   try {
@@ -448,9 +528,7 @@ router.post("/:slug/products", verifyToken, isAdmin, async (req, res) => {
 
       if (existing.length > 0) {
         existingProducts.push(productId);
-        return res.status(400).json({
-          error: `Product ID ${productId} already exists in this room`,
-        });
+        continue;
       }
 
       // Thêm vào room_product
@@ -462,13 +540,11 @@ router.post("/:slug/products", verifyToken, isAdmin, async (req, res) => {
       addedProducts.push(productId);
     }
 
-    if (
-      addedProducts.length === 0 &&
-      existingProducts.length === 0 &&
-      invalidProducts.length > 0
-    ) {
+    if (addedProducts.length === 0) {
       return res.status(400).json({
-        error: "No products to add or existing or invalid",
+        error:
+          "No products added. All are invalid or already exist in the room.",
+        existing_products: existingProducts,
         invalid_products: invalidProducts,
       });
     }
@@ -490,7 +566,11 @@ router.post("/:slug/products", verifyToken, isAdmin, async (req, res) => {
  * @desc    Xóa sản phẩm khỏi phòng
  * @access  Private (Admin only)
  */
-router.delete( "/:slug/products/:productId", verifyToken, isAdmin, async (req, res) => {
+router.delete(
+  "/:slug/products/:productId",
+  verifyToken,
+  isAdmin,
+  async (req, res) => {
     try {
       const slug = req.params.slug;
       const productId = Number(req.params.productId);
@@ -537,29 +617,29 @@ router.delete( "/:slug/products/:productId", verifyToken, isAdmin, async (req, r
   }
 );
 
-
 /**
  * @route   GET /api/rooms/by-product/:slug
  * @desc    Lấy danh sách phòng theo sản phẩm
  * @access  Public
  */
-router.get('/by-product/:slug', async (req, res) => {
+router.get("/by-product/:slug", async (req, res) => {
   const slug = req.params.slug;
   if (!slug) return res.status(400).json({ error: "Missing product slug" });
   try {
-    const [rows] = await db.query(`
+    const [rows] = await db.query(
+      `
       SELECT DISTINCT r.room_id, r.room_name, r.slug
 FROM room r
 JOIN room_product rp ON r.room_id = rp.room_id
 JOIN product p ON rp.product_id = p.product_id
 WHERE p.product_slug = ?
-    `, [slug]);
+    `,
+      [slug]
+    );
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch rooms by product" });
   }
 });
-
-
 
 module.exports = router;

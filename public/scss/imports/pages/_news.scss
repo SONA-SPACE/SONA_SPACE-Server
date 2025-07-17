@@ -1,35 +1,27 @@
 .news_page {
-  padding: 20px;
-  display: flex;
 
-  .dashboard-header-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
+  /* News Page Styles */
   .action-buttons {
     display: flex;
     align-items: center;
+  }
 
-    .add-room-btn,
-    .add-product-btn {
-      background-color: #3ccf4e;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      padding: 8px 12px;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
+  .add-news-btn {
+    background-color: #3ccf4e;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+  }
 
-      i {
-        margin-right: 6px;
-        font-size: 12px;
-      }
-    }
+  .add-news-btn i {
+    margin-right: 6px;
+    font-size: 12px;
   }
 
   .filter-row {
@@ -37,12 +29,12 @@
     align-items: center;
     margin-bottom: 20px;
     flex-wrap: wrap;
+  }
 
-    .results-info {
-      margin-left: auto;
-      font-size: 13px;
-      color: var(--text-secondary);
-    }
+  .results-info {
+    margin-left: auto;
+    font-size: 13px;
+    color: var(--text-secondary);
   }
 
   .news-table-container {
@@ -50,83 +42,78 @@
     border-radius: 8px;
     padding: 15px;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
 
-    .news-table {
-      width: 100%;
-      border-collapse: collapse;
+  .news-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
 
-      th {
-        text-align: left;
-        padding: 10px;
-        font-weight: 500;
-        color: var(--text-secondary);
-        border-bottom: 1px solid var(--border-color);
-        white-space: nowrap;
-      }
+  .news-table th {
+    text-align: left;
+    padding: 10px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-color);
+    white-space: nowrap;
+  }
 
-      td {
-        padding: 10px;
-        border-bottom: 1px solid var(--border-color);
-        vertical-align: middle;
-      }
+  .news-table td {
+    padding: 10px;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+  }
 
-      .news-info {
-        display: flex;
-        align-items: center;
+  .news-info {
+    display: flex;
+    align-items: center;
+  }
 
-        .news-image {
-          width: 40px;
-          height: 40px;
-          border-radius: 4px;
-          overflow: hidden;
-          margin-right: 10px;
-          background-color: var(--bg-light);
+  .news-image {
+    width: 40px;
+    height: 40px;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-right: 10px;
+    background-color: var(--bg-light);
+  }
 
-          img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-          }
-        }
+  .news-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 
-        .news-name {
-          font-weight: 500;
-        }
-      }
+  .news-name {
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+  }
 
-      .status-indicator {
-        &.visible {
-          background-color: rgba(40, 167, 69, 0.1);
-          color: var(--success-color);
-        }
+  .status-indicator.visible {
+    background-color: rgba(40, 167, 69, 0.1);
+    color: var(--success-color);
+  }
 
-        &.hidden {
-          background-color: rgba(220, 53, 69, 0.1);
-          color: var(--danger-color);
-        }
-      }
+  .status-indicator.hidden {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: var(--danger-color);
+  }
 
-      .action-cell {
-        display: flex;
-        gap: 6px;
+  .action-button.edit {
+    background-color: var(--bg-light);
+    color: var(--text-secondary);
+  }
 
-        .action-button {
-          &.edit {
-            background-color: var(--bg-light);
-            color: var(--text-secondary);
-          }
+  .action-button.visibility {
+    background-color: #fff7d0;
+    color: #d6b600;
+  }
 
-          &.visibility {
-            background-color: #fff7d0;
-            color: #d6b600;
-          }
-
-          &.delete {
-            background-color: #ffebee;
-            color: #d32f2f;
-          }
-        }
-      }
-    }
+  .action-button.delete {
+    background-color: #ffebee;
+    color: #d32f2f;
   }
 }

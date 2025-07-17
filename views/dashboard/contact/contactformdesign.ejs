@@ -35,7 +35,7 @@
         <th data-sortable="true">Email</th>
         <th data-sortable="true">Số điện thoại</th>
         <th data-sortable="true">Không gian thiết kế</th>
-        <th data-sortable="true">Yêu cầu thiết kế</th>
+        <!-- <th data-sortable="true">Yêu cầu thiết kế</th> -->
         <th data-sortable="true">Ngân sách</th>
         <th data-sortable="true">Phí thiết kế</th>
         <th data-sortable="true">Trạng thái</th>
@@ -110,11 +110,11 @@
                         <td>${contactForm.email || "-"}</td>
                         <td>${contactForm.phone || "-"}</td>
                         <td>${contactForm.room_name || "-"}</td>
-                        <td>
+                        <!-- <td>
                             <div class="td-2-lines-content">
                                 ${contactForm.require_design || "-"}
-                            </div>
-                        </td>
+                            </div> -->
+                        <!-- </td> -->
                        <td>${contactForm.budget ? Number(contactForm.budget).toLocaleString("vi-VN") : "-"}</td>
                        <td>${contactForm.design_fee ? Number(contactForm.design_fee).toLocaleString("vi-VN") : "-"}</td>
                         <td>

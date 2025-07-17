@@ -2220,7 +2220,7 @@ section p {
 }
 
 body {
-  font-family: "Inter", sans-serif;
+  font-family: "Be-R", sans-serif;
   background-color: #f8f9fa;
   color: var(--text-primary);
   font-size: 14px;
@@ -4750,7 +4750,7 @@ textarea.form-control {
 
 .left-panel {
   width: 70%;
-  background-color: #F0A00A;
+  background-color: #f0a00a;
   color: white;
   padding: 60px 40px;
   position: relative;
@@ -4816,57 +4816,49 @@ textarea.form-control {
   flex-direction: column;
   justify-content: center;
 }
-
-.welcome-text {
+.right-panel .welcome-text {
   text-align: center;
   margin-bottom: 40px;
 }
-
-.welcome-text h2 {
+.right-panel .welcome-text h2 {
   font-size: 28px;
   font-family: M-SB;
   line-height: auto;
   color: #000;
-  margin-bottom: 5px;
+  margin-bottom: 12px;
 }
-
-.welcome-text p {
+.right-panel .welcome-text p {
   font-size: 16px;
-  font-family: M-SB;
+  font-family: Be-R;
   line-height: auto;
   color: #000;
 }
-
-.login-form {
+.right-panel .login-form {
   display: flex;
   flex-direction: column;
   width: 100%;
   max-width: 350px;
   margin: 0 auto;
 }
-.login-form .form-group {
+.right-panel .login-form .form-group {
   min-height: 82px;
 }
-
-.input-wrapper {
+.right-panel .input-wrapper {
   position: relative;
   width: 100%;
 }
-
-.form-control.is-invalid {
+.right-panel .form-control.is-invalid {
   border-color: #D83B01;
   background-color: rgba(220, 53, 69, 0.05);
 }
-
-.form-control.is-valid {
+.right-panel .form-control.is-valid {
   border-color: #3AA655;
   background-color: rgba(40, 167, 69, 0.05);
 }
-
-.error-message {
+.right-panel .error-message {
   color: #D83B01;
   font-size: 12px;
-  font-family: M-SB;
+  font-family: Be-R;
   line-height: auto;
   color: #D83B01;
   margin-top: 5px;
@@ -4879,61 +4871,56 @@ textarea.form-control {
   caret-color: transparent;
   pointer-events: none;
 }
-
-.password-toggle {
+.right-panel .password-toggle {
   position: absolute;
-  right: 15px;
-  top: 50%;
+  right: 16px;
+  top: 37%;
   transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
   cursor: pointer;
   color: #666;
   z-index: 10;
 }
-
-.password-toggle:hover {
+.right-panel .password-toggle:hover {
   color: #0066cc;
 }
-
-.password-strength {
+.right-panel .password-strength {
   height: 5px;
   margin-top: 5px;
   border-radius: 3px;
   transition: all 0.3s ease;
 }
-
-.password-strength.weak {
+.right-panel .password-strength.weak {
   background-color: #D83B01;
   width: 25%;
 }
-
-.password-strength.medium {
+.right-panel .password-strength.medium {
   background-color: #F5B400;
   width: 50%;
 }
-
-.password-strength.strong {
+.right-panel .password-strength.strong {
   background-color: #3AA655;
   width: 100%;
 }
-
-.form-control {
+.right-panel .form-control {
   width: 100%;
-  padding: 15px;
+  padding: 12px 42px 12px 16px;
   border: 1px solid #ddd;
   border-radius: 8px;
   font-size: 16px;
-  font-family: M-SB;
-  line-height: auto;
+  font-family: Be-R;
+  line-height: normal;
   color: #000;
   outline: none;
   transition: border-color 0.3s;
 }
-
-.form-control:focus {
+.right-panel .form-control:focus {
   border-color: #0066cc;
 }
-
-.login-btn {
+.right-panel .login-btn {
   background-color: #0066cc;
   color: white;
   border: none;
@@ -4947,17 +4934,14 @@ textarea.form-control {
   transition: background-color 0.3s;
   margin-top: 10px;
 }
-
-.login-btn:hover {
+.right-panel .login-btn:hover {
   background-color: #0055b3;
 }
-
-.forgot-password {
+.right-panel .forgot-password {
   text-align: center;
   margin-top: 20px;
 }
-
-.forgot-password a {
+.right-panel .forgot-password a {
   font-size: 14px;
   font-family: M-SB;
   line-height: auto;
@@ -4965,8 +4949,7 @@ textarea.form-control {
   text-decoration: none;
   transition: all 0.3s ease;
 }
-
-.forgot-password a:hover {
+.right-panel .forgot-password a:hover {
   color: #0066cc;
   transition: all 0.3s ease;
 }
@@ -5899,20 +5882,13 @@ textarea.form-control {
 }
 
 .news_page {
-  padding: 20px;
-  display: flex;
-}
-.news_page .dashboard-header-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  /* News Page Styles */
 }
 .news_page .action-buttons {
   display: flex;
   align-items: center;
 }
-.news_page .action-buttons .add-room-btn,
-.news_page .action-buttons .add-product-btn {
+.news_page .add-news-btn {
   background-color: #3ccf4e;
   color: white;
   border: none;
@@ -5924,8 +5900,7 @@ textarea.form-control {
   display: flex;
   align-items: center;
 }
-.news_page .action-buttons .add-room-btn i,
-.news_page .action-buttons .add-product-btn i {
+.news_page .add-news-btn i {
   margin-right: 6px;
   font-size: 12px;
 }
@@ -5935,7 +5910,7 @@ textarea.form-control {
   margin-bottom: 20px;
   flex-wrap: wrap;
 }
-.news_page .filter-row .results-info {
+.news_page .results-info {
   margin-left: auto;
   font-size: 13px;
   color: var(--text-secondary);
@@ -5946,11 +5921,11 @@ textarea.form-control {
   padding: 15px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
-.news_page .news-table-container .news-table {
+.news_page .news-table {
   width: 100%;
   border-collapse: collapse;
 }
-.news_page .news-table-container .news-table th {
+.news_page .news-table th {
   text-align: left;
   padding: 10px;
   font-weight: 500;
@@ -5958,16 +5933,16 @@ textarea.form-control {
   border-bottom: 1px solid var(--border-color);
   white-space: nowrap;
 }
-.news_page .news-table-container .news-table td {
+.news_page .news-table td {
   padding: 10px;
   border-bottom: 1px solid var(--border-color);
   vertical-align: middle;
 }
-.news_page .news-table-container .news-table .news-info {
+.news_page .news-info {
   display: flex;
   align-items: center;
 }
-.news_page .news-table-container .news-table .news-info .news-image {
+.news_page .news-image {
   width: 40px;
   height: 40px;
   border-radius: 4px;
@@ -5975,36 +5950,36 @@ textarea.form-control {
   margin-right: 10px;
   background-color: var(--bg-light);
 }
-.news_page .news-table-container .news-table .news-info .news-image img {
+.news_page .news-image img {
   width: 100%;
   height: 100%;
   -o-object-fit: cover;
      object-fit: cover;
 }
-.news_page .news-table-container .news-table .news-info .news-name {
+.news_page .news-name {
   font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
 }
-.news_page .news-table-container .news-table .status-indicator.visible {
+.news_page .status-indicator.visible {
   background-color: rgba(40, 167, 69, 0.1);
   color: var(--success-color);
 }
-.news_page .news-table-container .news-table .status-indicator.hidden {
+.news_page .status-indicator.hidden {
   background-color: rgba(220, 53, 69, 0.1);
   color: var(--danger-color);
 }
-.news_page .news-table-container .news-table .action-cell {
-  display: flex;
-  gap: 6px;
-}
-.news_page .news-table-container .news-table .action-cell .action-button.edit {
+.news_page .action-button.edit {
   background-color: var(--bg-light);
   color: var(--text-secondary);
 }
-.news_page .news-table-container .news-table .action-cell .action-button.visibility {
+.news_page .action-button.visibility {
   background-color: #fff7d0;
   color: #d6b600;
 }
-.news_page .news-table-container .news-table .action-cell .action-button.delete {
+.news_page .action-button.delete {
   background-color: #ffebee;
   color: #d32f2f;
 }
@@ -6048,7 +6023,7 @@ textarea.form-control {
   font-weight: 500;
 }
 .add-voucher-container .voucher-form-column .form-section-voucher .form-row .form-group .form-control {
-  font-family: "M-SB";
+  font-family: "Be-R";
   width: 100%;
   padding: 10px 12px;
   font-size: 13px;

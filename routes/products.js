@@ -575,7 +575,6 @@ router.get("/newest", optionalAuth, async (req, res) => {
  */
 router.get("/variants", async (req, res) => {
   try {
-    // Lấy toàn bộ variants kèm tên sản phẩm và hình đầu tiên
     const [variants] = await db.query(
       `
       SELECT
@@ -681,8 +680,8 @@ router.get("/test/:slug", async (req, res) => {
       slug: v.slug,
       list_image: v.list_image
         ? v.list_image
-          .split(",")
-          .map((img) => img.trim().replace(/^['"]+|['"]+$/g, ""))
+            .split(",")
+            .map((img) => img.trim().replace(/^['"]+|['"]+$/g, ""))
         : [],
     }));
 
@@ -700,9 +699,6 @@ router.get("/test/:slug", async (req, res) => {
       slug: v.slug,
     }));
 
-    // --- PHẦN ĐIỀU CHỈNH ĐỂ LẤY VÀ HIỂN THỊ THUỘC TÍNH THEO DANH MỤC ---
-
-    // Lấy TẤT CẢ các thuộc tính được định nghĩa cho danh mục của sản phẩm
     const [categoryAttributesDefinitions] = await db.query(
       `
       SELECT
@@ -720,7 +716,6 @@ router.get("/test/:slug", async (req, res) => {
       [product.category_id]
     );
 
-    // Lấy các giá trị thuộc tính thực tế đã được gán cho sản phẩm
     const [productAttributeValues] = await db.query(
       `
       SELECT
@@ -740,21 +735,17 @@ router.get("/test/:slug", async (req, res) => {
       [product.product_id]
     );
 
-    // Kết hợp định nghĩa thuộc tính với giá trị thực tế của sản phẩm
-    // Điều này đảm bảo tất cả thuộc tính của danh mục đều được trả về, dù có giá trị hay chưa.
-    const finalAttributes = categoryAttributesDefinitions.map(definedAttr => {
+    const finalAttributes = categoryAttributesDefinitions.map((definedAttr) => {
       const productValue = productAttributeValues.find(
-        pav => pav.attribute_id === definedAttr.attribute_id
+        (pav) => pav.attribute_id === definedAttr.attribute_id
       );
       return {
         name: definedAttr.attribute_name,
-        value: productValue ? productValue.value : null, // Trả về giá trị nếu có, nếu không là null
+        value: productValue ? productValue.value : null,
         unit: definedAttr.unit,
         is_required: definedAttr.is_required,
       };
     });
-
-    // --- KẾT THÚC PHẦN ĐIỀU CHỈNH ---
 
     // 5. Lấy sản phẩm liên quan
     const [relatedProducts] = await db.query(
@@ -779,13 +770,7 @@ router.get("/test/:slug", async (req, res) => {
         sold: product.product_sold,
         view: product.product_view,
         rating: product.product_rating,
-        // **KHUYẾN NGHỊ: LOẠI BỎ CÁC CỘT CŨ NÀY**
-        // materials: product.variant_materials,
-        // height: product.variant_height,
-        // width: product.variant_width,
-        // depth: product.variant_depth,
-        // seating_height: product.variant_seating_height,
-        // max_weight_load: product.variant_maximum_weight_load,
+
         status: product.product_status,
         category_id: product.category_id,
         category_name: product.category_name,
@@ -957,9 +942,6 @@ ORDER BY c.color_priority DESC
     res.status(500).json({ error: "Failed to fetch product details" });
   }
 });
-
-
-
 
 /**
  * @route   POST /api/products
@@ -1274,7 +1256,7 @@ router.delete("/:slug", async (req, res) => {
       }
     }
 
-    // 🔥 Xoá ảnh biến thể
+    // Xoá ảnh biến thể
     for (const variant of variants) {
       // Đảm bảo variant_product_list_image là chuỗi và không rỗng
       const imageUrls = variant.variant_product_list_image
@@ -1304,21 +1286,20 @@ router.delete("/:slug", async (req, res) => {
       }
     }
 
-    // 🔥 Xoá ảnh chính sản phẩm
     if (product_image) {
-      const publicId = extractPublicIdFromUrl(product_image.trim()); // Cắt khoảng trắng thừa
+      const publicId = extractPublicIdFromUrl(product_image.trim());
       if (publicId) {
         try {
-          console.log(`Đang xóa ảnh chính sản phẩm: ${publicId}`); // Log để debug
+          console.log(`Đang xóa ảnh chính sản phẩm: ${publicId}`);
           await cloudinary.uploader.destroy(publicId);
-          console.log(`Đã xóa ảnh chính sản phẩm: ${publicId}`); // Log thành công
+          console.log(`Đã xóa ảnh chính sản phẩm: ${publicId}`);
         } catch (err) {
           console.error(
             "Lỗi khi xoá ảnh sản phẩm chính:",
             publicId,
             err.message,
             err.http_code
-          ); // Log chi tiết lỗi
+          );
         }
       } else {
         console.warn(
@@ -1327,7 +1308,7 @@ router.delete("/:slug", async (req, res) => {
       }
     }
 
-    // 🔄 Xoá liên kết trong database
+    //  Xoá liên kết trong database
     await db.query("DELETE FROM variant_product WHERE product_id = ?", [
       product_id,
     ]);
@@ -1468,6 +1449,7 @@ router.get("/by-category/:categoryId", async (req, res) => {
  * @desc    Thêm sản phẩm mới (Admin)
  * @access  Private (Admin only)
  */
+
 router.post("/add", async (req, res) => {
   try {
     const {
@@ -1476,25 +1458,18 @@ router.post("/add", async (req, res) => {
       slug,
       category_id,
       status,
-      materials,
-      height,
-      width,
-      depth,
-      seating_height,
-      max_weight_load,
       main_image,
       room_ids,
       variants,
+      attributes,
     } = req.body;
 
     const errors = [];
 
-    // Helper validators
     const isEmpty = (val) =>
       val === undefined || val === null || String(val).trim() === "";
     const isNumber = (val) => !isEmpty(val) && !isNaN(Number(val));
 
-    // --- Validate main product fields ---
     if (isEmpty(name)) {
       errors.push({ field: "name", message: "Tên sản phẩm là bắt buộc" });
     }
@@ -1510,46 +1485,17 @@ router.post("/add", async (req, res) => {
     if (isEmpty(category_id)) {
       errors.push({ field: "category_id", message: "Danh mục là bắt buộc" });
     }
-    // Validate status select
     if (isEmpty(status)) {
       errors.push({ field: "status", message: "Vui lòng chọn trạng thái" });
     } else if (![0, 1, "0", "1"].includes(status)) {
       errors.push({ field: "status", message: "Trạng thái không hợp lệ" });
     }
-    // Validate main image
     if (isEmpty(main_image)) {
       errors.push({
         field: "main_image",
         message: "Ảnh chính sản phẩm là bắt buộc",
       });
     }
-    // Validate materials
-    if (isEmpty(materials)) {
-      errors.push({ field: "materials", message: "Chất liệu là bắt buộc" });
-    }
-    // Validate numeric fields
-    if (!isNumber(height)) {
-      errors.push({ field: "height", message: "Chiều cao không hợp lệ" });
-    }
-    if (!isNumber(width)) {
-      errors.push({ field: "width", message: "Chiều rộng không hợp lệ" });
-    }
-    if (!isNumber(depth)) {
-      errors.push({ field: "depth", message: "Chiều sâu không hợp lệ" });
-    }
-    if (!isNumber(seating_height)) {
-      errors.push({
-        field: "seating_height",
-        message: "Chiều cao chỗ ngồi không hợp lệ",
-      });
-    }
-    if (!isNumber(max_weight_load)) {
-      errors.push({
-        field: "max_weight_load",
-        message: "Tải trọng tối đa không hợp lệ",
-      });
-    }
-    // Validate rooms select (multiple)
     if (!Array.isArray(room_ids) || room_ids.length === 0) {
       errors.push({
         field: "room_ids",
@@ -1557,7 +1503,62 @@ router.post("/add", async (req, res) => {
       });
     }
 
-    // --- Validate variants array ---
+    let requiredAttributesFromDB = [];
+    if (category_id) {
+      const [dbAttrs] = await db.query(
+        `SELECT attribute_id, is_required FROM attributes WHERE category_id = ?`,
+        [category_id]
+      );
+      requiredAttributesFromDB = dbAttrs;
+    }
+
+    if (!Array.isArray(attributes)) {
+      errors.push({
+        field: "attributes",
+        message: "Dữ liệu thuộc tính sản phẩm không hợp lệ.",
+      });
+    } else {
+      const submittedAttributesMap = new Map();
+      attributes.forEach((attr) => {
+        submittedAttributesMap.set(attr.attribute_id, attr);
+      });
+
+      requiredAttributesFromDB.forEach((requiredAttr) => {
+        const submittedAttr = submittedAttributesMap.get(
+          requiredAttr.attribute_id
+        );
+        if (
+          requiredAttr.is_required &&
+          (!submittedAttr ||
+            (isEmpty(submittedAttr.value) &&
+              isEmpty(submittedAttr.material_id)))
+        ) {
+          errors.push({
+            field: `attributes`,
+            message: `Thuộc tính bắt buộc (ID: ${requiredAttr.attribute_id}) còn thiếu hoặc chưa có giá trị.`,
+          });
+        }
+      });
+
+      attributes.forEach((attr, i) => {
+        if (isEmpty(attr.attribute_id)) {
+          errors.push({
+            field: `attributes[${i}].attribute_id`,
+            message: `Thuộc tính ${i + 1}: Thiếu ID thuộc tính.`,
+          });
+        }
+
+        if (!isEmpty(attr.value) && !isEmpty(attr.material_id)) {
+          errors.push({
+            field: `attributes[${i}]`,
+            message: `Thuộc tính ${
+              i + 1
+            }: Không thể có cả giá trị và ID chất liệu.`,
+          });
+        }
+      });
+    }
+
     if (!Array.isArray(variants) || variants.length === 0) {
       errors.push({
         field: "variants",
@@ -1608,16 +1609,13 @@ router.post("/add", async (req, res) => {
       });
     }
 
-    // If any validation errors, return 400
     if (errors.length > 0) {
       return res.status(400).json({ error: "Dữ liệu không hợp lệ", errors });
     }
 
-    // Start transaction for insert
     const connection = await db.getConnection();
     await connection.beginTransaction();
     try {
-      // Insert product
       const [productResult] = await connection.query(
         `INSERT INTO product (
           product_name,
@@ -1625,31 +1623,29 @@ router.post("/add", async (req, res) => {
           product_slug,
           category_id,
           product_status,
-          variant_materials,
-          variant_height,
-          variant_width,
-          variant_depth,
-          variant_seating_height,
-          variant_maximum_weight_load,
-          product_image
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          name,
-          description,
-          slug,
-          category_id,
-          status,
-          materials,
-          height,
-          width,
-          depth,
-          seating_height,
-          max_weight_load,
-          main_image,
-        ]
+          product_image,
+          created_at,
+          updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+        [name, description, slug, category_id, status, main_image]
       );
       const productId = productResult.insertId;
-      // Insert variants
+
+      if (attributes.length > 0) {
+        const attributeValues = attributes.map((attr) => [
+          productId,
+          attr.attribute_id,
+          attr.value === undefined || attr.value === "" ? null : attr.value,
+          attr.material_id === undefined || attr.material_id === ""
+            ? null
+            : attr.material_id,
+        ]);
+        await connection.query(
+          `INSERT INTO product_attribute_value (product_id, attribute_id, value, material_id) VALUES ?`,
+          [attributeValues]
+        );
+      }
+
       for (const v of variants) {
         await connection.query(
           `INSERT INTO variant_product (
@@ -1672,7 +1668,7 @@ router.post("/add", async (req, res) => {
           ]
         );
       }
-      // Insert room associations
+
       if (room_ids.length > 0) {
         const roomValues = room_ids.map((rid) => [productId, rid]);
         await connection.query(
@@ -1680,46 +1676,47 @@ router.post("/add", async (req, res) => {
           [roomValues]
         );
       }
+
       await connection.commit();
       return res
         .status(201)
         .json({ message: "Tạo sản phẩm thành công", product_id: productId });
     } catch (insertErr) {
       await connection.rollback();
-      throw insertErr;
+      console.error("Lỗi trong giao dịch:", insertErr);
+      return res.status(500).json({
+        error: "Lỗi server khi tạo sản phẩm",
+        details: insertErr.message,
+      });
     } finally {
       connection.release();
     }
   } catch (err) {
-    console.error("Lỗi khi tạo sản phẩm:", err);
+    console.error("Lỗi tổng thể khi tạo sản phẩm:", err);
     return res.status(500).json({ error: "Lỗi server", details: err.message });
   }
 });
 
-/** * @route   PUT /api/products/admin/:slug
- * @desc    Cập nhật sản phẩm
- *    @access  Private (Admin only)
+/**
+ *  @route   PUT /api/products/admin/:slug
+ *  @desc    Cập nhật sản phẩm
+ *  @access  Private (Admin only)
  */
+
 router.put("/admin/:slug", async (req, res) => {
-  const { slug: currentSlug } = req.params; // Đổi tên để tránh nhầm lẫn với slug mới từ body
+  const { slug: currentSlug } = req.params;
   const {
     name,
     description,
     category_id,
     status,
-    materials,
-    height,
-    width,
-    depth,
-    seating_height,
-    max_weight_load,
     main_image,
     room_ids,
     removedImages = [],
-    slug, // Đây là slug mới từ req.body
+    slug,
+    attributes,
   } = req.body;
 
-  // === VALIDATION ===
   const errors = [];
   const isEmpty = (val) =>
     val === undefined || val === null || String(val).trim() === "";
@@ -1734,21 +1731,25 @@ router.put("/admin/:slug", async (req, res) => {
       message: "Mô tả sản phẩm là bắt buộc",
     });
   }
-  // === THÊM VALIDATION CHO SLUG MỚI ===
   if (isEmpty(slug)) {
     errors.push({ field: "slug", message: "Slug là bắt buộc" });
   }
-  // === KIỂM TRA DUY NHẤT CỦA SLUG (TÙY CHỌN NHƯNG NÊN CÓ) ===
+
   if (!isEmpty(slug)) {
-    const [existingSlug] = await db.query(
-      `SELECT product_id FROM product WHERE product_slug = ? AND product_id <> (SELECT product_id FROM product WHERE product_slug = ?)`,
-      [slug, currentSlug]
-    );
-    if (existingSlug.length > 0) {
-      errors.push({
-        field: "slug",
-        message: "Slug đã tồn tại. Vui lòng chọn slug khác.",
-      });
+    try {
+      const [existingSlug] = await db.query(
+        `SELECT product_id FROM product WHERE product_slug = ? AND product_id <> (SELECT product_id FROM product WHERE product_slug = ?)`,
+        [slug, currentSlug]
+      );
+      if (existingSlug.length > 0) {
+        errors.push({
+          field: "slug",
+          message: "Slug đã tồn tại. Vui lòng chọn slug khác.",
+        });
+      }
+    } catch (dbErr) {
+      console.error("Error checking slug uniqueness:", dbErr);
+      errors.push({ field: "slug", message: "Lỗi kiểm tra slug duy nhất." });
     }
   }
 
@@ -1766,30 +1767,101 @@ router.put("/admin/:slug", async (req, res) => {
       message: "Ảnh chính sản phẩm là bắt buộc",
     });
   }
-  if (isEmpty(materials)) {
-    errors.push({ field: "materials", message: "Chất liệu là bắt buộc" });
-  }
 
-  if (!isNumber(height)) {
-    errors.push({ field: "height", message: "Chiều cao không hợp lệ" });
-  }
-  if (!isNumber(width)) {
-    errors.push({ field: "width", message: "Chiều rộng không hợp lệ" });
-  }
-  if (!isNumber(depth)) {
-    errors.push({ field: "depth", message: "Chiều sâu không hợp lệ" });
-  }
-  if (!isNumber(seating_height)) {
+  if (!Array.isArray(attributes)) {
     errors.push({
-      field: "seating_height",
-      message: "Chiều cao chỗ ngồi không hợp lệ",
+      field: "attributes",
+      message: "Dữ liệu thuộc tính không hợp lệ.",
     });
-  }
-  if (!isNumber(max_weight_load)) {
-    errors.push({
-      field: "max_weight_load",
-      message: "Tải trọng tối đa không hợp lệ",
-    });
+  } else {
+    try {
+      const [categoryAttributesMeta] = await db.query(
+        `SELECT attribute_id, attribute_name, value_type, is_required
+             FROM attributes
+             WHERE category_id = ?`,
+        [category_id]
+      );
+
+      const categoryAttributeMap = new Map(
+        categoryAttributesMeta.map((attr) => [attr.attribute_id, attr])
+      );
+
+      const payloadAttributeIds = new Set(
+        attributes.map((attr) => attr.attribute_id)
+      );
+
+      for (const payloadAttr of attributes) {
+        const meta = categoryAttributeMap.get(payloadAttr.attribute_id);
+
+        if (!meta) {
+          errors.push({
+            field: `attributes[${payloadAttr.attribute_id}]`,
+            message: `Thuộc tính ID ${payloadAttr.attribute_id} không hợp lệ cho danh mục này.`,
+          });
+          continue;
+        }
+
+        if (meta.is_required) {
+          if (meta.value_type === "material_id") {
+            if (isEmpty(payloadAttr.material_id)) {
+              errors.push({
+                field: `attributes[${payloadAttr.attribute_id}].material_id`,
+                message: `Thuộc tính "${meta.attribute_name}" (chất liệu) là bắt buộc.`,
+              });
+            }
+          } else {
+            if (isEmpty(payloadAttr.value)) {
+              errors.push({
+                field: `attributes[${payloadAttr.attribute_id}].value`,
+                message: `Thuộc tính "${meta.attribute_name}" là bắt buộc.`,
+              });
+            }
+          }
+        }
+
+        if (
+          meta.value_type === "number" &&
+          !isEmpty(payloadAttr.value) &&
+          !isNumber(payloadAttr.value)
+        ) {
+          errors.push({
+            field: `attributes[${payloadAttr.attribute_id}].value`,
+            message: `Giá trị cho "${meta.attribute_name}" phải là số hợp lệ.`,
+          });
+        }
+
+        if (
+          meta.value_type === "material_id" &&
+          !isEmpty(payloadAttr.material_id)
+        ) {
+          const [materialExists] = await db.query(
+            `SELECT material_id FROM materials WHERE material_id = ?`,
+            [payloadAttr.material_id]
+          );
+          if (materialExists.length === 0) {
+            errors.push({
+              field: `attributes[${payloadAttr.attribute_id}].material_id`,
+              message: `Chất liệu ID ${payloadAttr.material_id} không tồn tại.`,
+            });
+          }
+        }
+      }
+
+      for (const meta of categoryAttributesMeta) {
+        if (meta.is_required && !payloadAttributeIds.has(meta.attribute_id)) {
+          errors.push({
+            field: `attributes[${meta.attribute_id}]`,
+            message: `Thuộc tính "${meta.attribute_name}" là bắt buộc nhưng bị thiếu.`,
+          });
+        }
+      }
+    } catch (attrErr) {
+      console.error("Error validating dynamic attributes:", attrErr);
+      errors.push({
+        field: "attributes",
+        message: "Lỗi server khi xác thực thuộc tính.",
+      });
+    }
   }
 
   if (!Array.isArray(room_ids) || room_ids.length === 0) {
@@ -1803,7 +1875,6 @@ router.put("/admin/:slug", async (req, res) => {
     return res.status(400).json({ error: "Dữ liệu không hợp lệ", errors });
   }
 
-  // === XÓA ẢNH CLOUDINARY (Đoạn này đã đúng) ===
   if (removedImages.length) {
     for (const imageUrl of removedImages) {
       const matches = imageUrl.match(
@@ -1817,7 +1888,7 @@ router.put("/admin/:slug", async (req, res) => {
           console.log("🗑️ Đã xoá ảnh Cloudinary:", publicId);
         } catch (destroyErr) {
           console.warn(
-            "❌ Không thể xoá ảnh Cloudinary:",
+            "Không thể xoá ảnh Cloudinary:",
             publicId,
             destroyErr.message
           );
@@ -1831,7 +1902,7 @@ router.put("/admin/:slug", async (req, res) => {
 
   try {
     const [productRows] = await connection.query(
-      `SELECT product_id, product_priority FROM product WHERE product_slug = ?`, // Lấy cả product_priority
+      `SELECT product_id, product_priority FROM product WHERE product_slug = ?`,
       [currentSlug]
     );
     if (!productRows.length) {
@@ -1839,16 +1910,14 @@ router.put("/admin/:slug", async (req, res) => {
       return res.status(404).json({ error: "Product not found" });
     }
     const productId = productRows[0].product_id;
-    const currentPriority = productRows[0].product_priority; // Lấy ưu tiên hiện tại
+    const currentPriority = productRows[0].product_priority;
 
-    let newPriority = currentPriority; // Mặc định giữ ưu tiên hiện tại
-
-    // === TÍNH TOÁN ĐỘ ƯU TIÊN MỚI NẾU product_priority HIỆN TẠI LÀ 0 ===
+    let newPriority = currentPriority;
     if (currentPriority === 0) {
       const [maxPriorityResult] = await connection.query(
         `SELECT MAX(product_priority) AS max_priority FROM product`
       );
-      const maxPriority = maxPriorityResult[0].max_priority || 0; // Nếu không có sản phẩm nào, max_priority là 0
+      const maxPriority = maxPriorityResult[0].max_priority || 0;
       newPriority = maxPriority + 1;
       console.log(
         `Debug: Product ID ${productId}, currentPriority was 0, newPriority calculated: ${newPriority}`
@@ -1859,7 +1928,6 @@ router.put("/admin/:slug", async (req, res) => {
       );
     }
 
-    // CẬP NHẬT CÂU TRUY VẤN VÀ THAM SỐ
     await connection.query(
       `UPDATE product SET
         product_name = ?,
@@ -1867,14 +1935,8 @@ router.put("/admin/:slug", async (req, res) => {
         product_description = ?,
         category_id = ?,
         product_status = ?,
-        variant_materials = ?,
-        variant_height = ?,
-        variant_width = ?,
-        variant_depth = ?,
-        variant_seating_height = ?,
-        variant_maximum_weight_load = ?,
         product_image = ?,
-        product_priority = ? -- ĐÃ THÊM product_priority
+        product_priority = ?
       WHERE product_id = ?`,
       [
         name,
@@ -1882,19 +1944,30 @@ router.put("/admin/:slug", async (req, res) => {
         description,
         category_id,
         status,
-        materials,
-        height,
-        width,
-        depth,
-        seating_height,
-        max_weight_load,
         main_image,
-        newPriority, // TRUYỀN GIÁ TRỊ newPriority VÀO ĐÂY
+        newPriority,
         productId,
       ]
     );
 
-    // ... (Phần cập nhật room_product vẫn giữ nguyên) ...
+    await connection.query(
+      `DELETE FROM product_attribute_value WHERE product_id = ?`,
+      [productId]
+    );
+
+    if (attributes && attributes.length > 0) {
+      const attributeValues = attributes.map((attr) => [
+        productId,
+        attr.attribute_id,
+        attr.value,
+        attr.material_id,
+      ]);
+      await connection.query(
+        `INSERT INTO product_attribute_value (product_id, attribute_id, value, material_id) VALUES ?`,
+        [attributeValues]
+      );
+    }
+
     await connection.query(`DELETE FROM room_product WHERE product_id = ?`, [
       productId,
     ]);
@@ -1908,7 +1981,7 @@ router.put("/admin/:slug", async (req, res) => {
 
     await connection.commit();
 
-    const [product] = await db.query(
+    const [updatedProductRows] = await db.query(
       `SELECT
         p.*,
         c.category_name
@@ -1918,9 +1991,20 @@ router.put("/admin/:slug", async (req, res) => {
       [productId]
     );
 
+    const [productAttributesValues] = await db.query(
+      `SELECT pav.attribute_id, pav.value, pav.material_id, a.attribute_name, a.unit, a.is_required, a.value_type
+         FROM product_attribute_value pav
+         JOIN attributes a ON pav.attribute_id = a.attribute_id
+         WHERE pav.product_id = ?`,
+      [productId]
+    );
+
     res.json({
       message: "Product updated successfully",
-      product: product[0],
+      product: {
+        ...updatedProductRows[0],
+        attributes: productAttributesValues,
+      },
     });
   } catch (error) {
     await connection.rollback();
@@ -1933,20 +2017,41 @@ router.put("/admin/:slug", async (req, res) => {
     connection.release();
   }
 });
-/* * @route   GET /api/products/admin/:slug
+
+/*
+ * @route   GET /api/products/admin/:slug
  * @desc    Lấy thông tin chi tiết sản phẩm (Admin)
  * @access  Private (Admin only)
  */
+
 router.get("/admin/:slug", async (req, res) => {
   const slug = req.params.slug;
   if (!slug) return res.status(400).json({ message: "Slug không hợp lệ" });
 
   try {
-    // 1. Lấy thông tin sản phẩm
+    // 1. Lấy thông tin sản phẩm chính
+
     const [productRows] = await db.query(
       `
-      SELECT 
-        p.*, c.category_name
+      SELECT
+        p.product_id,
+        p.product_name,
+        p.product_description,
+        p.product_slug,
+        p.product_sold,
+        p.product_view,
+        p.product_status,
+        p.category_id,
+        p.product_image,
+        p.created_at,
+        p.updated_at,
+        p.variant_materials,       -- Giữ lại tạm thời theo cấu trúc bạn cung cấp
+        p.variant_height,          -- Giữ lại tạm thời theo cấu trúc bạn cung cấp
+        p.variant_width,           -- Giữ lại tạm thời theo cấu trúc bạn cung cấp
+        p.variant_depth,           -- Giữ lại tạm thời theo cấu trúc bạn cung cấp
+        p.variant_seating_height,  -- Giữ lại tạm thời theo cấu trúc bạn cung cấp
+        p.variant_maximum_weight_load, -- Giữ lại tạm thời theo cấu trúc bạn cung cấp
+        c.category_name
       FROM product p
       LEFT JOIN category c ON p.category_id = c.category_id
       WHERE p.product_slug = ?
@@ -2003,10 +2108,28 @@ router.get("/admin/:slug", async (req, res) => {
     // 3. Lấy danh sách phòng
     const [rooms] = await db.query(
       `
-     SELECT rp.room_id, r.room_name
-FROM room_product rp
-JOIN room r ON rp.room_id = r.room_id
-WHERE rp.product_id = ?
+      SELECT rp.room_id, r.room_name
+      FROM room_product rp
+      JOIN room r ON rp.room_id = r.room_id
+      WHERE rp.product_id = ?
+      `,
+      [product.product_id]
+    );
+
+    // 4. Lấy các thuộc tính động từ bảng product_attribute_value
+    const [productAttributes] = await db.query(
+      `
+      SELECT
+          pav.attribute_id,
+          pav.value,
+          pav.material_id,
+          a.attribute_name,
+          a.unit,
+          a.is_required,
+          a.value_type -- Lấy trực tiếp value_type từ bảng attributes
+      FROM product_attribute_value pav
+      JOIN attributes a ON pav.attribute_id = a.attribute_id
+      WHERE pav.product_id = ?
       `,
       [product.product_id]
     );
@@ -2019,13 +2142,6 @@ WHERE rp.product_id = ?
         slug: product.product_slug,
         sold: product.product_sold,
         view: product.product_view,
-        rating: product.product_rating,
-        materials: product.variant_materials,
-        height: product.variant_height,
-        width: product.variant_width,
-        depth: product.variant_depth,
-        seating_height: product.variant_seating_height,
-        max_weight_load: product.variant_maximum_weight_load,
         status: product.product_status,
         category_id: product.category_id,
         category_name: product.category_name,
@@ -2035,6 +2151,13 @@ WHERE rp.product_id = ?
           ? product.product_image.trim().replace(/^['"]+|['"]+$/g, "")
           : "",
         variants: variantsFull,
+        attributes: productAttributes,
+        materials: product.variant_materials,
+        height: product.variant_height,
+        width: product.variant_width,
+        depth: product.variant_depth,
+        seating_height: product.variant_seating_height,
+        max_weight_load: product.variant_maximum_weight_load,
       },
       rooms,
     });

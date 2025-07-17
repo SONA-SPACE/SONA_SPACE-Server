@@ -3397,9 +3397,16 @@ avatar-image .product-filters {
   margin-bottom: 18px;
 }
 
-.form-group {
-  flex: 1;
-  min-width: 0;
+#dynamicAttributesContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  width: 100%;
+}
+
+.form-infor {
+  flex: 1 1 calc(50% - 10px);
+  min-width: calc(50% - 10px);
 }
 
 .form-group.full-width {

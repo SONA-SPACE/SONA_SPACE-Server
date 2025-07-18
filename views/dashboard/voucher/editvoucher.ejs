@@ -29,7 +29,7 @@
                     <div class="select-wrapper">
                         <select id="vouchertype" class="form-control">
                             <option value="percentage">Phần trăm</option>
-                            <option value="fixed">Cố định </option>
+                            <option value="fixed">Cố định</option>
                         </select>
                         <i class="fas fa-chevron-down"></i>
                     </div>
@@ -73,19 +73,13 @@
                     <div class="select-wrapper">
                         <select id="applyToAll" class="form-control">
                             <option value="all">Tất cả người dùng</option>
-                            <option value="custom">Chỉ định người dùng</option>
+                            <option value="new_users_30d">Người dùng mới trong 30 ngày</option>
                         </select>
                         <i class="fas fa-chevron-down"></i>
                     </div>
                 </div>
-
-                <div class="form-group" id="userIdInput" style="display: none;">
-                    <label for="userIdList">ID người dùng (phân cách bằng dấu phẩy)</label>
-                    <select id="userIdList" class="form-control select2" multiple></select>
-
-                </div>
-
             </div>
+
             <div class="form-row">
                 <div class="form-group">
                     <label for="voucherStart">Thời gian bắt đầu</label>
@@ -114,32 +108,12 @@
 
 <script>
     let voucherId = null;
-    function formatPriceInput(value) {
-        if (!value) return "";
-        const number = parseFloat(value);
-        if (isNaN(number)) return "";
-        return number % 1 === 0 ? number.toString() : number.toFixed(2).replace(/\.?0+$/, "");
-    }
 
     document.addEventListener("DOMContentLoaded", async () => {
         const urlParts = window.location.pathname.split("/");
         voucherId = urlParts[urlParts.length - 1];
 
         await loadVoucher(voucherId);
-
-        document.querySelector(".btn-save").addEventListener("click", handleUpdateVoucher);
-    });
-    document.getElementById("applyToAll").addEventListener("change", function () {
-        const selected = this.value;
-        document.getElementById("userIdInput").style.display = selected === "custom" ? "block" : "none";
-    });
-    document.addEventListener("DOMContentLoaded", async () => {
-        const urlParts = window.location.pathname.split("/");
-        voucherId = urlParts[urlParts.length - 1];
-
-        await loadUserOptions();
-        await loadVoucher(voucherId);
-
         document.querySelector(".btn-save").addEventListener("click", handleUpdateVoucher);
     });
 
@@ -151,13 +125,13 @@
                 }
             });
             const data = await res.json();
-            if (data.user_ids && Array.isArray(data.user_ids)) {
-                document.getElementById("applyToAll").value = "custom";
-                document.getElementById("userIdInput").style.display = "block";
-                $("#userIdList").val(data.user_ids.map(String)).trigger("change");
-            } else {
+
+            if (data.user_ids === null) {
                 document.getElementById("applyToAll").value = "all";
-                document.getElementById("userIdInput").style.display = "none";
+            } else if (data.user_ids === "new_users") {
+                document.getElementById("applyToAll").value = "new_users_30d";
+            } else {
+                document.getElementById("applyToAll").value = "all"; // fallback
             }
 
 
@@ -173,8 +147,6 @@
                 document.getElementById("voucherEnd").value = data.exp_time?.slice(0, 16);
                 document.getElementById("voucherUsed").value = data.used || 0;
                 document.getElementById("minOrder").value = formatPriceInput(data.min_order || "");
-
-
             } else {
                 showToast("Không tìm thấy voucher", "danger");
             }
@@ -198,10 +170,7 @@
         const applyTo = document.getElementById("applyToAll").value;
         const min_order = parseFloat(document.getElementById("minOrder").value) || 0;
 
-        const user_ids = applyTo === "custom"
-            ? $("#userIdList").val()?.map(id => parseInt(id)) || []
-            : null;
-
+        const user_ids = applyTo === "new_users_30d" ? "new_users" : null;
 
         const saveBtn = document.querySelector(".btn-save");
         saveBtn.disabled = true;
@@ -255,6 +224,13 @@
         }
     }
 
+    function formatPriceInput(value) {
+        if (!value) return "";
+        const number = parseFloat(value);
+        if (isNaN(number)) return "";
+        return number % 1 === 0 ? number.toString() : number.toFixed(2).replace(/\.?0+$/, "");
+    }
+
     function showToast(message, type = "success") {
         let toastContainer = document.getElementById("toastContainer");
         if (!toastContainer) {
@@ -277,35 +253,4 @@
         new bootstrap.Toast(toast, { delay: 4000 }).show();
         toast.addEventListener("hidden.bs.toast", () => toast.remove());
     }
-    async function loadUserOptions() {
-        try {
-            const res = await fetch("http://localhost:3501/api/users/simple", {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem("token")}`,
-                },
-            });
-            const data = await res.json();
-
-            const select = document.getElementById("userIdList");
-            select.innerHTML = "";
-
-            data.forEach(user => {
-                const option = document.createElement("option");
-                option.value = user.id;
-                option.textContent = `${user.id} - ${user.name} - ${user.email}`;
-                select.appendChild(option);
-            });
-
-            $("#userIdList").select2({
-                width: "100%",
-                placeholder: "Chọn người dùng",
-                allowClear: true
-            });
-
-        } catch (err) {
-            console.error("Lỗi khi tải danh sách người dùng:", err);
-            showToast("Không thể tải danh sách người dùng", "danger");
-        }
-    }
-
 </script>

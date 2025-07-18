@@ -77,16 +77,13 @@
                     <div class="select-wrapper">
                         <select id="applyToAll" class="form-control">
                             <option value="all">Tất cả người dùng</option>
-                            <option value="custom">Chỉ định người dùng</option>
+                            <option value="new_users">Người dùng mới (30 ngày gần đây)</option>
                         </select>
+
                         <i class="fas fa-chevron-down"></i>
                     </div>
                 </div>
 
-                <div class="form-group" id="userIdInput" style="display: none;">
-                    <label for="userIdList">ID người dùng</label>
-                    <select id="userIdList" class="form-control select2" multiple></select>
-                </div>
 
             </div>
 
@@ -145,12 +142,13 @@
         const used = parseInt(document.getElementById("voucherused").value);
         const min_order = parseFloat(document.getElementById("minOrder").value) || 0;
 
-        const applyTo = document.getElementById("applyToAll").value;
         let user_ids = null;
-        if (applyTo === "custom") {
-            const select = document.getElementById("userIdList");
-            user_ids = Array.from(select.selectedOptions).map(opt => parseInt(opt.value));
+        const applyTo = document.getElementById("applyToAll").value;
+
+        if (applyTo === "new_users") {
+            user_ids = "new_users";
         }
+
 
 
         const saveBtn = document.querySelector(".btn-save");
@@ -234,37 +232,6 @@
 
         toast.addEventListener("hidden.bs.toast", () => toast.remove());
     }
-    async function loadUserOptions() {
-        try {
-            const res = await fetch("http://localhost:3501/api/users/simple", {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem("token")}`,
-                },
-            });
-            const data = await res.json();
-
-            const select = document.getElementById("userIdList");
-            select.innerHTML = "";
-
-            data.forEach(user => {
-                const option = document.createElement("option");
-                option.value = user.id;
-                option.textContent = `${user.id} - ${user.name} - ${user.email}`;
-                select.appendChild(option);
-            });
-
-            // ✅ Khởi tạo Select2 sau khi đã gán option
-            $("#userIdList").select2({
-                width: "100%", // tùy chỉnh cho full width
-                placeholder: "Chọn người dùng",
-                allowClear: true
-            });
-
-        } catch (err) {
-            console.error("Lỗi khi tải danh sách người dùng:", err);
-            showToast("Không thể tải danh sách người dùng", "danger");
-        }
-    }
-
+   
 
 </script>

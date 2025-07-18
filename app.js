@@ -89,7 +89,16 @@ app.use(
 );
 app.use(
   "/tom-select/dist/css/tom-select.bootstrap5.min.css",
-  express.static(path.join(__dirname, "node_modules", "tom-select", "dist", "css", "tom-select.bootstrap5.min.css"))
+  express.static(
+    path.join(
+      __dirname,
+      "node_modules",
+      "tom-select",
+      "dist",
+      "css",
+      "tom-select.bootstrap5.min.css"
+    )
+  )
 );
 
 // tinymce

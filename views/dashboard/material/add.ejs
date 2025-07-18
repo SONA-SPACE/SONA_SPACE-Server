@@ -1,0 +1,197 @@
+<div class="dashboard-header-row">
+    <h2 class="dashboard-title">Thêm vật liệu</h2>
+</div>
+
+<form id="addMaterialForm" novalidate>
+    <div class="add-product-container">
+        <div class="product-form-column">
+            <div class="form-section">
+                <h3 class="section-title">Thông tin vật liệu</h3>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="materialName">Tên vật liệu</label>
+                        <input type="text" id="materialName" class="form-control" placeholder="Nhập tên vật liệu" />
+                        <div class="invalid-feedback"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="materialSlug">Slug</label>
+                        <input type="text" id="materialSlug" class="form-control" placeholder="Tự tạo nếu để trống" />
+                        <div class="invalid-feedback"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="materialStatus">Trạng thái</label>
+                        <div class="select-wrapper">
+                            <select id="materialStatus" class="form-control">
+                                <option value="">Chọn trạng thái</option>
+                                <option value="1">Hiển thị</option>
+                                <option value="0">Ẩn</option>
+                            </select>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="invalid-feedback"></div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label for="materialDescription">Mô tả</label>
+                        <textarea id="materialDescription" class="form-control" rows="5"
+                            placeholder="Nhập mô tả vật liệu"></textarea>
+                        <div class="invalid-feedback"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <button type="button" class="btn btn-cancel">Hủy</button>
+        <button type="submit" class="btn btn-save">Lưu</button>
+    </div>
+</form>
+<script>
+    function generateSlug(str) {
+        return str
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9 -]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-')
+            .replace(/^-+|-+$/g, '');
+    }
+
+    const nameInput = document.getElementById("materialName");
+    const slugInput = document.getElementById("materialSlug");
+    const statusSelect = document.getElementById("materialStatus");
+    const descriptionInput = document.getElementById("materialDescription");
+
+    // Tự động sinh slug khi gõ tên
+    nameInput.addEventListener("input", function () {
+        const name = nameInput.value.trim();
+        slugInput.value = name ? generateSlug(name) : '';
+        clearError(nameInput);
+    });
+
+    descriptionInput.addEventListener("input", function () {
+        clearError(descriptionInput);
+    });
+
+    statusSelect.addEventListener("change", function () {
+        clearError(statusSelect);
+    });
+
+    function showError(inputElement, message) {
+        inputElement.classList.add("is-invalid");
+
+        const feedback = inputElement.closest(".form-group")?.querySelector(".invalid-feedback");
+        if (feedback) {
+            feedback.textContent = message;
+        }
+    }
+
+    function clearError(inputElement) {
+        inputElement.classList.remove("is-invalid");
+
+        const feedback = inputElement.closest(".form-group")?.querySelector(".invalid-feedback");
+        if (feedback) {
+            feedback.textContent = '';
+        }
+    }
+
+
+    document.getElementById("addMaterialForm").addEventListener("submit", async function (e) {
+        e.preventDefault();
+
+        // Reset lỗi cũ
+        [nameInput, slugInput, statusSelect, descriptionInput].forEach(clearError);
+
+        const material_name = nameInput.value.trim();
+        const slug = slugInput.value.trim();
+        const material_status = statusSelect.value;
+        const material_description = descriptionInput.value.trim();
+
+        let hasError = false;
+
+        if (!material_name) {
+            showError(nameInput, "Tên vật liệu là bắt buộc.");
+            hasError = true;
+        }
+
+        if (!material_description) {
+            showError(descriptionInput, "Mô tả vật liệu là bắt buộc.");
+            hasError = true;
+        }
+
+        if (!material_status) {
+            showError(statusSelect, "Vui lòng chọn trạng thái.");
+            hasError = true;
+        }
+
+        if (hasError) return;
+
+        const payload = {
+            material_name,
+            slug,
+            material_status,
+            material_description
+        };
+
+        try {
+            const res = await fetch("/api/materials", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(payload),
+            });
+
+            const data = await res.json();
+            if (!res.ok || data.success === false) {
+                showToast(data.message || "Có lỗi xảy ra khi thêm vật liệu.", "danger");
+                return;
+            }
+
+
+            showToast("Thêm vật liệu thành công!");
+            window.location.href = "/dashboard/material";
+        } catch (error) {
+            console.error("Lỗi kết nối:", error);
+            showToast("Không thể kết nối đến máy chủ.");
+        }
+    });
+</script>
+<script>
+    function showToast(message, type = "success") {
+        let toastContainer = document.getElementById("toastContainer");
+        if (!toastContainer) {
+            toastContainer = document.createElement("div");
+            toastContainer.id = "toastContainer";
+            toastContainer.className = "position-fixed top-0 end-0 p-3";
+            toastContainer.style.zIndex = "1050";
+            document.body.appendChild(toastContainer);
+        }
+
+        const toast = document.createElement("div");
+        toast.className = `toast align-items-center text-white bg-${type} border-0`;
+        toast.setAttribute("role", "alert");
+        toast.setAttribute("aria-live", "assertive");
+        toast.setAttribute("aria-atomic", "true");
+
+        toast.innerHTML = `
+ <div class="d-flex">
+  <div class="toast-body" style="font-size: 24px;">${message}</div>
+  <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+ </div>
+`;
+
+        toastContainer.appendChild(toast);
+        const bsToast = new bootstrap.Toast(toast, { delay: 3000 });
+        bsToast.show();
+
+        toast.addEventListener("hidden.bs.toast", () => toast.remove());
+    }
+</script>

@@ -319,12 +319,12 @@
           <% order.items.forEach(item => { %>
             <tr>
               <td>
-                <%= item.product_name %>
-                <div class="item-description"><%= item.variant_name || 'Mặc định' %></div>
+                <%= item.product_name || item.name %>
+                <div class="item-description"><%= item.color_name || 'Mặc định' %></div>
               </td>
               <td><%= item.quantity %></td>
-              <td><%= new Intl.NumberFormat('vi-VN').format(item.product_price) %></td>
-              <td><%= new Intl.NumberFormat('vi-VN').format(item.product_price * item.quantity) %></td>
+              <td><%= new Intl.NumberFormat('vi-VN').format(item.price_sale || item.price || item.product_price || item.variant_product_price || item.variant_product_price_sale) %></td>
+              <td><%= new Intl.NumberFormat('vi-VN').format((item.price_sale || item.price || item.product_price || item.variant_product_price || item.variant_product_price_sale) * item.quantity) %></td>
             </tr>
           <% }); %>
         <% } else { %>

@@ -332,9 +332,9 @@ router.get("/orders/invoice/:id", async (req, res) => {
         const [orderItems] = await db.query(`
           SELECT oi.*, p.product_name, vp.variant_name, vp.variant_product_price, vp.variant_product_price_sale
           FROM order_items oi
-          JOIN variant_product vp ON oi.variant_id = vp.variant_id
-          JOIN product p ON vp.product_id = p.product_id
-          WHERE oi.order_id = ?
+          LEFT JOIN variant_product vp ON oi.variant_id = vp.variant_id
+          LEFT JOIN product p ON vp.product_id = p.product_id
+          WHERE oi.order_id = ? AND oi.deleted_at IS NULL
         `, [orderId]);
 
         items = orderItems;
@@ -426,11 +426,40 @@ router.get("/orders/invoice/:id", async (req, res) => {
       };
     }
 
+    // Helper functions for template
+    const mapPaymentStatus = (status) => {
+      switch (status) {
+        case 'PENDING': return 'Chờ thanh toán';
+        case 'PROCESSING': return 'Đang xử lý';
+        case 'SUCCESS': return 'Đã thanh toán';
+        case 'FAILED': return 'Thanh toán thất bại';
+        case 'CANCELLED': return 'Đã hủy';
+        default: return status || 'Chờ thanh toán';
+      }
+    };
+
+    const mapShippingStatus = (status) => {
+      switch (status) {
+        case 'pending': return 'Chờ lấy hàng';
+        case 'picking_up': return 'Đang đi lấy hàng';
+        case 'picked_up': return 'Đã lấy hàng';
+        case 'in_transit': return 'Đang vận chuyển';
+        case 'delivered': return 'Đã giao hàng';
+        case 'delivery_failed': return 'Giao hàng thất bại';
+        case 'returning': return 'Đang hoàn trả';
+        case 'returned': return 'Đã hoàn trả';
+        case 'canceled': return 'Đã hủy';
+        default: return status || 'Chờ lấy hàng';
+      }
+    };
+
     res.render("dashboard/orders/order-invoice", {
       title: "Order Invoice",
       layout: false, // Không sử dụng layout để in hóa đơn dễ dàng
       orderId: orderId,
-      order: order
+      order: order,
+      mapPaymentStatus,
+      mapShippingStatus
     });
   } catch (error) {
     console.error('Lỗi khi hiển thị hóa đơn:', error);

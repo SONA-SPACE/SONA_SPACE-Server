@@ -39,20 +39,22 @@
               <% order.items.forEach(item => { %>
                 <div class="product-item">
                   <div class="product-image">
-                    <img src="<%= item.product_image || '/images/products/default.png' %>" alt="<%= item.product_name %>">
+                    <img src="<%= item.product_image || item.image || '/images/products/default.png' %>" alt="<%= item.product_name %>">
                   </div>
                   <div class="product-details">
                     <div class="product-name"><%= item.product_name %></div>
-                    <div class="product-type"><%= item.product_sku || 'Sản phẩm' %></div>
+                    <div class="product-type"><%= item.variant_name || 'Sản phẩm' %></div>
                     <div class="price-row">
                       <div class="price-label">Thành tiền:</div>
-                      <div class="price-value"><%= formatPrice(item.product_price * item.quantity) %>đ</div>
+                      <div class="price-value"><%= formatPrice((item.price_sale || item.price || item.product_price) * item.quantity) %>đ</div>
                     </div>
                     <div class="wrapper">
                       <div class="price-row">
                         <div class="price-label">Màu</div>
                         <div class="price-value">
-                          <% if (item.color_hex) { %>
+                          <% if (item.color && item.color.hex) { %>
+                            <span class="color-dot" data-color="<%= item.color.hex %>"></span>
+                          <% } else if (item.color_hex) { %>
                             <span class="color-dot" data-color="<%= item.color_hex %>"></span>
                           <% } else { %>
                             -

@@ -1,6 +1,6 @@
 <!-- Trang Quản lý tin tức -->
 <!-- Tiêu đề và Thanh công cụ -->
-<div class="room_page">
+<div class="news_page">
     <div class="dashboard-header-row">
         <h2 class="dashboard-title">Tin tức</h2>
         <div class="action-buttons">
@@ -25,8 +25,8 @@
         </div>
     </div>
 
-    <div class="room-table-container">
-        <table class="room-table" id="roomTable">
+    <div class="news-table-container">
+        <table class="news-table" id="newsTable">
             <thead>
                 <tr>
                     <th>Tin tức</th>
@@ -64,7 +64,7 @@
         }
 
         function renderNews(newsList) {
-            const tableBody = document.querySelector("#roomTable tbody");
+            const tableBody = document.querySelector("#newsTable tbody");
             tableBody.innerHTML = "";
 
             newsList.forEach((news) => {
@@ -75,11 +75,11 @@
 
                 row.innerHTML = `
                     <td>
-                        <div class="room-info">
-                        <div class="room-image">
+                        <div class="news-info">
+                        <div class="news-image">
                             <img src="${imageUrl}" alt="${news.news_title}" >
                         </div>
-                            <div class="room-name">${news.news_title}</div>
+                            <div class="news-name">${news.news_title}</div>
                         </div>
                     </td>
                     <td>${news.category_name || "-"}</td>

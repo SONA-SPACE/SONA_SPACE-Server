@@ -386,32 +386,6 @@
 </div>
 
 <script>
-  function mapPaymentStatus(status) {
-    switch (status) {
-      case 'PENDING': return 'Chờ thanh toán';
-      case 'PROCESSING': return 'Đang xử lý';
-      case 'SUCCESS': return 'Đã thanh toán';
-      case 'FAILED': return 'Thanh toán thất bại';
-      case 'CANCELLED': return 'Đã hủy';
-      default: return status || 'Chờ thanh toán';
-    }
-  }
-
-  function mapShippingStatus(status) {
-    switch (status) {
-      case 'pending': return 'Chờ lấy hàng';
-      case 'picking_up': return 'Đang đi lấy hàng';
-      case 'picked_up': return 'Đã lấy hàng';
-      case 'in_transit': return 'Đang vận chuyển';
-      case 'delivered': return 'Đã giao hàng';
-      case 'delivery_failed': return 'Giao hàng thất bại';
-      case 'returning': return 'Đang hoàn trả';
-      case 'returned': return 'Đã hoàn trả';
-      case 'canceled': return 'Đã hủy';
-      default: return status || 'Chờ lấy hàng';
-    }
-  }
-
   function sendInvoiceEmail() {
     // Lấy thông tin đơn hàng và email khách hàng
     const orderId = '<%= order?.order_id || "INV-001" %>';

@@ -1,0 +1,154 @@
+<<<<<<< HEAD
+<!-- Tiêu đề và Thanh công cụ -->
+<div class="dashboard-header-row">
+    <h2 class="dashboard-title">Danh mục vật liệu</h2>
+    <div class="action-buttons">
+        <button class="add-category-btn" onclick="window.location.href='/'">
+=======
+<!-- HTML hiển thị danh sách vật liệu -->
+<div class="dashboard-header-row">
+    <h2 class="dashboard-title">Danh mục vật liệu</h2>
+    <div class="action-buttons">
+        <button class="add-category-btn" onclick="window.location.href='/dashboard/material/add'">
+>>>>>>> CRUD_Product
+            <i class="fas fa-plus"></i> Thêm vật liệu
+        </button>
+    </div>
+</div>
+
+<<<<<<< HEAD
+<!-- Bộ lọc và Tìm kiếm -->
+<div class="filter-row">
+    <div class="search-container">
+        <i class="fas fa-search search-icon"></i>
+        <input type="text" class="search-input" placeholder="Tìm kiếm danh mục..." />
+=======
+<div class="filter-row">
+    <div class="search-container">
+        <i class="fas fa-search search-icon"></i>
+        <input type="text" class="search-input" placeholder="Tìm kiếm vật liệu..." />
+>>>>>>> CRUD_Product
+    </div>
+    <div class="date-range">
+        <i class="far fa-calendar-alt"></i>
+        <span>01/04/2023 - 30/04/2023</span>
+    </div>
+    <div class="results-info">Đang tải dữ liệu...</div>
+</div>
+
+<<<<<<< HEAD
+<!-- Bảng Danh mục -->
+<div class="category-table-container">
+    <table class="category-table" id="categoriesTable">
+        <thead>
+            <tr>
+                <th>Danh mục</th>
+                <th>Sản phẩm</th>
+=======
+<div class="category-table-container">
+    <table class="category-table" id="materialsTable">
+        <thead>
+            <tr>
+                <th>Vật liệu</th>
+                <th>Mô tả</th>
+>>>>>>> CRUD_Product
+                <th>Trạng thái</th>
+                <th>Vị trí</th>
+                <th>Ngày tạo</th>
+                <th>Ngày cập nhật</th>
+                <th>Slug</th>
+                <th>Thao tác</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Dữ liệu sẽ được JS đổ vào -->
+        </tbody>
+    </table>
+<<<<<<< HEAD
+</div>
+=======
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const URL_API = "http://localhost:3501/api";
+
+        function getMaterials() {
+            fetch(URL_API + "/materials")
+                .then((res) => res.json())
+                .then((materials) => {
+                    renderMaterials(materials);
+                })
+                .catch((err) => {
+                    console.error("Lỗi khi tải vật liệu:", err);
+                    document.querySelector(".results-info").textContent =
+                        "Không thể tải dữ liệu.";
+                });
+        }
+
+        function renderMaterials(materials) {
+            const tableBody = document.querySelector("#materialsTable tbody");
+            tableBody.innerHTML = "";
+
+            materials.forEach((material) => {
+                const status = material.material_status === 1 ? "visible" : "hidden";
+
+                const row = document.createElement("tr");
+                row.innerHTML = `
+          <td>${material.material_name}</td>
+          <td class="description-cell">${material.material_description || "-"
+                    }</td>
+          <td>
+            <span class="status-indicator ${status}">
+              <i class="fas ${status === "visible" ? "fa-eye" : "fa-eye-slash"
+                    }"></i>
+              ${status === "visible" ? "Hiển thị" : "Ẩn"}
+            </span>
+          </td>
+          <td>${material.material_priority || "-"}</td>
+          <td>${formatDate(material.created_at)}</td>
+          <td>${formatDate(material.updated_at)}</td>
+          <td>${material.slug || "-"}</td>
+          <td>
+            <div class="action-cell">
+            <button class="action-button edit" onclick="window.location.href='/dashboard/material/edit/${material.slug
+                    }'">
+                        <i class="fas fa-edit"></i>
+                    </button>
+              <button class="action-button visibility" data-id="${material.material_slug
+                    }" data-status="${status}">
+                <i class="fas ${status === "visible" ? "fa-eye-slash" : "fa-eye"
+                    }"></i>
+              </button>
+              <button class="action-button delete" data-id="${material.material_slug
+                    }" data-name="${material.material_name}">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </td>
+        `;
+                tableBody.appendChild(row);
+            });
+
+            document.querySelector(
+                ".results-info"
+            ).textContent = `Hiển thị ${materials.length} kết quả`;
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return "-";
+            return new Date(dateStr).toLocaleDateString("vi-VN");
+        }
+
+        getMaterials();
+    });
+</script>
+<style>
+    .description-cell {
+        max-width: 400px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+</style>
+>>>>>>> CRUD_Product

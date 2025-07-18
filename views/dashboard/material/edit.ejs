@@ -1,0 +1,267 @@
+<div class="dashboard-header-row">
+    <h2 class="dashboard-title">Chỉnh sửa vật liệu</h2>
+</div>
+
+<form id="editMaterialForm" novalidate>
+    <div class="add-product-container">
+        <div class="product-form-column">
+            <div class="form-section">
+                <h3 class="section-title">Thông tin vật liệu</h3>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="materialName">Tên vật liệu</label>
+                        <input type="text" id="materialName" class="form-control" placeholder="Nhập tên vật liệu" />
+                        <div class="invalid-feedback"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="materialSlug">Slug</label>
+                        <input type="text" id="materialSlug" class="form-control" placeholder="Tự tạo nếu để trống" />
+                        <div class="invalid-feedback"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="materialStatus">Trạng thái</label>
+                        <div class="select-wrapper">
+                            <select id="materialStatus" class="form-control">
+                                <option value="">Chọn trạng thái</option>
+                                <option value="active">Hiển thị</option>
+                                <option value="inactive">Ẩn</option>
+                            </select>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="invalid-feedback"></div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group full-width">
+                        <label for="materialDescription">Mô tả</label>
+                        <textarea id="materialDescription" class="form-control" rows="5"
+                            placeholder="Nhập mô tả vật liệu"></textarea>
+                        <div class="invalid-feedback"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <button type="button" class="btn btn-cancel" onclick="window.history.back()">Hủy</button>
+        <button type="submit" class="btn btn-save">Cập nhật</button>
+    </div>
+</form>
+
+<script>
+    // Utility function for slug generation
+    function generateSlug(str) {
+        return str
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9 -]/g, '')
+            .replace(/\s+/g, '-')
+            .replace(/-+/g, '-')
+            .replace(/^-+|-+$/g, '');
+    }
+
+    // Get elements using their new IDs
+    const materialNameInput = document.getElementById("materialName");
+    const materialSlugInput = document.getElementById("materialSlug");
+    const materialStatusSelect = document.getElementById("materialStatus");
+    const materialDescriptionInput = document.getElementById("materialDescription");
+    const editMaterialForm = document.getElementById("editMaterialForm");
+
+    // Get the material ID/slug directly from the URL pathname
+    // Assumes URL structure is /dashboard/material/edit/YOUR_SLUG
+    const pathParts = window.location.pathname.split('/');
+    // The slug should be the last part of the URL
+    const materialId = pathParts[pathParts.length - 1];
+
+    // Function to show error messages, adapted for the new HTML structure
+    function showError(inputElement, message) {
+        inputElement.classList.add("is-invalid");
+        const feedback = inputElement.closest(".form-group")?.querySelector(".invalid-feedback");
+        if (feedback) {
+            feedback.textContent = message;
+        }
+    }
+
+    // Function to clear error messages, adapted for the new HTML structure
+    function clearError(inputElement) {
+        inputElement.classList.remove("is-invalid");
+        const feedback = inputElement.closest(".form-group")?.querySelector(".invalid-feedback");
+        if (feedback) {
+            feedback.textContent = '';
+        }
+    }
+
+    // Event listeners for input changes to clear errors and generate slug
+    materialNameInput.addEventListener("input", function () {
+        const name = materialNameInput.value.trim();
+        materialSlugInput.value = name ? generateSlug(name) : '';
+        clearError(materialNameInput);
+    });
+
+    materialSlugInput.addEventListener("input", function () {
+        clearError(materialSlugInput);
+    });
+
+    materialDescriptionInput.addEventListener("input", function () {
+        clearError(materialDescriptionInput);
+    });
+
+    materialStatusSelect.addEventListener("change", function () {
+        clearError(materialStatusSelect);
+    });
+
+    // Function to fetch and populate material data when the page loads
+    async function fetchMaterialData() {
+        if (!materialId) {
+            console.error("Material ID not found in URL. Cannot fetch data.");
+            showToast("Không tìm thấy ID vật liệu để chỉnh sửa.", "danger");
+            return;
+        }
+
+        try {
+            // Assuming your API for fetching a single material is /api/materials/:slug
+            const res = await fetch(`/api/materials/${materialId}`);
+            const data = await res.json();
+
+            if (!res.ok || data.success === false) {
+                showToast(data.message || "Không thể tải dữ liệu vật liệu.", "danger");
+                console.error("Error fetching material:", data.error);
+                return;
+            }
+
+            // Populate the form fields with fetched data
+            const material = data.material;
+            materialNameInput.value = material.material_name || '';
+            materialSlugInput.value = material.slug || '';
+            // Convert backend status (e.g., 1/0) to frontend 'active'/'inactive'
+            materialStatusSelect.value = material.material_status === 1 ? 'active' : 'inactive';
+            materialDescriptionInput.value = material.material_description || '';
+
+        } catch (error) {
+            console.error("Lỗi kết nối khi tải dữ liệu:", error);
+            showToast("Không thể kết nối đến máy chủ để tải dữ liệu.");
+        }
+    }
+
+    // Call fetchMaterialData when the DOM is fully loaded
+    document.addEventListener("DOMContentLoaded", fetchMaterialData);
+
+    // Form submission handler for updating material
+    editMaterialForm.addEventListener("submit", async function (e) {
+        e.preventDefault();
+
+        // Reset previous errors for all relevant fields
+        [materialNameInput, materialSlugInput, materialStatusSelect, materialDescriptionInput].forEach(clearError);
+
+        const material_name = materialNameInput.value.trim();
+        const newSlug = materialSlugInput.value.trim();
+        const material_status_frontend = materialStatusSelect.value;
+        const material_description = materialDescriptionInput.value.trim();
+
+        let hasError = false;
+
+        // Validation checks
+        if (!material_name) {
+            showError(materialNameInput, "Tên vật liệu là bắt buộc.");
+            hasError = true;
+        }
+
+        if (!newSlug) {
+            showError(materialSlugInput, "Slug là bắt buộc.");
+            hasError = true;
+        }
+
+        if (!material_status_frontend) {
+            showError(materialStatusSelect, "Vui lòng chọn trạng thái.");
+            hasError = true;
+        }
+
+        if (!material_description) {
+            showError(materialDescriptionInput, "Vui lòng nhập mô tả.");
+            hasError = true;
+        }
+
+        if (hasError) return;
+
+        // Convert frontend status to backend expected value (1 for 'active', 0 for 'inactive')
+        const material_status_backend = material_status_frontend === 'active' ? 1 : 0;
+
+        const payload = {
+            material_name,
+            slug: newSlug,
+            material_description,
+            material_status: material_status_backend
+        };
+
+        try {
+            // Use PUT method for updates, include the original materialId in the URL
+            const res = await fetch(`/api/materials/${materialId}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    // Add authorization token if your API requires it: "Authorization": "Bearer YOUR_TOKEN"
+                },
+                body: JSON.stringify(payload),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                if (res.status === 409) {
+                    showError(materialSlugInput, "Slug đã tồn tại.");
+                } else {
+                    showToast(data.message || "Lỗi khi cập nhật vật liệu.", "danger");
+                }
+                return;
+            }
+
+            showToast("Cập nhật vật liệu thành công!");
+            setTimeout(() => {
+                window.location.href = "/dashboard/material";
+            }, 3000);
+        } catch (err) {
+            console.error("Lỗi kết nối:", err);
+            showToast("Không thể kết nối đến máy chủ.");
+        }
+    });
+
+</script>
+
+<script>
+    // Toast notification function (re-included for completeness and Bootstrap usage)
+    function showToast(message, type = "success") {
+        let toastContainer = document.getElementById("toastContainer");
+        if (!toastContainer) {
+            toastContainer = document.createElement("div");
+            toastContainer.id = "toastContainer";
+            toastContainer.className = "position-fixed top-0 end-0 p-3";
+            toastContainer.style.zIndex = "1050";
+            document.body.appendChild(toastContainer);
+        }
+
+        const toast = document.createElement("div");
+        toast.className = `toast align-items-center text-white bg-${type} border-0`;
+        toast.setAttribute("role", "alert");
+        toast.setAttribute("aria-live", "assertive");
+        toast.setAttribute("aria-atomic", "true");
+
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body" style="font-size: 24px;">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+
+        toastContainer.appendChild(toast);
+        const bsToast = new bootstrap.Toast(toast, { delay: 3000 });
+        bsToast.show();
+
+        toast.addEventListener("hidden.bs.toast", () => toast.remove());
+    }
+</script>

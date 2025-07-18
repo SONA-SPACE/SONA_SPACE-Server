@@ -623,6 +623,33 @@ router.get("/orders/invoice/:id", async (req, res) => {
 
     // Extract the order object from the response
     const order = orderData.data || orderData;
+    console.log(`Fetching invoice for order ID: ${orderId}`);
+
+    // Fetch order data from API
+    const response = await fetch(
+      `http://localhost:3501/api/orders/${orderId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${req.cookies.token}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      console.error(
+        `API response not OK: ${response.status} ${response.statusText}`
+      );
+      throw new Error("Failed to fetch order details for invoice");
+    }
+
+    const orderData = await response.json();
+    console.log(
+      "API Response for invoice:",
+      JSON.stringify(orderData).substring(0, 200) + "..."
+    );
+
+    // Extract the order object from the response
+    const order = orderData.data || orderData;
 
     // If items are missing, fetch them directly from the database
     if (!order.items || order.items.length === 0) {
@@ -631,7 +658,19 @@ router.get("/orders/invoice/:id", async (req, res) => {
       );
       const db = require("../config/database");
       const [items] = await db.query(
+    // If items are missing, fetch them directly from the database
+    if (!order.items || order.items.length === 0) {
+      console.log(
+        "No items found in API response, fetching from database for invoice"
+      );
+      const db = require("../config/database");
+      const [items] = await db.query(
         `
+        SELECT oi.*, p.product_name, vp.variant_product_price, vp.variant_product_price_sale
+        FROM order_items oi
+        LEFT JOIN variant_product vp ON oi.variant_id = vp.variant_id
+        LEFT JOIN product p ON vp.product_id = p.product_id
+        WHERE oi.order_id = ? AND oi.deleted_at IS NULL
         SELECT oi.*, p.product_name, vp.variant_product_price, vp.variant_product_price_sale
         FROM order_items oi
         LEFT JOIN variant_product vp ON oi.variant_id = vp.variant_id
@@ -693,7 +732,7 @@ router.get("/orders/invoice/:id", async (req, res) => {
           return "Đã thanh toán";
         case "FAILED":
           return "Thanh toán thất bại";
-        case "REFUNDED":
+        case "CANCELLED":
           return "Đã hủy";
         default:
           return status || "Chờ thanh toán";
@@ -745,6 +784,7 @@ router.get("/orders/invoice/:id", async (req, res) => {
     });
   } catch (error) {
     console.error("Lỗi khi hiển thị hóa đơn:", error);
+    res.status(500).send("Đã xảy ra lỗi khi tải hóa đơn: " + error.message);
     res.status(500).send("Đã xảy ra lỗi khi tải hóa đơn: " + error.message);
   }
 });

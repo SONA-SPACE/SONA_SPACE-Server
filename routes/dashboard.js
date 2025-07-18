@@ -57,7 +57,26 @@ router.get("/contact-forms-design/:id", (req, res) => {
     layout: "layouts/dashboard",
   });
 });
-
+router.get("/material", (req, res) => {
+  res.render("dashboard/material/material", {
+    title: "Sona Space - Quản lý Sản phẩm",
+    layout: "layouts/dashboard",
+  });
+});
+router.get("/material/add", (req, res) => {
+  res.render("dashboard/material/add", {
+    title: "Sona Space - Quản lý Sản phẩm",
+    layout: "layouts/dashboard",
+  });
+});
+router.get("/material/edit/:slug", (req, res) => {
+  // NO /dashboard HERE, because app.use('/dashboard', ...) already handles it
+  res.render("dashboard/material/edit", {
+    title: "Sona Space - Quản lý Sản phẩm",
+    layout: "layouts/dashboard",
+    productId: req.params.slug, // Pass the slug to the view
+  });
+});
 // Products management
 router.get("/products", (req, res) => {
   res.render("dashboard/products/products", {

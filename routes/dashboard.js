@@ -172,6 +172,7 @@ router.get("/orders/view/:id", (req, res) => {
 router.get('/orders/detail/:id', isAdmin, async (req, res) => {
   try {
     const orderId = req.params.id;
+    console.log(`Fetching order details for ID: ${orderId}`);
     
     // Fetch order data from API
     const response = await fetch(`http://localhost:3501/api/orders/${orderId}`, {
@@ -181,10 +182,32 @@ router.get('/orders/detail/:id', isAdmin, async (req, res) => {
     });
     
     if (!response.ok) {
+      console.error(`API response not OK: ${response.status} ${response.statusText}`);
       throw new Error('Failed to fetch order details');
     }
     
-    const order = await response.json();
+    const orderData = await response.json();
+    console.log('API Response:', JSON.stringify(orderData).substring(0, 200) + '...');
+    
+    // Extract the order object from the response
+    const order = orderData.data || orderData;
+    
+    // If items are missing, fetch them directly from the database
+    if (!order.items || order.items.length === 0) {
+      console.log('No items found in API response, fetching from database');
+      const db = require('../config/database');
+      const [items] = await db.query(`
+        SELECT oi.*, p.product_name, p.product_image, c.color_hex
+        FROM order_items oi
+        LEFT JOIN variant_product vp ON oi.variant_id = vp.variant_id
+        LEFT JOIN product p ON vp.product_id = p.product_id
+        LEFT JOIN color c ON vp.color_id = c.color_id
+        WHERE oi.order_id = ? AND oi.deleted_at IS NULL
+      `, [orderId]);
+      
+      console.log(`Found ${items.length} items in database`);
+      order.items = items;
+    }
     
     // Helper functions for template
     const helpers = {
@@ -262,11 +285,12 @@ router.get('/orders/detail/:id', isAdmin, async (req, res) => {
       }
     };
     
+    console.log('Rendering order detail template with data');
     res.render('dashboard/orders/order-detail', {
       title: `Chi tiết đơn hàng #${orderId}`,
       layout: "layouts/dashboard",
       orderId,
-      order: order.data || order,
+      order,
       mapPaymentStatus: helpers.mapPaymentStatus,
       mapStatus: helpers.mapStatus,
       mapShippingStatus: helpers.mapShippingStatus,

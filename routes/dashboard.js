@@ -70,10 +70,12 @@ router.get("/material/add", (req, res) => {
     layout: "layouts/dashboard",
   });
 });
-router.get("/material/add", (req, res) => {
+router.get("/material/edit/:slug", (req, res) => {
+  // NO /dashboard HERE, because app.use('/dashboard', ...) already handles it
   res.render("dashboard/material/edit", {
     title: "Sona Space - Quản lý Sản phẩm",
     layout: "layouts/dashboard",
+    productId: req.params.slug, // Pass the slug to the view
   });
 });
 // Products management

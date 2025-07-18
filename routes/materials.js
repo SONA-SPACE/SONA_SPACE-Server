@@ -98,7 +98,7 @@ router.post("/", async (req, res) => {
     if (err.code === "ER_DUP_ENTRY") {
       return res.status(409).json({
         success: false,
-        message: "Slug hoặc tên vật liệu đã tồn tại.",
+        message: "Loại vật liệu này đã tồn tại.",
       });
     }
     console.error("Error adding new material:", err);

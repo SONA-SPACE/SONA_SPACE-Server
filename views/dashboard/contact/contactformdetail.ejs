@@ -30,6 +30,14 @@
           </select>
         </div>
       </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="staff_name">Nhân viên</label>
+          <select id="staff_name" class="form-control">
+            <option value="">Chọn nhân viên</option>
+          </select>
+        </div>
+      </div>
 
       <div class="form-row">
         <div class="form-group">
@@ -80,7 +88,7 @@
             type="text"
             id="budget"
             class="form-control"
-            placeholder="Ví dụ: 100000000 VNĐ"
+            placeholder="Chưa bàn giao"
           />
         </div>
         <div class="form-group">
@@ -89,7 +97,7 @@
             type="text"
             id="design_fee"
             class="form-control"
-            placeholder="Ví dụ: 100000000 VNĐ"
+            placeholder="Chưa bàn giao"
           />
         </div>
       </div>
@@ -184,6 +192,16 @@
             value="0"
           />
         </div>
+        <div class="form-group">
+          <label for="first_image">Hình ảnh sản phẩm</label>
+          <div class="main-upload-area">
+            <div class="upload-placeholder" id="first_image_drop_area">
+              <i class="far fa-image"></i>
+              <p>Drop image here, or browse</p>
+              <p class="upload-hint">jpeg, png - kích thước ngang</p>
+            </div>
+          </div>
+        </div>
         <button type="button" class="btn btn-add" id="add-product-btn">
           Thêm
         </button>
@@ -219,7 +237,7 @@
             <tr>
               <td><strong>Chi phí thiết kế:</strong></td>
               <td style="text-align: right">
-                <span id="design-fee">0 VNĐ</span>
+                <span id="design_fee_text">0 VNĐ</span>
               </td>
             </tr>
             <tr>
@@ -235,22 +253,20 @@
   </div>
 </div>
 
-<link href="/tom-select/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet" />
+<link
+  href="/tom-select/dist/css/tom-select.bootstrap5.min.css"
+  rel="stylesheet"
+/>
 <script src="/tom-select/dist/js/tom-select.complete.min.js"></script>
 <script>
   const id = window.location.pathname.split("/").pop();
   let total_product_price = 0;
   let design_fee = 0;
 
-  document.addEventListener("DOMContentLoaded", () => {
-    loadData();
-    loadVariants();
-    loadDesignDetails();
-    document.querySelector(".btn-save").addEventListener("click", handleUpdate);
-    document
-      .getElementById("add-product-btn")
-      .addEventListener("click", handleAddProduct);
-  });
+  function formatDate(dateStr) {
+    if (!dateStr) return "-";
+    return new Date(dateStr).toLocaleDateString("vi-VN");
+  }
 
   function formatCurrency(value) {
     if (typeof value !== "number" || isNaN(value)) return "0 VNĐ";
@@ -258,6 +274,24 @@
       style: "currency",
       currency: "VND",
     }).format(value);
+  }
+
+  function loadStaff() {
+    fetch(`/api/users/staff`)
+      .then((res) => res.json())
+      .then((data) => {
+        console.log(data);
+        const select = document.getElementById("staff_name");
+        select.innerHTML = '<option value="">Chọn nhân viên</option>';
+        data.users.forEach((staff) => {
+          const option = document.createElement("option");
+          option.value = staff.user_id;
+          option.textContent = staff.user_name;
+          select.appendChild(option);
+        });
+        // Gán value khi chắc chắn option đã render xong
+        select.value = data.staff_name || "";
+      });
   }
 
   function loadVariants() {
@@ -268,6 +302,7 @@
         select.innerHTML = '<option value="">Chọn một sản phẩm</option>';
         data.forEach((variant) => {
           const option = document.createElement("option");
+          option.dataset.image = variant.first_image;
           option.value = variant.variant_id;
           option.textContent = `${variant.product_name} - ${
             variant.variant_name || variant.slug
@@ -286,16 +321,27 @@
         new TomSelect("#variant-select", {
           create: false,
           sortField: "text",
-          placeholder: "Chọn một sản phẩm",
+          // placeholder: "Chọn một sản phẩm",
           allowEmptyOption: true,
         });
       });
   }
 
-  // Lắng nghe khi chọn sản phẩm
-  document.addEventListener("DOMContentLoaded", function () {
+  document.addEventListener("DOMContentLoaded", () => {
+    loadData();
+    loadStaff();
     loadVariants();
-    // Event change lấy giá
+    loadDesignDetails();
+
+    // handle save
+    document.querySelector(".btn-save").addEventListener("click", handleUpdate);
+
+    // handle add product
+    document
+      .getElementById("add-product-btn")
+      .addEventListener("click", handleAddProduct);
+
+    // handle change variant
     document
       .getElementById("variant-select")
       .addEventListener("change", function () {
@@ -303,6 +349,9 @@
         const price =
           selectedOption.dataset.priceSale || selectedOption.dataset.price;
         document.getElementById("unit-price-input").value = price || 0;
+        document.getElementById(
+          "first_image_drop_area"
+        ).innerHTML = `<img src="${selectedOption.dataset.image}" alt="${selectedOption.textContent}" style="height: 30%; width: 30%;">`;
       });
   });
 
@@ -359,7 +408,6 @@
     }
 
     const selectedOption = variantSelect.options[variantSelect.selectedIndex];
-    // const unit_price = selectedOption.dataset.price;
 
     try {
       const res = await fetch(`/api/contact-form-design/${id}/details`, {
@@ -413,10 +461,17 @@
     fetch(`/api/contact-form-design/${id}`)
       .then((res) => res.json())
       .then((data) => {
+        console.log(data);
         design_fee = data.design_fee || 0;
-
-        document.getElementById("created_at").innerHTML = data.created_at;
-        document.getElementById("updated_at").innerHTML = data.updated_at;
+        document.getElementById("design_fee_text").innerHTML = data.design_fee
+          ? formatCurrency(Number(data.design_fee))
+          : "0 VNĐ";
+        document.getElementById("created_at").innerHTML = formatDate(
+          data.created_at
+        );
+        document.getElementById("updated_at").innerHTML = formatDate(
+          data.updated_at
+        );
         document.getElementById("name").value = data.name;
         document.getElementById("email").value = data.email;
         document.getElementById("room_name").value = data.room_name;
@@ -427,16 +482,12 @@
         document.getElementById("design_fee").value = data.design_fee
           ? Number(data.design_fee).toLocaleString("vi-VN")
           : "";
-        document.getElementById("design-fee").textContent = formatCurrency(
-          Number(design_fee)
-        );
         document.getElementById("design_description").value =
           data.design_description;
         document.getElementById("require_design").value = data.require_design;
         document.getElementById("style_design").value = data.style_design;
         document.getElementById("different_information").value =
           data.different_information;
-        document.getElementById("design_fee").value = data.design_fee;
         document.getElementById("status").value = data.status;
         document.getElementById("status_text").innerHTML =
           data.status.charAt(0).toUpperCase() + data.status.slice(1);
@@ -444,17 +495,30 @@
           .getElementById("status_text")
           .classList.add(`status-${data.status.toLowerCase()}`);
         document.getElementById("remarks").value = data.remarks;
+        document.getElementById("staff_name").value = data.user_id;
         updateTotalPrice();
       });
   }
 
   async function handleUpdate() {
+    const user_id = document.getElementById("staff_name").value;
+    console.log(user_id);
     const name = document.getElementById("name").value;
     const email = document.getElementById("email").value;
     const room_name = document.getElementById("room_name").value;
     const phone = document.getElementById("phone").value;
-    const budget = document.getElementById("budget").value;
-    const design_fee = document.getElementById("design_fee").value;
+    const budget = Number(
+      document
+        .getElementById("budget")
+        .value.replace(/,/g, "")
+        .replace(/\./g, "")
+    );
+    const design_fee = Number(
+      document
+        .getElementById("design_fee")
+        .value.replace(/,/g, "")
+        .replace(/\./g, "")
+    );
     const design_description =
       document.getElementById("design_description").value;
     const require_design = document.getElementById("require_design").value;
@@ -479,6 +543,7 @@
         different_information,
         remarks,
         status,
+        user_id,
       };
 
       const res = await fetch(`/api/contact-form-design/${id}`, {

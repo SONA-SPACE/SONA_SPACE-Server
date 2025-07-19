@@ -509,7 +509,10 @@
 
   async function handleUpdate() {
     const user_id = document.getElementById("staff_name").value;
-    console.log(user_id);
+    if (user_id === "") {
+      showToast("Vui lòng chọn nhân viên thực hiện trước khi chuyển trạng thái", "danger");
+      return;
+    }
     const name = document.getElementById("name").value;
     const email = document.getElementById("email").value;
     const room_name = document.getElementById("room_name").value;
@@ -536,6 +539,7 @@
     const remarks = document.getElementById("remarks").value;
     const status = document.getElementById("status").value;
     const unit_price = document.getElementById("unit-price-input").value;
+    const driver = document.getElementById("driver").value;
     try {
       const payload = {
         name,
@@ -551,6 +555,7 @@
         remarks,
         status,
         user_id,
+        driver,
       };
 
       const res = await fetch(`/api/contact-form-design/${id}`, {

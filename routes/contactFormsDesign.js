@@ -240,6 +240,8 @@ router.put("/:id", verifyToken, isAdmin, async (req, res) => {
       "different_information",
       "design_fee",
       "user_id",
+      "remarks",
+      "driver"
     ];
 
     // Kiểm tra form tồn tại

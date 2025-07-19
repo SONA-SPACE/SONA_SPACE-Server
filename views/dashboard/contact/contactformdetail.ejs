@@ -112,6 +112,13 @@
           ></textarea>
         </div>
       </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="driver">Link xem thêm</label>
+          <input type="text" id="driver" class="form-control" />
+        </div>
+      </div>
     </div>
 
     <div class="form-section">
@@ -280,7 +287,6 @@
     fetch(`/api/users/staff`)
       .then((res) => res.json())
       .then((data) => {
-        console.log(data);
         const select = document.getElementById("staff_name");
         select.innerHTML = '<option value="">Chọn nhân viên</option>';
         data.users.forEach((staff) => {
@@ -496,6 +502,7 @@
           .classList.add(`status-${data.status.toLowerCase()}`);
         document.getElementById("remarks").value = data.remarks;
         document.getElementById("staff_name").value = data.user_id;
+        document.getElementById("driver").value = data.driver;
         updateTotalPrice();
       });
   }

@@ -1,17 +1,17 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const bcrypt = require('bcryptjs');
-const db = require('../config/database');
-const { verifyToken, isAdmin } = require('../middleware/auth');
-const upload = require('../middleware/upload');
-const cloudinary = require('../config/cloudinary');
+const bcrypt = require("bcryptjs");
+const db = require("../config/database");
+const { verifyToken, isAdmin } = require("../middleware/auth");
+const upload = require("../middleware/upload");
+const cloudinary = require("../config/cloudinary");
 
 /**
  * @route   GET /api/users
  * @desc    Lấy danh sách người dùng (chỉ admin)
  * @access  Private (Admin)
  */
-router.get('/', isAdmin, async (req, res) => {
+router.get("/", isAdmin, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
@@ -19,11 +19,12 @@ router.get('/', isAdmin, async (req, res) => {
     const search = req.query.search;
 
     // Tìm kiếm người dùng nếu có tham số search
-    let whereClause = '';
+    let whereClause = "";
     let params = [];
 
     if (search) {
-      whereClause = 'WHERE user_gmail LIKE ? OR user_name LIKE ? OR user_number LIKE ?';
+      whereClause =
+        "WHERE user_gmail LIKE ? OR user_name LIKE ? OR user_number LIKE ?";
       params = [`%${search}%`, `%${search}%`, `%${search}%`];
     }
 
@@ -46,7 +47,7 @@ router.get('/', isAdmin, async (req, res) => {
     );
 
     // Định dạng lại kết quả
-    const formattedUsers = users.map(user => ({
+    const formattedUsers = users.map((user) => ({
       id: user.user_id,
       email: user.user_gmail,
       full_name: user.user_name,
@@ -54,7 +55,7 @@ router.get('/', isAdmin, async (req, res) => {
       address: user.user_address,
       role: user.user_role,
       created_at: user.created_at,
-      updated_at: user.updated_at
+      updated_at: user.updated_at,
     }));
 
     res.json({
@@ -63,12 +64,12 @@ router.get('/', isAdmin, async (req, res) => {
         currentPage: page,
         totalPages,
         totalUsers,
-        usersPerPage: limit
-      }
+        usersPerPage: limit,
+      },
     });
   } catch (error) {
-    console.error('Error fetching users:', error);
-    res.status(500).json({ error: 'Failed to fetch users' });
+    console.error("Error fetching users:", error);
+    res.status(500).json({ error: "Failed to fetch users" });
   }
 });
 router.get("/simple", verifyToken, isAdmin, async (req, res) => {
@@ -85,7 +86,7 @@ router.get("/simple", verifyToken, isAdmin, async (req, res) => {
   }
 });
 // 💥 Đặt trước route chứa /:id
-router.get('/admin', async (req, res) => {
+router.get("/admin", async (req, res) => {
   try {
     const [rows] = await db.execute(`
       SELECT 
@@ -108,7 +109,7 @@ router.get('/admin', async (req, res) => {
 
     const today = new Date();
 
-    const users = rows.map(user => {
+    const users = rows.map((user) => {
       const createdAt = new Date(user.created_at);
       const updatedAt = new Date(user.updated_at);
       const birth = user.user_birth ? new Date(user.user_birth) : null;
@@ -117,32 +118,79 @@ router.get('/admin', async (req, res) => {
       return {
         ...user,
 
-        user_birth: birth ? birth.toLocaleDateString('vi-VN') : '',
-        user_category: diffDays <= 30 ? 'Khách hàng mới' : 'Khách hàng cũ'
+        user_birth: birth ? birth.toLocaleDateString("vi-VN") : "",
+        user_category: diffDays <= 30 ? "Khách hàng mới" : "Khách hàng cũ",
       };
     });
 
     res.json({ users });
   } catch (error) {
-    console.error('Error fetching users:', error);
-    res.status(500).json({ error: 'Lỗi server khi lấy danh sách người dùng' });
+    console.error("Error fetching users:", error);
+    res.status(500).json({ error: "Lỗi server khi lấy danh sách người dùng" });
   }
 });
-router.get('/admin/:id', async (req, res) => {
+router.get("/staff", async (req, res) => {
+  try {
+    const [rows] = await db.execute(`
+      SELECT 
+        user_id,
+        user_name,
+        user_gmail,
+        user_number,
+        user_image,
+        user_address,
+        user_role,
+        user_gender,
+        user_birth,
+        user_email_active,
+        created_at,
+        updated_at
+      FROM user
+      WHERE deleted_at IS NULL AND user_role = 'staff'
+      ORDER BY created_at DESC
+    `);
+
+    const today = new Date();
+
+    const users = rows.map((user) => {
+      const createdAt = new Date(user.created_at);
+      const updatedAt = new Date(user.updated_at);
+      const birth = user.user_birth ? new Date(user.user_birth) : null;
+      const diffDays = Math.floor((today - createdAt) / (1000 * 60 * 60 * 24));
+
+      return {
+        ...user,
+        user_birth: birth ? birth.toLocaleDateString("vi-VN") : "",
+        user_category: diffDays <= 30 ? "Khách hàng mới" : "Khách hàng cũ",
+      };
+    });
+
+    res.json({ users });
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    res.status(500).json({ error: "Lỗi server khi lấy danh sách người dùng" });
+  }
+});
+router.get("/admin/:id", async (req, res) => {
   try {
     const userId = Number(req.params.id);
-    if (isNaN(userId)) return res.status(400).json({ error: 'ID không hợp lệ' });
+    if (isNaN(userId))
+      return res.status(400).json({ error: "ID không hợp lệ" });
 
-    const [users] = await db.query(`
+    const [users] = await db.query(
+      `
       SELECT 
         user_id, user_name, user_gmail, user_number, user_image, user_address,
         user_role, user_gender, user_birth, user_email_active, user_verified_at, user_disabled_at,
         created_at, updated_at
       FROM user
       WHERE user_id = ? AND deleted_at IS NULL
-    `, [userId]);
+    `,
+      [userId]
+    );
 
-    if (users.length === 0) return res.status(404).json({ error: 'Không tìm thấy người dùng' });
+    if (users.length === 0)
+      return res.status(404).json({ error: "Không tìm thấy người dùng" });
 
     const user = users[0];
     const today = new Date();
@@ -161,22 +209,22 @@ router.get('/admin/:id', async (req, res) => {
       birth: user.user_birth,
       email_active: user.user_email_active,
       verified_at: user.user_verified_at,
-      disabled_at: user.user_disabled_at || '-',
+      disabled_at: user.user_disabled_at || "-",
       created_at: user.created_at,
       updated_at: user.updated_at,
       purchasedProducts: 0,
-      category: diffDays <= 30 ? 'Khách hàng mới' : 'Khách hàng cũ'
+      category: diffDays <= 30 ? "Khách hàng mới" : "Khách hàng cũ",
     });
-
   } catch (err) {
-    console.error('Lỗi lấy người dùng:', err);
-    res.status(500).json({ error: 'Lỗi server' });
+    console.error("Lỗi lấy người dùng:", err);
+    res.status(500).json({ error: "Lỗi server" });
   }
 });
 router.put("/admin/:id", upload.single("image"), async (req, res) => {
   try {
     const userId = Number(req.params.id);
-    if (isNaN(userId)) return res.status(400).json({ error: "ID không hợp lệ" });
+    if (isNaN(userId))
+      return res.status(400).json({ error: "ID không hợp lệ" });
 
     const {
       user_name,
@@ -195,23 +243,31 @@ router.put("/admin/:id", upload.single("image"), async (req, res) => {
 
     // Nếu có ảnh mới được upload
     if (req.file) {
-      const base64Image = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
+      const base64Image = `data:${
+        req.file.mimetype
+      };base64,${req.file.buffer.toString("base64")}`;
       const result = await cloudinary.uploader.upload(base64Image, {
         folder: "SonaSpace/User",
       });
       imageUrl = result.secure_url;
 
       // Xoá ảnh cũ nếu muốn (tùy chọn)
-      const [oldRows] = await db.query("SELECT user_image FROM user WHERE user_id = ?", [userId]);
+      const [oldRows] = await db.query(
+        "SELECT user_image FROM user WHERE user_id = ?",
+        [userId]
+      );
       const oldImage = oldRows[0]?.user_image;
       if (oldImage) {
-        const publicId = oldImage.split('/').slice(-1)[0].split('.')[0];
+        const publicId = oldImage.split("/").slice(-1)[0].split(".")[0];
         await cloudinary.uploader.destroy(`SonaSpace/User/${publicId}`);
       }
-    } else if (remove_image === '1') {
+    } else if (remove_image === "1") {
       imageUrl = null;
     } else {
-      const [rows] = await db.query("SELECT user_image FROM user WHERE user_id = ?", [userId]);
+      const [rows] = await db.query(
+        "SELECT user_image FROM user WHERE user_id = ?",
+        [userId]
+      );
       imageUrl = rows[0]?.user_image || null;
     }
 
@@ -255,26 +311,24 @@ router.put("/admin/:id", upload.single("image"), async (req, res) => {
   }
 });
 
-
-
-
-
 /**
  * @route   GET /api/users/:id
  * @desc    Lấy thông tin người dùng theo ID
  * @access  Private
  */
-router.get('/:id', async (req, res) => {
+router.get("/:id", async (req, res) => {
   try {
     const userId = Number(req.params.id);
 
     if (isNaN(userId)) {
-      return res.status(400).json({ error: 'Invalid user ID' });
+      return res.status(400).json({ error: "Invalid user ID" });
     }
 
     // Kiểm tra quyền: chỉ admin hoặc chính người dùng đó mới được xem thông tin
-    if (req.user.role !== 'admin' && req.user.id !== userId) {
-      return res.status(403).json({ error: 'You do not have permission to view this user' });
+    if (req.user.role !== "admin" && req.user.id !== userId) {
+      return res
+        .status(403)
+        .json({ error: "You do not have permission to view this user" });
     }
 
     const [users] = await db.query(
@@ -284,7 +338,7 @@ router.get('/:id', async (req, res) => {
     );
 
     if (users.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: "User not found" });
     }
 
     // Định dạng lại kết quả
@@ -296,13 +350,13 @@ router.get('/:id', async (req, res) => {
       address: users[0].user_address,
       role: users[0].user_role,
       created_at: users[0].created_at,
-      updated_at: users[0].updated_at
+      updated_at: users[0].updated_at,
     };
 
     res.json(user);
   } catch (error) {
-    console.error('Error fetching user:', error);
-    res.status(500).json({ error: 'Failed to fetch user' });
+    console.error("Error fetching user:", error);
+    res.status(500).json({ error: "Failed to fetch user" });
   }
 });
 
@@ -311,31 +365,36 @@ router.get('/:id', async (req, res) => {
  * @desc    Cập nhật thông tin người dùng
  * @access  Private
  */
-router.put('/:id', async (req, res) => {
+router.put("/:id", async (req, res) => {
   try {
     const userId = Number(req.params.id);
 
     if (isNaN(userId)) {
-      return res.status(400).json({ error: 'Invalid user ID' });
+      return res.status(400).json({ error: "Invalid user ID" });
     }
 
     // Kiểm tra quyền: chỉ admin hoặc chính người dùng đó mới được cập nhật thông tin
-    if (req.user.role !== 'admin' && req.user.id !== userId) {
-      return res.status(403).json({ error: 'You do not have permission to update this user' });
+    if (req.user.role !== "admin" && req.user.id !== userId) {
+      return res
+        .status(403)
+        .json({ error: "You do not have permission to update this user" });
     }
 
     const { full_name, phone, address, password, role } = req.body;
 
     // Kiểm tra người dùng tồn tại
-    const [existingUser] = await db.query('SELECT * FROM user WHERE user_id = ?', [userId]);
+    const [existingUser] = await db.query(
+      "SELECT * FROM user WHERE user_id = ?",
+      [userId]
+    );
 
     if (existingUser.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: "User not found" });
     }
 
     // Chỉ admin mới được cập nhật quyền
     let updatedRole = existingUser[0].user_role;
-    if (role && req.user.role === 'admin') {
+    if (role && req.user.role === "admin") {
       updatedRole = role;
     }
 
@@ -343,9 +402,10 @@ router.put('/:id', async (req, res) => {
     const updateData = {
       user_name: full_name || existingUser[0].user_name,
       user_number: phone !== undefined ? phone : existingUser[0].user_number,
-      user_address: address !== undefined ? address : existingUser[0].user_address,
+      user_address:
+        address !== undefined ? address : existingUser[0].user_address,
       user_role: updatedRole,
-      updated_at: new Date()
+      updated_at: new Date(),
     };
 
     // Cập nhật mật khẩu nếu có
@@ -360,13 +420,26 @@ router.put('/:id', async (req, res) => {
         user_name = ?,
         user_number = ?,
         user_address = ?,
-        ${password ? 'user_password = ?,' : ''}
+        ${password ? "user_password = ?," : ""}
         user_role = ?,
         updated_at = NOW()
       WHERE user_id = ?`,
       password
-        ? [updateData.user_name, updateData.user_number, updateData.user_address, updateData.user_password, updateData.user_role, userId]
-        : [updateData.user_name, updateData.user_number, updateData.user_address, updateData.user_role, userId]
+        ? [
+            updateData.user_name,
+            updateData.user_number,
+            updateData.user_address,
+            updateData.user_password,
+            updateData.user_role,
+            userId,
+          ]
+        : [
+            updateData.user_name,
+            updateData.user_number,
+            updateData.user_address,
+            updateData.user_role,
+            userId,
+          ]
     );
 
     // Lấy thông tin người dùng đã cập nhật
@@ -385,16 +458,16 @@ router.put('/:id', async (req, res) => {
       address: updatedUser[0].user_address,
       role: updatedUser[0].user_role,
       created_at: updatedUser[0].created_at,
-      updated_at: updatedUser[0].updated_at
+      updated_at: updatedUser[0].updated_at,
     };
 
     res.json({
-      message: 'User updated successfully',
-      user: formattedUser
+      message: "User updated successfully",
+      user: formattedUser,
     });
   } catch (error) {
-    console.error('Error updating user:', error);
-    res.status(500).json({ error: 'Failed to update user' });
+    console.error("Error updating user:", error);
+    res.status(500).json({ error: "Failed to update user" });
   }
 });
 
@@ -403,47 +476,59 @@ router.put('/:id', async (req, res) => {
  * @desc    Xóa người dùng
  * @access  Private (Admin)
  */
-router.delete('/:id', isAdmin, async (req, res) => {
+router.delete("/:id", isAdmin, async (req, res) => {
   try {
     const userId = Number(req.params.id);
 
     if (isNaN(userId)) {
-      return res.status(400).json({ error: 'Invalid user ID' });
+      return res.status(400).json({ error: "Invalid user ID" });
     }
 
     // Kiểm tra người dùng tồn tại
-    const [existingUser] = await db.query('SELECT * FROM user WHERE user_id = ?', [userId]);
+    const [existingUser] = await db.query(
+      "SELECT * FROM user WHERE user_id = ?",
+      [userId]
+    );
 
     if (existingUser.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: "User not found" });
     }
 
     // Không thể xóa chính mình
     if (userId === req.user.id) {
-      return res.status(400).json({ error: 'Cannot delete your own account' });
+      return res.status(400).json({ error: "Cannot delete your own account" });
     }
 
     // Kiểm tra xem người dùng có đơn hàng không
-    const [orders] = await db.query('SELECT order_id FROM `orders` WHERE user_id = ? LIMIT 1', [userId]);
+    const [orders] = await db.query(
+      "SELECT order_id FROM `orders` WHERE user_id = ? LIMIT 1",
+      [userId]
+    );
 
     if (orders.length > 0) {
       // Nếu có đơn hàng, đánh dấu là không hoạt động thay vì xóa
       // Giả sử có cột user_email_active làm dấu hiệu cho hoạt động
-      await db.query('UPDATE user SET user_email_active = 0 WHERE user_id = ?', [userId]);
-      return res.json({ message: 'User has been deactivated instead of deleted due to existing orders' });
+      await db.query(
+        "UPDATE user SET user_email_active = 0 WHERE user_id = ?",
+        [userId]
+      );
+      return res.json({
+        message:
+          "User has been deactivated instead of deleted due to existing orders",
+      });
     }
 
     // Xóa các bản ghi liên quan
-    await db.query('DELETE FROM wishlist WHERE user_id = ?', [userId]);
-    await db.query('DELETE FROM comment WHERE user_id = ?', [userId]);
+    await db.query("DELETE FROM wishlist WHERE user_id = ?", [userId]);
+    await db.query("DELETE FROM comment WHERE user_id = ?", [userId]);
 
     // Xóa người dùng
-    await db.query('DELETE FROM user WHERE user_id = ?', [userId]);
+    await db.query("DELETE FROM user WHERE user_id = ?", [userId]);
 
-    res.json({ message: 'User deleted successfully' });
+    res.json({ message: "User deleted successfully" });
   } catch (error) {
-    console.error('Error deleting user:', error);
-    res.status(500).json({ error: 'Failed to delete user' });
+    console.error("Error deleting user:", error);
+    res.status(500).json({ error: "Failed to delete user" });
   }
 });
 
@@ -452,28 +537,34 @@ router.delete('/:id', isAdmin, async (req, res) => {
  * @desc    Lấy danh sách đơn hàng của người dùng
  * @access  Private
  */
-router.get('/:id/orders', async (req, res) => {
+router.get("/:id/orders", async (req, res) => {
   try {
     const userId = Number(req.params.id);
 
     if (isNaN(userId)) {
-      return res.status(400).json({ error: 'Invalid user ID' });
+      return res.status(400).json({ error: "Invalid user ID" });
     }
 
     // Kiểm tra quyền: chỉ admin hoặc chính người dùng đó mới được xem đơn hàng
-    if (req.user.role !== 'admin' && req.user.id !== userId) {
-      return res.status(403).json({ error: 'You do not have permission to view these orders' });
+    if (req.user.role !== "admin" && req.user.id !== userId) {
+      return res
+        .status(403)
+        .json({ error: "You do not have permission to view these orders" });
     }
 
     // Kiểm tra người dùng tồn tại
-    const [existingUser] = await db.query('SELECT user_id FROM user WHERE user_id = ?', [userId]);
+    const [existingUser] = await db.query(
+      "SELECT user_id FROM user WHERE user_id = ?",
+      [userId]
+    );
 
     if (existingUser.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: "User not found" });
     }
 
     // Lấy danh sách đơn hàng
-    const [orders] = await db.query(`
+    const [orders] = await db.query(
+      `
       SELECT 
         o.*,
         os.order_status_name as status_name
@@ -481,21 +572,27 @@ router.get('/:id/orders', async (req, res) => {
       LEFT JOIN order_status os ON o.order_status_id = os.order_status_id
       WHERE o.user_id = ?
       ORDER BY o.created_at DESC
-    `, [userId]);
+    `,
+      [userId]
+    );
 
     // Lấy chi tiết cho mỗi đơn hàng
     for (let i = 0; i < orders.length; i++) {
       // Lấy thông tin thanh toán
-      const [payments] = await db.query(`
+      const [payments] = await db.query(
+        `
         SELECT * FROM payment WHERE order_id = ?
-      `, [orders[i].order_id]);
+      `,
+        [orders[i].order_id]
+      );
 
       if (payments.length > 0) {
         orders[i].payment = payments[0];
       }
 
       // Lấy thông tin các sản phẩm trong đơn hàng
-      const [orderItems] = await db.query(`
+      const [orderItems] = await db.query(
+        `
         SELECT 
           oi.*,
           p.product_name,
@@ -503,7 +600,9 @@ router.get('/:id/orders', async (req, res) => {
         FROM order_items oi
         LEFT JOIN product p ON oi.product_id = p.product_id
         WHERE oi.order_id = ?
-      `, [orders[i].order_id]);
+      `,
+        [orders[i].order_id]
+      );
 
       orders[i].items = orderItems;
       orders[i].total_items = orderItems.length;
@@ -511,8 +610,8 @@ router.get('/:id/orders', async (req, res) => {
 
     res.json(orders);
   } catch (error) {
-    console.error('Error fetching user orders:', error);
-    res.status(500).json({ error: 'Failed to fetch user orders' });
+    console.error("Error fetching user orders:", error);
+    res.status(500).json({ error: "Failed to fetch user orders" });
   }
 });
 
@@ -521,21 +620,24 @@ router.get('/:id/orders', async (req, res) => {
  * @desc    Lấy danh sách wishlist của người dùng
  * @access  Private
  */
-router.get('/:id/wishlist', async (req, res) => {
+router.get("/:id/wishlist", async (req, res) => {
   try {
     const userId = Number(req.params.id);
 
     if (isNaN(userId)) {
-      return res.status(400).json({ error: 'Invalid user ID' });
+      return res.status(400).json({ error: "Invalid user ID" });
     }
 
     // Kiểm tra quyền: chỉ admin hoặc chính người dùng đó mới được xem wishlist
-    if (req.user.role !== 'admin' && req.user.id !== userId) {
-      return res.status(403).json({ error: 'You do not have permission to view this wishlist' });
+    if (req.user.role !== "admin" && req.user.id !== userId) {
+      return res
+        .status(403)
+        .json({ error: "You do not have permission to view this wishlist" });
     }
 
     // Lấy danh sách wishlist với thông tin sản phẩm
-    const [wishlist] = await db.query(`
+    const [wishlist] = await db.query(
+      `
       SELECT 
         w.wishlist_id,
         w.created_at,
@@ -547,12 +649,14 @@ router.get('/:id/wishlist', async (req, res) => {
       JOIN product p ON w.product_id = p.product_id
       WHERE w.user_id = ?
       ORDER BY w.created_at DESC
-    `, [userId]);
+    `,
+      [userId]
+    );
 
     res.json(wishlist);
   } catch (error) {
-    console.error('Error fetching user wishlist:', error);
-    res.status(500).json({ error: 'Failed to fetch user wishlist' });
+    console.error("Error fetching user wishlist:", error);
+    res.status(500).json({ error: "Failed to fetch user wishlist" });
   }
 });
 
@@ -561,21 +665,24 @@ router.get('/:id/wishlist', async (req, res) => {
  * @desc    Lấy danh sách đánh giá sản phẩm của người dùng
  * @access  Private
  */
-router.get('/:id/reviews', async (req, res) => {
+router.get("/:id/reviews", async (req, res) => {
   try {
     const userId = Number(req.params.id);
 
     if (isNaN(userId)) {
-      return res.status(400).json({ error: 'Invalid user ID' });
+      return res.status(400).json({ error: "Invalid user ID" });
     }
 
     // Kiểm tra quyền: chỉ admin hoặc chính người dùng đó mới được xem đánh giá
-    if (req.user.role !== 'admin' && req.user.id !== userId) {
-      return res.status(403).json({ error: 'You do not have permission to view these reviews' });
+    if (req.user.role !== "admin" && req.user.id !== userId) {
+      return res
+        .status(403)
+        .json({ error: "You do not have permission to view these reviews" });
     }
 
     // Lấy danh sách đánh giá với thông tin sản phẩm
-    const [reviews] = await db.query(`
+    const [reviews] = await db.query(
+      `
       SELECT 
         c.*,
         p.product_name,
@@ -585,18 +692,15 @@ router.get('/:id/reviews', async (req, res) => {
       JOIN product p ON c.product_id = p.product_id
       WHERE c.user_id = ?
       ORDER BY c.created_at DESC
-    `, [userId]);
+    `,
+      [userId]
+    );
 
     res.json(reviews);
   } catch (error) {
-    console.error('Error fetching user reviews:', error);
-    res.status(500).json({ error: 'Failed to fetch user reviews' });
+    console.error("Error fetching user reviews:", error);
+    res.status(500).json({ error: "Failed to fetch user reviews" });
   }
 });
-
-
-
-
-
 
 module.exports = router;

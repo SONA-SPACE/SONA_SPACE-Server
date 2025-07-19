@@ -35,12 +35,12 @@
         <th data-sortable="true">Email</th>
         <th data-sortable="true">Số điện thoại</th>
         <th data-sortable="true">Không gian thiết kế</th>
-        <!-- <th data-sortable="true">Yêu cầu thiết kế</th> -->
         <th data-sortable="true">Ngân sách</th>
         <th data-sortable="true">Phí thiết kế</th>
         <th data-sortable="true">Trạng thái</th>
+        <th data-sortable="true">Nhân viên phụ trách</th>
         <th data-sortable="true">Ngày cập nhật</th>
-        <th></th>
+        <th>Thao tác</th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -123,6 +123,7 @@
                                 ${formatStatus(contactForm.status)}
                             </span>
                         </td>
+                        <td>${contactForm.servicer_name || "Chưa phân công"}</td>
                         <td>${formatDate(contactForm.updated_at)}</td>
                         <td>
                             <div class="action-cell">

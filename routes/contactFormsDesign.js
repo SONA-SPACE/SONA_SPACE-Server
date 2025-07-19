@@ -99,9 +99,7 @@ router.post("/", async (req, res) => {
       different_information,
     };
 
-    await sendEmail(data.email, "Xác nhận Yêu cầu Tư vấn Thiết kế", data);
-    console.log(data);
-
+    sendEmail(data.email, "Xác nhận Yêu cầu Tư vấn Thiết kế", data);
     res.status(200).json({
       data,
       success: true,
@@ -146,8 +144,23 @@ router.get("/", verifyToken, isAdmin, async (req, res) => {
     // Lấy danh sách form liên hệ
     const [forms] = await db.query(
       `
-      SELECT * FROM contact_form_design
+      SELECT 
+        contact_form_design.contact_form_design_id,
+        contact_form_design.name,
+        contact_form_design.email,
+        contact_form_design.phone,
+        contact_form_design.room_name,
+        contact_form_design.require_design,
+        contact_form_design.style_design,
+        contact_form_design.budget,
+        contact_form_design.design_fee,
+        contact_form_design.status,
+        contact_form_design.created_at,
+        contact_form_design.updated_at,
+        u.user_name as servicer_name
+      FROM contact_form_design
       ${statusFilter}
+      LEFT JOIN user u ON u.user_id = contact_form_design.user_id
       ORDER BY created_at DESC
       LIMIT ?, ?
     `,
@@ -182,7 +195,12 @@ router.get("/:id", verifyToken, isAdmin, async (req, res) => {
     }
 
     const [forms] = await db.query(
-      "SELECT * FROM contact_form_design WHERE contact_form_design_id = ?",
+      `SELECT 
+        contact_form_design.*,
+        u.user_name as staff_name
+      FROM contact_form_design
+      LEFT JOIN user u ON u.user_id = contact_form_design.user_id
+      WHERE contact_form_design.contact_form_design_id = ?`,
       [id]
     );
 
@@ -221,6 +239,9 @@ router.put("/:id", verifyToken, isAdmin, async (req, res) => {
       "budget",
       "different_information",
       "design_fee",
+      "user_id",
+      "remarks",
+      "driver",
     ];
 
     // Kiểm tra form tồn tại
@@ -233,7 +254,6 @@ router.put("/:id", verifyToken, isAdmin, async (req, res) => {
     }
 
     // Kiểm tra trạng thái hợp lệ
-    
     if (status !== undefined && status !== null && status !== "") {
       const [statusEnumRows] = await db.query(`
         SHOW COLUMNS FROM contact_form_design LIKE 'status'
@@ -255,6 +275,14 @@ router.put("/:id", verifyToken, isAdmin, async (req, res) => {
         REJECTED: ["CLOSED"],
         CLOSED: [],
       };
+      if (status === "IN_PROGRESS" && forms[0].user_id === null) {
+        return res
+          .status(400)
+          .json({
+            error:
+              "Vui lòng chọn nhân viên thực hiện trước khi chuyển trạng thái",
+          });
+      }
       if (
         status !== currentStatus &&
         !validTransitions[currentStatus].includes(status)
@@ -264,6 +292,16 @@ router.put("/:id", verifyToken, isAdmin, async (req, res) => {
           .json({ error: "Trạng thái không được phép chuyển đổi" });
       }
     }
+
+    // kiểm tra budget và design_fee
+    const { budget, design_fee } = rest;
+    if (budget !== undefined && isNaN(budget)) {
+      return res.status(400).json({ error: "Budget phải là số" });
+    }
+    if (design_fee !== undefined && isNaN(design_fee)) {
+      return res.status(400).json({ error: "Design_fee phải là số" });
+    }
+
     // Cập nhật form
     const updates = [];
     const values = [];
@@ -604,7 +642,7 @@ router.delete("/:id", verifyToken, isAdmin, async (req, res) => {
   try {
     const id = Number(req.params.id);
     if (isNaN(id)) {
-      return res.status(400).json({ error: "Invalid contact form ID" });
+      return res.status(400).json({ error: "ID contact form không hợp lệ" });
     }
 
     // Kiểm tra form tồn tại
@@ -614,8 +652,14 @@ router.delete("/:id", verifyToken, isAdmin, async (req, res) => {
     );
 
     if (forms.length === 0) {
-      return res.status(404).json({ error: "Contact form not found" });
+      return res.status(404).json({ error: "Form liên hệ không tồn tại" });
     }
+
+    //  Xóa liên kết với bảng contact_form_design_details
+    await db.query(
+      "DELETE FROM contact_form_design_details WHERE contact_form_design_id = ?",
+      [id]
+    );
 
     // Xóa form
     await db.query(
@@ -623,10 +667,10 @@ router.delete("/:id", verifyToken, isAdmin, async (req, res) => {
       [id]
     );
 
-    res.json({ message: "Contact form deleted successfully" });
+    res.json({ message: "Form liên hệ đã được xóa thành công" });
   } catch (error) {
     console.error("Error deleting contact form:", error);
-    res.status(500).json({ error: "Failed to delete contact form" });
+    res.status(500).json({ error: "Không thể xóa form liên hệ" });
   }
 });
 

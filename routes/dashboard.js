@@ -2,7 +2,6 @@ const express = require("express");
 const router = express.Router();
 const authMiddleware = require("../middleware/auth");
 const { route } = require("./upload");
-const fetch = require('node-fetch'); // Add this line
 const { isAdmin } = require('../middleware/auth');
 
 // Middleware to check if user is admin

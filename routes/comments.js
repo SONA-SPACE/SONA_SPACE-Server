@@ -1,3 +1,4 @@
+console.log("comments.js router loaded.");
 const express = require("express");
 const router = express.Router();
 const db = require("../config/database");
@@ -285,135 +286,205 @@ router.get("/user/:userId", verifyToken, async (req, res) => {
 
 /**
  * @route   POST /api/comments
- * @desc    Tạo bình luận/đánh giá mới
- * @access  Private
+ * @desc    Tạo bình luận/đánh giá mới cho một order_item
+ * @access  Private (Yêu cầu đăng nhập)
  */
-router.post("/", verifyToken, async (req, res) => {
-  try {
-    const { product_id, content, rating, images } = req.body;
-    const user_id = req.user.id;
 
-    // Kiểm tra các trường bắt buộc
-    if (!product_id || !content) {
-      return res
-        .status(400)
-        .json({ error: "Product ID and content are required" });
+router.post("/", verifyToken, async (req, res) => {
+  const {
+    order_item_id,
+    comment_title,
+    comment_description,
+    comment_rating,
+    // images, // Nếu bạn muốn thêm trường images, hãy bỏ comment và xử lý nó
+  } = req.body;
+  const user_id = req.user.id; // Lấy user_id từ token xác thực
+
+  let connection; // Khai báo biến connection để dùng trong finally block
+
+  try {
+    // --- 1. Xác thực (Validation) dữ liệu đầu vào ---
+    if (
+      !order_item_id ||
+      !comment_title ||
+      !comment_description ||
+      !comment_rating
+    ) {
+      return res.status(400).json({
+        error:
+          "Vui lòng cung cấp đầy đủ ID sản phẩm trong đơn hàng, tiêu đề, mô tả và điểm đánh giá.",
+      });
     }
 
-    // Kiểm tra giá trị đánh giá hợp lệ
     if (
-      rating &&
-      (isNaN(Number(rating)) || Number(rating) < 1 || Number(rating) > 5)
+      isNaN(Number(comment_rating)) ||
+      Number(comment_rating) < 1 ||
+      Number(comment_rating) > 5
     ) {
       return res
         .status(400)
-        .json({ error: "Rating must be a number between 1 and 5" });
+        .json({ error: "Điểm đánh giá phải là số từ 1 đến 5." });
     }
 
-    // Kiểm tra sản phẩm tồn tại
-    const [products] = await db.query("SELECT id FROM product WHERE id = ?", [
-      product_id,
-    ]);
+    connection = await db.getConnection(); // Lấy một kết nối từ pool
+    await connection.beginTransaction(); // Bắt đầu transaction
 
-    if (products.length === 0) {
-      return res.status(404).json({ error: "Product not found" });
-    }
-
-    // Kiểm tra xem người dùng đã mua sản phẩm này chưa (nếu cần)
-    if (req.query.verify_purchase === "true") {
-      const [purchases] = await db.query(
-        `
-        SELECT COUNT(*) as count
-        FROM order_item oi
-        JOIN orders o ON oi.order_id = o.id
-        WHERE o.user_id = ? AND oi.product_id = ? AND o.status_id IN (
-          SELECT id FROM order_status WHERE name IN ('completed', 'delivered')
-        )
-      `,
-        [user_id, product_id]
-      );
-
-      if (purchases[0].count === 0) {
-        return res
-          .status(400)
-          .json({ error: "You can only review products you have purchased" });
-      }
-    }
-
-    // Kiểm tra xem người dùng đã bình luận sản phẩm này chưa (nếu chỉ cho phép một đánh giá/người dùng)
-    if (req.query.allow_multiple === "false") {
-      const [existingComments] = await db.query(
-        "SELECT id FROM comment WHERE user_id = ? AND product_id = ?",
-        [user_id, product_id]
-      );
-
-      if (existingComments.length > 0) {
-        return res
-          .status(400)
-          .json({ error: "You have already reviewed this product" });
-      }
-    }
-
-    // Lưu bình luận vào database
-    const [result] = await db.query(
+    // --- 2. Kiểm tra điều kiện đánh giá (Quan trọng!) ---
+    // Giữ nguyên alias ở đây để tránh lỗi ambiguous nếu có nhiều bảng có cột trùng tên
+    // trong các JOIN phức tạp như thế này.
+    const [orderItemInfo] = await connection.query(
       `
-      INSERT INTO comment (
-        user_id, 
-        product_id, 
-        content, 
-        rating, 
-        images,
-        created_at
-      ) VALUES (?, ?, ?, ?, ?, NOW())
+            SELECT
+                order_items.order_item_id,
+                order_items.comment_id AS existing_comment_id,
+                orders.current_status AS order_status,
+                orders.user_id AS order_user_id,
+                variant_product.product_id AS linked_product_id,
+                order_items.product_name
+            FROM
+                order_items
+            JOIN
+                orders ON order_items.order_id = orders.order_id
+            JOIN
+                variant_product ON order_items.variant_id = variant_product.variant_id
+            WHERE
+                order_items.order_item_id = ?
+            LIMIT 1
+            `,
+      [order_item_id]
+    );
+
+    if (orderItemInfo.length === 0) {
+      await connection.rollback();
+      return res
+        .status(404)
+        .json({ error: "Không tìm thấy sản phẩm trong đơn hàng này." });
+    }
+
+    const item = orderItemInfo[0];
+    const product_id_from_item = item.linked_product_id;
+
+    if (item.order_user_id !== user_id) {
+      await connection.rollback();
+      return res
+        .status(403)
+        .json({ error: "Bạn không có quyền đánh giá sản phẩm này." });
+    }
+
+    if (item.order_status !== "SUCCESS") {
+      await connection.rollback();
+      return res.status(400).json({
+        error:
+          "Đơn hàng chứa sản phẩm này chưa được giao thành công hoặc chưa hoàn tất.",
+      });
+    }
+
+    if (item.existing_comment_id !== null) {
+      await connection.rollback();
+      return res
+        .status(400)
+        .json({ error: "Sản phẩm này đã được bạn đánh giá trước đó." });
+    }
+
+    // Giữ nguyên alias ở đây để tránh lỗi ambiguous vì có JOIN nhiều bảng và cột trùng tên.
+    const [existingProductComment] = await connection.query(
+      `
+    SELECT comment.comment_id
+    FROM comment
+    JOIN order_items ON comment.order_item_id = order_items.order_item_id
+    JOIN variant_product ON order_items.variant_id = variant_product.variant_id
+    WHERE comment.user_id = ? AND variant_product.product_id = ?
+    LIMIT 1
     `,
+      [user_id, product_id_from_item]
+    );
+
+    if (existingProductComment.length > 0) {
+      await connection.rollback();
+      return res.status(400).json({
+        error:
+          "Bạn đã đánh giá sản phẩm này trước đó. Bạn chỉ có thể đánh giá một lần cho mỗi sản phẩm gốc.",
+      });
+    }
+
+    // --- 3. Chèn đánh giá vào bảng `comment` (bỏ alias) ---
+    const [commentResult] = await connection.query(
+      `
+            INSERT INTO comment (
+                order_item_id,
+                user_id,
+                product_id,
+                comment_title,
+                comment_description,
+                comment_rating,
+                created_at,
+                updated_at
+               
+            ) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
+            `,
       [
+        order_item_id,
         user_id,
-        product_id,
-        content,
-        rating || null,
-        images ? JSON.stringify(images) : null,
+        product_id_from_item,
+        comment_title,
+        comment_description,
+        comment_rating,
+        // images ? JSON.stringify(images) : null, // nếu dùng
+        // 0 // nếu dùng comment_reaction
       ]
     );
 
-    // After insert, get the new comment without users table join
-    const [newComment] = await db.query(
+    const newCommentId = commentResult.insertId;
+
+    // --- 4. Cập nhật `comment_id` vào bảng `order_items` (bỏ alias) ---
+    await connection.query(
       `
-      SELECT c.*
-      FROM comment c
-      WHERE c.id = ?
-    `,
-      [result.insertId]
+            UPDATE order_items
+            SET comment_id = ?
+            WHERE order_item_id = ?
+            `,
+      [newCommentId, order_item_id]
     );
 
-    // Add placeholder for user data
-    const commentWithPlaceholder = {
-      ...newComment[0],
-      user_name: `User ${req.user.id}`,
-      user_avatar: null,
-    };
+    await connection.commit(); // Commit transaction
 
-    // Cập nhật số sao đánh giá trung bình của sản phẩm
-    await db.query(
+    // --- 6. Trả về phản hồi (giữ lại alias để đơn giản hóa SELECT * và truy cập cột) ---
+    // Hoặc bạn có thể liệt kê tất cả cột mà không dùng alias nếu muốn, nhưng sẽ dài hơn.
+    const [createdComment] = await connection.query(
       `
-      UPDATE product 
-      SET 
-        rating_count = (SELECT COUNT(*) FROM comment WHERE product_id = ? AND rating IS NOT NULL),
-        rating_average = (SELECT AVG(rating) FROM comment WHERE product_id = ? AND rating IS NOT NULL)
-      WHERE id = ?
-    `,
-      [product_id, product_id, product_id]
+        SELECT
+            comment.*, -- Lấy tất cả cột từ bảng comment
+            user.user_name,
+            user.user_image,
+            order_items.product_name AS reviewed_product_name,
+            variant_product.product_id AS reviewed_product_id
+        FROM comment
+        JOIN user ON comment.user_id = user.user_id
+        JOIN order_items ON comment.order_item_id = order_items.order_item_id
+        JOIN variant_product ON order_items.variant_id = variant_product.variant_id
+        WHERE comment.comment_id = ?
+        `,
+      [newCommentId]
     );
-
     res.status(201).json({
-      message: "Comment created successfully",
-      comment: commentWithPlaceholder,
+      message: "Đánh giá đã được tạo thành công!",
+      comment: createdComment[0],
     });
   } catch (error) {
-    console.error("Error creating comment:", error);
-    res.status(500).json({ error: "Failed to create comment" });
+    if (connection) {
+      await connection.rollback();
+    }
+    console.error("Lỗi khi tạo bình luận:", error);
+    res.status(500).json({
+      error: "Có lỗi xảy ra khi tạo bình luận.",
+      details: error.message,
+    });
+  } finally {
+    if (connection) {
+      connection.release();
+    }
   }
 });
-
 /**
  * @route   PUT /api/comments/:id
  * @desc    Cập nhật bình luận

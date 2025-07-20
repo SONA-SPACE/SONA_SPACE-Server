@@ -115,8 +115,8 @@
 
       <div class="form-row">
         <div class="form-group">
-          <label for="driver">Link xem thêm</label>
-          <input type="text" id="driver" class="form-control" />
+          <label for="drive">Link xem thêm</label>
+          <input type="text" id="drive" class="form-control" />
         </div>
       </div>
     </div>
@@ -502,7 +502,7 @@
           .classList.add(`status-${data.status.toLowerCase()}`);
         document.getElementById("remarks").value = data.remarks;
         document.getElementById("staff_name").value = data.user_id;
-        document.getElementById("driver").value = data.driver;
+        document.getElementById("drive").value = data.drive;
         updateTotalPrice();
       });
   }
@@ -539,7 +539,7 @@
     const remarks = document.getElementById("remarks").value;
     const status = document.getElementById("status").value;
     const unit_price = document.getElementById("unit-price-input").value;
-    const driver = document.getElementById("driver").value;
+    const drive = document.getElementById("drive").value;
     try {
       const payload = {
         name,
@@ -555,7 +555,7 @@
         remarks,
         status,
         user_id,
-        driver,
+        drive,
       };
 
       const res = await fetch(`/api/contact-form-design/${id}`, {

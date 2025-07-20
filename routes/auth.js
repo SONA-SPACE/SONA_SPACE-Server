@@ -5,9 +5,31 @@ const db = require("../config/database");
 const { generateToken, verifyToken } = require("../middleware/auth");
 const jwt = require("jsonwebtoken");
 const { sendEmail } = require("../services/mailVerify");
+const { OAuth2Client } = require("google-auth-library");
 
 // Lấy JWT secret từ biến môi trường hoặc sử dụng giá trị mặc định
 const JWT_SECRET = process.env.JWT_SECRET || "furnitown-secret-key";
+const clientId = process.env.GOOGLE_CLIENT_ID;
+const client = new OAuth2Client(clientId);
+
+async function verifyGoogleToken(token) {
+  if (!token) throw new Error("Thiếu token Google!");
+  try {
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: clientId,
+    });
+    const payload = ticket.getPayload();
+
+    // Có thể kiểm tra thêm, ví dụ:
+    // if (!payload.email_verified) throw new Error("Email Google chưa xác minh!");
+
+    return payload;
+  } catch (error) {
+    console.error("verifyGoogleToken error:", error);
+    throw new Error("Token Google không hợp lệ!");
+  }
+}
 
 /**
  * @route   POST /api/auth/register
@@ -220,7 +242,7 @@ router.get("/verify-email", async (req, res) => {
     if (!token) {
       return res.redirect(
         `${frontendBaseUrl}/xac-thuc-email?status=error&message=` +
-        encodeURIComponent("Liên kết xác thực không hợp lệ hoặc bị thiếu.")
+          encodeURIComponent("Liên kết xác thực không hợp lệ hoặc bị thiếu.")
       );
     }
 
@@ -230,7 +252,7 @@ router.get("/verify-email", async (req, res) => {
     } catch (err) {
       return res.redirect(
         `${frontendBaseUrl}/xac-thuc-email?status=error&message=` +
-        encodeURIComponent("Liên kết xác thực không hợp lệ hoặc đã hết hạn.")
+          encodeURIComponent("Liên kết xác thực không hợp lệ hoặc đã hết hạn.")
       );
     }
 
@@ -238,7 +260,7 @@ router.get("/verify-email", async (req, res) => {
     if (decodedToken.purpose !== "email_verification") {
       return res.redirect(
         `${frontendBaseUrl}/xac-thuc-email?status=error&message=` +
-        encodeURIComponent("Token không dùng cho mục đích xác thực email.")
+          encodeURIComponent("Token không dùng cho mục đích xác thực email.")
       );
     }
 
@@ -251,7 +273,7 @@ router.get("/verify-email", async (req, res) => {
     if (users.length === 0) {
       return res.redirect(
         `${frontendBaseUrl}/xac-thuc-email?status=error&message=` +
-        encodeURIComponent("Tài khoản không tồn tại.")
+          encodeURIComponent("Tài khoản không tồn tại.")
       );
     }
 
@@ -261,9 +283,9 @@ router.get("/verify-email", async (req, res) => {
     if (user.user_email_active && !user.user_token) {
       return res.redirect(
         `${frontendBaseUrl}/xac-thuc-email?status=success&message=` +
-        encodeURIComponent(
-          "Email của bạn đã được xác thực trước đó. Bạn có thể đăng nhập."
-        )
+          encodeURIComponent(
+            "Email của bạn đã được xác thực trước đó. Bạn có thể đăng nhập."
+          )
       );
     }
 
@@ -271,9 +293,9 @@ router.get("/verify-email", async (req, res) => {
     if (user.user_token !== token) {
       return res.redirect(
         `${frontendBaseUrl}/xac-thuc-email?status=error&message=` +
-        encodeURIComponent(
-          "Liên kết xác thực đã được sử dụng hoặc không hợp lệ."
-        )
+          encodeURIComponent(
+            "Liên kết xác thực đã được sử dụng hoặc không hợp lệ."
+          )
       );
     }
 
@@ -287,16 +309,83 @@ router.get("/verify-email", async (req, res) => {
 
     return res.redirect(
       `${frontendBaseUrl}/xac-thuc-email?status=success&message=` +
-      encodeURIComponent("Email của bạn đã được xác thực thành công!")
+        encodeURIComponent("Email của bạn đã được xác thực thành công!")
     );
   } catch (error) {
     console.error("Lỗi xác thực email:", error);
     return res.redirect(
       `${frontendBaseUrl}/xac-thuc-email?status=error&message=` +
-      encodeURIComponent(
-        "Lỗi máy chủ khi xác thực email. Vui lòng thử lại sau."
-      )
+        encodeURIComponent(
+          "Lỗi máy chủ khi xác thực email. Vui lòng thử lại sau."
+        )
     );
+  }
+});
+
+router.post("/google-login", async (req, res) => {
+  try {
+    const googleToken = req.body.token;
+    const payload = await verifyGoogleToken(googleToken);
+
+    if (!payload || !payload.email) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Dữ liệu Google không hợp lệ!" });
+    }
+
+    const { email, name, picture } = payload;
+
+    const [users] = await db.query(
+      "SELECT user_id, user_gmail, user_name, user_image, user_role, created_at FROM user WHERE user_gmail = ?",
+      [email]
+    );
+
+    let user, userId;
+
+    if (users.length === 0) {
+      // User chưa có, tạo mới
+      const newUserRes = await db.query(
+        "INSERT INTO user (user_gmail, user_name, user_image, user_role, created_at) VALUES (?, ?, ?, ?, NOW())",
+        [email, name, picture, "user"]
+      );
+      userId = newUserRes[0].insertId;
+      user = {
+        id: userId,
+        email,
+        full_name: name,
+        image: picture,
+        role: "user",
+        created_at: new Date(),
+      };
+    } else {
+      // User đã tồn tại
+      const u = users[0];
+      userId = u.user_id;
+      user = {
+        id: u.user_id,
+        email: u.user_gmail,
+        full_name: u.user_name,
+        image: u.user_image,
+        role: u.user_role,
+        created_at: u.created_at,
+      };
+    }
+
+    // Sinh access token cho user (app của bạn)
+    const accessToken = generateToken(userId);
+
+    res.json({
+      success: true,
+      message: "Đăng nhập thành công",
+      token: accessToken,
+      user,
+    });
+  } catch (error) {
+    console.error("Lỗi khi đăng nhập với Google:", error);
+    res.status(500).json({
+      success: false,
+      error: "Lỗi máy chủ trong quá trình đăng nhập.",
+    });
   }
 });
 

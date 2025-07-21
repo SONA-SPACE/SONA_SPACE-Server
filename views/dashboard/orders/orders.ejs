@@ -7,6 +7,72 @@
 <script src="https://cdn.jsdelivr.net/npm/antd@4.24.15/dist/antd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.10/dayjs.min.js"></script>
 
+<style>
+  /* Table header filter styles */
+  th.filterable {
+    position: relative;
+    padding-right: 25px; /* Add space for the filter icon */
+  }
+  
+  .header-filter {
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: inline-block;
+    cursor: pointer;
+    width: 20px;
+    height: 20px;
+    text-align: center;
+    line-height: 20px;
+  }
+  
+  .filter-icon {
+    color: #666;
+    font-size: 14px;
+    transition: color 0.2s ease;
+  }
+  
+  .header-filter:hover .filter-icon {
+    color: #333;
+  }
+  
+  .header-filter .filter-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    min-width: 180px;
+    background-color: #fff;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    padding: 8px 0;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+  }
+  
+  .header-filter.active .filter-dropdown {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+  
+  .filter-dropdown .filter-item {
+    display: block;
+    padding: 8px 16px;
+    color: #333;
+    text-decoration: none;
+    font-size: 14px;
+    transition: background-color 0.2s ease;
+  }
+  
+  .filter-dropdown .filter-item:hover {
+    background-color: #f5f5f5;
+  }
+</style>
+
 <!-- Trang quản lý đơn hàng -->
 <div class="orders-page">
   <div class="content-wrapper">
@@ -69,96 +135,118 @@
         </div>
 
         <div class="orders-table">
-          <div class="table-header">
-            <div class="bulk-actions">
-              <input type="checkbox" class="checkbox">
-              <div class="dropdown">
-                <button class="dropdown-toggle">Mã đơn <i class="fas fa-chevron-down"></i></button>
-                <div class="dropdown-menu">
-                  <a class="dropdown-item" href="#" data-sort="asc">Tăng dần (A-Z)</a>
-                  <a class="dropdown-item" href="#" data-sort="desc">Giảm dần (Z-A)</a>
-                </div>
-              </div>
-            </div>
-
-            <div class="table-filters">
-              <div class="filter">
-                <button class="filter-toggle">Ngày đặt đơn</button>
-                <div class="filter-dropdown">
-                  <a class="filter-item" href="#" data-sort="date-asc">Cũ nhất trước</a>
-                  <a class="filter-item" href="#" data-sort="date-desc">Mới nhất trước</a>
-                </div>
-              </div>
-              <div class="filter">
-                <button class="filter-toggle">Khách hàng</button>
-                <div class="filter-dropdown">
-                  <a class="filter-item" href="#" data-sort="customer-asc">Tên (A-Z)</a>
-                  <a class="filter-item" href="#" data-sort="customer-desc">Tên (Z-A)</a>
-                </div>
-              </div>
-              <div class="filter">
-                <button class="filter-toggle">Thanh toán</button>
-                <div class="filter-dropdown">
-                  <a class="filter-item" href="#" data-sort="payment-paid">Đã thanh toán</a>
-                  <a class="filter-item" href="#" data-sort="payment-unpaid">Chưa thanh toán</a>
-                  <a class="filter-item" href="#" data-sort="payment-all">Tất cả</a>
-                </div>
-              </div>
-              <div class="filter">
-                <button class="filter-toggle">Sản phẩm</button>
-                <div class="filter-dropdown">
-                  <a class="filter-item" href="#" data-sort="products-asc">Số lượng tăng dần</a>
-                  <a class="filter-item" href="#" data-sort="products-desc">Số lượng giảm dần</a>
-                </div>
-              </div>
-              <div class="filter">
-                <button class="filter-toggle">Tổng tiền</button>
-                <div class="filter-dropdown">
-                  <a class="filter-item" href="#" data-sort="total-asc">Giá trị tăng dần</a>
-                  <a class="filter-item" href="#" data-sort="total-desc">Giá trị giảm dần</a>
-                </div>
-              </div>
-              <div class="filter">
-                <button class="filter-toggle">Vận chuyển</button>
-                <div class="filter-dropdown">
-                  <a class="filter-item" href="#" data-sort="shipping-pending">Chờ lấy hàng</a>
-                  <a class="filter-item" href="#" data-sort="shipping-transit">Đang vận chuyển</a>
-                  <a class="filter-item" href="#" data-sort="shipping-delivered">Đã giao hàng</a>
-                  <a class="filter-item" href="#" data-sort="shipping-failed">Giao hàng thất bại</a>
-                  <a class="filter-item" href="#" data-sort="shipping-returned">Đã hoàn trả</a>
-                  <a class="filter-item" href="#" data-sort="shipping-all">Tất cả</a>
-                </div>
-              </div>
-              <div class="filter">
-                <button class="filter-toggle">Trạng thái</button>
-                <div class="filter-dropdown">
-                  <a class="filter-item" href="#" data-sort="status-pending">Chờ xác nhận</a>
-                  <a class="filter-item" href="#" data-sort="status-confirmed">Đã xác nhận</a>
-                  <a class="filter-item" href="#" data-sort="status-shipping">Đang giao</a>
-                  <a class="filter-item" href="#" data-sort="status-success">Giao hàng thành công</a>
-                  <a class="filter-item" href="#" data-sort="status-failed">Thất bại</a>
-                  <a class="filter-item" href="#" data-sort="status-cancelled">Đã hủy</a>
-                  <a class="filter-item" href="#" data-sort="status-all">Tất cả</a>
-                </div>
-              </div>
-              <div class="filter">
-                <button class="filter-toggle">Ngày cập nhật</button>
-                <div class="filter-dropdown">
-                  <a class="filter-item" href="#" data-sort="update-asc">Cũ nhất trước</a>
-                  <a class="filter-item" href="#" data-sort="update-desc">Mới nhất trước</a>
-                </div>
-              </div>
-              <div class="filter">
-                <button class="filter-toggle">Hành động</button>
-                <div class="filter-dropdown">
-                  <a class="filter-item" href="#" data-action="export">Xuất Excel</a>
-                  <a class="filter-item" href="#" data-action="print">In danh sách</a>
-                </div>
-              </div>
-            </div>
-          </div>
 
           <table>
+            <thead>
+              <tr>
+                <th><input type="checkbox" class="checkbox" id="select-all-table"></th>
+                <th class="filterable">
+                  Mã đơn hàng
+                  <div class="header-filter">
+                    <i class="fas fa-filter filter-icon"></i>
+                    <div class="filter-dropdown">
+                      <a class="filter-item" href="#" data-sort="order-asc">Tăng dần (A-Z)</a>
+                      <a class="filter-item" href="#" data-sort="order-desc">Giảm dần (Z-A)</a>
+                    </div>
+                  </div>
+                </th>
+                <th class="filterable">
+                  Ngày đặt
+                  <div class="header-filter">
+                    <i class="fas fa-filter filter-icon"></i>
+                    <div class="filter-dropdown">
+                      <a class="filter-item" href="#" data-sort="date-asc">Cũ nhất trước</a>
+                      <a class="filter-item" href="#" data-sort="date-desc">Mới nhất trước</a>
+                    </div>
+                  </div>
+                </th>
+                <th class="filterable">
+                  Khách hàng
+                  <div class="header-filter">
+                    <i class="fas fa-filter filter-icon"></i>
+                    <div class="filter-dropdown">
+                      <a class="filter-item" href="#" data-sort="customer-asc">Tên (A-Z)</a>
+                      <a class="filter-item" href="#" data-sort="customer-desc">Tên (Z-A)</a>
+                    </div>
+                  </div>
+                </th>
+                <th class="filterable">
+                  Thanh toán
+                  <div class="header-filter">
+                    <i class="fas fa-filter filter-icon"></i>
+                    <div class="filter-dropdown">
+                      <a class="filter-item" href="#" data-sort="payment-paid">Đã thanh toán</a>
+                      <a class="filter-item" href="#" data-sort="payment-unpaid">Chưa thanh toán</a>
+                      <a class="filter-item" href="#" data-sort="payment-all">Tất cả</a>
+                    </div>
+                  </div>
+                </th>
+                <th class="filterable">
+                  Sản phẩm
+                  <div class="header-filter">
+                    <i class="fas fa-filter filter-icon"></i>
+                    <div class="filter-dropdown">
+                      <a class="filter-item" href="#" data-sort="products-asc">Số lượng tăng dần</a>
+                      <a class="filter-item" href="#" data-sort="products-desc">Số lượng giảm dần</a>
+                    </div>
+                  </div>
+                </th>
+                <th class="filterable">
+                  Tổng tiền
+                  <div class="header-filter">
+                    <i class="fas fa-filter filter-icon"></i>
+                    <div class="filter-dropdown">
+                      <a class="filter-item" href="#" data-sort="total-asc">Giá trị tăng dần</a>
+                      <a class="filter-item" href="#" data-sort="total-desc">Giá trị giảm dần</a>
+                    </div>
+                  </div>
+                </th>
+                <th class="filterable">
+                  Vận chuyển
+                  <div class="header-filter">
+                    <i class="fas fa-filter filter-icon"></i>
+                    <div class="filter-dropdown">
+                      <a class="filter-item" href="#" data-sort="shipping-pending">Chờ lấy hàng</a>
+                      <a class="filter-item" href="#" data-sort="shipping-transit">Đang vận chuyển</a>
+                      <a class="filter-item" href="#" data-sort="shipping-delivered">Đã giao hàng</a>
+                      <a class="filter-item" href="#" data-sort="shipping-failed">Giao hàng thất bại</a>
+                      <a class="filter-item" href="#" data-sort="shipping-returned">Đã hoàn trả</a>
+                      <a class="filter-item" href="#" data-sort="shipping-all">Tất cả</a>
+                    </div>
+                  </div>
+                </th>
+                <th class="filterable">
+                  Trạng thái
+                  <div class="header-filter">
+                    <i class="fas fa-filter filter-icon"></i>
+                    <div class="filter-dropdown">
+                      <a class="filter-item" href="#" data-sort="status-pending">Chờ xác nhận</a>
+                      <a class="filter-item" href="#" data-sort="status-confirmed">Đã xác nhận</a>
+                      <a class="filter-item" href="#" data-sort="status-shipping">Đang giao</a>
+                      <a class="filter-item" href="#" data-sort="status-success">Giao hàng thành công</a>
+                      <a class="filter-item" href="#" data-sort="status-failed">Thất bại</a>
+                      <a class="filter-item" href="#" data-sort="status-cancelled">Đã hủy</a>
+                      <a class="filter-item" href="#" data-sort="status-all">Tất cả</a>
+                    </div>
+                  </div>
+                </th>
+                <th class="filterable">
+                  Phương thức TT
+                  <div class="header-filter">
+                    <i class="fas fa-filter filter-icon"></i>
+                    <div class="filter-dropdown">
+                      <a class="filter-item" href="#" data-sort="payment-method-cod">COD</a>
+                      <a class="filter-item" href="#" data-sort="payment-method-bank">Chuyển khoản</a>
+                      <a class="filter-item" href="#" data-sort="payment-method-vnpay">VNPay</a>
+                      <a class="filter-item" href="#" data-sort="payment-method-momo">MoMo</a>
+                      <a class="filter-item" href="#" data-sort="payment-method-zalopay">ZaloPay</a>
+                      <a class="filter-item" href="#" data-sort="payment-method-all">Tất cả</a>
+                    </div>
+                  </div>
+                </th>
+                <th>Hành động</th>
+              </tr>
+            </thead>
             <tbody id="orders-list">
               <!-- Dữ liệu đơn hàng mẫu -->
               <!-- <tr>
@@ -357,211 +445,112 @@
 
 <script>
   document.addEventListener('DOMContentLoaded', function () {
-    // Xử lý sự kiện chọn tất cả checkbox
-    const selectAllCheckbox = document.querySelector('.table-header .checkbox');
-    const rowCheckboxes = document.querySelectorAll('tbody .checkbox');
+    loadOrders(); // 🚀 Load đơn hàng khi vào trang
 
-    if (selectAllCheckbox) {
-      selectAllCheckbox.addEventListener('change', function () {
-        const isChecked = this.checked;
-        rowCheckboxes.forEach(checkbox => {
-          checkbox.checked = isChecked;
-        });
-      });
-    }
-
-    // Xử lý sự kiện khi click vào dropdown filters
-    const filterToggles = document.querySelectorAll('.filter-toggle');
-
-    filterToggles.forEach(toggle => {
-      toggle.addEventListener('click', function (e) {
-        e.preventDefault(); // Ngăn hành vi mặc định
-        e.stopPropagation(); // Ngăn sự kiện lan ra ngoài
-        
-        const dropdown = this.nextElementSibling;
-        
-        // Đóng tất cả các dropdown khác
-        document.querySelectorAll('.filter-dropdown, .dropdown-menu').forEach(item => {
-          if (item !== dropdown) {
-            item.classList.remove('active');
-          }
-        });
-        
-        // Toggle dropdown hiện tại
-        dropdown.classList.toggle('active');
-      });
-      
-      // Ngăn sự kiện mouseenter và mouseleave để tránh xung đột với hover CSS
-      toggle.parentElement.addEventListener('mouseenter', function(e) {
-        e.stopPropagation();
-      });
-      
-      toggle.parentElement.addEventListener('mouseleave', function(e) {
-        e.stopPropagation();
-      });
-    });
-    
-    // Xử lý sự kiện khi click vào các item trong dropdown
-    document.querySelectorAll('.filter-item').forEach(item => {
-      item.addEventListener('click', function(e) {
+    // Xử lý sự kiện cho header filters
+    document.querySelectorAll('.header-filter').forEach(filter => {
+      filter.addEventListener('click', function (e) {
         e.preventDefault();
         e.stopPropagation();
-        
+
+        // Toggle active class
+        this.classList.toggle('active');
+
+        // Close other dropdowns
+        document.querySelectorAll('.header-filter').forEach(otherFilter => {
+          if (otherFilter !== this) {
+            otherFilter.classList.remove('active');
+          }
+        });
+      });
+    });
+
+    // Xử lý sự kiện click cho filter items trong header
+    document.querySelectorAll('.header-filter .filter-item').forEach(item => {
+      item.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
         const sortType = this.getAttribute('data-sort');
         console.log('Sorting by:', sortType);
-        
+
         // Hiển thị thông báo đang sắp xếp
         if (window.antd && window.antd.message) {
           window.antd.message.loading('Đang sắp xếp dữ liệu...');
         }
-        
+
         // Thực hiện sắp xếp dữ liệu
         sortOrders(sortType);
-        
+
         // Đóng dropdown sau khi chọn
-        this.closest('.filter-dropdown').classList.remove('active');
+        this.closest('.header-filter').classList.remove('active');
       });
     });
-    
-    // Xử lý sự kiện khi click vào dropdown trong bulk actions
-    const dropdownToggle = document.querySelector('.dropdown-toggle');
-    if (dropdownToggle) {
-      dropdownToggle.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const menu = this.nextElementSibling;
-        
-        // Đóng tất cả các dropdown khác
-        document.querySelectorAll('.filter-dropdown, .dropdown-menu').forEach(item => {
-          if (item !== menu) {
-            item.classList.remove('active');
+
+    // Đóng tất cả dropdowns khi click ra ngoài
+    document.addEventListener('click', function () {
+      document.querySelectorAll('.header-filter').forEach(filter => {
+        filter.classList.remove('active');
+      });
+    });
+
+    // Xóa xử lý sự kiện cập nhật trạng thái cũ
+
+    // Xử lý sự kiện đóng modal
+    const closeButtons = document.querySelectorAll('[data-dismiss="modal"]');
+    closeButtons.forEach(button => {
+      button.addEventListener('click', function () {
+        const modalId = this.closest('.modal').id;
+
+        if (typeof $ !== 'undefined') {
+          $(`#${modalId}`).modal('hide');
+        } else {
+          const modal = document.getElementById(modalId);
+          modal.classList.remove('show');
+          modal.style.display = 'none';
+          modal.setAttribute('aria-hidden', 'true');
+          document.body.classList.remove('modal-open');
+
+          // Xóa backdrop
+          const backdrop = document.querySelector('.modal-backdrop');
+          if (backdrop) {
+            backdrop.parentNode.removeChild(backdrop);
           }
-        });
-        
-        // Toggle dropdown hiện tại
-        menu.classList.toggle('active');
-      });
-      
-      // Ngăn sự kiện mouseenter và mouseleave để tránh xung đột với hover CSS
-      dropdownToggle.parentElement.addEventListener('mouseenter', function(e) {
-        e.stopPropagation();
-      });
-      
-      dropdownToggle.parentElement.addEventListener('mouseleave', function(e) {
-        e.stopPropagation();
-      });
-    }
-    
-    // Xử lý sự kiện khi click vào các item trong dropdown bulk actions
-    document.querySelectorAll('.dropdown-item').forEach(item => {
-      item.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const sortType = this.getAttribute('data-sort');
-        console.log('Sorting order IDs by:', sortType);
-        
-        // Hiển thị thông báo đang sắp xếp
-        if (window.antd && window.antd.message) {
-          window.antd.message.loading('Đang sắp xếp dữ liệu...');
-        }
-        
-        // Thực hiện sắp xếp dữ liệu theo mã đơn
-        sortOrders('order-' + sortType);
-        
-        // Đóng dropdown sau khi chọn
-        this.closest('.dropdown-menu').classList.remove('active');
-      });
-    });
-    
-    // Ngăn sự kiện hover trên các dropdown
-    document.querySelectorAll('.filter-dropdown, .dropdown-menu').forEach(dropdown => {
-      dropdown.addEventListener('mouseenter', function(e) {
-        e.stopPropagation();
-        // Nếu dropdown đang active, giữ nó active
-        if (this.classList.contains('active')) {
-          e.preventDefault();
         }
       });
-      
-      dropdown.addEventListener('mouseleave', function(e) {
-        e.stopPropagation();
-        // Không đóng dropdown khi di chuyển chuột ra ngoài
-      });
     });
-    
-    // Đóng tất cả dropdown khi click ra ngoài
-    document.addEventListener('click', function(e) {
-      // Kiểm tra xem click có phải là trên dropdown hay không
-      const isClickInsideDropdown = e.target.closest('.filter-dropdown') || e.target.closest('.dropdown-menu');
-      const isClickOnToggle = e.target.closest('.filter-toggle') || e.target.closest('.dropdown-toggle');
-      
-      if (!isClickInsideDropdown && !isClickOnToggle) {
-        document.querySelectorAll('.filter-dropdown, .dropdown-menu').forEach(dropdown => {
-          dropdown.classList.remove('active');
+
+    // Khởi tạo Ant Design nếu cần
+    if (window.antd) {
+      console.log('Ant Design loaded successfully');
+
+      // Có thể thêm các cấu hình khác cho Ant Design ở đây
+      if (window.antd.message) {
+        window.antd.message.config({
+          top: 60,
+          duration: 2,
+          maxCount: 3,
         });
       }
-    });
-
-    // Xử lý sự kiện khi click vào nút chỉnh sửa
-    const editButtons = document.querySelectorAll('.action-btn.edit');
-
-    editButtons.forEach(button => {
-      button.addEventListener('click', function () {
-        const row = this.closest('tr');
-        const orderId = row.querySelector('.order-id').textContent;
-        console.log('Edit order:', orderId);
-        // Chuyển hướng đến trang chỉnh sửa đơn hàng
-        // window.location.href = `/dashboard/orders/edit/${orderId}`;
-      });
-    });
-
-    // Xử lý sự kiện khi click vào nút xóa
-    const deleteButtons = document.querySelectorAll('.action-btn.delete');
-
-    deleteButtons.forEach(button => {
-      button.addEventListener('click', function () {
-        const row = this.closest('tr');
-        const orderId = row.querySelector('.order-id').textContent;
-
-        if (confirm(`Bạn có chắc chắn muốn xóa đơn hàng ${orderId}?`)) {
-          console.log('Delete order:', orderId);
-          // Gọi API xóa đơn hàng
-          // fetch(`/api/orders/${orderId}`, { method: 'DELETE' })
-          //   .then(response => response.json())
-          //   .then(data => {
-          //     if (data.success) {
-          //       row.remove();
-          //     }
-          //   });
-        }
-      });
-    });
-
-    // Xử lý sự kiện tìm kiếm
-    const searchInput = document.getElementById('search-orders');
-
-    if (searchInput) {
-      searchInput.addEventListener('keyup', function (e) {
-        if (e.key === 'Enter') {
-          const searchTerm = this.value.trim();
-          console.log('Search term:', searchTerm);
-          // Thực hiện tìm kiếm
-          // loadOrders(1, searchTerm);
-        }
-      });
     }
+
+    // Cập nhật màu sắc của select khi thay đổi giá trị
+    document.addEventListener('change', function (e) {
+      if (e.target && e.target.classList.contains('order-status-select')) {
+        // Cập nhật data-current-status để CSS có thể áp dụng màu sắc mới
+        e.target.setAttribute('data-current-status', e.target.value);
+      }
+    });
   });
-  
+
   // Hàm sắp xếp đơn hàng
   function sortOrders(sortType) {
     // Lấy tất cả các hàng trong bảng
     const tbody = document.getElementById('orders-list');
     const rows = Array.from(tbody.querySelectorAll('tr'));
-    
+
     // Sắp xếp dựa trên loại sắp xếp
-    switch(sortType) {
+    switch (sortType) {
       case 'order-asc':
         rows.sort((a, b) => {
           const aValue = a.querySelector('.order-id').textContent;
@@ -569,7 +558,7 @@
           return aValue.localeCompare(bValue);
         });
         break;
-        
+
       case 'order-desc':
         rows.sort((a, b) => {
           const aValue = a.querySelector('.order-id').textContent;
@@ -577,7 +566,7 @@
           return bValue.localeCompare(aValue);
         });
         break;
-        
+
       case 'date-asc':
         rows.sort((a, b) => {
           const aValue = new Date(a.querySelectorAll('td')[2].textContent);
@@ -585,7 +574,7 @@
           return aValue - bValue;
         });
         break;
-        
+
       case 'date-desc':
         rows.sort((a, b) => {
           const aValue = new Date(a.querySelectorAll('td')[2].textContent);
@@ -593,7 +582,7 @@
           return bValue - aValue;
         });
         break;
-        
+
       case 'customer-asc':
         rows.sort((a, b) => {
           const aValue = a.querySelectorAll('td')[3].textContent;
@@ -601,7 +590,7 @@
           return aValue.localeCompare(bValue);
         });
         break;
-        
+
       case 'customer-desc':
         rows.sort((a, b) => {
           const aValue = a.querySelectorAll('td')[3].textContent;
@@ -609,7 +598,7 @@
           return bValue.localeCompare(aValue);
         });
         break;
-        
+
       case 'payment-paid':
         // Lọc chỉ hiển thị đơn hàng đã thanh toán
         rows.forEach(row => {
@@ -617,7 +606,7 @@
           row.style.display = paymentStatus.includes('Đã thanh toán') ? '' : 'none';
         });
         return; // Không cần sắp xếp lại
-        
+
       case 'payment-unpaid':
         // Lọc chỉ hiển thị đơn hàng chưa thanh toán
         rows.forEach(row => {
@@ -625,14 +614,14 @@
           row.style.display = !paymentStatus.includes('Đã thanh toán') ? '' : 'none';
         });
         return; // Không cần sắp xếp lại
-        
+
       case 'payment-all':
         // Hiển thị tất cả đơn hàng
         rows.forEach(row => {
           row.style.display = '';
         });
         return; // Không cần sắp xếp lại
-        
+
       case 'products-asc':
         // Sắp xếp theo số lượng sản phẩm tăng dần
         rows.sort((a, b) => {
@@ -643,7 +632,7 @@
           return aValue - bValue;
         });
         break;
-        
+
       case 'products-desc':
         // Sắp xếp theo số lượng sản phẩm giảm dần
         rows.sort((a, b) => {
@@ -654,7 +643,7 @@
           return bValue - aValue;
         });
         break;
-        
+
       case 'total-asc':
         rows.sort((a, b) => {
           const aValue = parseFloat(a.querySelectorAll('td')[6].textContent.replace(/[^\d]/g, ''));
@@ -662,7 +651,7 @@
           return aValue - bValue;
         });
         break;
-        
+
       case 'total-desc':
         rows.sort((a, b) => {
           const aValue = parseFloat(a.querySelectorAll('td')[6].textContent.replace(/[^\d]/g, ''));
@@ -670,7 +659,7 @@
           return bValue - aValue;
         });
         break;
-        
+
       // Thêm xử lý cho các trường hợp shipping status
       case 'shipping-pending':
       case 'shipping-transit':
@@ -683,7 +672,7 @@
         rows.forEach(row => {
           const badgeElement = row.querySelectorAll('td')[7].querySelector('.badge');
           const shippingStatus = badgeElement ? badgeElement.className : '';
-          
+
           // Kiểm tra xem trạng thái có khớp không
           let shouldDisplay = false;
           if (shippingStatusToFilter === 'pending' && shippingStatus.includes('badge-secondary')) {
@@ -697,18 +686,18 @@
           } else if (shippingStatusToFilter === 'returned' && shippingStatus.includes('badge-warning')) {
             shouldDisplay = true;
           }
-          
+
           row.style.display = shouldDisplay ? '' : 'none';
         });
         return; // Không cần sắp xếp lại
-        
+
       case 'shipping-all':
         // Hiển thị tất cả đơn hàng
         rows.forEach(row => {
           row.style.display = '';
         });
         return; // Không cần sắp xếp lại
-        
+
       // Thêm xử lý cho các trường hợp order status
       case 'status-pending':
       case 'status-confirmed':
@@ -725,14 +714,44 @@
           row.style.display = (currentStatus === statusToFilter) ? '' : 'none';
         });
         return; // Không cần sắp xếp lại
-        
+
       case 'status-all':
         // Hiển thị tất cả đơn hàng
         rows.forEach(row => {
           row.style.display = '';
         });
         return; // Không cần sắp xếp lại
-        
+
+      case 'payment-method-cod':
+      case 'payment-method-bank':
+      case 'payment-method-vnpay':
+      case 'payment-method-momo':
+      case 'payment-method-zalopay':
+        // Lấy phương thức thanh toán cần lọc
+        const paymentMethodToFilter = sortType.replace('payment-method-', '').toUpperCase();
+        const methodMap = {
+          'COD': 'COD',
+          'BANK': 'BANK_TRANSFER',
+          'VNPAY': 'VNPAY',
+          'MOMO': 'MOMO',
+          'ZALOPAY': 'ZALOPAY'
+        };
+        const methodToFilter = methodMap[paymentMethodToFilter] || paymentMethodToFilter;
+
+        // Lọc các đơn hàng theo phương thức thanh toán
+        rows.forEach(row => {
+          const paymentMethod = row.querySelectorAll('td')[9].textContent.trim();
+          row.style.display = paymentMethod.includes(methodToFilter) ? '' : 'none';
+        });
+        return; // Không cần sắp xếp lại
+
+      case 'payment-method-all':
+        // Hiển thị tất cả đơn hàng
+        rows.forEach(row => {
+          row.style.display = '';
+        });
+        return; // Không cần sắp xếp lại
+
       case 'update-asc':
         rows.sort((a, b) => {
           const aValue = new Date(a.querySelectorAll('td')[9].textContent);
@@ -740,7 +759,7 @@
           return aValue - bValue;
         });
         break;
-        
+
       case 'update-desc':
         rows.sort((a, b) => {
           const aValue = new Date(a.querySelectorAll('td')[9].textContent);
@@ -749,19 +768,19 @@
         });
         break;
     }
-    
+
     // Xóa các hàng hiện tại
     while (tbody.firstChild) {
       tbody.removeChild(tbody.firstChild);
     }
-    
+
     // Thêm lại các hàng đã sắp xếp
     rows.forEach(row => {
       if (row.style.display !== 'none') {
         tbody.appendChild(row);
       }
     });
-    
+
     // Thông báo đã sắp xếp xong
     if (window.antd && window.antd.message) {
       window.antd.message.success('Đã sắp xếp dữ liệu');
@@ -809,7 +828,7 @@
             <option value="CANCELLED" ${order.current_status === 'CANCELLED' ? 'selected' : ''}>Đã hủy</option>
           </select>
         </td>
-        <td>${formatDate(order.created_at)}</td>
+        <td>${order.payment_method || 'N/A'}</td>
         <td>
           <div class="actions">
             <a href="/dashboard/orders/detail/${order.order_id}" class="action-btn view-btn" title="Xem chi tiết"><i class="fas fa-eye"></i></a>
@@ -942,8 +961,8 @@
 
     // Kiểm tra xem có đang cố gắng lùi step không
     // Cho phép chuyển sang FAILED hoặc CANCELLED từ bất kỳ trạng thái nào
-    if (newStatus !== 'FAILED' && newStatus !== 'CANCELLED' && 
-        statusOrder[newStatus] < statusOrder[previousStatus]) {
+    if (newStatus !== 'FAILED' && newStatus !== 'CANCELLED' &&
+      statusOrder[newStatus] < statusOrder[previousStatus]) {
       // Hiển thị thông báo lỗi
       if (window.antd && window.antd.notification) {
         window.antd.notification.error({
@@ -954,7 +973,7 @@
       } else {
         alert('Không thể lùi trạng thái đơn hàng về bước trước đó');
       }
-      
+
       // Khôi phục giá trị cũ
       selectElement.value = previousStatus;
       return;
@@ -1048,56 +1067,4 @@
       loadOrders();
     }
   }
-
-  document.addEventListener('DOMContentLoaded', function () {
-    loadOrders(); // 🚀 Load đơn hàng khi vào trang
-
-    // Xóa xử lý sự kiện cập nhật trạng thái cũ
-
-    // Xử lý sự kiện đóng modal
-    const closeButtons = document.querySelectorAll('[data-dismiss="modal"]');
-    closeButtons.forEach(button => {
-      button.addEventListener('click', function () {
-        const modalId = this.closest('.modal').id;
-
-        if (typeof $ !== 'undefined') {
-          $(`#${modalId}`).modal('hide');
-        } else {
-          const modal = document.getElementById(modalId);
-          modal.classList.remove('show');
-          modal.style.display = 'none';
-          modal.setAttribute('aria-hidden', 'true');
-          document.body.classList.remove('modal-open');
-
-          // Xóa backdrop
-          const backdrop = document.querySelector('.modal-backdrop');
-          if (backdrop) {
-            backdrop.parentNode.removeChild(backdrop);
-          }
-        }
-      });
-    });
-
-    // Khởi tạo Ant Design nếu cần
-    if (window.antd) {
-      console.log('Ant Design loaded successfully');
-
-      // Có thể thêm các cấu hình khác cho Ant Design ở đây
-      if (window.antd.message) {
-        window.antd.message.config({
-          top: 60,
-          duration: 2,
-          maxCount: 3,
-        });
-      }
-    }
-
-    // Cập nhật màu sắc của select khi thay đổi giá trị
-    document.addEventListener('change', function (e) {
-      if (e.target && e.target.classList.contains('order-status-select')) {
-        // Cập nhật data-current-status để CSS có thể áp dụng màu sắc mới
-        e.target.setAttribute('data-current-status', e.target.value);
-      }
-    });
-  });
 </script>

@@ -30,11 +30,16 @@
   .filter-icon {
     color: #666;
     font-size: 14px;
-    transition: color 0.2s ease;
+    transition: all 0.3s ease;
   }
   
   .header-filter:hover .filter-icon {
     color: #333;
+  }
+  
+  .header-filter.active .filter-icon {
+    transform: rotate(180deg);
+    color: #007bff;
   }
   
   .header-filter .filter-dropdown {
@@ -135,7 +140,6 @@
         </div>
 
         <div class="orders-table">
-
           <table>
             <thead>
               <tr>
@@ -143,7 +147,7 @@
                 <th class="filterable">
                   Mã đơn hàng
                   <div class="header-filter">
-                    <i class="fas fa-filter filter-icon"></i>
+                    <i class="fas fa-chevron-down filter-icon"></i>
                     <div class="filter-dropdown">
                       <a class="filter-item" href="#" data-sort="order-asc">Tăng dần (A-Z)</a>
                       <a class="filter-item" href="#" data-sort="order-desc">Giảm dần (Z-A)</a>
@@ -153,7 +157,7 @@
                 <th class="filterable">
                   Ngày đặt
                   <div class="header-filter">
-                    <i class="fas fa-filter filter-icon"></i>
+                    <i class="fas fa-chevron-down filter-icon"></i>
                     <div class="filter-dropdown">
                       <a class="filter-item" href="#" data-sort="date-asc">Cũ nhất trước</a>
                       <a class="filter-item" href="#" data-sort="date-desc">Mới nhất trước</a>
@@ -163,7 +167,7 @@
                 <th class="filterable">
                   Khách hàng
                   <div class="header-filter">
-                    <i class="fas fa-filter filter-icon"></i>
+                    <i class="fas fa-chevron-down filter-icon"></i>
                     <div class="filter-dropdown">
                       <a class="filter-item" href="#" data-sort="customer-asc">Tên (A-Z)</a>
                       <a class="filter-item" href="#" data-sort="customer-desc">Tên (Z-A)</a>
@@ -173,7 +177,7 @@
                 <th class="filterable">
                   Thanh toán
                   <div class="header-filter">
-                    <i class="fas fa-filter filter-icon"></i>
+                    <i class="fas fa-chevron-down filter-icon"></i>
                     <div class="filter-dropdown">
                       <a class="filter-item" href="#" data-sort="payment-paid">Đã thanh toán</a>
                       <a class="filter-item" href="#" data-sort="payment-unpaid">Chưa thanh toán</a>
@@ -184,7 +188,7 @@
                 <th class="filterable">
                   Sản phẩm
                   <div class="header-filter">
-                    <i class="fas fa-filter filter-icon"></i>
+                    <i class="fas fa-chevron-down filter-icon"></i>
                     <div class="filter-dropdown">
                       <a class="filter-item" href="#" data-sort="products-asc">Số lượng tăng dần</a>
                       <a class="filter-item" href="#" data-sort="products-desc">Số lượng giảm dần</a>
@@ -194,7 +198,7 @@
                 <th class="filterable">
                   Tổng tiền
                   <div class="header-filter">
-                    <i class="fas fa-filter filter-icon"></i>
+                    <i class="fas fa-chevron-down filter-icon"></i>
                     <div class="filter-dropdown">
                       <a class="filter-item" href="#" data-sort="total-asc">Giá trị tăng dần</a>
                       <a class="filter-item" href="#" data-sort="total-desc">Giá trị giảm dần</a>
@@ -204,7 +208,7 @@
                 <th class="filterable">
                   Vận chuyển
                   <div class="header-filter">
-                    <i class="fas fa-filter filter-icon"></i>
+                    <i class="fas fa-chevron-down filter-icon"></i>
                     <div class="filter-dropdown">
                       <a class="filter-item" href="#" data-sort="shipping-pending">Chờ lấy hàng</a>
                       <a class="filter-item" href="#" data-sort="shipping-transit">Đang vận chuyển</a>
@@ -218,7 +222,7 @@
                 <th class="filterable">
                   Trạng thái
                   <div class="header-filter">
-                    <i class="fas fa-filter filter-icon"></i>
+                    <i class="fas fa-chevron-down filter-icon"></i>
                     <div class="filter-dropdown">
                       <a class="filter-item" href="#" data-sort="status-pending">Chờ xác nhận</a>
                       <a class="filter-item" href="#" data-sort="status-confirmed">Đã xác nhận</a>
@@ -233,7 +237,7 @@
                 <th class="filterable">
                   Phương thức TT
                   <div class="header-filter">
-                    <i class="fas fa-filter filter-icon"></i>
+                    <i class="fas fa-chevron-down filter-icon"></i>
                     <div class="filter-dropdown">
                       <a class="filter-item" href="#" data-sort="payment-method-cod">COD</a>
                       <a class="filter-item" href="#" data-sort="payment-method-bank">Chuyển khoản</a>
@@ -809,8 +813,6 @@
         const paymentInfo = order.payment && order.payment.length > 0 ? order.payment[0] : {};
         const paymentStatus = paymentInfo.status || order.payment_status || 'PENDING';
         const paymentMethod = paymentInfo.method || order.payment_method || 'N/A';
-        
-        console.log(`Order ${order.order_id}: Payment status = ${paymentStatus}, Method = ${paymentMethod}`);
         
         tr.innerHTML = `
         <td><input type="checkbox" class="checkbox"></td>

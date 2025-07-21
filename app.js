@@ -133,7 +133,7 @@ app.use("/api/wishlists-id", wishlistsIdRouter);
 // API routes - protected
 app.use("/api/users", usersRouter);
 app.use("/api/wishlists", authMiddleware.verifyToken, wishlistsRouter);
-app.use("/api/orders", authMiddleware.verifyToken, ordersRouter);
+app.use("/api/orders", ordersRouter);
 app.use("/api/order-status", authMiddleware.verifyToken, orderStatusRouter);
 app.use("/api/payments", authMiddleware.verifyToken, paymentsRouter);
 app.use("/api/couponcodes", authMiddleware.verifyToken, couponcodesRouter);

@@ -281,10 +281,10 @@ router.get("/admin", verifyToken, isAdmin, async (req, res) => {
           paid_at: null
         }];
       }
-      
+
       // Remove the extra fields used for processing
       delete order.payment_status_from_payment;
-      
+
       return order;
     });
 
@@ -427,119 +427,6 @@ router.get("/", verifyToken, isAdmin, async (req, res) => {
       .json({ error: "Failed to fetch orders", details: error.message });
   }
 });
-
-/**
- * @route   GET /api/orders/:id
- * @desc    Lấy thông tin chi tiết một đơn hàng
- * @access  Private
- */
-
-router.get("/:id", verifyToken, async (req, res) => {
-  try {
-    const orderId = Number(req.params.id);
-
-    if (isNaN(orderId)) {
-      return res.status(400).json({ error: "Invalid order ID" });
-    }
-
-    const orderQuery = `
-      SELECT 
-        o.*,
-        u.user_gmail AS user_email,
-        u.user_name AS user_name,
-        u.user_number AS user_phone,
-        p.method AS payment_method,
-        p.status AS payment_status,
-        p.transaction_code AS payment_transaction_code,
-        p.paid_at AS payment_paid_at
-      FROM \`orders\` o
-      LEFT JOIN user u ON o.user_id = u.user_id
-      LEFT JOIN payments p ON o.order_id = p.order_id
-      WHERE o.order_id = ?
-    `;
-
-    let orders;
-    try {
-      [orders] = await db.query(orderQuery, [orderId]);
-      console.log("Order query result length:", orders.length);
-    } catch (error) {
-      console.error("Error in order query:", error);
-      return res.status(500).json({ error: "Failed to fetch order", details: error.message });
-    }
-
-    if (orders.length === 0) {
-      return res.status(404).json({ error: "Order not found" });
-    }
-
-    let order = orders[0];
-
-    // Gộp thông tin thanh toán vào array `payment[]`, rồi xoá các field gốc
-    order.payment = [{
-      method: order.payment_method,
-      status: order.payment_status,
-      transaction_code: order.payment_transaction_code,
-      paid_at: order.payment_paid_at
-    }];
-    delete order.payment_method;
-    delete order.payment_status;
-    delete order.payment_transaction_code;
-    delete order.payment_paid_at;
-
-    // Kiểm tra quyền truy cập
-    if (req.user.role !== "admin" && req.user.id !== order.user_id) {
-      return res.status(403).json({ error: "You do not have permission to view this order" });
-    }
-
-    try {
-      // Lấy chi tiết sản phẩm
-      const orderItemsQuery = `
-        SELECT 
-          oi.*,
-          p.product_name,
-          p.product_image
-        FROM order_items oi
-        LEFT JOIN variant_product vp ON oi.variant_id = vp.variant_id
-        LEFT JOIN product p ON vp.product_id = p.product_id
-        WHERE oi.order_id = ?
-      `;
-
-      let orderItems;
-      try {
-        [orderItems] = await db.query(orderItemsQuery, [orderId]);
-        order.items = orderItems;
-      } catch (error) {
-        console.error("Error in order items query:", error);
-        order.items = [];
-      }
-
-      // Lấy trạng thái đơn hàng
-      const statusLogsQuery = `
-        SELECT 
-          osl.*
-        FROM order_status_log osl
-        WHERE osl.order_id = ?
-        ORDER BY osl.created_at ASC
-      `;
-
-      let statusLogs;
-      try {
-        [statusLogs] = await db.query(statusLogsQuery, [orderId]);
-        order.status_logs = statusLogs;
-      } catch (error) {
-        console.error("Error in status logs query:", error);
-        order.status_logs = [];
-      }
-
-      res.json(order);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch order details", details: error.message });
-    }
-  } catch (error) {
-    console.error("Error fetching order:", error);
-    res.status(500).json({ error: "Failed to fetch order", details: error.message });
-  }
-});
-
 
 /**
  * @route   POST /api/orders
@@ -736,174 +623,63 @@ router.post("/", verifyToken, async (req, res) => {
     // MoMo: không lưu đơn → trả về payUrl
     // MoMo: không lưu đơn → trả về payUrl
     if (method === "MOMO") {
-      const [existingOrders] = await db.query(
-        "SELECT * FROM orders WHERE order_hash = ?",
-        [order_id]
-      );
-      if (existingOrders.length > 0) {
-        return res.status(400).json({ error: "Đơn hàng đã tồn tại" });
-      }
-
-      // Insert đơn hàng ngay
-      await db.query(
-        `
-        INSERT INTO orders (
-          order_hash, user_id, order_address_old, order_address_new,
-          order_number1, order_number2, order_total, order_total_final,
-          shipping_fee, order_discount,
-          current_status, created_at,
-          order_name_old, order_name_new,
-          order_email_old, order_email_new,
-          couponcode_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?)
-
-      `,
-        [
-          order_id,
-          user_id,
-          defaultAddress,
-          finalAddressNew,
-          defaultPhone,
-          finalNumber2,
-          order_total,
-          order_total,
-          shipping_fee,
-          order_discount,
-          "PENDING",
-          defaultName,
-          orderNameNew,
-          defaultEmail,
-          orderEmailNew,
-          couponcodeId,
-        ]
-      );
-
-      const [[orderRow]] = await db.query(
-        `SELECT order_id FROM orders WHERE order_hash = ?`,
-        [order_id]
-      );
-      const orderId = orderRow?.order_id;
-
-      // Lưu order_items
-      for (const item of cart_items) {
-        const {
-          variant_id,
-          quantity,
-          name: product_name,
-          price: product_price,
-        } = item;
-        if (!variant_id || !quantity || !product_name || !product_price)
-          continue;
-
-        await db.query(
-          `
-      INSERT INTO order_items (order_id, variant_id, quantity, product_name, product_price, current_status, created_at)
-      VALUES (?, ?, ?, ?, ?, 'NORMAL', NOW())
-    `,
-          [orderId, variant_id, quantity, product_name, product_price]
-        );
-      }
-
-      // Ghi log trạng thái
-      await db.query(
-        `
-    INSERT INTO order_status_log (order_id, from_status, to_status, trigger_by, step, created_at)
-    VALUES (?, NULL, 'PENDING', 'system', 'Khởi tạo đơn', NOW())
-  `,
-        [orderId]
-      );
-
-      // Tạo giao dịch thanh toán MoMo
       const partnerCode = "MOMO";
       const accessKey = "F8BBA842ECF85";
       const secretKey = "K951B6PE1waDMi640xX08PD3vg6EkVlz";
-      const requestId = partnerCode + new Date().getTime();
-      const momoOrderId = requestId;
-      const orderInfo = `Thanh toán đơn hàng #${order_id}`;
-      const redirectUrl = `http://localhost:5173/dat-hang-thanh-cong/${order_id}`;
-      const ipnUrl = "http://localhost:3501/api/orders";
       const requestType = "captureWallet";
-      const extraData = "";
 
-      const rawSignature =
-        `accessKey=${accessKey}&amount=${amount}&extraData=${extraData}&ipnUrl=${ipnUrl}` +
-        `&orderId=${momoOrderId}&orderInfo=${orderInfo}&partnerCode=${partnerCode}` +
-        `&redirectUrl=${redirectUrl}&requestId=${requestId}&requestType=${requestType}`;
+      const orderId = `SNA-${Date.now()}`;
+      const requestId = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      const redirectUrl = `https://2a20dc71e8db.ngrok-free.app/api/orders/redirect/momo`;
+      const ipnUrl = `https://2a20dc71e8db.ngrok-free.app/api/orders/payment/momo`;
+      const orderInfo = "Thanh toán đơn hàng";
+
+      const extraData = Buffer.from(JSON.stringify({
+        order_id: orderId,
+        user_id,
+        order_total,
+        order_address_new,
+        order_number2,
+        order_name_new,
+        order_email_new,
+        couponcode_id,
+        cart_items,
+        coupon_code,
+        shipping_fee,
+        order_discount
+      })).toString('base64');
+
+      const rawSignature = `accessKey=${accessKey}&amount=${amount}&extraData=${extraData}&ipnUrl=${ipnUrl}&orderId=${orderId}&orderInfo=${orderInfo}&partnerCode=${partnerCode}&redirectUrl=${redirectUrl}&requestId=${requestId}&requestType=${requestType}`;
 
       const signature = crypto
-        .createHmac("sha256", secretKey)
+        .createHmac('sha256', secretKey)
         .update(rawSignature)
-        .digest("hex");
+        .digest('hex');
 
-      const requestBody = {
+      const momoBody = {
         partnerCode,
         accessKey,
         requestId,
-        amount: `${amount}`,
-        orderId: momoOrderId,
+        amount: amount.toString(),
+        orderId,
         orderInfo,
         redirectUrl,
         ipnUrl,
         extraData,
         requestType,
         signature,
-        lang: "vi",
+        lang: 'vi'
       };
 
-      const momoResponse = await axios.post(
-        "https://test-payment.momo.vn/v2/gateway/api/create",
-        requestBody,
-        { headers: { "Content-Type": "application/json" } }
+      const momoRes = await axios.post(
+        'https://test-payment.momo.vn/v2/gateway/api/create',
+        momoBody,
+        { headers: { 'Content-Type': 'application/json' } }
       );
 
-      const { payUrl } = momoResponse.data;
-
-      // Lưu paymen
-      await db.query(
-        `
-    INSERT INTO payments (order_id, method, amount, status, transaction_code, created_at)
-    VALUES (?, ?, ?, 'SUCCESS', ?, NOW())
-  `,
-        [orderId, method, amount, momoOrderId]
-      );
-
-      // Gửi email xác nhận
-      const emailData = {
-        name: orderNameNew || defaultName,
-        email: orderEmailNew || defaultEmail,
-        phone: finalNumber2 || defaultPhone,
-        address: finalAddressNew || defaultAddress,
-        amount,
-        method,
-        order_id,
-        order_hash,
-        created_at: new Date().toLocaleString("vi-VN", {
-          timeZone: "Asia/Ho_Chi_Minh",
-        }),
-        current_status: "PENDING",
-        order_total_final: amount.toLocaleString("vi-VN") + "đ",
-        products: cart_items.map((item) => ({
-          name: item.name,
-          quantity: item.quantity,
-          price: (item.price * 1).toLocaleString("vi-VN") + "đ",
-          total: (item.price * item.quantity).toLocaleString("vi-VN") + "đ",
-          image: item.image,
-        })),
-      };
-
-      try {
-        await sendEmail1(emailData.email, "Xác nhận đơn hàng", emailData);
-      } catch (err) {
-        console.error("Lỗi gửi email:", err.message);
-      }
-
-      return res.status(200).json({
-        message: "Tạo đơn hàng MoMo thành công",
-        payUrl,
-        order_id: orderId,
-        order_hash: order_id,
-      });
+      return res.json({ payUrl: momoRes.data.payUrl });
     }
+
 
     // VNPay: không lưu đơn → trả về payUrl
     if (method === "VNPAY") {
@@ -916,7 +692,7 @@ router.post("/", verifyToken, async (req, res) => {
         vnpayHost: "https://sandbox.vnpayment.vn",
         testMode: true,
         hashAlgorithm: "SHA512",
-        loggerFn: () => {},
+        loggerFn: () => { },
       });
 
       const tomorrow = new Date();
@@ -950,234 +726,236 @@ router.post("/", verifyToken, async (req, res) => {
   }
 });
 
-// router.post('/payment/momo', async (req, res) => {
-//   try {
-//     const {
-//       orderId,
-//       requestId,
-//       resultCode,
-//       amount: decodedAmount,
-//       orderInfo,
-//       extraData,
-//       signature
-//     } = req.body;
 
-//     // Validate chữ ký (signature)
-//     const rawSignature =
-//       `accessKey=F8BBA842ECF85&amount=${amount}&extraData=${extraData}` +
-//       `&orderId=${orderId}&orderInfo=${orderInfo}&partnerCode=MOMO` +
-//       `&requestId=${requestId}&responseTime=${Date.now()}&resultCode=${resultCode}&message=Success`;
+router.post("/payment/momo", async (req, res) => {
+  const {
+    orderId,
+    amount,
+    resultCode,
+    requestId,
+    orderInfo,
+    orderType,
+    transId,
+    payType,
+    extraData,
+    signature,
+    message,
+    partnerCode,
+    responseTime,
+  } = req.body;
 
-//     const expectedSignature = crypto
-//       .createHmac('sha256', 'K951B6PE1waDMi640xX08PD3vg6EkVlz') // secretKey
-//       .update(rawSignature)
-//       .digest('hex');
+  const accessKey = "F8BBA842ECF85";
+  const secretKey = "K951B6PE1waDMi640xX08PD3vg6EkVlz";
 
-//     if (signature !== expectedSignature) {
-//       return res.status(400).json({ message: 'Chữ ký không hợp lệ' });
-//     }
+  try {
 
-//     if (parseInt(resultCode) !== 0) {
-//       return res.status(200).json({ message: 'Thanh toán thất bại' });
-//     }
+    const rawSignature = `accessKey=${accessKey}&amount=${amount}&extraData=${extraData}&message=${message}&orderId=${orderId}&orderInfo=${orderInfo}&orderType=${orderType}&partnerCode=${partnerCode}&payType=${payType}&requestId=${requestId}&responseTime=${responseTime}&resultCode=${resultCode}&transId=${transId}`;
 
-//     // Giải mã extraData
-//     const decoded = JSON.parse(Buffer.from(extraData, 'base64').toString());
-//     const {
-//       order_id,
-//       user_id,
-//       order_total,
-//       amount,
-//       order_address_new,
-//       order_number2,
-//       order_name_new,
-//       order_email_new,
-//       couponcode_id,
-//       cart_items = [],
-//       coupon_code
-//     } = decoded;
+    const expectedSignature = crypto
+      .createHmac("sha256", secretKey)
+      .update(rawSignature)
+      .digest("hex");
 
-//     // Lấy thông tin user
-//     const [[userInfo]] = await db.query(
-//       `SELECT user_address, user_number, user_name, user_gmail FROM user WHERE user_id = ?`,
-//       [user_id]
-//     );
-//     if (!userInfo) return res.status(404).json({ error: 'Không tìm thấy user' });
+    if (signature !== expectedSignature || parseInt(resultCode) !== 0) {
+      return res.status(400).json({ message: "Signature mismatch or payment failed" });
+    }
 
-//     const defaultName = userInfo.user_name?.trim() || '';
-//     const defaultEmail = userInfo.user_gmail?.trim() || '';
-//     const defaultAddress = userInfo.user_address?.trim() || '';
-//     const defaultPhone = userInfo.user_number?.trim() || '';
+    // Đã tồn tại đơn hàng này chưa?
+    const [existingOrder] = await db.query("SELECT * FROM orders WHERE order_id = ?", [orderId]);
+    if (existingOrder.length > 0) {
+      return res.status(200).json({ message: "Order already exists" });
+    }
 
-//     const orderNameNew = (order_name_new?.trim() && order_name_new.trim() !== defaultName) ? order_name_new.trim() : null;
-//     const orderEmailNew = (order_email_new?.trim() && order_email_new.trim() !== defaultEmail) ? order_email_new.trim() : null;
-//     const finalAddressNew = (order_address_new?.trim() && order_address_new.trim() !== defaultAddress) ? order_address_new.trim() : null;
-//     const finalNumber2 = (order_number2?.trim() && order_number2.trim() !== defaultPhone) ? order_number2.trim() : null;
+    // Parse extraData
+    const extra = JSON.parse(Buffer.from(extraData, "base64").toString("utf8"));
+    const {
+      user_id,
+      order_total,
+      shipping_fee,
+      order_discount,
+      couponcode_id,
+      cart_items,
+      order_name_new,
+      order_email_new,
+      order_address_new,
+      order_number2,
+      order_hash,
+    } = extra;
 
-//     let couponcodeId = couponcode_id || null;
-//     if (!couponcodeId && coupon_code) {
-//       const [[coupon]] = await db.query(`SELECT couponcode_id FROM couponcode WHERE code = ?`, [coupon_code]);
-//       if (coupon) couponcodeId = coupon.couponcode_id;
-//     }
+    // Insert orders
+    await db.query(
+      `INSERT INTO orders 
+        (order_id, user_id, order_total, method, amount, status, created_at, updated_at, couponcode_id, shipping_fee, discount, order_name, order_email, order_address, order_number, order_hash)
+        VALUES (?, ?, ?, ?, ?, 'PAID', NOW(), NOW(), ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        orderId,
+        user_id,
+        order_total,
+        "MoMo",
+        amount,
+        couponcode_id || null,
+        shipping_fee,
+        order_discount,
+        order_name_new,
+        order_email_new,
+        order_address_new,
+        order_number2,
+        order_hash,
+      ]
+    );
 
-//     // Check đơn hàng tồn tại chưa
-//     const [existingOrders] = await db.query('SELECT * FROM orders WHERE order_hash = ?', [order_id]);
-//     if (existingOrders.length > 0) {
-//       return res.status(200).json({ message: 'Đơn hàng đã tồn tại, không lưu lại' });
-//     }
+    // Insert order items
+    for (const item of cart_items) {
+      await db.query(
+        `INSERT INTO order_items (order_id, product_id, variant_id, quantity, price) VALUES (?, ?, ?, ?, ?)`,
+        [orderId, item.product_id, item.variant_id, item.quantity, item.price]
+      );
+    }
 
-//     // Lưu đơn hàng
-//     await db.query(`
-//       INSERT INTO orders (
-//         order_hash, user_id, order_address_old, order_address_new,
-//         order_number1, order_number2, order_total, order_total_final,
-//         current_status, created_at,
-//         order_name_old, order_name_new,
-//         order_email_old, order_email_new,
-//         couponcode_id
-//       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?)`,
-//       [
-//         order_id,
-//         user_id,
-//         defaultAddress,
-//         finalAddressNew,
-//         defaultPhone,
-//         finalNumber2,
-//         order_total,
-//         order_total,
-//         'PENDING',
-//         defaultName,
-//         orderNameNew,
-//         defaultEmail,
-//         orderEmailNew,
-//         couponcodeId
-//       ]
-//     );
+    // Insert payment
+    await db.query(
+      `INSERT INTO payments (order_id, provider, amount, status, trans_id, created_at)
+       VALUES (?, 'MoMo', ?, 'PAID', ?, NOW())`,
+      [orderId, amount, transId]
+    );
 
-//     const [[orderRow]] = await db.query(`SELECT order_id FROM orders WHERE order_hash = ?`, [order_id]);
-//     const dbOrderId = orderRow.order_id;
+    // Log order status
+    await db.query(
+      `INSERT INTO order_status_log (order_id, status, changed_at) VALUES (?, 'PAID', NOW())`,
+      [orderId]
+    );
 
-//     // Chi tiết đơn hàng
-//     for (const item of cart_items) {
-//       const { variant_id, quantity, name: product_name, price: product_price } = item;
-//       if (!variant_id || !quantity || !product_name || !product_price) continue;
+    return res.status(200).json({ message: "Payment verified and order saved" });
+  } catch (error) {
+    console.error("MoMo IPN error:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
 
-//       await db.query(`
-//         INSERT INTO order_items (order_id, variant_id, quantity, product_name, product_price, current_status, created_at)
-//         VALUES (?, ?, ?, ?, ?, 'NORMAL', NOW())
-//       `, [dbOrderId, variant_id, quantity, product_name, product_price]);
-//     }
+router.get("/redirect/momo", (req, res) => {
+  const { resultCode, orderId } = req.query;
 
-//     // Payment thành công
-//     await db.query(`
-//       INSERT INTO payments (order_id, method, amount, status, transaction_code, created_at)
-//       VALUES (?, ?, ?, 'SUCCESS', ?, NOW())
-//     `, [dbOrderId, 'MOMO', amount, transId]);
+  if (parseInt(resultCode) === 0) {
+    return res.redirect(`http://localhost:5173/dat-hang-thanh-cong/${orderId}`);
+  }
 
-//     // Log trạng thái
-//     await db.query(`
-//       INSERT INTO order_status_log (order_id, from_status, to_status, trigger_by, step, created_at)
-//       VALUES (?, NULL, 'PENDING', 'momo-ipn', 'Khởi tạo đơn hàng', NOW())
-//     `, [dbOrderId]);
+  return res.redirect("http://localhost:5173/");
+});
 
-//     // Gửi email xác nhận
-//     const emailData = {
-//       name: orderNameNew || defaultName,
-//       email: orderEmailNew || defaultEmail,
-//       phone: finalNumber2 || defaultPhone,
-//       address: finalAddressNew || defaultAddress,
-//       amount,
-//       method: 'MOMO',
-//       order_id,
-//       order_hash: order_id,
-//       created_at: new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" }),
-//       current_status: 'PENDING',
-//       order_total_final: amount.toLocaleString("vi-VN") + "đ",
-//       products: cart_items.map((item) => ({
-//         name: item.name,
-//         quantity: item.quantity,
-//         price: (item.price * 1).toLocaleString("vi-VN") + "đ",
-//         total: (item.price * item.quantity).toLocaleString("vi-VN") + "đ",
-//         image: item.image
-//       }))
-//     };
+/**
+ * @route   GET /api/orders/:id
+ * @desc    Lấy thông tin chi tiết một đơn hàng
+ * @access  Private
+ */
 
-//     await sendEmail1(emailData.email, "Xác nhận đơn hàng", emailData);
+router.get("/:id", verifyToken, async (req, res) => {
+  try {
+    const orderId = Number(req.params.id);
 
-//     return res.status(200).json({ message: 'Thanh toán MoMo thành công và đơn hàng đã được lưu' });
-//   } catch (err) {
-//     console.error("Lỗi IPN MoMo:", err);
-//     return res.status(500).json({ error: 'Lỗi xử lý IPN MoMo' });
-//   }
-// });
+    if (isNaN(orderId)) {
+      return res.status(400).json({ error: "Invalid order ID" });
+    }
 
-// router.get('/payment/vnpay', async (req, res) => {
-//   try {
-//     const query = req.query;
+    const orderQuery = `
+      SELECT 
+        o.*,
+        u.user_gmail AS user_email,
+        u.user_name AS user_name,
+        u.user_number AS user_phone,
+        p.method AS payment_method,
+        p.status AS payment_status,
+        p.transaction_code AS payment_transaction_code,
+        p.paid_at AS payment_paid_at
+      FROM \`orders\` o
+      LEFT JOIN user u ON o.user_id = u.user_id
+      LEFT JOIN payments p ON o.order_id = p.order_id
+      WHERE o.order_id = ?
+    `;
 
-//     const secureSecret = 'NXM2DJWRF8RLC4R5VBK85OJZS1UE9KI6F';
-//     const vnpay = new VNPay({ tmnCode: 'DHF21S3V', secureSecret, hashAlgorithm: 'SHA512' });
+    let orders;
+    try {
+      [orders] = await db.query(orderQuery, [orderId]);
+      console.log("Order query result length:", orders.length);
+    } catch (error) {
+      console.error("Error in order query:", error);
+      return res.status(500).json({ error: "Failed to fetch order", details: error.message });
+    }
 
-//     const isValid = vnpay.validateReturnUrl(query);
+    if (orders.length === 0) {
+      return res.status(404).json({ error: "Order not found" });
+    }
 
-//     if (!isValid) {
-//       return res.status(400).json({ error: "Chữ ký không hợp lệ" });
-//     }
+    let order = orders[0];
 
-//     const vnp_ResponseCode = query.vnp_ResponseCode;
-//     const vnp_TxnRef = query.vnp_TxnRef;
+    // Gộp thông tin thanh toán vào array `payment[]`, rồi xoá các field gốc
+    order.payment = [{
+      method: order.payment_method,
+      status: order.payment_status,
+      transaction_code: order.payment_transaction_code,
+      paid_at: order.payment_paid_at
+    }];
+    delete order.payment_method;
+    delete order.payment_status;
+    delete order.payment_transaction_code;
+    delete order.payment_paid_at;
 
-//     const [[payment]] = await db.query(`SELECT * FROM payments WHERE transaction_code = ?`, [vnp_TxnRef]);
+    // Kiểm tra quyền truy cập
+    if (req.user.role !== "admin" && req.user.id !== order.user_id) {
+      return res.status(403).json({ error: "You do not have permission to view this order" });
+    }
 
-//     if (!payment) return res.status(404).json({ error: "Không tìm thấy thanh toán" });
+    try {
+      // Lấy chi tiết sản phẩm
+      const orderItemsQuery = `
+        SELECT 
+          oi.*,
+          p.product_name,
+          p.product_image
+        FROM order_items oi
+        LEFT JOIN variant_product vp ON oi.variant_id = vp.variant_id
+        LEFT JOIN product p ON vp.product_id = p.product_id
+        WHERE oi.order_id = ?
+      `;
 
-//     const orderId = payment.order_id;
+      let orderItems;
+      try {
+        [orderItems] = await db.query(orderItemsQuery, [orderId]);
+        order.items = orderItems;
+      } catch (error) {
+        console.error("Error in order items query:", error);
+        order.items = [];
+      }
 
-//     if (vnp_ResponseCode === "00") {
-//       // Thanh toán thành công
-//       await db.query(`UPDATE payments SET status = 'SUCCESS' WHERE transaction_code = ?`, [vnp_TxnRef]);
+      // Lấy trạng thái đơn hàng
+      const statusLogsQuery = `
+        SELECT 
+          osl.*
+        FROM order_status_log osl
+        WHERE osl.order_id = ?
+        ORDER BY osl.created_at ASC
+      `;
 
-//       await db.query(`UPDATE orders SET current_status = 'PENDING' WHERE order_id = ?`, [orderId]);
+      let statusLogs;
+      try {
+        [statusLogs] = await db.query(statusLogsQuery, [orderId]);
+        order.status_logs = statusLogs;
+      } catch (error) {
+        console.error("Error in status logs query:", error);
+        order.status_logs = [];
+      }
 
-//       await db.query(`
-//         INSERT INTO order_status_log (order_id, from_status, to_status, trigger_by, step, created_at)
-//         VALUES (?, NULL, 'PENDING', 'system', 'IPN VNPay xác nhận', NOW())
-//       `, [orderId]);
+      res.json(order);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch order details", details: error.message });
+    }
+  } catch (error) {
+    console.error("Error fetching order:", error);
+    res.status(500).json({ error: "Failed to fetch order", details: error.message });
+  }
+});
 
-//       const [[order]] = await db.query(`SELECT * FROM orders WHERE order_id = ?`, [orderId]);
-//       const [items] = await db.query(`SELECT * FROM order_items WHERE order_id = ?`, [orderId]);
 
-//       const emailData = {
-//         name: order.order_name_new || order.order_name_old,
-//         email: order.order_email_new || order.order_email_old,
-//         phone: order.order_number2 || order.order_number1,
-//         address: order.order_address_new || order.order_address_old,
-//         amount: payment.amount,
-//         method: 'VNPAY',
-//         order_id: order.order_hash,
-//         created_at: new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" }),
-//         current_status: order.current_status,
-//         order_total_final: Number(payment.amount).toLocaleString("vi-VN") + "đ",
-//         products: items.map(item => ({
-//           name: item.product_name,
-//           quantity: item.quantity,
-//           price: Number(item.product_price).toLocaleString("vi-VN") + "đ",
-//           total: (item.product_price * item.quantity).toLocaleString("vi-VN") + "đ",
-//           image: item.image || "/images/default.jpg"
-//         }))
-//       };
 
-//       await sendEmail1(emailData.email, "Xác nhận đơn hàng VNPay", emailData);
-
-//       return res.redirect(`http://localhost:5173/dat-hang-thanh-cong/${order.order_hash}`);
-//     } else {
-//       return res.redirect("http://localhost:5173/thanh-toan");
-//     }
-//   } catch (error) {
-//     console.error("Lỗi IPN VNPay:", error);
-//     res.status(500).json({ error: "Lỗi máy chủ khi xử lý IPN VNPay" });
-//   }
-// });
 /**
  * @route   PUT /api/orders/:id/status
  * @desc    Cập nhật trạng thái đơn hàng
@@ -1463,9 +1241,8 @@ router.post("/send-invoice", verifyToken, async (req, res) => {
     );
 
     // Tạo nội dung email
-    const invoiceUrl = `${
-      process.env.SITE_URL || "http://localhost:3501"
-    }/dashboard/orders/invoice/${order_id}`;
+    const invoiceUrl = `${process.env.SITE_URL || "http://localhost:3501"
+      }/dashboard/orders/invoice/${order_id}`;
 
     // Trong thực tế, bạn sẽ sử dụng một thư viện gửi email như nodemailer
     // Ví dụ mẫu này chỉ giả lập việc gửi email
@@ -1527,32 +1304,32 @@ router.patch("/:id", verifyToken, isAdmin, async (req, res) => {
   try {
     const orderId = req.params.id;
     const updateData = req.body;
-    
+
     // Validate that orderId is a number
     if (isNaN(parseInt(orderId))) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Invalid order ID" 
+      return res.status(400).json({
+        success: false,
+        message: "Invalid order ID"
       });
     }
-    
+
     // Check if order exists
     const [[orderExists]] = await db.query(
       "SELECT order_id FROM orders WHERE order_id = ?",
       [orderId]
     );
-    
+
     if (!orderExists) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "Order not found" 
+      return res.status(404).json({
+        success: false,
+        message: "Order not found"
       });
     }
-    
+
     // Start a transaction
     const connection = await db.getConnection();
     await connection.beginTransaction();
-    
+
     try {
       // Allowed fields to update in orders table
       const allowedOrderFields = [
@@ -1562,11 +1339,11 @@ router.patch("/:id", verifyToken, isAdmin, async (req, res) => {
         'order_address_new',
         'note'
       ];
-      
+
       // Special case for payment_method - this goes in the payments table
       const paymentMethod = updateData.payment_method;
       delete updateData.payment_method;
-      
+
       // Filter out any fields that are not allowed
       const filteredData = {};
       for (const key in updateData) {
@@ -1574,21 +1351,21 @@ router.patch("/:id", verifyToken, isAdmin, async (req, res) => {
           filteredData[key] = updateData[key];
         }
       }
-      
+
       // Update the order table if there are fields to update
       if (Object.keys(filteredData).length > 0) {
         const setClause = Object.keys(filteredData)
           .map(key => `${key} = ?`)
           .join(', ');
-        
+
         const values = [...Object.values(filteredData), orderId];
-        
+
         await connection.query(
           `UPDATE orders SET ${setClause}, updated_at = NOW() WHERE order_id = ?`,
           values
         );
       }
-      
+
       // Update payment method if provided
       if (paymentMethod) {
         // Check if valid payment method
@@ -1596,13 +1373,13 @@ router.patch("/:id", verifyToken, isAdmin, async (req, res) => {
         if (!validPaymentMethods.includes(paymentMethod)) {
           throw new Error('Invalid payment method');
         }
-        
+
         // Check if payment record exists
         const [[paymentExists]] = await connection.query(
           "SELECT payment_id FROM payments WHERE order_id = ? ORDER BY created_at DESC LIMIT 1",
           [orderId]
         );
-        
+
         if (paymentExists) {
           // Update existing payment record
           await connection.query(
@@ -1616,20 +1393,20 @@ router.patch("/:id", verifyToken, isAdmin, async (req, res) => {
             [orderId, paymentMethod]
           );
         }
-        
+
         // Add payment_method to the list of updated fields
         filteredData.payment_method = paymentMethod;
       }
-      
+
       // Commit the transaction
       await connection.commit();
-      
+
       return res.status(200).json({
         success: true,
         message: "Order updated successfully",
         updatedFields: Object.keys(filteredData)
       });
-      
+
     } catch (error) {
       // Rollback the transaction on error
       await connection.rollback();
@@ -1638,13 +1415,13 @@ router.patch("/:id", verifyToken, isAdmin, async (req, res) => {
       // Release the connection
       connection.release();
     }
-    
+
   } catch (error) {
     console.error("Error updating order:", error);
-    return res.status(500).json({ 
-      success: false, 
+    return res.status(500).json({
+      success: false,
       message: "Server error while updating order",
-      error: error.message 
+      error: error.message
     });
   }
 });

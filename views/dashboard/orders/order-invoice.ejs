@@ -297,7 +297,7 @@
       </div>
       <div class="meta-item">
         <div class="meta-title">Trạng thái thanh toán</div>
-        <div class="meta-value"><%= mapPaymentStatus(order?.payment_status) %></div>
+        <div class="meta-value"><%= mapPaymentStatus((order.payment && order.payment.length > 0) ? order.payment[0].status : order.payment_status) %></div>
       </div>
       <div class="meta-item">
         <div class="meta-title">Trạng thái vận chuyển</div>

@@ -1,4 +1,6 @@
 <!-- Trang chi tiết đơn hàng -->
+<% console.log("Order payment in EJS:", order.payment); %>
+<% console.log("Payment status in EJS:", (order.payment && order.payment.length > 0) ? order.payment[0].status : 'No payment data'); %>
 <div class="order-detail-page">
   <div class="container">
     <div class="order-card">
@@ -12,8 +14,26 @@
           <div class="status-item">
             <div class="record-status">
               <div class="status-label">Trạng thái thanh toán:</div>
-              <div class="status-value <%= order.payment_status ? order.payment_status.toLowerCase() : 'pending' %>">
-                <%= mapPaymentStatus(order.payment_status) %>
+              <% 
+                const paymentStatus = (order.payment && order.payment.length > 0) ? order.payment[0].status : order.payment_status;
+                console.log("Payment status in template:", paymentStatus);
+                
+                let statusDisplay = "Chờ thanh toán";
+                let statusClass = "pending";
+                
+                if (paymentStatus === "SUCCESS") {
+                  statusDisplay = "Đã thanh toán";
+                  statusClass = "paid";
+                } else if (paymentStatus === "FAILED") {
+                  statusDisplay = "Thanh toán thất bại";
+                  statusClass = "failed";
+                } else if (paymentStatus === "REFUNDED") {
+                  statusDisplay = "Đã hủy";
+                  statusClass = "refunded";
+                }
+              %>
+              <div class="status-value <%= statusClass %>">
+                <%= statusDisplay %>
               </div>
             </div>
             <div class="record-log">
@@ -180,12 +200,12 @@
             <div class="info-row">
               <div class="info-label">Phương thức thanh toán <i class="fas fa-pencil-alt edit-btn" data-field="payment_method"></i></div>
               <div class="info-value" id="payment_method">
-                <%= order.payment_method || 'Không có thông tin' %>
+                <%= order.payment && order.payment.length > 0 ? order.payment[0].method : 'Không có thông tin' %>
               </div>
               <select class="info-input" id="input_payment_method" style="display: none;">
                 <option value="">-- Chọn phương thức thanh toán --</option>
                 <% paymentMethods.forEach(method => { %>
-                  <option value="<%= method %>" <%= order.payment_method === method ? 'selected' : '' %>><%= method %></option>
+                  <option value="<%= method %>" <%= (order.payment && order.payment.length > 0 && order.payment[0].method === method) ? 'selected' : '' %>><%= method %></option>
                 <% }); %>
               </select>
             </div>

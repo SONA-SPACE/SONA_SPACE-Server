@@ -253,10 +253,20 @@ router.get("/admin", verifyToken, isAdmin, async (req, res) => {
         o.order_email_new,
         o.order_email_old,
         u.user_name,
+        p.method as payment_method,
         COUNT(oi.order_item_id) AS item_count
       FROM orders o
       LEFT JOIN user u ON o.user_id = u.user_id
       LEFT JOIN order_items oi ON o.order_id = oi.order_id
+      LEFT JOIN (
+        SELECT order_id, method 
+        FROM payments 
+        WHERE payment_id IN (
+          SELECT MAX(payment_id) 
+          FROM payments 
+          GROUP BY order_id
+        )
+      ) p ON o.order_id = p.order_id
       GROUP BY o.order_id
       ORDER BY o.created_at DESC
     `);

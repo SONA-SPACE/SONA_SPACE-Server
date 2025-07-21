@@ -1197,12 +1197,14 @@ router.put("/:id", async (req, res) => {
 router.delete("/:slug", async (req, res) => {
   const slug = req.params.slug;
   if (!slug) return res.status(400).json({ message: "Slug không hợp lệ" });
+
+  const connection = await db.getConnection();
+
   try {
+    await connection.beginTransaction();
+
     function extractPublicIdFromUrl(url) {
       if (!url) return null;
-
-      // https://res.cloudinary.com/your_cloud_name/image/upload/v12345/folder/subfolder/image_name.jpg
-      // folder/subfolder/image_name
       const match = url.match(
         /\/upload\/(?:v\d+\/)?(.+?)(?:\.\w{3,4})?(?:\?.*)?$/
       );
@@ -1217,38 +1219,38 @@ router.delete("/:slug", async (req, res) => {
       return null;
     }
 
-    // Lấy product_id từ slug
-    const [existingProduct] = await db.query(
+    const [existingProduct] = await connection.query(
       "SELECT product_id, product_image FROM product WHERE product_slug = ?",
       [slug]
     );
     if (!existingProduct.length) {
+      await connection.rollback();
       return res.status(404).json({ error: "Product not found" });
     }
 
     const { product_id, product_image } = existingProduct[0];
 
-    // Lấy tất cả variant_id + ảnh
-    const [variants] = await db.query(
+    const [variants] = await connection.query(
       "SELECT variant_id, variant_product_list_image FROM variant_product WHERE product_id = ?",
       [product_id]
     );
 
     const variantIds = variants.map((v) => v.variant_id);
 
-    // 🔐 Kiểm tra đơn hàng nếu có -> không cho xoá
     if (variantIds.length > 0) {
-      const [orderItems] = await db.query(
+      yảy;
+      const [orderItems] = await connection.query(
         `SELECT order_item_id FROM order_items WHERE variant_id IN (${variantIds
           .map(() => "?")
           .join(",")}) LIMIT 1`,
         variantIds
       );
       if (orderItems.length > 0) {
-        await db.query(
+        await connection.query(
           "UPDATE product SET product_status = 0 WHERE product_id = ?",
           [product_id]
         );
+        await connection.commit();
         return res.json({
           message:
             "Sản phẩm đang được mua trong đơn hàng, không thể xoá. Trạng thái đã được chuyển sang 'ẩn'.",
@@ -1256,14 +1258,12 @@ router.delete("/:slug", async (req, res) => {
       }
     }
 
-    // Xoá ảnh biến thể
     for (const variant of variants) {
-      // Đảm bảo variant_product_list_image là chuỗi và không rỗng
       const imageUrls = variant.variant_product_list_image
         ? variant.variant_product_list_image.split(",")
         : [];
       for (const url of imageUrls) {
-        const trimmedUrl = url.trim(); // Cắt khoảng trắng thừa
+        const trimmedUrl = url.trim();
         const publicId = extractPublicIdFromUrl(trimmedUrl);
         if (publicId) {
           try {
@@ -1308,30 +1308,43 @@ router.delete("/:slug", async (req, res) => {
       }
     }
 
-    //  Xoá liên kết trong database
-    await db.query("DELETE FROM variant_product WHERE product_id = ?", [
+    await connection.query("DELETE FROM comment WHERE product_id = ?", [
       product_id,
     ]);
-    await db.query("DELETE FROM room_product WHERE product_id = ?", [
+
+    await connection.query(
+      "DELETE FROM product_attribute_value WHERE product_id = ?",
+      [product_id]
+    );
+
+    await connection.query("DELETE FROM variant_product WHERE product_id = ?", [
       product_id,
     ]);
+    await connection.query("DELETE FROM room_product WHERE product_id = ?", [
+      product_id,
+    ]);
+
     if (variantIds.length > 0) {
-      await db.query(
+      await connection.query(
         `DELETE FROM wishlist WHERE variant_id IN (${variantIds
           .map(() => "?")
           .join(",")})`,
         variantIds
       );
     }
-    await db.query("DELETE FROM comment WHERE product_id = ?", [product_id]);
 
-    // 🔚 Xoá sản phẩm
-    await db.query("DELETE FROM product WHERE product_id = ?", [product_id]);
+    await connection.query("DELETE FROM product WHERE product_id = ?", [
+      product_id,
+    ]);
 
+    await connection.commit();
     res.json({ message: "Xoá sản phẩm thành công" });
   } catch (error) {
+    await connection.rollback();
     console.error("Error deleting product:", error);
     res.status(500).json({ error: "Failed to delete product" });
+  } finally {
+    connection.release();
   }
 });
 

@@ -1,0 +1,249 @@
+<!-- HTML hiển thị danh sách vật liệu -->
+<div class="dashboard-header-row">
+    <h2 class="dashboard-title">Quản lý bình luận</h2>
+    <div class="action-buttons">
+        <button class="add-category-btn" onclick="window.location.href='/dashboard/material/add'">
+            <i class="fas fa-plus"></i> Thêm vật liệu
+        </button>
+    </div>
+</div>
+
+<div class="filter-row">
+    <div class="search-container">
+        <i class="fas fa-search search-icon"></i>
+        <input type="text" class="search-input" placeholder="Tìm kiếm vật liệu..." />
+    </div>
+    <div class="date-range">
+        <i class="far fa-calendar-alt"></i>
+        <span>01/04/2023 - 30/04/2023</span>
+    </div>
+    <div class="results-info">Đang tải dữ liệu...</div>
+</div>
+
+<div class="category-table-container">
+    <table class="category-table" id="materialsTable">
+        <thead>
+            <tr>
+                <th>Mã đơn hàng </th>
+                <th>Khách hàng</th>
+                <th>Sản phẩm</th>
+                <th>Sao</th>
+                <th>Tiêu đề</th>
+                <th>Bình luận</th>
+                <th>Lượt thích bình luận</th>
+                <th>Trạng thái</th>
+
+                <th>Ngày bình luận</th>
+                <th>Ngày cập nhật</th>
+
+                <th>Thao tác</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Dữ liệu sẽ được JS đổ vào -->
+        </tbody>
+    </table>
+</div>
+<div id="confirmationModal" class="modal-overlay hidden1">
+    <div class="modal-content">
+        <h3 id="modalTitle">Xác nhận hành động</h3>
+        <p id="modalMessage"></p>
+        <div class="modal-buttons">
+            <button id="cancelBtn" class="cancel-btn">Hủy</button>
+            <button id="confirmBtn" class="confirm-btn">Xác nhận</button>
+        </div>
+    </div>
+</div>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const URL_API = "http://localhost:3501/api";
+        const AUTH_TOKEN = localStorage.getItem("token");
+
+        const modal = document.getElementById('confirmationModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalMessage = document.getElementById('modalMessage');
+        const confirmBtn = document.getElementById('confirmBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+
+        let currentConfirmCallback = null;
+
+        function showModal(title, message, onConfirmCallback) {
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            currentConfirmCallback = onConfirmCallback;
+            modal.classList.remove('hidden1');
+        }
+
+        function hideModal() {
+            modal.classList.add('hidden1');
+            currentConfirmCallback = null;
+        }
+
+        confirmBtn.addEventListener('click', () => {
+            if (currentConfirmCallback) {
+                currentConfirmCallback();
+            }
+            hideModal();
+        });
+
+        cancelBtn.addEventListener('click', () => {
+            hideModal();
+        });
+
+
+
+        function getComments() {
+            fetch(URL_API + "/comments/admin", {
+                headers: {
+                    'Authorization': `Bearer ${AUTH_TOKEN}`
+                }
+            })
+                .then((res) => {
+                    if (!res.ok) {
+                        // If response is not OK, parse error message
+                        return res.json().then(err => { throw new Error(err.error || 'Failed to fetch comments'); });
+                    }
+                    return res.json();
+                })
+                .then((comments) => {
+                    renderComments(comments);
+                })
+                .catch((err) => {
+                    console.error("Lỗi khi tải bình luận:", err);
+                    document.querySelector(".results-info").textContent =
+                        `Không thể tải dữ liệu: ${err.message}`;
+                });
+        }
+
+        // Function to render comments into the table
+        function renderComments(comments) {
+            const tableBody = document.querySelector("#materialsTable tbody");
+            tableBody.innerHTML = "";
+
+
+
+            comments.forEach((comment) => {
+                const statusText = comment.comment_status === 1 ? "Hiển thị" : "Ẩn";
+                const statusIcon = comment.comment_status === 1 ? "fa-eye" : "fa-eye-slash";
+
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${comment.order_hash || "-"}</td>
+                    <td>${comment.user_name || "-"}</td>
+                    <td>${comment.product_name || "-"}</td>
+                    <td>${comment.comment_rating || "-"}</td>
+                    <td>${comment.comment_title || "-"}</td>
+                    <td class="description-cell">${comment.comment_description || "-"}</td>
+                    <td>${comment.comment_reaction || 0}</td>
+                    <td>
+                        <span class="status-indicator ${comment.comment_status === 1 ? "visible" : "hidden"}">
+                            <i class="fas ${statusIcon}"></i> ${statusText}
+                        </span>
+                    </td>
+
+                    <td>${formatDate(comment.created_at)}</td>
+                    <td>${formatDate(comment.updated_at)}</td>
+                    <td>
+                        <div class="action-cell">
+                            <button class="action-button edit">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="action-button visibility" data-id="${comment.comment_id}" data-status="${comment.comment_status}">
+                                <i class="fas ${statusIcon}"></i>
+                            </button>
+                            <button class="action-button delete" data-id="${comment.comment_id}" data-name="${comment.comment_title}">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+
+
+                const visibilityButton = row.querySelector(`.action-button.visibility`);
+                if (visibilityButton) {
+                    visibilityButton.addEventListener('click', function () {
+                        const commentId = this.dataset.id;
+                        const currentStatus = parseInt(this.dataset.status);
+                        const newStatus = currentStatus === 1 ? 0 : 1;
+                        const actionText = newStatus === 1 ? "hiển thị" : "ẩn";
+                        const confirmMessage = `Bạn có chắc chắn muốn ${actionText} bình luận của ${comment.user_name} không?`;
+
+                        showModal("Xác nhận thay đổi trạng thái", confirmMessage, () => {
+                            updateCommentStatus(commentId, newStatus);
+                        });
+                    });
+                }
+            });
+
+            document.querySelector(".results-info").textContent =
+                `Hiển thị ${comments.length} bình luận`;
+        }
+
+        async function updateCommentStatus(commentId, newStatus) {
+            try {
+                const response = await fetch(`${URL_API}/comments/${commentId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${AUTH_TOKEN}`
+                    },
+                    body: JSON.stringify({ status: newStatus })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to update comment status');
+                }
+
+                const result = await response.json();
+                console.log("Cập nhật trạng thái bình luận thành công:", result.message);
+
+
+                const button = document.querySelector(`.action-button.visibility[data-id="${commentId}"]`);
+                const icon = button.querySelector("i");
+                const row = button.closest("tr");
+
+
+                icon.classList.remove("fa-eye", "fa-eye-slash");
+                icon.classList.add(newStatus === 1 ? "fa-eye" : "fa-eye-slash");
+                button.dataset.status = newStatus;
+
+                const statusCell = row.querySelector(".status-indicator");
+                if (statusCell) {
+                    statusCell.innerHTML = `<i class="fas ${newStatus === 1 ? "fa-eye" : "fa-eye-slash"}"></i> ${newStatus === 1 ? "Hiển thị" : "Ẩn"}`;
+                    statusCell.className = `status-indicator ${newStatus === 1 ? "visible" : "hidden"}`;
+                }
+
+            } catch (error) {
+                console.error("Lỗi khi cập nhật trạng thái bình luận:", error);
+                alert(`Lỗi: ${error.message}`);
+            }
+        }
+        function formatDate(dateStr) {
+            if (!dateStr) return "-";
+            try {
+
+                const date = new Date(dateStr);
+                if (isNaN(date.getTime())) {
+                    return "-";
+                }
+                return date.toLocaleDateString("vi-VN", {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                });
+            } catch (e) {
+                console.error("Error formatting date:", e);
+                return "-";
+            }
+        }
+
+        getComments();
+        console.log(`ID: ${comment.comment_id} - Status: ${comment.comment_status}`);
+    });
+</script>

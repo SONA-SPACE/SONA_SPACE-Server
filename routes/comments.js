@@ -65,7 +65,102 @@ router.get("/", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch comments" });
   }
 });
+/**
+ * GET /api/admin/comments
+ * Lấy tất cả bình luận + thông tin user, sản phẩm, đơn hàng
+ */
+router.get("/admin", async (req, res) => {
+  // Thêm verifyToken và isAdmin nếu bạn muốn bảo vệ route này
+  try {
+    const [rows] = await db.query(`
+      SELECT 
+        c.comment_id,
+        u.user_name,
+        p.product_name,
+        o.order_hash,
+        c.comment_rating,
+        c.comment_title,
+        c.comment_description,
+        c.comment_reaction,
+        c.comment_status,
+        c.created_at,
+        c.updated_at,
+        c.deleted_at,
+        c.user_id,         
+        c.order_item_id,  
+        c.product_id    
+      FROM comment c
+      LEFT JOIN user u ON c.user_id = u.user_id
+      LEFT JOIN product p ON c.product_id = p.product_id
+      LEFT JOIN order_items oi ON c.order_item_id = oi.order_item_id
+      LEFT JOIN orders o ON oi.order_id = o.order_id
+      WHERE c.deleted_at IS NULL
+      ORDER BY c.created_at DESC
+    `);
 
+    res.json(rows);
+  } catch (error) {
+    console.error("Lỗi khi lấy danh sách bình luận:", error);
+    res.status(500).json({ error: "Lỗi máy chủ khi lấy bình luận" });
+  }
+});
+router.put("/:comment_id/status", async (req, res) => {
+  try {
+    const commentId = Number(req.params.comment_id);
+    if (isNaN(commentId)) {
+      return res.status(400).json({ error: "Invalid comment ID" });
+    }
+
+    const { status, deleted } = req.body; // 'status' có thể là 0 (ẩn) hoặc 1 (hiển thị)
+
+    const [comments] = await db.query(
+      "SELECT * FROM comment WHERE comment_id = ?",
+      [commentId]
+    );
+    if (comments.length === 0) {
+      return res.status(404).json({ error: "Comment not found" });
+    }
+
+    const updates = [];
+    const values = [];
+
+    if (status !== undefined) {
+      // Giả định cột trạng thái trong bảng 'comment' là 'comment_status'
+      updates.push("comment_status = ?");
+      values.push(status);
+    }
+
+    if (deleted !== undefined) {
+      updates.push("deleted_at = ?");
+      values.push(deleted ? new Date() : null); // Xóa mềm (đặt timestamp) hoặc bỏ xóa mềm (đặt NULL)
+    }
+
+    updates.push("updated_at = NOW()"); // Luôn cập nhật thời gian cập nhật
+
+    if (updates.length === 1 && updates[0] === "updated_at = NOW()") {
+      return res.status(400).json({ error: "No update data provided" });
+    }
+
+    values.push(commentId);
+
+    await db.query(
+      `UPDATE comment SET ${updates.join(", ")} WHERE comment_id = ?`,
+      values
+    );
+
+    const [updatedComment] = await db.query(
+      `SELECT * FROM comment WHERE comment_id = ?`,
+      [commentId]
+    );
+    res.json({
+      message: "Comment updated successfully",
+      comment: updatedComment[0],
+    });
+  } catch (error) {
+    console.error("Error updating comment status:", error);
+    res.status(500).json({ error: "Failed to update comment status" });
+  }
+});
 /**
  * @route   GET /api/comments/:id
  * @desc    Lấy chi tiết bình luận

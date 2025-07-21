@@ -106,7 +106,30 @@ router.get("/material/edit/:slug", (req, res) => {
     productId: req.params.slug,
   });
 });
+// Products management
+router.get("/comment", (req, res) => {
+  res.render("dashboard/comment/comment", {
+    title: "Sona Space - Quản lý Sản phẩm",
+    layout: "layouts/dashboard",
+  });
+});
 
+// Add product
+router.get("/comment/add", (req, res) => {
+  res.render("dashboard/comment/add", {
+    title: "Sona Space - Thêm Sản phẩm mới",
+    layout: "layouts/dashboard",
+  });
+});
+
+// Edit product
+router.get("/comment/edit/:slug", (req, res) => {
+  res.render("dashboard/comment/edit", {
+    title: "Sona Space - Chỉnh sửa Sản phẩm",
+    layout: "layouts/dashboard",
+    productId: req.params.slug,
+  });
+});
 // Categories management
 router.get("/categories", (req, res) => {
   res.render("dashboard/category/categories", {

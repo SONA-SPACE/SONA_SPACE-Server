@@ -253,10 +253,20 @@ router.get("/admin", verifyToken, isAdmin, async (req, res) => {
         o.order_email_new,
         o.order_email_old,
         u.user_name,
+        p.method as payment_method,
         COUNT(oi.order_item_id) AS item_count
       FROM orders o
       LEFT JOIN user u ON o.user_id = u.user_id
       LEFT JOIN order_items oi ON o.order_id = oi.order_id
+      LEFT JOIN (
+        SELECT order_id, method 
+        FROM payments 
+        WHERE payment_id IN (
+          SELECT MAX(payment_id) 
+          FROM payments 
+          GROUP BY order_id
+        )
+      ) p ON o.order_id = p.order_id
       GROUP BY o.order_id
       ORDER BY o.created_at DESC
     `);
@@ -457,10 +467,10 @@ router.get("/:id", verifyToken, async (req, res) => {
         SELECT 
           oi.*,
           p.product_name,
-          p.product_sku,
           p.product_image
         FROM order_items oi
-        LEFT JOIN product p ON oi.product_id = p.product_id
+        LEFT JOIN variant_product vp ON oi.variant_id = vp.variant_id
+        LEFT JOIN product p ON vp.product_id = p.product_id
         WHERE oi.order_id = ?
       `;
 
@@ -1483,6 +1493,137 @@ router.post("/send-invoice", verifyToken, async (req, res) => {
       success: false,
       message: "Lỗi khi gửi hóa đơn",
       error: error.message,
+    });
+  }
+});
+
+/**
+ * @route   PATCH /api/orders/:id
+ * @desc    Update specific fields of an order
+ * @access  Private (Admin)
+ */
+router.patch("/:id", verifyToken, isAdmin, async (req, res) => {
+  try {
+    const orderId = req.params.id;
+    const updateData = req.body;
+    
+    // Validate that orderId is a number
+    if (isNaN(parseInt(orderId))) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Invalid order ID" 
+      });
+    }
+    
+    // Check if order exists
+    const [[orderExists]] = await db.query(
+      "SELECT order_id FROM orders WHERE order_id = ?",
+      [orderId]
+    );
+    
+    if (!orderExists) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Order not found" 
+      });
+    }
+    
+    // Start a transaction
+    const connection = await db.getConnection();
+    await connection.beginTransaction();
+    
+    try {
+      // Allowed fields to update in orders table
+      const allowedOrderFields = [
+        'order_name_new',
+        'order_email_new',
+        'order_number2',
+        'order_address_new',
+        'note'
+      ];
+      
+      // Special case for payment_method - this goes in the payments table
+      const paymentMethod = updateData.payment_method;
+      delete updateData.payment_method;
+      
+      // Filter out any fields that are not allowed
+      const filteredData = {};
+      for (const key in updateData) {
+        if (allowedOrderFields.includes(key)) {
+          filteredData[key] = updateData[key];
+        }
+      }
+      
+      // Update the order table if there are fields to update
+      if (Object.keys(filteredData).length > 0) {
+        const setClause = Object.keys(filteredData)
+          .map(key => `${key} = ?`)
+          .join(', ');
+        
+        const values = [...Object.values(filteredData), orderId];
+        
+        await connection.query(
+          `UPDATE orders SET ${setClause}, updated_at = NOW() WHERE order_id = ?`,
+          values
+        );
+      }
+      
+      // Update payment method if provided
+      if (paymentMethod) {
+        // Check if valid payment method
+        const validPaymentMethods = ['COD', 'BANK_TRANSFER', 'VNPAY', 'MOMO', 'ZALOPAY'];
+        if (!validPaymentMethods.includes(paymentMethod)) {
+          throw new Error('Invalid payment method');
+        }
+        
+        // Check if payment record exists
+        const [[paymentExists]] = await connection.query(
+          "SELECT payment_id FROM payments WHERE order_id = ? ORDER BY created_at DESC LIMIT 1",
+          [orderId]
+        );
+        
+        if (paymentExists) {
+          // Update existing payment record
+          await connection.query(
+            "UPDATE payments SET method = ?, updated_at = NOW() WHERE payment_id = ?",
+            [paymentMethod, paymentExists.payment_id]
+          );
+        } else {
+          // Create new payment record
+          await connection.query(
+            "INSERT INTO payments (order_id, method, amount, status, created_at) VALUES (?, ?, 0, 'PENDING', NOW())",
+            [orderId, paymentMethod]
+          );
+        }
+        
+        // Add payment_method to the list of updated fields
+        filteredData.payment_method = paymentMethod;
+      }
+      
+      // Commit the transaction
+      await connection.commit();
+      
+      return res.status(200).json({
+        success: true,
+        message: "Order updated successfully",
+        updatedFields: Object.keys(filteredData)
+      });
+      
+    } catch (error) {
+      // Rollback the transaction on error
+      await connection.rollback();
+      throw error;
+    } finally {
+      // Release the connection
+      connection.release();
+    }
+    
+  } catch (error) {
+    console.error("Error updating order:", error);
+    return res.status(500).json({ 
+      success: false, 
+      message: "Server error while updating order",
+      error: error.message 
     });
   }
 });

@@ -139,7 +139,7 @@
           <table>
             <thead>
               <tr>
-                <th><input type="checkbox" class="checkbox" id="select-all-table"></th>
+                <th></th>
                 <th class="filterable">
                   Mã đơn hàng
                   <div class="header-filter">
@@ -737,7 +737,7 @@
           'ZALOPAY': 'ZALOPAY'
         };
         const methodToFilter = methodMap[paymentMethodToFilter] || paymentMethodToFilter;
-
+        
         // Lọc các đơn hàng theo phương thức thanh toán
         rows.forEach(row => {
           const paymentMethod = row.querySelectorAll('td')[9].textContent.trim();
@@ -804,12 +804,20 @@
 
       orders.forEach(order => {
         const tr = document.createElement('tr');
+        
+        // Get payment info from the payment array
+        const paymentInfo = order.payment && order.payment.length > 0 ? order.payment[0] : {};
+        const paymentStatus = paymentInfo.status || order.payment_status || 'PENDING';
+        const paymentMethod = paymentInfo.method || order.payment_method || 'N/A';
+        
+        console.log(`Order ${order.order_id}: Payment status = ${paymentStatus}, Method = ${paymentMethod}`);
+        
         tr.innerHTML = `
         <td><input type="checkbox" class="checkbox"></td>
         <td class="order-id">${order.order_hash}</td>
         <td>${formatDate(order.created_at)}</td>
         <td>${order.order_name_new || order.order_name_old || order.user_name}</td>
-        <td><span class="status ${mapPaymentStatusClass(order.payment_status)}">${mapPaymentStatus(order.payment_status)}</span></td>
+        <td><span class="status ${mapPaymentStatusClass(paymentStatus)}">${mapPaymentStatus(paymentStatus)}</span></td>
         <td>${order.item_count} sản phẩm</td>
         <td>${formatPrice(order.order_total_final)} đ</td>
         <td>
@@ -828,11 +836,10 @@
             <option value="CANCELLED" ${order.current_status === 'CANCELLED' ? 'selected' : ''}>Đã hủy</option>
           </select>
         </td>
-        <td>${order.payment_method || 'N/A'}</td>
+        <td>${paymentMethod}</td>
         <td>
           <div class="actions">
-            <a href="/dashboard/orders/detail/${order.order_id}" class="action-btn view-btn" title="Xem chi tiết"><i class="fas fa-eye"></i></a>
-            <button class="action-btn"><i class="fas fa-pencil-alt"></i></button>
+            <a href="/dashboard/orders/detail/${order.order_id}" class="action-btn view-btn" title="Xem chi tiết"><i class="fas fa-pencil"></i></a>
             <button class="action-btn"><i class="fas fa-trash-alt"></i></button>
           </div>
         </td>
@@ -871,10 +878,9 @@
   function mapPaymentStatus(status) {
     switch (status) {
       case 'PENDING': return 'Chờ thanh toán';
-      case 'PROCESSING': return 'Đang xử lý';
       case 'SUCCESS': return 'Đã thanh toán';
       case 'FAILED': return 'Thanh toán thất bại';
-      case 'CANCELLED': return 'Đã hủy';
+      case 'REFUNDED': return 'Đã hủy';
       default: return status || 'Chờ thanh toán';
     }
   }
@@ -882,10 +888,9 @@
   function mapPaymentStatusClass(status) {
     switch (status) {
       case 'PENDING': return 'pending';
-      case 'PROCESSING': return 'processing';
       case 'SUCCESS': return 'paid';
       case 'FAILED': return 'failed';
-      case 'CANCELLED': return 'cancelled';
+      case 'REFUNDED': return 'refunded';
       default: return 'pending';
     }
   }

@@ -250,16 +250,15 @@ router.get("/admin", verifyToken, isAdmin, async (req, res) => {
         o.order_total_final,
         o.order_name_new,
         o.order_name_old,
-        o.order_email_new,
-        o.order_email_old,
         u.user_name,
         p.method as payment_method,
+        p.status as payment_status_from_payment,
         COUNT(oi.order_item_id) AS item_count
       FROM orders o
       LEFT JOIN user u ON o.user_id = u.user_id
       LEFT JOIN order_items oi ON o.order_id = oi.order_id
       LEFT JOIN (
-        SELECT order_id, method 
+        SELECT order_id, method, status
         FROM payments 
         WHERE payment_id IN (
           SELECT MAX(payment_id) 
@@ -271,10 +270,28 @@ router.get("/admin", verifyToken, isAdmin, async (req, res) => {
       ORDER BY o.created_at DESC
     `);
 
-    res.json({ success: true, orders });
+    // Process orders to include payment array
+    const processedOrders = orders.map(order => {
+      // Create payment array if payment data exists
+      if (order.payment_method || order.payment_status_from_payment) {
+        order.payment = [{
+          method: order.payment_method || 'N/A',
+          status: order.payment_status_from_payment || order.payment_status || 'PENDING',
+          transaction_code: null,
+          paid_at: null
+        }];
+      }
+      
+      // Remove the extra fields used for processing
+      delete order.payment_status_from_payment;
+      
+      return order;
+    });
+
+    res.json({ success: true, orders: processedOrders });
   } catch (err) {
-    console.error("Lỗi khi lấy danh sách đơn hàng:", err);
-    res.status(500).json({ success: false, message: "Lỗi server" });
+    console.error("Error fetching orders:", err);
+    res.status(500).json({ success: false, message: "Failed to fetch orders" });
   }
 });
 
@@ -425,15 +442,19 @@ router.get("/:id", verifyToken, async (req, res) => {
       return res.status(400).json({ error: "Invalid order ID" });
     }
 
-    // Lấy thông tin đơn hàng
     const orderQuery = `
       SELECT 
         o.*,
-        u.user_gmail as user_email,
-        u.user_name as user_name,
-        u.user_number as user_phone
+        u.user_gmail AS user_email,
+        u.user_name AS user_name,
+        u.user_number AS user_phone,
+        p.method AS payment_method,
+        p.status AS payment_status,
+        p.transaction_code AS payment_transaction_code,
+        p.paid_at AS payment_paid_at
       FROM \`orders\` o
       LEFT JOIN user u ON o.user_id = u.user_id
+      LEFT JOIN payments p ON o.order_id = p.order_id
       WHERE o.order_id = ?
     `;
 
@@ -443,26 +464,34 @@ router.get("/:id", verifyToken, async (req, res) => {
       console.log("Order query result length:", orders.length);
     } catch (error) {
       console.error("Error in order query:", error);
-      return res
-        .status(500)
-        .json({ error: "Failed to fetch order", details: error.message });
+      return res.status(500).json({ error: "Failed to fetch order", details: error.message });
     }
 
     if (orders.length === 0) {
       return res.status(404).json({ error: "Order not found" });
     }
 
-    const order = orders[0];
+    let order = orders[0];
 
-    // Kiểm tra quyền truy cập (chỉ admin hoặc chủ đơn hàng)
+    // Gộp thông tin thanh toán vào array `payment[]`, rồi xoá các field gốc
+    order.payment = [{
+      method: order.payment_method,
+      status: order.payment_status,
+      transaction_code: order.payment_transaction_code,
+      paid_at: order.payment_paid_at
+    }];
+    delete order.payment_method;
+    delete order.payment_status;
+    delete order.payment_transaction_code;
+    delete order.payment_paid_at;
+
+    // Kiểm tra quyền truy cập
     if (req.user.role !== "admin" && req.user.id !== order.user_id) {
-      return res
-        .status(403)
-        .json({ error: "You do not have permission to view this order" });
+      return res.status(403).json({ error: "You do not have permission to view this order" });
     }
 
     try {
-      // Lấy chi tiết đơn hàng (sản phẩm)
+      // Lấy chi tiết sản phẩm
       const orderItemsQuery = `
         SELECT 
           oi.*,
@@ -477,15 +506,13 @@ router.get("/:id", verifyToken, async (req, res) => {
       let orderItems;
       try {
         [orderItems] = await db.query(orderItemsQuery, [orderId]);
-        console.log("Order items query result length:", orderItems.length);
         order.items = orderItems;
       } catch (error) {
         console.error("Error in order items query:", error);
         order.items = [];
       }
 
-      // Lấy lịch sử trạng thái đơn hàng
-      console.log("Executing status logs query...");
+      // Lấy trạng thái đơn hàng
       const statusLogsQuery = `
         SELECT 
           osl.*
@@ -493,12 +520,10 @@ router.get("/:id", verifyToken, async (req, res) => {
         WHERE osl.order_id = ?
         ORDER BY osl.created_at ASC
       `;
-      console.log("Status logs query:", statusLogsQuery);
 
       let statusLogs;
       try {
         [statusLogs] = await db.query(statusLogsQuery, [orderId]);
-        console.log("Status logs query result length:", statusLogs.length);
         order.status_logs = statusLogs;
       } catch (error) {
         console.error("Error in status logs query:", error);
@@ -507,18 +532,14 @@ router.get("/:id", verifyToken, async (req, res) => {
 
       res.json(order);
     } catch (error) {
-      res.status(500).json({
-        error: "Failed to fetch order details",
-        details: error.message,
-      });
+      res.status(500).json({ error: "Failed to fetch order details", details: error.message });
     }
   } catch (error) {
     console.error("Error fetching order:", error);
-    res
-      .status(500)
-      .json({ error: "Failed to fetch order", details: error.message });
+    res.status(500).json({ error: "Failed to fetch order", details: error.message });
   }
 });
+
 
 /**
  * @route   POST /api/orders

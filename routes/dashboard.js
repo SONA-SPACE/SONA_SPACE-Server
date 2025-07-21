@@ -243,22 +243,38 @@ router.get("/orders/detail/:id", isAdmin, async (req, res) => {
     }
     
     // Fetch payment method from payments table if not available in order
-    if (!order.payment_method) {
+    if (!order.payment || !order.payment.length) {
       try {
         const db = require("../config/database");
         const [[paymentInfo]] = await db.query(
-          `SELECT method FROM payments WHERE order_id = ? AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1`,
+          `SELECT method, status, transaction_code, paid_at FROM payments WHERE order_id = ? ORDER BY created_at DESC LIMIT 1`,
           [orderId]
         );
         
-        if (paymentInfo && paymentInfo.method) {
-          order.payment_method = paymentInfo.method;
-          console.log(`Found payment method: ${paymentInfo.method}`);
+        if (paymentInfo) {
+          order.payment = [paymentInfo];
+          console.log(`Found payment info:`, paymentInfo);
+        } else {
+          order.payment = [{
+            method: 'N/A',
+            status: 'PENDING',
+            transaction_code: null,
+            paid_at: null
+          }];
         }
       } catch (error) {
         console.error("Error fetching payment method:", error);
+        order.payment = [{
+          method: 'N/A',
+          status: 'PENDING',
+          transaction_code: null,
+          paid_at: null
+        }];
       }
     }
+    
+    console.log("Order payment before rendering:", JSON.stringify(order.payment));
+    console.log("Payment status before rendering:", order.payment && order.payment.length > 0 ? order.payment[0].status : 'No payment data');
     
     // Define available payment methods for dropdown
     const paymentMethods = ['COD', 'BANK_TRANSFER', 'VNPAY', 'MOMO', 'ZALOPAY'];
@@ -309,16 +325,15 @@ router.get("/orders/detail/:id", isAdmin, async (req, res) => {
     // Helper functions for template
     const helpers = {
       mapPaymentStatus: (status) => {
+        console.log("mapPaymentStatus called with:", status);
         switch (status) {
           case "PENDING":
             return "Chờ thanh toán";
-          case "PROCESSING":
-            return "Đang xử lý";
           case "SUCCESS":
             return "Đã thanh toán";
           case "FAILED":
             return "Thanh toán thất bại";
-          case "CANCELLED":
+          case "REFUNDED":
             return "Đã hủy";
           default:
             return status || "Chờ thanh toán";
@@ -576,7 +591,7 @@ router.get("/orders/invoice/:id", async (req, res) => {
           return "Đã thanh toán";
         case "FAILED":
           return "Thanh toán thất bại";
-        case "CANCELLED":
+        case "REFUNDED":
           return "Đã hủy";
         default:
           return status || "Chờ thanh toán";

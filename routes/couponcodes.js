@@ -81,9 +81,6 @@ router.get('/codes', verifyToken, async (req, res) => {
   }
 });
 
-
-
-
 router.get('/admin', verifyToken, async (req, res) => {
   try {
     const [rows] = await db.query(`
@@ -219,29 +216,39 @@ router.post('/', verifyToken, isAdmin, async (req, res) => {
 
 
     // Nếu có user_ids
-    if (user_ids === "new_users") {
-      // Lấy danh sách user mới (tạo trong 30 ngày gần đây)
-      const [newUsers] = await db.query(`
-        SELECT user_id FROM user 
-        WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-      `);
+ if (user_ids === "new_users") {
+  const [newUsers] = await db.query(`
+    SELECT user_id FROM user 
+    WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+  `);
 
-
-      if (newUsers.length > 0) {
-        const values = newUsers.map(user => [user.user_id, result.insertId]);
-
-        await db.query(`
+  if (newUsers.length > 0) {
+    const values = newUsers.map(user => [user.user_id, result.insertId]);
+    await db.query(`
       INSERT INTO user_has_coupon (user_id, couponcode_id)
       VALUES ?
     `, [values]);
-      }
-    } else if (Array.isArray(user_ids) && user_ids.length > 0) {
-      const values = user_ids.map(userId => [userId, result.insertId]);
-      await db.query(`
+  }
+
+} else if (user_ids === "all") {
+  // Lấy tất cả người dùng
+  const [allUsers] = await db.query(`SELECT user_id FROM user`);
+  if (allUsers.length > 0) {
+    const values = allUsers.map(user => [user.user_id, result.insertId]);
+    await db.query(`
+      INSERT INTO user_has_coupon (user_id, couponcode_id)
+      VALUES ?
+    `, [values]);
+  }
+
+} else if (Array.isArray(user_ids) && user_ids.length > 0) {
+  const values = user_ids.map(userId => [userId, result.insertId]);
+  await db.query(`
     INSERT INTO user_has_coupon (user_id, couponcode_id)
     VALUES ?
   `, [values]);
-    }
+}
+
 
 
     // Nếu có user_ids, thêm vào bảng couponcode_has_user
@@ -260,8 +267,6 @@ router.post('/', verifyToken, isAdmin, async (req, res) => {
     res.status(500).json({ error: 'Lỗi khi tạo voucher' });
   }
 });
-
-
 
 /**
  * @route   PUT /api/couponcodes/:id
@@ -390,21 +395,34 @@ router.put('/:id', verifyToken, isAdmin, async (req, res) => {
       // Xóa hết user cũ
       await db.query('DELETE FROM user_has_coupon WHERE couponcode_id = ?', [id]);
 
-      if (Array.isArray(user_ids) && user_ids.length > 0) {
-        // custom user list
-        const insertData = user_ids.map(user_id => [user_id, id, 0]);
-        await db.query('INSERT INTO user_has_coupon (user_id, couponcode_id, status) VALUES ?', [insertData]);
-      } else if (user_ids === 'new_users_30d') {
-        // Lấy danh sách user đăng ký 30 ngày gần nhất
-        const [newUsers] = await db.query(`
+if (user_ids !== undefined) {
+  // Xóa hết user cũ
+  await db.query('DELETE FROM user_has_coupon WHERE couponcode_id = ?', [id]);
+
+  if (Array.isArray(user_ids) && user_ids.length > 0) {
+    // custom user list
+    const insertData = user_ids.map(user_id => [user_id, id, 0]);
+    await db.query('INSERT INTO user_has_coupon (user_id, couponcode_id, status) VALUES ?', [insertData]);
+  } else if (user_ids === 'new_users_30d' || user_ids === 'new_users') {
+    // Người dùng mới
+    const [newUsers] = await db.query(`
       SELECT user_id FROM user 
       WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
     `);
-        if (newUsers.length > 0) {
-          const insertData = newUsers.map(user => [user.user_id, id, 0]);
-          await db.query('INSERT INTO user_has_coupon (user_id, couponcode_id, status) VALUES ?', [insertData]);
-        }
-      }
+    if (newUsers.length > 0) {
+      const insertData = newUsers.map(user => [user.user_id, id, 0]);
+      await db.query('INSERT INTO user_has_coupon (user_id, couponcode_id, status) VALUES ?', [insertData]);
+    }
+  } else if (user_ids === 'all') {
+    // Tất cả người dùng
+    const [allUsers] = await db.query('SELECT user_id FROM user');
+    if (allUsers.length > 0) {
+      const insertData = allUsers.map(user => [user.user_id, id, 0]);
+      await db.query('INSERT INTO user_has_coupon (user_id, couponcode_id, status) VALUES ?', [insertData]);
+    }
+  }
+}
+
     }
 
 

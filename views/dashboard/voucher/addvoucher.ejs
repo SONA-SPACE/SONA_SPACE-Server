@@ -147,7 +147,10 @@
 
         if (applyTo === "new_users") {
             user_ids = "new_users";
+        } else if (applyTo === "all") {
+            user_ids = "all";
         }
+
 
 
 
@@ -232,6 +235,6 @@
 
         toast.addEventListener("hidden.bs.toast", () => toast.remove());
     }
-   
+
 
 </script>

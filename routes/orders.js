@@ -1649,4 +1649,232 @@ router.patch("/:id", verifyToken, isAdmin, async (req, res) => {
   }
 });
 
+/**
+ * @route   POST /api/orders/return/:orderHash
+ * @desc    Process an order return request
+ * @access  Private
+ */
+router.post("/return/:orderHash", verifyToken, async (req, res) => {
+  try {
+    const { orderHash } = req.params;
+    const { reason, items, return_type } = req.body;
+    const user_id = req.user.id;
+    const isAdmin = req.user.role === 'admin';
+
+    if (!reason) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Vui lòng cung cấp lý do trả hàng" 
+      });
+    }
+
+    // Tìm đơn hàng dựa trên order_hash
+    const [[order]] = await db.query(
+      `SELECT o.order_id, o.user_id, o.current_status, o.created_at, o.order_hash,
+       u.user_name, u.user_gmail as user_email
+       FROM orders o
+       LEFT JOIN user u ON o.user_id = u.user_id
+       WHERE o.order_hash = ?`,
+      [orderHash]
+    );
+
+    if (!order) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Không tìm thấy đơn hàng" 
+      });
+    }
+
+    // Kiểm tra quyền truy cập (chỉ admin hoặc chủ đơn hàng)
+    if (!isAdmin && user_id !== order.user_id) {
+      return res.status(403).json({ 
+        success: false, 
+        message: "Bạn không có quyền trả lại đơn hàng này" 
+      });
+    }
+
+    // Kiểm tra trạng thái đơn hàng (chỉ cho phép trả hàng khi đơn hàng đã hoàn thành)
+    if (order.current_status !== 'SUCCESS') {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Chỉ có thể trả lại đơn hàng đã giao thành công" 
+      });
+    }
+
+    // Bắt đầu transaction
+    const connection = await db.getConnection();
+    await connection.beginTransaction();
+
+    try {
+      // Lấy danh sách sản phẩm trong đơn hàng
+      const [orderItems] = await connection.query(
+        `SELECT oi.order_item_id, oi.variant_id, oi.quantity, oi.product_price, 
+         vp.product_id, p.product_name, p.product_image
+         FROM order_items oi
+         LEFT JOIN variant_product vp ON oi.variant_id = vp.variant_id
+         LEFT JOIN product p ON vp.product_id = p.product_id
+         WHERE oi.order_id = ?`,
+        [order.order_id]
+      );
+
+      // Nếu có danh sách sản phẩm cụ thể được yêu cầu trả lại
+      let itemsToReturn = orderItems;
+      let totalRefundAmount = 0;
+      
+      if (items && Array.isArray(items) && items.length > 0) {
+        // Lọc ra các sản phẩm được yêu cầu trả lại
+        itemsToReturn = orderItems.filter(item => 
+          items.some(returnItem => 
+            returnItem.order_item_id === item.order_item_id && 
+            returnItem.quantity > 0 && 
+            returnItem.quantity <= item.quantity
+          )
+        );
+        
+        if (itemsToReturn.length === 0) {
+          throw new Error('Không tìm thấy sản phẩm hợp lệ để trả lại');
+        }
+        
+        // Tính tổng số tiền hoàn lại
+        for (const item of itemsToReturn) {
+          const returnItem = items.find(i => i.order_item_id === item.order_item_id);
+          const returnQuantity = Math.min(returnItem.quantity, item.quantity);
+          totalRefundAmount += returnQuantity * item.product_price;
+          
+          // Khôi phục số lượng tồn kho
+          if (item.product_id) {
+            await connection.query(
+              'UPDATE product SET product_stock = product_stock + ? WHERE product_id = ?',
+              [returnQuantity, item.product_id]
+            );
+          }
+        }
+      } else {
+        // Trả lại toàn bộ đơn hàng
+        // Tính tổng số tiền hoàn lại
+        for (const item of itemsToReturn) {
+          totalRefundAmount += item.quantity * item.product_price;
+          
+          // Khôi phục số lượng tồn kho
+          if (item.product_id) {
+            await connection.query(
+              'UPDATE product SET product_stock = product_stock + ? WHERE product_id = ?',
+              [item.quantity, item.product_id]
+            );
+          }
+        }
+      }
+
+      // Tạo bản ghi trả hàng
+      const [result] = await connection.query(
+        `INSERT INTO order_returns (
+          order_id, user_id, reason, return_type, total_refund, status, created_at
+        ) VALUES (?, ?, ?, ?, ?, 'PENDING', NOW())`,
+        [order.order_id, user_id, reason, return_type || 'REFUND', totalRefundAmount]
+      );
+      
+      const returnId = result.insertId;
+      
+      // Lưu chi tiết sản phẩm trả lại
+      for (const item of itemsToReturn) {
+        const returnItem = items ? items.find(i => i.order_item_id === item.order_item_id) : item;
+        const returnQuantity = returnItem ? returnItem.quantity : item.quantity;
+        
+        if (returnQuantity > 0) {
+          await connection.query(
+            `INSERT INTO return_items (
+              return_id, order_item_id, quantity, price, created_at
+            ) VALUES (?, ?, ?, ?, NOW())`,
+            [returnId, item.order_item_id, returnQuantity, item.product_price]
+          );
+        }
+      }
+
+      // Cập nhật trạng thái đơn hàng nếu trả lại toàn bộ
+      if (!items || items.length === 0) {
+        await connection.query(
+          `UPDATE orders SET current_status = 'RETURNED', status_updated_by = ?, status_updated_at = NOW(), 
+           note = CONCAT(IFNULL(note, ''), ?) WHERE order_id = ?`,
+          [isAdmin ? 'admin' : 'user', `\nĐơn hàng đã được trả lại. Lý do: ${reason}`, order.order_id]
+        );
+        
+        // Ghi log trạng thái
+        await connection.query(
+          `INSERT INTO order_status_log (order_id, from_status, to_status, trigger_by, step, created_at) 
+           VALUES (?, ?, 'RETURNED', ?, ?, NOW())`,
+          [order.order_id, order.current_status, isAdmin ? 'admin' : 'user', `Đơn hàng đã được trả lại`]
+        );
+      }
+
+      // Tạo thông báo cho admin nếu người dùng yêu cầu trả hàng
+      if (!isAdmin) {
+        try {
+          // Kiểm tra xem bảng notifications có tồn tại không
+          const [tables] = await connection.query(
+            "SHOW TABLES LIKE 'notifications'"
+          );
+          
+          if (tables.length > 0) {
+            // Lấy tên các cột trong bảng notifications
+            const [columns] = await connection.query(
+              "SHOW COLUMNS FROM notifications"
+            );
+            
+            const columnNames = columns.map(col => col.Field);
+            
+            // Tìm admin để gửi thông báo
+            const [[admin]] = await connection.query(
+              "SELECT user_id FROM user WHERE role = 'admin' LIMIT 1"
+            );
+            
+            if (admin && columnNames.includes('user_id')) {
+              await connection.query(
+                `INSERT INTO notifications (user_id, type, message, related_id, created_at, is_read)
+                 VALUES (?, 'ORDER_RETURN', ?, ?, NOW(), 0)`,
+                [admin.user_id, `Đơn hàng #${order.order_hash} có yêu cầu trả hàng mới`, order.order_id]
+              );
+            }
+          }
+        } catch (notificationError) {
+          console.error('Lỗi khi tạo thông báo:', notificationError);
+          // Không throw lỗi để transaction vẫn tiếp tục
+        }
+      }
+
+      // Commit transaction
+      await connection.commit();
+
+      return res.status(200).json({
+        success: true,
+        message: 'Yêu cầu trả hàng đã được ghi nhận',
+        data: {
+          return_id: returnId,
+          order_id: order.order_id,
+          order_hash: order.order_hash,
+          total_refund: totalRefundAmount,
+          items: itemsToReturn.map(item => ({
+            order_item_id: item.order_item_id,
+            product_name: item.product_name,
+            quantity: items ? items.find(i => i.order_item_id === item.order_item_id)?.quantity || 0 : item.quantity,
+            price: item.product_price
+          }))
+        }
+      });
+    } catch (error) {
+      // Rollback nếu có lỗi
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  } catch (error) {
+    console.error('Lỗi khi xử lý yêu cầu trả hàng:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Đã xảy ra lỗi khi xử lý yêu cầu trả hàng',
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;

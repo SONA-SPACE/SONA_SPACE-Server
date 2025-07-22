@@ -170,7 +170,13 @@
         const applyTo = document.getElementById("applyToAll").value;
         const min_order = parseFloat(document.getElementById("minOrder").value) || 0;
 
-        const user_ids = applyTo === "new_users_30d" ? "new_users" : null;
+        let user_ids = null;
+        if (applyTo === "new_users_30d") {
+            user_ids = "new_users";
+        } else if (applyTo === "all") {
+            user_ids = "all";
+        }
+
 
         const saveBtn = document.querySelector(".btn-save");
         saveBtn.disabled = true;

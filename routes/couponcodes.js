@@ -21,6 +21,33 @@ router.get('/', verifyToken, isAdmin, async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch coupon codes' });
   }
 });
+
+router.get('/notification', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    const [rows] = await db.query(`
+      SELECT 
+        un.id AS user_notification_id,
+        un.notification_id,
+        n.title,
+        n.message,
+        n.created_at,
+        un.is_read,
+        un.read_at
+      FROM user_notifications un
+      JOIN notifications n ON un.notification_id = n.id
+      WHERE un.user_id = ? AND un.is_deleted = 0
+      ORDER BY n.created_at DESC
+    `, [userId]);
+
+    res.status(200).json(rows);
+  } catch (error) {
+    console.error("Lỗi lấy thông báo:", error);
+    res.status(500).json({ error: "Lỗi server khi lấy thông báo" });
+  }
+});
+
 router.get('/user-has-coupon', verifyToken, async (req, res) => {
   try {
     const userId = req.user.id;
@@ -42,7 +69,9 @@ router.get('/user-has-coupon', verifyToken, async (req, res) => {
         c.min_order
       FROM user_has_coupon uhc
       JOIN couponcode c ON uhc.couponcode_id = c.couponcode_id
-      WHERE uhc.user_id = ? AND uhc.status = 0
+      WHERE uhc.user_id = ? 
+        AND uhc.status = 0
+        AND c.exp_time > NOW()
       ORDER BY c.exp_time ASC
     `, [userId]);
 
@@ -52,6 +81,7 @@ router.get('/user-has-coupon', verifyToken, async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch user coupons' });
   }
 });
+
 
 
 
@@ -260,69 +290,77 @@ router.post('/', verifyToken, isAdmin, async (req, res) => {
     }
 
     const [result] = await db.query(`
-  INSERT INTO couponcode (
-    code, title, value_price, description, start_time, exp_time,
-    min_order, used, is_flash_sale, combinations, discount_type, status
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-`, [
+      INSERT INTO couponcode (
+        code, title, value_price, description, start_time, exp_time,
+        min_order, used, is_flash_sale, combinations, discount_type, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
       code, title, value_price, description || null, startDate, endDate,
       min_order || null, used || 1, is_flash_sale || 0, combinations || null,
       discount_type, status
     ]);
 
+    const couponId = result.insertId;
 
-    // Nếu có user_ids
- if (user_ids === "new_users") {
-  const [newUsers] = await db.query(`
-    SELECT user_id FROM user 
-    WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-  `);
+    // Tạo nội dung thông báo
+    const notificationTitle = "Bạn nhận được một mã giảm giá mới!";
+    const notificationMessage = `Mã ${code} đã được thêm vào tài khoản của bạn. Áp dụng đến ${endDate.toLocaleDateString()}`;
 
-  if (newUsers.length > 0) {
-    const values = newUsers.map(user => [user.user_id, result.insertId]);
-    await db.query(`
-      INSERT INTO user_has_coupon (user_id, couponcode_id)
-      VALUES ?
-    `, [values]);
-  }
+    const [notiResult] = await db.query(`
+      INSERT INTO notifications (type, title, message, created_by)
+      VALUES (?, ?, ?, ?)
+    `, [
+      'coupon',
+      notificationTitle,
+      notificationMessage,
+      req.user.username || 'admin'
+    ]);
 
-} else if (user_ids === "all") {
-  // Lấy tất cả người dùng
-  const [allUsers] = await db.query(`SELECT user_id FROM user`);
-  if (allUsers.length > 0) {
-    const values = allUsers.map(user => [user.user_id, result.insertId]);
-    await db.query(`
-      INSERT INTO user_has_coupon (user_id, couponcode_id)
-      VALUES ?
-    `, [values]);
-  }
+    const notificationId = notiResult.insertId;
 
-} else if (Array.isArray(user_ids) && user_ids.length > 0) {
-  const values = user_ids.map(userId => [userId, result.insertId]);
-  await db.query(`
-    INSERT INTO user_has_coupon (user_id, couponcode_id)
-    VALUES ?
-  `, [values]);
-}
+    let affectedUsers = [];
 
+    if (user_ids === "new_users") {
+      const [newUsers] = await db.query(`
+        SELECT user_id FROM user 
+        WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+      `);
+      affectedUsers = newUsers.map(user => user.user_id);
 
+    } else if (user_ids === "all") {
+      const [allUsers] = await db.query(`SELECT user_id FROM user`);
+      affectedUsers = allUsers.map(user => user.user_id);
 
-    // Nếu có user_ids, thêm vào bảng couponcode_has_user
-    if (Array.isArray(user_ids) && user_ids.length > 0) {
-      const values = user_ids.map(userId => [userId, result.insertId]);
+    } else if (Array.isArray(user_ids) && user_ids.length > 0) {
+      affectedUsers = user_ids;
+    }
+
+    // Lưu user_has_coupon nếu có user
+    if (affectedUsers.length > 0) {
+      const couponValues = affectedUsers.map(userId => [userId, couponId]);
       await db.query(`
         INSERT INTO user_has_coupon (user_id, couponcode_id)
         VALUES ?
-      `, [values]);
+      `, [couponValues]);
+
+      // Lưu user_notifications
+      const notificationValues = affectedUsers.map(userId => [userId, notificationId, 0, null, 0]);
+      await db.query(`
+        INSERT INTO user_notifications (user_id, notification_id, is_read, read_at, is_deleted)
+        VALUES ?
+      `, [notificationValues]);
     }
 
-    const [newCoupon] = await db.query('SELECT * FROM couponcode WHERE couponcode_id = ?', [result.insertId]);
+    const [newCoupon] = await db.query('SELECT * FROM couponcode WHERE couponcode_id = ?', [couponId]);
+
     res.status(201).json({ message: 'Tạo voucher thành công', coupon: newCoupon[0] });
+
   } catch (error) {
     console.error('Error creating coupon code:', error);
     res.status(500).json({ error: 'Lỗi khi tạo voucher' });
   }
 });
+
 
 /**
  * @route   PUT /api/couponcodes/:id
@@ -451,33 +489,33 @@ router.put('/:id', verifyToken, isAdmin, async (req, res) => {
       // Xóa hết user cũ
       await db.query('DELETE FROM user_has_coupon WHERE couponcode_id = ?', [id]);
 
-if (user_ids !== undefined) {
-  // Xóa hết user cũ
-  await db.query('DELETE FROM user_has_coupon WHERE couponcode_id = ?', [id]);
+      if (user_ids !== undefined) {
+        // Xóa hết user cũ
+        await db.query('DELETE FROM user_has_coupon WHERE couponcode_id = ?', [id]);
 
-  if (Array.isArray(user_ids) && user_ids.length > 0) {
-    // custom user list
-    const insertData = user_ids.map(user_id => [user_id, id, 0]);
-    await db.query('INSERT INTO user_has_coupon (user_id, couponcode_id, status) VALUES ?', [insertData]);
-  } else if (user_ids === 'new_users_30d' || user_ids === 'new_users') {
-    // Người dùng mới
-    const [newUsers] = await db.query(`
+        if (Array.isArray(user_ids) && user_ids.length > 0) {
+          // custom user list
+          const insertData = user_ids.map(user_id => [user_id, id, 0]);
+          await db.query('INSERT INTO user_has_coupon (user_id, couponcode_id, status) VALUES ?', [insertData]);
+        } else if (user_ids === 'new_users_30d' || user_ids === 'new_users') {
+          // Người dùng mới
+          const [newUsers] = await db.query(`
       SELECT user_id FROM user 
       WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
     `);
-    if (newUsers.length > 0) {
-      const insertData = newUsers.map(user => [user.user_id, id, 0]);
-      await db.query('INSERT INTO user_has_coupon (user_id, couponcode_id, status) VALUES ?', [insertData]);
-    }
-  } else if (user_ids === 'all') {
-    // Tất cả người dùng
-    const [allUsers] = await db.query('SELECT user_id FROM user');
-    if (allUsers.length > 0) {
-      const insertData = allUsers.map(user => [user.user_id, id, 0]);
-      await db.query('INSERT INTO user_has_coupon (user_id, couponcode_id, status) VALUES ?', [insertData]);
-    }
-  }
-}
+          if (newUsers.length > 0) {
+            const insertData = newUsers.map(user => [user.user_id, id, 0]);
+            await db.query('INSERT INTO user_has_coupon (user_id, couponcode_id, status) VALUES ?', [insertData]);
+          }
+        } else if (user_ids === 'all') {
+          // Tất cả người dùng
+          const [allUsers] = await db.query('SELECT user_id FROM user');
+          if (allUsers.length > 0) {
+            const insertData = allUsers.map(user => [user.user_id, id, 0]);
+            await db.query('INSERT INTO user_has_coupon (user_id, couponcode_id, status) VALUES ?', [insertData]);
+          }
+        }
+      }
 
     }
 

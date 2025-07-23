@@ -59,6 +59,7 @@ router.get('/:userId', async (req, res) => {
         c.color_hex,
         p.product_id,
         p.product_name,
+        p.product_slug,
         p.product_image AS product_image,
         cat.category_name AS category,
         (SELECT COUNT(*) FROM comment WHERE product_id = p.product_id) AS comment_count,
@@ -81,6 +82,7 @@ router.get('/:userId', async (req, res) => {
       itemsMap.get(item.order_id).push({
         id: item.id,
         name: item.product_name,
+        slug: item.product_slug,
         image: item.image || item.product_image || '/images/default.jpg',
         price: item.price_sale || item.price,
         quantity: item.quantity,

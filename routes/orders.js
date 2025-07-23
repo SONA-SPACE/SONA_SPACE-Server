@@ -1787,4 +1787,55 @@ router.post("/return/:orderHash", verifyToken, async (req, res) => {
   }
 });
 
+/**
+ * @route   GET /api/orders/return/count
+ * @desc    Count return order requests
+ * @access  Private (Admin)
+ */
+router.get('/return/count', verifyToken, isAdmin, async (req, res) => {
+  try {
+    // Check if order_returns table exists
+    let count = 0;
+    
+    try {
+      const [tables] = await db.query(
+        "SHOW TABLES LIKE 'order_returns'"
+      );
+      
+      if (tables.length > 0) {
+        // If the table exists, count the number of return requests
+        const [result] = await db.query(
+          "SELECT COUNT(*) as count FROM order_returns"
+        );
+        count = result[0].count;
+      } else {
+        // Alternative: check if there are orders with RETURNED status
+        const [result] = await db.query(
+          "SELECT COUNT(*) as count FROM orders WHERE current_status = 'RETURNED'"
+        );
+        count = result[0].count;
+      }
+    } catch (error) {
+      console.error("Error checking order_returns table:", error);
+      // Fallback to checking orders with RETURNED status
+      const [result] = await db.query(
+        "SELECT COUNT(*) as count FROM orders WHERE current_status = 'RETURNED'"
+      );
+      count = result[0].count;
+    }
+    
+    return res.status(200).json({
+      success: true,
+      count
+    });
+  } catch (error) {
+    console.error("Error counting return orders:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while counting return orders",
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;

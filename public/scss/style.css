@@ -2654,13 +2654,11 @@ body {
   align-items: center;
   margin-bottom: 20px;
 }
-
-.dashboard-title {
+.dashboard-header-row .dashboard-title {
   font-size: 18px;
   font-weight: 500;
 }
-
-.period-selector {
+.dashboard-header-row .period-selector {
   display: flex;
   align-items: center;
   background-color: #fff;
@@ -2669,8 +2667,7 @@ body {
   padding: 5px 10px;
   font-size: 13px;
 }
-
-.period-selector i {
+.dashboard-header-row .period-selector i {
   margin-left: 5px;
   font-size: 10px;
 }
@@ -2678,32 +2675,40 @@ body {
 /* Revenue Chart */
 .revenue-chart-container {
   background-color: #fff;
-  border-radius: 8px;
-  padding: 15px;
-  margin-bottom: 20px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  padding: 20px 24px 16px 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.07);
 }
-
-.chart-header {
+.revenue-chart-container .chart-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
-
-.chart-title {
-  font-size: 16px;
-  font-weight: 500;
+.revenue-chart-container .chart-header .chart-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #202124;
 }
-
-.chart-info-icon {
-  color: var(--text-secondary);
+.revenue-chart-container .chart-header .chart-info-icon {
+  color: #888ea8;
   cursor: pointer;
+  font-size: 18px;
+  transition: color 0.2s;
 }
-
-.chart-wrapper {
-  height: 280px;
+.revenue-chart-container .chart-header .chart-info-icon:hover {
+  color: #444;
+}
+.revenue-chart-container .chart-wrapper {
+  height: auto !important;
+  max-height: none !important;
+  min-height: unset !important;
   position: relative;
+}
+.revenue-chart-container .chart-wrapper canvas {
+  width: 100% !important;
+  display: block;
 }
 
 /* Stat Cards */
@@ -2713,29 +2718,41 @@ body {
   gap: 15px;
   margin-bottom: 20px;
 }
-
-.stat-card {
+.stats-container .stat-card {
+  padding: 15px;
   background-color: #fff;
   border-radius: 8px;
   padding: 15px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
-
-.stat-card-title {
+.stats-container .stat-card-title {
   font-size: 13px;
-  color: var(--text-secondary);
+  font-family: Be-R;
+  line-height: normal;
+  color: #221D00;
   margin-bottom: 10px;
 }
-
-.stat-card-value {
+.stats-container .stat-card-value {
   font-size: 20px;
-  font-weight: 600;
+  font-family: Be-B;
+  line-height: normal;
+  color: #221D00;
 }
-
-.stat-card-subtitle {
+.stats-container .stat-card-subtitle {
   font-size: 12px;
-  color: var(--text-secondary);
-  margin-top: 5px;
+  font-family: Be-R;
+  line-height: normal;
+  color: #221D00;
+  margin: 8px 0;
+}
+.stats-container .red {
+  color: #D83B01 !important;
+}
+.stats-container .green {
+  color: #3AA655 !important;
+}
+.stats-container .yellow {
+  color: #F5B400 !important;
 }
 
 /* Orders Table */
@@ -7532,4 +7549,83 @@ input.readonly-field {
 .add-category-container .image-upload-column {
   width: 40%;
   min-width: 400px;
+}
+
+.description-cell {
+  max-width: 400px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  width: 90%;
+  max-width: 500px;
+  text-align: center;
+}
+
+.modal-content h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: #1f2937;
+}
+
+.modal-content p {
+  margin-bottom: 1.5rem;
+  color: #4b5563;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+.modal-buttons button {
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.375rem;
+  font-weight: 600;
+  border: none;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.modal-buttons .cancel-btn {
+  background: #f3f4f6;
+  color: #555;
+}
+.modal-buttons .cancel-btn:hover {
+  background: #e2e6ea;
+}
+
+.modal-buttons .cancel-btn:hover {
+  background-color: #d1d5db;
+}
+
+.modal-buttons .confirm-btn {
+  background: var(--primary-color);
+  color: #fff;
+}
+.modal-buttons .confirm-btn:hover {
+  background: color-mix(in srgb, var(--primary-color) 80%, transparent);
+}
+
+.hidden1 {
+  display: none;
 }/*# sourceMappingURL=style.css.map */

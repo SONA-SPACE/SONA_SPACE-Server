@@ -1,380 +1,197 @@
 <!-- Dashboard Overview Page -->
 
-<!-- Title and Period Selector -->
-<div class="dashboard-header-row">
-    <div class="dashboard-title">Doanh thu</div>
-    <div class="period-selector">
-        Month <i class="fas fa-chevron-down"></i>
-    </div>
-</div>
-
-<!-- Revenue Chart -->
-<div class="revenue-chart-container">
-    <div class="chart-header">
-        <div class="chart-title"></div>
-        <div class="chart-info-icon">
-            <i class="fas fa-circle-info"></i>
-        </div>
-    </div>
-    <div class="chart-wrapper">
-        <canvas id="revenueChart"></canvas>
-    </div>
-</div>
-
 <!-- Today Header -->
 <div class="dashboard-header-row">
-    <div class="dashboard-title">Tổng quan</div>
-    <div class="period-selector">
-        Today <i class="fas fa-chevron-down"></i>
-    </div>
+  <div class="dashboard-title">Tổng quan</div>
+  <div class="period-selector">
+    Tháng này <i class="fas fa-chevron-down"></i>
+  </div>
 </div>
 
 <!-- Stats Cards -->
 <div class="stats-container">
-    <div class="stat-card">
-        <div class="stat-card-title">Tổng đơn hàng</div>
-        <div class="stat-card-value">20</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-card-title">Đơn hàng</div>
-        <div class="stat-card-subtitle">Đơn hàng đang chờ xử lý</div>
-        <div class="stat-card-value">20</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-card-title">Đang vận chuyển</div>
-        <div class="stat-card-subtitle">Tổng đơn hàng đang vận chuyển</div>
-        <div class="stat-card-value">2</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-card-title">Sản phẩm hết hàng</div>
-        <div class="stat-card-subtitle">Sản phẩm hết hàng trong kho</div>
-        <div class="stat-card-value">2</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-card-title">Tổng thu</div>
-        <div class="stat-card-value">20.000.000 đ</div>
-    </div>
+  <div class="stat-card">
+    <div class="stat-card-title">Tổng đơn hàng</div>
+    <div class="stat-card-value green">20</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-title">Đơn hàng hoàn thành</div>
+    <div class="stat-card-value green">20</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-title">Đang vận chuyển</div>
+    <div class="stat-card-subtitle">Tổng đơn hàng đang vận chuyển</div>
+    <div class="stat-card-value yellow">2</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-title">Doanh Thu tháng này</div>
+    <div class="stat-card-subtitle">Tổng doanh thu tháng này</div>
+    <div class="stat-card-value green">20.000.000 đ</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-card-title">Tổng doanh thu</div>
+    <div class="stat-card-value green">900.000.000 đ</div>
+  </div>
 </div>
 
-<!-- Recent Orders -->
-<div class="orders-container">
-    <div class="table-header">
-        <div class="table-title">Đơn hàng gần đây</div>
-        <div class="table-actions">
-            <div class="search-container">
-                <i class="fas fa-search search-icon"></i>
-                <input type="text" class="search-input" placeholder="Search">
-            </div>
-            <div class="date-range">
-                <i class="far fa-calendar"></i>
-                1/05/2025 - 31/5/2025
-            </div>
-        </div>
+<div class="dashboard-charts-row">
+  <div class="revenue-chart-container flex-item">
+    <div class="chart-header">
+      <div class="chart-title">Doanh thu</div>
     </div>
-    
-    <div style="margin-bottom: 10px; font-size: 13px; color: #6c757d;">
-        Hiển thị từ 0 đến 500
+    <div class="chart-wrapper">
+      <canvas id="revenueChart"></canvas>
     </div>
-    
-    <table class="orders-table">
-        <thead>
-            <tr>
-                <th class="checkbox-cell">
-                    <input type="checkbox">
-                </th>
-                <th>Mã đơn <i class="fas fa-sort"></i></th>
-                <th>Ngày đặt đơn <i class="fas fa-sort"></i></th>
-                <th>Khách hàng <i class="fas fa-sort"></i></th>
-                <th>Thanh toán <i class="fas fa-sort"></i></th>
-                <th>Sản phẩm <i class="fas fa-sort"></i></th>
-                <th>Tổng tiền <i class="fas fa-sort"></i></th>
-                <th>Vận chuyển <i class="fas fa-sort"></i></th>
-                <th>Trạng thái đơn hàng <i class="fas fa-sort"></i></th>
-                <th>Ngày cập nhật <i class="fas fa-sort"></i></th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td class="checkbox-cell">
-                    <input type="checkbox">
-                </td>
-                <td class="order-id">ORD-10586</td>
-                <td>16/08:55 8-05-2025</td>
-                <td class="customer-name">Nguyễn X</td>
-                <td>
-                    <div class="payment-status completed">
-                        <i class="fas fa-circle"></i> Đã thanh toán
-                    </div>
-                </td>
-                <td>2 sản phẩm</td>
-                <td class="order-amount">15.050.000 đ</td>
-                <td>-</td>
-                <td>
-                    <div class="order-status">
-                        <div class="status-indicator delivered">
-                            <i class="fas fa-circle"></i> Yêu cầu hủy
-                        </div>
-                        <div class="status-dropdown">
-                            <i class="fas fa-chevron-down"></i>
-                        </div>
-                    </div>
-                </td>
-                <td>16/08:55 8-05-2025</td>
-                <td class="action-cell">
-                    <div class="action-button">
-                        <i class="fas fa-pencil"></i>
-                    </div>
-                    <div class="action-button">
-                        <i class="fas fa-trash"></i>
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td class="checkbox-cell">
-                    <input type="checkbox">
-                </td>
-                <td class="order-id">ORD-10586</td>
-                <td>16/08:55 8-05-2025</td>
-                <td class="customer-name">Nguyễn X</td>
-                <td>
-                    <div class="payment-status completed">
-                        <i class="fas fa-circle"></i> Đã thanh toán
-                    </div>
-                </td>
-                <td>2 sản phẩm</td>
-                <td class="order-amount">15.050.000 đ</td>
-                <td>-</td>
-                <td>
-                    <div class="order-status">
-                        <div class="status-indicator processing">
-                            <i class="fas fa-circle"></i> Chờ xác nhận
-                        </div>
-                        <div class="status-dropdown">
-                            <i class="fas fa-chevron-down"></i>
-                        </div>
-                    </div>
-                </td>
-                <td>16/08:55 8-05-2025</td>
-                <td class="action-cell">
-                    <div class="action-button">
-                        <i class="fas fa-pencil"></i>
-                    </div>
-                    <div class="action-button">
-                        <i class="fas fa-trash"></i>
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td class="checkbox-cell">
-                    <input type="checkbox">
-                </td>
-                <td class="order-id">ORD-10586</td>
-                <td>16/08:55 8-05-2025</td>
-                <td class="customer-name">Nguyễn X</td>
-                <td>
-                    <div class="payment-status completed">
-                        <i class="fas fa-circle"></i> Đã thanh toán
-                    </div>
-                </td>
-                <td>2 sản phẩm</td>
-                <td class="order-amount">15.050.000 đ</td>
-                <td>-</td>
-                <td>
-                    <div class="order-status">
-                        <div class="status-indicator delivered">
-                            <i class="fas fa-circle"></i> Yêu cầu hủy
-                        </div>
-                        <div class="status-dropdown">
-                            <i class="fas fa-chevron-down"></i>
-                        </div>
-                    </div>
-                </td>
-                <td>16/08:55 8-05-2025</td>
-                <td class="action-cell">
-                    <div class="action-button">
-                        <i class="fas fa-pencil"></i>
-                    </div>
-                    <div class="action-button">
-                        <i class="fas fa-trash"></i>
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td class="checkbox-cell">
-                    <input type="checkbox">
-                </td>
-                <td class="order-id">ORD-10586</td>
-                <td>16/08:55 8-05-2025</td>
-                <td class="customer-name">Nguyễn X</td>
-                <td>
-                    <div class="payment-status completed">
-                        <i class="fas fa-circle"></i> Đã thanh toán
-                    </div>
-                </td>
-                <td>2 sản phẩm</td>
-                <td class="order-amount">15.050.000 đ</td>
-                <td>-</td>
-                <td>
-                    <div class="order-status">
-                        <div class="status-indicator cancelled">
-                            <i class="fas fa-circle"></i> Đã hủy
-                        </div>
-                        <div class="status-dropdown">
-                            <i class="fas fa-chevron-down"></i>
-                        </div>
-                    </div>
-                </td>
-                <td>16/08:55 8-05-2025</td>
-                <td class="action-cell">
-                    <div class="action-button">
-                        <i class="fas fa-pencil"></i>
-                    </div>
-                    <div class="action-button">
-                        <i class="fas fa-trash"></i>
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td class="checkbox-cell">
-                    <input type="checkbox">
-                </td>
-                <td class="order-id">ORD-10586</td>
-                <td>16/08:55 8-05-2025</td>
-                <td class="customer-name">Nguyễn X</td>
-                <td>
-                    <div class="payment-status completed">
-                        <i class="fas fa-circle"></i> Đã thanh toán
-                    </div>
-                </td>
-                <td>2 sản phẩm</td>
-                <td class="order-amount">15.050.000 đ</td>
-                <td>-</td>
-                <td>
-                    <div class="order-status">
-                        <div class="status-indicator delivered">
-                            <i class="fas fa-circle"></i> Đang giao
-                        </div>
-                        <div class="status-dropdown">
-                            <i class="fas fa-chevron-down"></i>
-                        </div>
-                    </div>
-                </td>
-                <td>16/08:55 8-05-2025</td>
-                <td class="action-cell">
-                    <div class="action-button">
-                        <i class="fas fa-pencil"></i>
-                    </div>
-                    <div class="action-button">
-                        <i class="fas fa-trash"></i>
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td class="checkbox-cell">
-                    <input type="checkbox">
-                </td>
-                <td class="order-id">ORD-10586</td>
-                <td>16/08:55 8-05-2025</td>
-                <td class="customer-name">Nguyễn X</td>
-                <td>
-                    <div class="payment-status completed">
-                        <i class="fas fa-circle"></i> Đã thanh toán
-                    </div>
-                </td>
-                <td>2 sản phẩm</td>
-                <td class="order-amount">15.050.000 đ</td>
-                <td>-</td>
-                <td>
-                    <div class="order-status">
-                        <div class="status-indicator delivered">
-                            <i class="fas fa-circle"></i> Yêu cầu trả hàng
-                        </div>
-                        <div class="status-dropdown">
-                            <i class="fas fa-chevron-down"></i>
-                        </div>
-                    </div>
-                </td>
-                <td>16/08:55 8-05-2025</td>
-                <td class="action-cell">
-                    <div class="action-button">
-                        <i class="fas fa-pencil"></i>
-                    </div>
-                    <div class="action-button">
-                        <i class="fas fa-trash"></i>
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td class="checkbox-cell">
-                    <input type="checkbox">
-                </td>
-                <td class="order-id">ORD-10586</td>
-                <td>16/08:55 8-05-2025</td>
-                <td class="customer-name">Nguyễn X</td>
-                <td>
-                    <div class="payment-status completed">
-                        <i class="fas fa-circle"></i> Đã thanh toán
-                    </div>
-                </td>
-                <td>2 sản phẩm</td>
-                <td class="order-amount">15.050.000 đ</td>
-                <td>-</td>
-                <td>
-                    <div class="order-status">
-                        <div class="status-indicator delivered">
-                            <i class="fas fa-circle"></i> Trả hàng
-                        </div>
-                        <div class="status-dropdown">
-                            <i class="fas fa-chevron-down"></i>
-                        </div>
-                    </div>
-                </td>
-                <td>16/08:55 8-05-2025</td>
-                <td class="action-cell">
-                    <div class="action-button">
-                        <i class="fas fa-pencil"></i>
-                    </div>
-                    <div class="action-button">
-                        <i class="fas fa-trash"></i>
-                    </div>
-                </td>
-            </tr>
-            <tr>
-                <td class="checkbox-cell">
-                    <input type="checkbox">
-                </td>
-                <td class="order-id">ORD-10586</td>
-                <td>16/08:55 8-05-2025</td>
-                <td class="customer-name">Nguyễn X</td>
-                <td>
-                    <div class="payment-status completed">
-                        <i class="fas fa-circle"></i> Đã thanh toán
-                    </div>
-                </td>
-                <td>2 sản phẩm</td>
-                <td class="order-amount">15.050.000 đ</td>
-                <td>-</td>
-                <td>
-                    <div class="order-status">
-                        <div class="status-indicator delivered">
-                            <i class="fas fa-circle"></i> Giao hàng thành công
-                        </div>
-                        <div class="status-dropdown">
-                            <i class="fas fa-chevron-down"></i>
-                        </div>
-                    </div>
-                </td>
-                <td>16/08:55 8-05-2025</td>
-                <td class="action-cell">
-                    <div class="action-button">
-                        <i class="fas fa-pencil"></i>
-                    </div>
-                    <div class="action-button">
-                        <i class="fas fa-trash"></i>
-                    </div>
-                </td>
-            </tr>
-        </tbody>
-    </table>
-</div> 
+  </div>
+  <div class="revenue-chart-container flex-item">
+    <div class="chart-header">
+      <div class="chart-title">Người dùng mới</div>
+    </div>
+    <div class="chart-wrapper">
+      <canvas id="userChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Title and Period Selector -->
+<!-- <div class="dashboard-header-row">
+  <div class="dashboard-title">Doanh thu</div>
+  <div class="period-selector">Tháng này <i class="fas fa-chevron-down"></i></div>
+</div> -->
+
+<!-- Revenue Chart -->
+<!-- <div class="revenue-chart-container">
+  <div class="chart-header">
+    <div class="chart-title"></div>
+    <div class="chart-info-icon">
+      <i class="fas fa-circle-info"></i>
+    </div>
+  </div>
+  <div class="chart-wrapper">
+    <canvas id="myChart"></canvas>
+  </div>
+</div> -->
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  async function fetchRevenue() {
+    // Gọi đúng endpoint API của bạn
+    const res = await fetch("/api/revenue?type=day");
+    return await res.json();
+  }
+  async function fetchUser() {
+    const res = await fetch("/api/revenue/user?type=day");
+    return await res.json();
+  }
+
+  async function renderCharts() {
+    // 1. Fetch song song
+    const [revenueData, userData] = await Promise.all([
+      fetchRevenue(),
+      fetchUser(),
+    ]);
+
+    // 2. Render Revenue Chart
+    const revenueLabels = revenueData.map((item) => item.date);
+    const totalRevenue = revenueData.map(
+      (item) => (item.orderRevenue || 0) + (item.designRevenue || 0)
+    );
+    const orderRevenue = revenueData.map((item) => item.orderRevenue || 0);
+    const designRevenue = revenueData.map((item) => item.designRevenue || 0);
+
+    new Chart(document.getElementById("revenueChart").getContext("2d"), {
+      type: "line",
+      data: {
+        labels: revenueLabels,
+        datasets: [
+          {
+            label: "Tổng doanh thu",
+            data: totalRevenue,
+            borderColor: "rgba(75,192,192,1)",
+            backgroundColor: "rgba(75,192,192,0.1)",
+            tension: 0.3,
+            pointRadius: 5,
+            pointHoverRadius: 8,
+            fill: false,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        aspectRatio: 2,
+        plugins: {
+          tooltip: {
+            enabled: true,
+            callbacks: {
+              label: function (context) {
+                const idx = context.dataIndex;
+                return [
+                  `Tổng doanh thu: ${totalRevenue[idx].toLocaleString()} VNĐ`,
+                  `└ Đơn hàng: ${orderRevenue[idx].toLocaleString()} VNĐ`,
+                  `└ Design: ${designRevenue[idx].toLocaleString()} VNĐ`,
+                ];
+              },
+            },
+          },
+        },
+        scales: {
+          x: {
+            title: { display: true, text: "Ngày" },
+          },
+          y: {
+            title: { display: true, text: "Doanh thu (VNĐ)" },
+            beginAtZero: true,
+          },
+        },
+      },
+    });
+
+    // 3. Render User Chart
+    const userLabels = userData.map((item) => item.date);
+    const userCounts = userData.map((item) => item.userCount);
+
+    new Chart(document.getElementById("userChart").getContext("2d"), {
+      type: "line",
+      data: {
+        labels: userLabels,
+        datasets: [
+          {
+            label: "Người dùng mới",
+            data: userCounts,
+            borderColor: "rgba(54, 162, 235, 1)",
+            backgroundColor: "rgba(54, 162, 235, 0.1)",
+            tension: 0.3,
+            pointRadius: 5,
+            pointHoverRadius: 8,
+            fill: false,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        aspectRatio: 2,
+        plugins: {
+          tooltip: {
+            enabled: true,
+            callbacks: {
+              label: function (context) {
+                return `Người dùng mới: ${context.parsed.y}`;
+              },
+            },
+          },
+        },
+        scales: {
+          x: {
+            title: { display: true, text: "Ngày" },
+          },
+          y: {
+            title: { display: true, text: "Số lượng" },
+            beginAtZero: true,
+          },
+        },
+      },
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", renderCharts);
+</script>

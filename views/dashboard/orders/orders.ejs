@@ -111,31 +111,31 @@
         <div class="orders-summary">
           <div class="summary-card">
             <div class="card-title">Tổng đơn hàng</div>
-            <div class="card-value">20</div>
+            <div class="card-value" id="total-orders">0</div>
           </div>
 
           <div class="summary-card">
             <div class="card-title">Đơn hàng</div>
             <div class="card-subtitle">Đơn hàng đang chờ xử lý</div>
-            <div class="card-value">20</div>
+            <div class="card-value" id="pending-orders">0</div>
           </div>
 
           <div class="summary-card">
             <div class="card-title">Đang vận chuyển</div>
             <div class="card-subtitle">Tổng đơn hàng đang vận chuyển</div>
-            <div class="card-value">2</div>
+            <div class="card-value" id="shipping-orders">0</div>
           </div>
 
           <div class="summary-card">
             <div class="card-title">Hoàn trả đơn hàng</div>
             <div class="card-subtitle">Đơn hàng được yêu cầu trả hàng</div>
-            <div class="card-value">0</div>
+            <div class="card-value" id="return-orders">0</div>
           </div>
 
           <div class="summary-card">
             <div class="card-title">Hủy đơn hàng</div>
             <div class="card-subtitle">Đơn hàng được yêu cầu hủy</div>
-            <div class="card-value">0</div>
+            <div class="card-value" id="cancel-orders">0</div>
           </div>
         </div>
 
@@ -408,7 +408,7 @@
           </table>
 
           <div class="table-footer">
-            <div class="showing-info">Hiển thị 1-8 trên tổng số 20 đơn hàng</div>
+            <div class="showing-info" id="orders-showing-info">Hiển thị 1-8 trên tổng số 20 đơn hàng</div>
             <div class="pagination">
               <button class="page-item disabled"><i class="fas fa-chevron-left"></i></button>
               <button class="page-item active">1</button>
@@ -794,6 +794,7 @@
 <script>
   async function loadOrders() {
     try {
+      // Fetch orders from admin API
       const res = await fetch('/api/orders/admin', {
         headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
       });
@@ -805,6 +806,66 @@
       const orders = data.orders;
       const tbody = document.getElementById('orders-list');
       tbody.innerHTML = ''; // Clear cũ
+
+      // Fetch total orders count from pagination API
+      try {
+        const paginationRes = await fetch('/api/orders', {
+          headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        });
+        const paginationData = await paginationRes.json();
+        
+        if (paginationData && paginationData.pagination && paginationData.pagination.totalOrders) {
+          document.getElementById('total-orders').textContent = paginationData.pagination.totalOrders;
+          
+          // Update showing info in table footer
+          const showingInfo = document.getElementById('orders-showing-info');
+          if (showingInfo) {
+            const start = 1;
+            const end = Math.min(orders.length, 10);
+            showingInfo.textContent = `Hiển thị ${start}-${end} trên tổng số ${paginationData.pagination.totalOrders} đơn hàng`;
+          }
+        }
+      } catch (paginationErr) {
+        console.error("Lỗi khi lấy thông tin phân trang:", paginationErr);
+      }
+
+      // Fetch order status counts
+      try {
+        const statusRes = await fetch('/api/orders/count', {
+          headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+        });
+        const statusData = await statusRes.json();
+        
+        if (Array.isArray(statusData)) {
+          // Update order status counts
+          const pendingOrders = statusData.find(item => item.status === 'PENDING')?.count || 0;
+          const shippingOrders = statusData.find(item => item.status === 'SHIPPING')?.count || 0;
+          const cancelledOrders = statusData.find(item => item.status === 'CANCELLED')?.count || 0;
+          
+          document.getElementById('pending-orders').textContent = pendingOrders;
+          document.getElementById('shipping-orders').textContent = shippingOrders;
+          document.getElementById('cancel-orders').textContent = cancelledOrders;
+          
+          // For return orders, we need to count orders with RETURNED status or check the return_orders table
+          // For now, we'll just use 0 as a placeholder
+          document.getElementById('return-orders').textContent = 0;
+          
+          // Try to fetch return orders count if there's an API for it
+          try {
+            const returnRes = await fetch('/api/orders/return/count', {
+              headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+            });
+            const returnData = await returnRes.json();
+            if (returnData && returnData.count) {
+              document.getElementById('return-orders').textContent = returnData.count;
+            }
+          } catch (returnErr) {
+            console.error("Không thể lấy số lượng đơn hàng trả lại:", returnErr);
+          }
+        }
+      } catch (statusErr) {
+        console.error("Lỗi khi lấy thông tin trạng thái đơn hàng:", statusErr);
+      }
 
       orders.forEach(order => {
         const tr = document.createElement('tr');

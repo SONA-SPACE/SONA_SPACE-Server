@@ -93,7 +93,6 @@ router.get("/hash/:orderHash", optionalAuth, async (req, res) => {
     const [[order]] = await db.query(
       `
       SELECT   
-
         o.order_id,
         o.order_hash,
         o.created_at,
@@ -136,8 +135,8 @@ router.get("/hash/:orderHash", optionalAuth, async (req, res) => {
         oi.order_item_id AS id,
         oi.quantity,
         vp.variant_id,
-        vp.variant_product_price AS price,
-        vp.variant_product_price_sale AS price_sale,
+  CAST(REPLACE(vp.variant_product_price, '.', '') AS UNSIGNED) AS price,
+  CAST(REPLACE(vp.variant_product_price_sale, '.', '') AS UNSIGNED) AS price_sale,
         vp.variant_product_list_image AS image,
         c.color_name,
         c.color_hex,
@@ -148,7 +147,7 @@ router.get("/hash/:orderHash", optionalAuth, async (req, res) => {
         cat.category_name AS category,
         (SELECT COUNT(*) FROM comment WHERE product_id = p.product_id) AS comment_count,
       (SELECT AVG(comment_rating) FROM comment WHERE product_id = p.product_id) AS average_rating,
-       oi.comment_id IS NOT NULL AS has_comment
+  IF(oi.comment_id IS NOT NULL, TRUE, FALSE) AS has_comment
       FROM order_items oi
       JOIN variant_product vp ON oi.variant_id = vp.variant_id
       JOIN product p ON vp.product_id = p.product_id
@@ -166,6 +165,12 @@ router.get("/hash/:orderHash", optionalAuth, async (req, res) => {
       SUCCESS: 4,
     };
     const statusStep = statusStepMap[order.current_status] || 1;
+
+    const cleanPrice = (value) => {
+      if (!value) return 0;
+      const cleaned = String(value).replace(/\./g, "");
+      return Number(cleaned);
+    };
 
     // Ưu tiên thông tin mới nếu có, fallback về thông tin cũ
     const recipientName =
@@ -212,7 +217,9 @@ router.get("/hash/:orderHash", optionalAuth, async (req, res) => {
           id: item.id,
           name: item.product_name,
           image: item.image || item.product_image || "/images/default.jpg",
-          price: item.price_sale || item.price,
+          price: item.price_sale ? cleanPrice(item.price_sale) : cleanPrice(item.price),
+
+
           quantity: item.quantity,
           slug: item.product_slug,
           color: {
@@ -450,6 +457,7 @@ router.post("/", verifyToken, async (req, res) => {
       coupon_code,
       shipping_fee,
       order_discount,
+      fromRedirect
     } = req.body;
 
     const user_id = req.user.id;
@@ -457,7 +465,9 @@ router.post("/", verifyToken, async (req, res) => {
     if (!order_id || !order_total || !method || !amount) {
       return res.status(400).json({ error: "Thiếu thông tin bắt buộc" });
     }
-
+    if (method === "MOMO" && !fromRedirect) {
+      return res.status(400).json({ error: "Chờ IPN hoặc fromRedirect mới được tạo đơn" });
+    }
     // Lấy thông tin người dùng
     const [[userInfo]] = await db.query(
       `SELECT user_address, user_number, user_name, user_gmail FROM user WHERE user_id = ?`,
@@ -512,15 +522,15 @@ router.post("/", verifyToken, async (req, res) => {
       // Insert order
       await db.query(
         `
-        INSERT INTO orders (
-          order_hash, user_id, order_address_old, order_address_new,
-          order_number1, order_number2, order_total, order_total_final,
-            shipping_fee, order_discount,  
-          current_status, created_at,
-          order_name_old, order_name_new,
-          order_email_old, order_email_new,
-          couponcode_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?)`,
+          INSERT INTO orders (
+            order_hash, user_id, order_address_old, order_address_new,
+            order_number1, order_number2, order_total, order_total_final,
+              shipping_fee, order_discount,  
+            current_status, created_at,
+            order_name_old, order_name_new,
+            order_email_old, order_email_new,
+            couponcode_id
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?)`,
         [
           order_id,
           user_id,
@@ -559,26 +569,38 @@ router.post("/", verifyToken, async (req, res) => {
 
         await db.query(
           `
-          INSERT INTO order_items (order_id, variant_id, quantity, product_name, product_price, current_status, created_at)
-          VALUES (?, ?, ?, ?, ?, 'NORMAL', NOW())
-        `,
+            INSERT INTO order_items (order_id, variant_id, quantity, product_name, product_price, current_status, created_at)
+            VALUES (?, ?, ?, ?, ?, 'NORMAL', NOW())
+          `,
           [orderId, variant_id, quantity, product_name, product_price]
+        );
+
+        await db.query(
+          `UPDATE variant_product SET variant_product_quantity = variant_product_quantity - ? WHERE variant_id = ?`,
+          [quantity, variant_id]
+        );
+        await db.query(
+          `UPDATE product
+          JOIN variant_product ON variant_product.product_id = product.product_id
+          SET product.product_sold = product.product_sold + ?
+          WHERE variant_product.variant_id = ?`,
+          [quantity, variant_id]
         );
       }
 
       await db.query(
         `
-        INSERT INTO payments (order_id, method, amount, status, created_at)
-        VALUES (?, ?, ?, 'PENDING', NOW())
-      `,
+          INSERT INTO payments (order_id, method, amount, status, created_at)
+          VALUES (?, ?, ?, 'PENDING', NOW())
+        `,
         [orderId, method, amount]
       );
 
       await db.query(
         `
-        INSERT INTO order_status_log (order_id, from_status, to_status, trigger_by, step, created_at)
-        VALUES (?, NULL, 'PENDING', 'system', 'Khởi tạo đơn', NOW())
-      `,
+          INSERT INTO order_status_log (order_id, from_status, to_status, trigger_by, step, created_at)
+          VALUES (?, NULL, 'PENDING', 'system', 'Khởi tạo đơn', NOW())
+        `,
         [orderId]
       );
 
@@ -628,10 +650,11 @@ router.post("/", verifyToken, async (req, res) => {
       const secretKey = "K951B6PE1waDMi640xX08PD3vg6EkVlz";
       const requestType = "captureWallet";
 
-      const orderId = `SNA-${Date.now()}`;
+      const orderId = req.body.order_id || `SNA-${Date.now()}`;
+
       const requestId = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-      const redirectUrl = `https://2a20dc71e8db.ngrok-free.app/api/orders/redirect/momo`;
-      const ipnUrl = `https://2a20dc71e8db.ngrok-free.app/api/orders/payment/momo`;
+      const redirectUrl = `https://6c86ca6c5a20.ngrok-free.app/api/orders/redirect/momo`;
+      const ipnUrl = `https://6c86ca6c5a20.ngrok-free.app/api/orders/payment/momo`;
       const orderInfo = "Thanh toán đơn hàng";
 
       const extraData = Buffer.from(JSON.stringify({
@@ -748,89 +771,199 @@ router.post("/payment/momo", async (req, res) => {
   const secretKey = "K951B6PE1waDMi640xX08PD3vg6EkVlz";
 
   try {
-
+    // Kiểm tra chữ ký hợp lệ
     const rawSignature = `accessKey=${accessKey}&amount=${amount}&extraData=${extraData}&message=${message}&orderId=${orderId}&orderInfo=${orderInfo}&orderType=${orderType}&partnerCode=${partnerCode}&payType=${payType}&requestId=${requestId}&responseTime=${responseTime}&resultCode=${resultCode}&transId=${transId}`;
-
-    const expectedSignature = crypto
-      .createHmac("sha256", secretKey)
-      .update(rawSignature)
-      .digest("hex");
+    const expectedSignature = crypto.createHmac("sha256", secretKey).update(rawSignature).digest("hex");
 
     if (signature !== expectedSignature || parseInt(resultCode) !== 0) {
-      return res.status(400).json({ message: "Signature mismatch or payment failed" });
+      return res.status(400).json({ message: "Chữ ký không hợp lệ hoặc thanh toán thất bại" });
     }
 
-    // Đã tồn tại đơn hàng này chưa?
-    const [existingOrder] = await db.query("SELECT * FROM orders WHERE order_id = ?", [orderId]);
+    // Kiểm tra đơn đã tồn tại chưa
+    const [existingOrder] = await db.query("SELECT * FROM orders WHERE order_hash = ?", [orderId]);
     if (existingOrder.length > 0) {
-      return res.status(200).json({ message: "Order already exists" });
+      const existingOrderId = existingOrder[0].order_id;
+
+      const [existingPayment] = await db.query(
+        "SELECT * FROM payments WHERE order_id = ? AND method = 'MOMO'",
+        [existingOrderId]
+      );
+
+      if (existingPayment.length === 0) {
+        await db.query(`
+          INSERT INTO payments (order_id, method, amount, status, transaction_code, created_at)
+          VALUES (?, 'MOMO', ?, 'PAID', ?, NOW())
+        `, [existingOrderId, amount, transId]);
+
+        await db.query(`
+          INSERT INTO order_status_log (order_id, from_status, to_status, trigger_by, step, created_at)
+          VALUES (?, NULL, 'PAID', 'system', 'Xác nhận lại MoMo', NOW())
+        `, [existingOrderId]);
+      }
+
+      return res.status(200).json({ message: "Đơn hàng đã tồn tại và đã xử lý thanh toán." });
     }
 
-    // Parse extraData
+    // Giải mã extraData
     const extra = JSON.parse(Buffer.from(extraData, "base64").toString("utf8"));
     const {
       user_id,
       order_total,
-      shipping_fee,
-      order_discount,
-      couponcode_id,
-      cart_items,
+      cart_items = [],
       order_name_new,
       order_email_new,
       order_address_new,
       order_number2,
-      order_hash,
+      couponcode_id,
+      coupon_code,
+      shipping_fee,
+      order_discount
     } = extra;
 
-    // Insert orders
-    await db.query(
-      `INSERT INTO orders 
-        (order_id, user_id, order_total, method, amount, status, created_at, updated_at, couponcode_id, shipping_fee, discount, order_name, order_email, order_address, order_number, order_hash)
-        VALUES (?, ?, ?, ?, ?, 'PAID', NOW(), NOW(), ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        orderId,
-        user_id,
-        order_total,
-        "MoMo",
-        amount,
-        couponcode_id || null,
-        shipping_fee,
-        order_discount,
-        order_name_new,
-        order_email_new,
-        order_address_new,
-        order_number2,
-        order_hash,
-      ]
-    );
+    const order_hash = orderId;
 
-    // Insert order items
+    // Lấy thông tin user mặc định
+    const [[userInfo]] = await db.query(
+      `SELECT user_address, user_number, user_name, user_gmail FROM user WHERE user_id = ?`,
+      [user_id]
+    );
+    const defaultName = userInfo.user_name?.trim() || "";
+    const defaultEmail = userInfo.user_gmail?.trim() || "";
+    const defaultAddress = userInfo.user_address?.trim() || "";
+    const defaultPhone = userInfo.user_number?.trim() || "";
+
+    const finalName = order_name_new?.trim() && order_name_new.trim() !== defaultName ? order_name_new.trim() : null;
+    const finalEmail = order_email_new?.trim() && order_email_new.trim() !== defaultEmail ? order_email_new.trim() : null;
+    const finalAddress = order_address_new?.trim() && order_address_new.trim() !== defaultAddress ? order_address_new.trim() : null;
+    const finalPhone = order_number2?.trim() && order_number2.trim() !== defaultPhone ? order_number2.trim() : null;
+
+    let couponcodeId = couponcode_id || null;
+    if (!couponcodeId && coupon_code) {
+      const [[coupon]] = await db.query(`SELECT couponcode_id FROM couponcode WHERE code = ?`, [coupon_code]);
+      if (coupon) couponcodeId = coupon.couponcode_id;
+    }
+
+    await db.query(`
+      INSERT INTO orders (
+        order_hash, user_id, order_address_old, order_address_new,
+        order_number1, order_number2, order_total, order_total_final,
+        shipping_fee, order_discount,
+        current_status, created_at,
+        order_name_old, order_name_new,
+        order_email_old, order_email_new,
+        couponcode_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?)
+    `, [
+      order_hash,
+      user_id,
+      defaultAddress,
+      finalAddress,
+      defaultPhone,
+      finalPhone,
+      order_total,
+      order_total,
+      shipping_fee,
+      order_discount,
+      "PENDING",
+      defaultName,
+      finalName,
+      defaultEmail,
+      finalEmail,
+      couponcodeId,
+    ]);
+
+    const [[orderRow]] = await db.query(`SELECT order_id FROM orders WHERE order_hash = ?`, [order_hash]);
+    const order_id = orderRow.order_id;
+
     for (const item of cart_items) {
+      const { variant_id, quantity, name: product_name, price: product_price } = item;
+      if (!variant_id || !quantity || !product_name || !product_price) continue;
+
+      await db.query(`
+        INSERT INTO order_items (order_id, variant_id, quantity, product_name, product_price, current_status, created_at)
+        VALUES (?, ?, ?, ?, ?, 'NORMAL', NOW())
+      `, [order_id, variant_id, quantity, product_name, product_price]);
+
+      // Cập nhật số lượng tồn kho và sản phẩm bán
+      await db.query(`
+        UPDATE variant_product SET variant_product_quantity = variant_product_quantity - ? WHERE variant_id = ?
+      `, [quantity, variant_id]);
+
+      await db.query(`
+        UPDATE product
+        JOIN variant_product ON variant_product.product_id = product.product_id
+        SET product.product_sold = product.product_sold + ?
+        WHERE variant_product.variant_id = ?
+      `, [quantity, variant_id]);
+    }
+
+    const wishlistIdsToDelete = [];
+
+    for (const item of cart_items) {
+      const [wishlistRows] = await db.query(
+        `SELECT wishlist_id FROM wishlist WHERE user_id = ? AND variant_id = ?`,
+        [user_id, item.variant_id]
+      );
+      wishlistRows.forEach((row) => wishlistIdsToDelete.push(row.wishlist_id));
+    }
+
+    if (wishlistIdsToDelete.length > 0) {
       await db.query(
-        `INSERT INTO order_items (order_id, product_id, variant_id, quantity, price) VALUES (?, ?, ?, ?, ?)`,
-        [orderId, item.product_id, item.variant_id, item.quantity, item.price]
+        `DELETE FROM wishlist WHERE wishlist_id IN (?)`,
+        [wishlistIdsToDelete]
       );
     }
 
-    // Insert payment
-    await db.query(
-      `INSERT INTO payments (order_id, provider, amount, status, trans_id, created_at)
-       VALUES (?, 'MoMo', ?, 'PAID', ?, NOW())`,
-      [orderId, amount, transId]
-    );
+    await db.query(`
+      INSERT INTO payments (order_id, method, amount, status, transaction_code, created_at)
+      VALUES (?, 'MOMO', ?, 'SUCCESS', ?, NOW())
+    `, [order_id, amount, transId]);
 
-    // Log order status
-    await db.query(
-      `INSERT INTO order_status_log (order_id, status, changed_at) VALUES (?, 'PAID', NOW())`,
-      [orderId]
-    );
+    await db.query(`
+      INSERT INTO order_status_log (order_id, from_status, to_status, trigger_by, step, created_at)
+      VALUES (?, NULL, 'PAID', 'system', 'Khởi tạo đơn', NOW())
+    `, [order_id]);
 
-    return res.status(200).json({ message: "Payment verified and order saved" });
+    // Gửi email xác nhận
+    const emailData = {
+      name: finalName || defaultName,
+      email: finalEmail || defaultEmail,
+      phone: finalPhone || defaultPhone,
+      address: finalAddress || defaultAddress,
+      amount,
+      method: "MOMO",
+      order_id,
+      order_hash,
+      created_at: new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" }),
+      current_status: "PENDING",
+      order_total_final: amount.toLocaleString("vi-VN") + "đ",
+      products: cart_items.map((item) => ({
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+        total: (item.price * item.quantity).toLocaleString("vi-VN") + "đ",
+        image: item.image,
+      })),
+    };
+
+    try {
+      await sendEmail1(emailData.email, "Xác nhận đơn hàng", emailData);
+    } catch (err) {
+      console.error("Lỗi gửi email:", err.message);
+    }
+
+    return res.status(200).json({
+      success: true,
+      resultCode: 0,
+      message: "Đơn hàng đã thanh toán thành công qua MoMo",
+    });
+
   } catch (error) {
     console.error("MoMo IPN error:", error);
-    return res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Lỗi server khi xử lý IPN MoMo" });
   }
 });
+
 
 router.get("/redirect/momo", (req, res) => {
   const { resultCode, orderId } = req.query;
@@ -1649,6 +1782,57 @@ router.post("/return/:orderHash", verifyToken, async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Đã xảy ra lỗi khi xử lý yêu cầu trả hàng',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * @route   GET /api/orders/return/count
+ * @desc    Count return order requests
+ * @access  Private (Admin)
+ */
+router.get('/return/count', verifyToken, isAdmin, async (req, res) => {
+  try {
+    // Check if order_returns table exists
+    let count = 0;
+    
+    try {
+      const [tables] = await db.query(
+        "SHOW TABLES LIKE 'order_returns'"
+      );
+      
+      if (tables.length > 0) {
+        // If the table exists, count the number of return requests
+        const [result] = await db.query(
+          "SELECT COUNT(*) as count FROM order_returns"
+        );
+        count = result[0].count;
+      } else {
+        // Alternative: check if there are orders with RETURNED status
+        const [result] = await db.query(
+          "SELECT COUNT(*) as count FROM orders WHERE current_status = 'RETURNED'"
+        );
+        count = result[0].count;
+      }
+    } catch (error) {
+      console.error("Error checking order_returns table:", error);
+      // Fallback to checking orders with RETURNED status
+      const [result] = await db.query(
+        "SELECT COUNT(*) as count FROM orders WHERE current_status = 'RETURNED'"
+      );
+      count = result[0].count;
+    }
+    
+    return res.status(200).json({
+      success: true,
+      count
+    });
+  } catch (error) {
+    console.error("Error counting return orders:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Server error while counting return orders",
       error: error.message
     });
   }

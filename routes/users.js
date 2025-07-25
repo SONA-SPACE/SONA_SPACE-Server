@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcryptjs");
 const db = require("../config/database");
-const { verifyToken, isAdmin } = require("../middleware/auth");
+const { verifyToken, isAdmin, isAdminOnly } = require("../middleware/auth");
 const upload = require("../middleware/upload");
 const cloudinary = require("../config/cloudinary");
 
@@ -85,50 +85,99 @@ router.get("/simple", verifyToken, isAdmin, async (req, res) => {
     res.status(500).json({ error: "Lỗi máy chủ khi lấy danh sách người dùng" });
   }
 });
-// 💥 Đặt trước route chứa /:id
-router.get("/admin", async (req, res) => {
-  try {
-    const [rows] = await db.execute(`
-      SELECT 
-        user_id,
-        user_name,
-        user_gmail,
-        user_number,
-        user_image,
-        user_address,
-        user_role,
-        user_gender,
-        user_birth,
-        user_email_active,
-        created_at,
-        updated_at
-      FROM user
-      WHERE deleted_at IS NULL
-      ORDER BY created_at DESC
-    `);
 
-    const today = new Date();
+router.get("/admin", verifyToken, async (req, res) => {
+  try {
+    let sqlQuery = `
+      SELECT 
+        u.user_id,
+        u.user_name,
+        u.user_gmail,
+        u.user_number,
+        u.user_image,
+        u.user_address,
+        u.user_role,
+        u.user_gender,
+        u.user_birth,
+        u.user_email_active,
+        u.user_verified_at,      -- Thêm ngày kích hoạt
+        u.user_disabled_at,
+        u.created_at,
+        u.updated_at,
+
+        -- Đếm đơn hàng đã mua (SUCCESS)
+        COUNT(CASE WHEN o.current_status = 'SUCCESS' THEN 1 END) AS total_success_orders,
+
+        -- Đếm đơn hàng đã hủy (CANCELLED)
+        COUNT(CASE WHEN o.current_status = 'CANCELLED' THEN 1 END) AS total_cancelled_orders
+
+      FROM user u
+      LEFT JOIN orders o ON u.user_id = o.user_id
+      WHERE u.deleted_at IS NULL
+    `;
+
+    let queryParams = [];
+
+    // Lấy vai trò người dùng hiện tại
+    const requestingUserRole = req.user
+      ? req.user.role.toLowerCase().trim()
+      : "guest";
+
+    if (requestingUserRole === "staff") {
+      sqlQuery += ` AND u.user_role = ?`;
+      queryParams.push("user");
+    } else if (requestingUserRole !== "admin") {
+      return res.status(403).json({
+        error:
+          "Forbidden - Bạn không có quyền truy cập danh sách người dùng này.",
+      });
+    }
+
+    sqlQuery += `
+      GROUP BY u.user_id
+      ORDER BY u.created_at DESC
+    `;
+
+    const [rows] = await db.execute(sqlQuery, queryParams);
 
     const users = rows.map((user) => {
+      const birth = user.user_birth ? new Date(user.user_birth) : null;
       const createdAt = new Date(user.created_at);
       const updatedAt = new Date(user.updated_at);
-      const birth = user.user_birth ? new Date(user.user_birth) : null;
-      const diffDays = Math.floor((today - createdAt) / (1000 * 60 * 60 * 24));
+      const disabledAt = user.user_disabled_at
+        ? new Date(user.user_disabled_at)
+        : null;
+      const verifiedAt = user.user_verified_at
+        ? new Date(user.user_verified_at)
+        : null;
 
       return {
-        ...user,
-
-        user_birth: birth ? birth.toLocaleDateString("vi-VN") : "",
-        user_category: diffDays <= 30 ? "Khách hàng mới" : "Khách hàng cũ",
+        id: user.user_id,
+        name: user.user_name,
+        email: user.user_gmail,
+        phone: user.user_number,
+        image: user.user_image,
+        role: user.user_role,
+        gender: user.user_gender,
+        birth: birth ? birth.toLocaleDateString("vi-VN") : "",
+        email_active: user.user_email_active,
+        status: disabledAt ? "Vô hiệu" : "Hoạt động",
+        created_at: createdAt.toISOString(),
+        updated_at: updatedAt.toISOString(),
+        disabled_at: disabledAt ? disabledAt.toISOString() : null,
+        verified_at: verifiedAt ? verifiedAt.toISOString() : null, // Ngày kích hoạt
+        total_success_orders: user.total_success_orders || 0,
+        total_cancelled_orders: user.total_cancelled_orders || 0,
       };
     });
 
     res.json({ users });
   } catch (error) {
-    console.error("Error fetching users:", error);
+    console.error("[GET /admin] Lỗi khi lấy danh sách người dùng:", error);
     res.status(500).json({ error: "Lỗi server khi lấy danh sách người dùng" });
   }
 });
+
 router.get("/staff", async (req, res) => {
   try {
     const [rows] = await db.execute(`
@@ -220,96 +269,145 @@ router.get("/admin/:id", async (req, res) => {
     res.status(500).json({ error: "Lỗi server" });
   }
 });
-router.put("/admin/:id", upload.single("image"), async (req, res) => {
-  try {
-    const userId = Number(req.params.id);
-    if (isNaN(userId))
-      return res.status(400).json({ error: "ID không hợp lệ" });
-
-    const {
-      user_name,
-      user_number,
-      user_gender,
-      user_birth,
-      user_role,
-      user_address,
-      user_email_active,
-      user_verified_at,
-      user_disabled_at,
-      remove_image,
-    } = req.body;
-
-    let imageUrl;
-
-    // Nếu có ảnh mới được upload
-    if (req.file) {
-      const base64Image = `data:${
-        req.file.mimetype
-      };base64,${req.file.buffer.toString("base64")}`;
-      const result = await cloudinary.uploader.upload(base64Image, {
-        folder: "SonaSpace/User",
-      });
-      imageUrl = result.secure_url;
-
-      // Xoá ảnh cũ nếu muốn (tùy chọn)
-      const [oldRows] = await db.query(
-        "SELECT user_image FROM user WHERE user_id = ?",
-        [userId]
-      );
-      const oldImage = oldRows[0]?.user_image;
-      if (oldImage) {
-        const publicId = oldImage.split("/").slice(-1)[0].split(".")[0];
-        await cloudinary.uploader.destroy(`SonaSpace/User/${publicId}`);
+router.put(
+  "/admin/:id",
+  verifyToken,
+  upload.single("image"),
+  async (req, res) => {
+    try {
+      const userId = Number(req.params.id);
+      if (isNaN(userId)) {
+        return res.status(400).json({ error: "ID không hợp lệ" });
       }
-    } else if (remove_image === "1") {
-      imageUrl = null;
-    } else {
-      const [rows] = await db.query(
-        "SELECT user_image FROM user WHERE user_id = ?",
+
+      const [existingUsers] = await db.query(
+        "SELECT user_role, user_image, user_name, user_number, user_gender, user_birth, user_address, user_email_active, user_verified_at, user_disabled_at FROM user WHERE user_id = ?",
         [userId]
       );
-      imageUrl = rows[0]?.user_image || null;
+
+      if (existingUsers.length === 0) {
+        return res.status(404).json({ error: "Không tìm thấy người dùng" });
+      }
+      const existingUser = existingUsers[0];
+
+      const {
+        user_name,
+        user_number,
+        user_gender,
+        user_birth,
+        user_role,
+        user_address,
+        user_email_active,
+        user_verified_at,
+        user_disabled_at,
+        remove_image,
+      } = req.body;
+
+      let finalUserRole = existingUser.user_role;
+
+      if (user_role !== undefined && user_role !== null) {
+        if (
+          req.user &&
+          req.user.role &&
+          req.user.role.toLowerCase().trim() === "admin"
+        ) {
+          finalUserRole = user_role;
+        } else {
+          if (
+            user_role.toLowerCase().trim() ===
+            existingUser.user_role.toLowerCase().trim()
+          ) {
+            finalUserRole = existingUser.user_role;
+          } else {
+            return res.status(403).json({
+              error:
+                "Chỉ quản trị viên mới được phép thay đổi quyền người dùng.",
+            });
+          }
+        }
+      }
+
+      let imageUrl;
+
+      if (req.file) {
+        const base64Image = `data:${
+          req.file.mimetype
+        };base64,${req.file.buffer.toString("base64")}`;
+        const result = await cloudinary.uploader.upload(base64Image, {
+          folder: "SonaSpace/User",
+        });
+        imageUrl = result.secure_url;
+
+        const oldImage = existingUser.user_image;
+        if (oldImage && oldImage !== imageUrl) {
+          try {
+            const publicId = oldImage.split("/").slice(-1)[0].split(".")[0];
+            await cloudinary.uploader.destroy(`SonaSpace/User/${publicId}`);
+          } catch (destroyError) {}
+        }
+      } else if (remove_image === "1") {
+        if (existingUser.user_image) {
+          try {
+            const publicId = existingUser.user_image
+              .split("/")
+              .slice(-1)[0]
+              .split(".")[0];
+            await cloudinary.uploader.destroy(`SonaSpace/User/${publicId}`);
+          } catch (destroyError) {}
+        }
+        imageUrl = null;
+      } else {
+        imageUrl = existingUser.user_image || null;
+      }
+
+      const [updateResult] = await db.query(
+        `UPDATE user SET
+         user_name = ?,
+         user_number = ?,
+         user_gender = ?,
+         user_birth = ?,
+         user_role = ?,
+         user_address = ?,
+         user_email_active = ?,
+         user_verified_at = ?,
+         user_disabled_at = ?,
+         user_image = ?,
+         updated_at = NOW()
+       WHERE user_id = ?`,
+        [
+          user_name !== undefined ? user_name : existingUser.user_name,
+          user_number !== undefined ? user_number : existingUser.user_number,
+          user_gender !== undefined ? user_gender : existingUser.user_gender,
+          user_birth !== undefined ? user_birth : existingUser.user_birth,
+          finalUserRole,
+          user_address !== undefined ? user_address : existingUser.user_address,
+          user_email_active !== undefined
+            ? user_email_active
+            : existingUser.user_email_active,
+          user_verified_at !== undefined
+            ? user_verified_at
+            : existingUser.user_verified_at,
+          user_disabled_at !== undefined
+            ? user_disabled_at
+            : existingUser.user_disabled_at,
+          imageUrl,
+          userId,
+        ]
+      );
+
+      if (updateResult.affectedRows === 0) {
+        return res.status(404).json({
+          error:
+            "Không tìm thấy người dùng hoặc không có thay đổi nào được thực hiện.",
+        });
+      }
+
+      res.json({ message: "Cập nhật người dùng thành công" });
+    } catch (error) {
+      res.status(500).json({ error: "Lỗi server", detail: error.message });
     }
-
-    const [result] = await db.query(
-      `UPDATE user SET 
-        user_name = ?, 
-        user_number = ?, 
-        user_gender = ?, 
-        user_birth = ?, 
-        user_role = ?, 
-        user_address = ?, 
-        user_email_active = ?, 
-        user_verified_at = ?, 
-        user_disabled_at = ?, 
-        user_image = ?, 
-        updated_at = NOW()
-      WHERE user_id = ?`,
-      [
-        user_name || null,
-        user_number || null,
-        user_gender || null,
-        user_birth || null,
-        user_role || null,
-        user_address || null,
-        user_email_active || 0,
-        user_verified_at || null,
-        user_disabled_at || null,
-        imageUrl,
-        userId,
-      ]
-    );
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: "Không tìm thấy người dùng" });
-    }
-
-    res.json({ message: "Cập nhật người dùng thành công" });
-  } catch (error) {
-    console.error("Lỗi cập nhật user:", error);
-    res.status(500).json({ error: "Lỗi server", detail: error.message });
   }
-});
+);
 
 /**
  * @route   GET /api/users/:id
@@ -365,7 +463,7 @@ router.get("/:id", async (req, res) => {
  * @desc    Cập nhật thông tin người dùng
  * @access  Private
  */
-router.put("/:id", async (req, res) => {
+router.put("/:id", isAdminOnly, async (req, res) => {
   try {
     const userId = Number(req.params.id);
 

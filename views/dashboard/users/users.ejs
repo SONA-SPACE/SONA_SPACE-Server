@@ -1,103 +1,163 @@
-<!-- Trang Quản lý Người dùng -->
-
 <!-- Tiêu đề và Thanh công cụ -->
 <div class="dashboard-header-row">
     <h2 class="dashboard-title">Quản lý người dùng</h2>
-    <div class="action-buttons">
+    <!-- <div class="action-buttons">
         <button class="add-product-btn" onclick="window.location.href='/dashboard/products/add'">
             <i class="fas fa-plus"></i> Thêm người dùng
         </button>
-    </div>
+    </div> -->
 </div>
 
 <!-- Bộ lọc và Tìm kiếm -->
 <div class="filter-row">
     <div class="search-container">
         <i class="fas fa-search search-icon"></i>
-        <input type="text" class="search-input" placeholder="Search" />
+        <input type="text" class="search-input" placeholder="Tìm kiếm người dùng..." id="searchInput" />
     </div>
-    <div class="date-range">
+    <!-- <div class="date-range">
         <i class="far fa-calendar-alt"></i>
         <span>1/05/2025 - 31/5/2025</span>
-    </div>
+    </div> -->
     <div class="results-info">Hiển thị 1-6 trong tổng số 500</div>
 </div>
 
-<!-- Bảng và Checkbox -->
-<!-- <div class="product-controls">
-    <label class="select-all">
-        <input type="checkbox" id="selectAll" />
-        <span>Người dùng</span>
-    </label>
-
-    <div class="product-filters">
-        <div class="filter-dropdown">
-            <button class="filter-btn">
-                Email/ Số điện thoại <i class="fas fa-chevron-down"></i>
-            </button>
-        </div>
-        <div class="filter-dropdown">
-            <button class="filter-btn">
-                Giá <i class="fas fa-chevron-down"></i>
-            </button>
-        </div>
-        <div class="filter-dropdown">
-            <button class="filter-btn">
-                Số lượng <i class="fas fa-chevron-down"></i>
-            </button>
-        </div>
-        <div class="filter-dropdown">
-            <button class="filter-btn">
-                Đã bán <i class="fas fa-chevron-down"></i>
-            </button>
-        </div>
-        <div class="filter-dropdown">
-            <button class="filter-btn">
-                Đánh giá <i class="fas fa-chevron-down"></i>
-            </button>
-        </div>
-        <div class="filter-dropdown">
-            <button class="filter-btn">
-                Lượt xem <i class="fas fa-chevron-down"></i>
-            </button>
-        </div>
-        <div class="filter-dropdown">
-            <button class="filter-btn">
-                Trạng thái <i class="fas fa-chevron-down"></i>
-            </button>
-        </div>
-        <div class="filter-dropdown">
-            <button class="filter-btn">
-                Ngày tạo <i class="fas fa-chevron-down"></i>
-            </button>
-        </div>
-        <div class="filter-dropdown">
-            <button class="filter-btn">
-                Ngày cập nhật <i class="fas fa-chevron-down"></i>
-            </button>
-        </div>
-    </div>
-</div> -->
-
 <!-- Bảng Người dùng -->
 <div class="product-table-container">
-    <table class="product-table" id="productsTable">
+    <table class="product-table" id="usersTable">
         <thead>
             <tr>
-                <th class="checkbox-cell">
-                    <input type="checkbox" />
+
+                <th class="filterable" data-column="name">
+                    Người dùng
+                    <!-- <div class="header-filter">
+                        <i class="fas fa-chevron-down filter-icon"></i>
+                        <div class="filter-dropdown">
+                            <a class="filter-item" href="#" data-sort-order="asc">Từ A-Z</a>
+                            <a class="filter-item" href="#" data-sort-order="desc">Từ Z-A</a>
+                            <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+                        </div>
+                    </div> -->
                 </th>
-                <th data-sortable="true">Người dùng</th>
-                <th data-sortable="true">Email/ Số điện thoại</th>
-                <th data-sortable="true">Quyền </th>
-                <th data-sortable="true">Sản phẩm đã mua</th>
-                <th data-sortable="true">Phân loại</th>
-                <th data-sortable="true">Ngày sinh</th>
-                <!-- <th data-sortable="true">Lượt xem</th> -->
-                <th data-sortable="true">Trạng thái</th>
-                <th data-sortable="true">Thứ tự</th>
-                <th data-sortable="true">Ngày tạo</th>
-                <th data-sortable="true">Ngày cập nhật</th>
+                <th class="filterable" data-column="email_phone">
+                    Email/ Số điện thoại
+
+                </th>
+
+                <th class="filterable" data-column="role">
+                    Quyền
+                    <div class="header-filter">
+                        <i class="fas fa-chevron-down filter-icon"></i>
+                        <div class="filter-dropdown">
+                            <a class="filter-item" href="#" data-filter-value="Admin">Admin</a>
+                            <a class="filter-item" href="#" data-filter-value="User">User</a>
+                            <a class="filter-item" href="#" data-filter-value="Staff">Nhân viên</a>
+                            <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+                        </div>
+                    </div>
+                </th>
+
+                <th class="filterable" data-column="total_success_orders">
+                    Đơn hàng đã mua
+                    <div class="header-filter">
+                        <i class="fas fa-chevron-down filter-icon"></i>
+                        <div class="filter-dropdown">
+
+                            <a class="filter-item" href="#" data-sort-order="desc">Từ cao đến thấp</a>
+                            <a class="filter-item" href="#" data-sort-order="asc">Từ thấp đến cao</a>
+                            <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+                        </div>
+                    </div>
+                </th>
+                <th class="filterable" data-column="total_cancelled_orders">
+                    Đơn hàng đã hủy
+                    <div class="header-filter">
+                        <i class="fas fa-chevron-down filter-icon"></i>
+                        <div class="filter-dropdown">
+
+
+                            <a class="filter-item" href="#" data-sort-order="desc">Từ cao đến thấp</a>
+                            <a class="filter-item" href="#" data-sort-order="asc">Từ thấp đến cao</a>
+                            <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+                        </div>
+                    </div>
+                </th>
+
+
+                <th class="filterable" data-column="email_active">
+                    Kich hoạt Email
+                    <div class="header-filter">
+                        <i class="fas fa-chevron-down filter-icon"></i>
+                        <div class="filter-dropdown">
+                            <a class="filter-item" href="#" data-filter-value="true">Đã kích hoạt</a>
+                            <a class="filter-item" href="#" data-filter-value="false">Chưa kích hoạt</a>
+                            <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+
+                        </div>
+                    </div>
+                </th>
+
+                <th class="filterable" data-column="status">
+                    Trạng thái Tài khoản
+                    <div class="header-filter">
+                        <i class="fas fa-chevron-down filter-icon"></i>
+                        <div class="filter-dropdown">
+                            <a class="filter-item" href="#" data-filter-value="Hoạt động">Hoạt động</a>
+                            <a class="filter-item" href="#" data-filter-value="Vô hiệu">Vô hiệu</a>
+                            <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+
+                        </div>
+                    </div>
+                </th>
+
+
+                <th class="filterable" data-column="verified_at">
+                    Ngày kích hoạt tài khoản
+                    <div class="header-filter">
+                        <i class="fas fa-chevron-down filter-icon"></i>
+                        <div class="filter-dropdown">
+                            <a class="filter-item" href="#" data-filter-value="true">Đã kích hoạt</a>
+                            <a class="filter-item" href="#" data-filter-value="false">Chưa kích hoạt</a>
+                            <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+                            <a class="filter-item" href="#" data-sort-order="desc">Mới nhất</a>
+                            <a class="filter-item" href="#" data-sort-order="asc">Cũ nhất</a>
+                        </div>
+                    </div>
+                </th>
+                <th class="filterable" data-column="disabled_at">
+                    Ngày vô hiệu hóa
+                    <div class="header-filter">
+                        <i class="fas fa-chevron-down filter-icon"></i>
+                        <div class="filter-dropdown">
+                            <a class="filter-item" href="#" data-filter-value="true">Đã vô hiệu hóa</a>
+                            <a class="filter-item" href="#" data-filter-value="false">Không vô hiệu hóa</a>
+                            <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+                            <a class="filter-item" href="#" data-sort-order="desc">Mới nhất</a>
+                            <a class="filter-item" href="#" data-sort-order="asc">Cũ nhất</a>
+                        </div>
+                    </div>
+                </th>
+                <th class="filterable" data-column="created_at">
+                    Ngày tạo
+                    <div class="header-filter">
+                        <i class="fas fa-chevron-down filter-icon"></i>
+                        <div class="filter-dropdown">
+                            <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+                            <a class="filter-item" href="#" data-sort-order="desc">Mới nhất</a>
+                            <a class="filter-item" href="#" data-sort-order="asc">Cũ nhất</a>
+                        </div>
+                    </div>
+                </th>
+                <th class="filterable" data-column="updated_at">
+                    Ngày cập nhật
+                    <div class="header-filter">
+                        <i class="fas fa-chevron-down filter-icon"></i>
+                        <div class="filter-dropdown">
+                            <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+                            <a class="filter-item" href="#" data-sort-order="desc">Mới nhất</a>
+                            <a class="filter-item" href="#" data-sort-order="asc">Cũ nhất</a>
+                        </div>
+                    </div>
+                </th>
                 <th></th>
             </tr>
         </thead>
@@ -107,79 +167,481 @@
     </table>
 </div>
 
+<!-- Confirmation Modal -->
+<div id="confirmationModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <h3>Xác nhận thao tác tài khoản</h3>
+        <p id="modalMessage"></p>
+        <div class="modal-actions">
+            <button id="confirmActionBtn" class="btn btn-confirm">Có</button>
+            <button id="cancelActionBtn" class="btn btn-cancel">Không</button>
+        </div>
+    </div>
+</div>
+
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        fetch('/api/users/admin')
-            .then(res => res.json())
-            .then(data => {
-                const users = data.users || [];
-                const tbody = document.getElementById('usersTableBody');
-                tbody.innerHTML = '';
-                users.forEach((user, idx) => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-        <td class="checkbox-cell"><input type="checkbox" /></td>
-        <td>
-            <div class="product-info">
-                <div class="avatar-image">
-                    <img src="${user.user_image || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}" alt="${user.user_name || ''}" />
-                </div>
-                <div class="product-name">
-                    <a href="#">${user.user_name || ''}</a>
-                </div>
-            </div>
-        </td>
-        <td>
-            <div class="product-price">
-                <div class="sale-price">${user.user_number || ''}</div>
-                <div class="sale-price">${user.user_gmail || ''}</div>
-            </div>
-        </td>
-        <td>
-            <div class="product-price">
-                <div class="sale-price">${user.user_role || ''}</div>
-            </div>
-        </td>
-        <td>${user.purchasedProducts || 0}</td>
-        <td>${user.user_category || ''}</td>
-        <td>${user.user_birth || ''}</td>
-        <td>
-            <span class="status-indicator visible">
-                <i class="fas fa-circle"></i> Hiển thị
-            </span>
-        </td>
-        <td>${idx + 1}</td>
-        <td>${user.created_at ? new Date(user.created_at).toLocaleDateString() : ''}</td>
-        <td>${user.updated_at ? new Date(user.updated_at).toLocaleDateString() : ''}</td>
-        <td>
-            <div class="action-cell">
-                <button class="action-button edit" data-id="${user.user_id}" title="Chỉnh sửa">
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button class="action-button visibility" data-id="${user.user_id}" data-status="visible"
-                    title="Ẩn Người dùng">
-                    <i class="fas fa-eye-slash"></i>
-                </button>
-                <button class="action-button delete" data-id="${user.user_id}" data-name="${user.user_name || ''}"
-                    title="Xóa Người dùng">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </div>
-        </td>
-    `;
-                    tbody.appendChild(tr);
-                });
+    let allUsers = []; // Stores the original fetched user data
+    let currentFilteredUsers = []; // Stores users after filtering (for search/dropdown filters)
+    let currentSortColumn = null;
+    let currentSortDirection = 'asc'; // 'asc' or 'desc'
 
-
-                tbody.querySelectorAll('.action-button.edit').forEach(btn => {
-                    btn.addEventListener('click', function () {
-                        const userId = this.getAttribute('data-id');
-                        window.location.href = '/dashboard/users/edit?id=' + userId;
-                    });
-                });
-            })
-            .catch(err => {
-                document.getElementById('usersTableBody').innerHTML = '<tr><td colspan="12">Không thể tải dữ liệu người dùng.</td></tr>';
+    document.addEventListener("DOMContentLoaded", function () {
+        // Initialize Ant Design message config
+        if (window.antd && window.antd.message) {
+            window.antd.message.config({
+                top: 60,
+                duration: 2,
+                maxCount: 3,
             });
+        }
+
+        // Function to show Ant Design toast messages
+        // function showToast(message, type) {
+        //     if (window.antd && window.antd.message) {
+        //         if (type === 'success') {
+        //             window.antd.message.success(message);
+        //         } else if (type === 'danger') {
+        //             window.antd.message.error(message);
+        //         } else if (type === 'loading') {
+        //             window.antd.message.loading(message);
+        //         } else {
+        //             window.antd.message.info(message);
+        //         }
+        //     } else {
+        //         console.log(`Toast (${type}): ${message}`);
+        //     }
+        // }
+
+        // --- Event Listeners for Filters and Sorts ---
+
+        // Header filter dropdown toggle
+        document.querySelectorAll('.header-filter').forEach(filter => {
+            filter.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                this.classList.toggle('active');
+
+
+                document.querySelectorAll('.header-filter').forEach(otherFilter => {
+                    if (otherFilter !== this) {
+                        otherFilter.classList.remove('active');
+                    }
+                });
+            });
+        });
+
+        // Filter/Sort options within dropdowns
+        document.querySelectorAll('.filter-dropdown .filter-item').forEach(item => {
+            item.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const th = this.closest('th');
+                const columnDataName = th.getAttribute('data-column');
+                const filterValue = this.getAttribute('data-filter-value');
+                const sortOrder = this.getAttribute('data-sort-order');
+
+                if (window.antd && window.antd.message) {
+                    window.antd.message.loading('Đang xử lý dữ liệu...');
+                }
+
+                if (sortOrder) {
+
+                    sortUsers(columnDataName, sortOrder);
+                } else if (filterValue) {
+
+                    filterUsers(columnDataName, filterValue);
+                }
+
+                // Close dropdown after selection
+                this.closest('.header-filter').classList.remove('active');
+                if (window.antd && window.antd.message) {
+                    window.antd.message.destroy();
+                }
+            });
+        });
+
+        // Close all dropdowns when clicking outside
+        document.addEventListener('click', function () {
+            document.querySelectorAll('.header-filter').forEach(filter => {
+                filter.classList.remove('active');
+            });
+        });
+
+        // Search input filtering
+        document.getElementById('searchInput').addEventListener('keyup', function () {
+            const searchTerm = this.value.toLowerCase();
+            filterUsersBySearch(searchTerm);
+        });
+
+        // --- Modal Logic ---
+        let currentUserIdToModify = null;
+        let currentUserNameToModify = null;
+        let currentIsDisabledStatus = null;
+
+        // Get modal elements
+        const confirmationModal = document.getElementById('confirmationModal');
+        const modalMessage = document.getElementById('modalMessage');
+        const confirmActionBtn = document.getElementById('confirmActionBtn');
+        const cancelActionBtn = document.getElementById('cancelActionBtn');
+
+        // Function to show the confirmation modal
+        function showConfirmationModal(userId, userName, isDisabled) {
+            currentUserIdToModify = userId;
+            currentUserNameToModify = userName;
+            currentIsDisabledStatus = isDisabled;
+
+            const actionText = isDisabled ? "kích hoạt lại" : "vô hiệu hóa";
+            modalMessage.textContent = `Bạn có chắc chắn muốn ${actionText} tài khoản của người dùng "${userName}" không?`;
+            confirmActionBtn.textContent = `Có, ${actionText}`;
+            // Reset classes and add appropriate one for styling
+            confirmActionBtn.classList.remove('confirm', 'cancel');
+            confirmActionBtn.classList.add(isDisabled ? 'cancel' : 'confirm');
+
+            confirmationModal.style.display = 'flex'; // Show modal
+            setTimeout(() => confirmationModal.classList.add('active'), 10);
+        }
+
+        // Function to hide the confirmation modal
+        function hideConfirmationModal() {
+            confirmationModal.classList.remove('active');
+            // Use a timeout to hide display after transition
+            setTimeout(() => {
+                confirmationModal.style.display = 'none';
+                currentUserIdToModify = null;
+                currentUserNameToModify = null;
+                currentIsDisabledStatus = null;
+            }, 300);
+        }
+
+        // Event listeners for modal buttons
+        confirmActionBtn.addEventListener('click', async function () {
+            if (currentUserIdToModify) {
+
+                const shouldDisable = !currentIsDisabledStatus;
+                await toggleAccountDisabledStatus(currentUserIdToModify, shouldDisable);
+            }
+            hideConfirmationModal();
+        });
+
+        cancelActionBtn.addEventListener('click', hideConfirmationModal);
+
+        // --- Core Functions ---
+
+        // Function to render the table with provided user data
+        function renderUsersTable(usersToRender) {
+            const tbody = document.getElementById("usersTableBody");
+            tbody.innerHTML = "";
+
+            if (usersToRender.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="13" style="text-align: center; padding: 20px;">Không tìm thấy người dùng nào.</td></tr>';
+                return;
+            }
+
+            usersToRender.forEach((user) => {
+                const tr = document.createElement("tr");
+
+
+                const isDisabled = user.disabled_at !== null && user.disabled_at !== '0000-00-00 00:00:00';
+                const disabledStatusText = isDisabled ? "Đã vô hiệu hóa" : "Không vô hiệu hóa";
+                const disabledStatusClass = isDisabled ? "hidden" : "visible";
+
+
+                const isVerified = user.verified_at !== null && user.verified_at !== '0000-00-00 00:00:00';
+                const verifiedStatusText = isVerified ? "Đã kích hoạt" : "Chưa kích hoạt";
+                const verifiedStatusClass = isVerified ? "visible" : "hidden";
+
+
+                tr.innerHTML = `
+                     
+                        <td>
+                            <div class="product-info">
+                                <div class="avatar-image">
+                                    <img src="${user.image || "https://placehold.co/40x40/aabbcc/ffffff?text=U"}" alt="${user.name || "-"}" onerror="this.onerror=null;this.src='https://placehold.co/40x40/aabbcc/ffffff?text=U';" />
+                                </div>
+                                <div class="user-name">
+                                    <a href="#">${user.name || "-"}</a>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="product-price">
+                                <div class="sale-price">${user.phone || "-"}</div>
+                                <div class="sale-price">${user.email || "-"}</div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="product-price">
+                                <div class="sale-price">${user.role || "-"}</div>
+                            </div>
+                        </td>
+                        <td>${user.total_success_orders != null ? user.total_success_orders : "-"}</td>
+                        <td>${user.total_cancelled_orders != null ? user.total_cancelled_orders : "-"}</td>
+
+                        <td>
+                            <span class="status-indicator ${user.email_active ? "visible" : "hidden"}">
+                                <i class="fas fa-circle"></i> ${user.email_active ? "Hoạt động" : "Vô hiệu"}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="status-indicator ${user.status === 'Hoạt động' ? 'visible' : 'hidden'}">
+                                <i class="fas fa-circle"></i> ${user.status || "-"}
+                            </span>
+                        </td>
+                         <td>${isVerified ? new Date(user.verified_at).toLocaleDateString('vi-VN') : "-"}</td>
+                        <td>${isDisabled ? new Date(user.disabled_at).toLocaleDateString('vi-VN') : "-"}</td>
+                        <td>${user.created_at ? new Date(user.created_at).toLocaleDateString('vi-VN') : "-"}</td>
+                        <td>${user.updated_at ? new Date(user.updated_at).toLocaleDateString('vi-VN') : "-"}</td>
+                        <td>
+                            <div class="action-cell ">
+                                <button class="action-button edit" data-id="${user.id}" title="Chỉnh sửa">
+                                     <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="action-button visibility disable-toggle"
+                                            data-id="${user.id}"
+                                            data-name="${user.name || "-"}"
+                                            title="${isDisabled ? "Kích hoạt lại tài khoản" : "Vô hiệu hóa tài khoản"}">
+                                    <i class="fas ${isDisabled ? "fa-eye-slash" : "fa-eye"}"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                tbody.appendChild(tr);
+
+                // Re-attach event listeners for action buttons
+                const editButton = tr.querySelector(".action-button.edit");
+                if (editButton) {
+                    editButton.addEventListener("click", function () {
+                        const userId = this.getAttribute("data-id");
+                        window.location.href = "/dashboard/users/edit?id=" + userId;
+                    });
+                }
+                // Add event listener for the new disable/enable button
+                const disableToggleButton = tr.querySelector(".action-button.disable-toggle");
+                if (disableToggleButton) {
+                    disableToggleButton.addEventListener("click", function () {
+                        const userIdToToggle = user.id;
+                        const userName = user.name || "người dùng này";
+                        const currentDisabledStatus = isDisabled; // From the render loop's `isDisabled` variable
+                        showConfirmationModal(userIdToToggle, userName, currentDisabledStatus);
+                    });
+                }
+            });
+        }
+
+        // Function to sort users
+        function sortUsers(columnDataName, sortOrder) {
+            let usersToSort = [...currentFilteredUsers];
+
+            usersToSort.sort((a, b) => {
+                let valA, valB;
+
+                switch (columnDataName) {
+                    case 'name':
+                    case 'role':
+                    case 'category':
+                    case 'status':
+                        valA = (a[columnDataName] || '').toLowerCase();
+                        valB = (b[columnDataName] || '').toLowerCase();
+
+                        return sortOrder === 'asc' ? valA.localeCompare(valB, 'vi') : valB.localeCompare(valA, 'vi');
+                    case 'email_phone':
+
+                        valA = ((a.email || '') + (a.phone || '')).toLowerCase();
+                        valB = ((b.email || '') + (b.phone || '')).toLowerCase();
+                        return sortOrder === 'asc' ? valA.localeCompare(valB, 'vi') : valB.localeCompare(valA, 'vi');
+                    case 'total_success_orders':
+                    case 'total_cancelled_orders':
+                        valA = parseInt(a[columnDataName] || 0);
+                        valB = parseInt(b[columnDataName] || 0);
+                        return sortOrder === 'asc' ? valA - valB : valB - valA;
+                    case 'birth':
+                    case 'created_at':
+                    case 'updated_at':
+                    case 'disabled_at':
+                    case 'verified_at':
+
+                        valA = (a[columnDataName] && a[columnDataName] !== '0000-00-00 00:00:00') ? new Date(a[columnDataName]).getTime() : 0;
+                        valB = (b[columnDataName] && b[columnDataName] !== '0000-00-00 00:00:00') ? new Date(b[columnDataName]).getTime() : 0;
+                        return sortOrder === 'asc' ? valA - valB : valB - valA;
+                    case 'email_active':
+                        valA = a[columnDataName] ? 1 : 0;
+                        valB = b[columnDataName] ? 1 : 0;
+                        return sortOrder === 'asc' ? valA - valB : valB - valA;
+                    default:
+                        return 0;
+                }
+            });
+
+            renderUsersTable(usersToSort);
+        }
+
+
+        function filterUsers(columnDataName, filterValue) {
+            let filteredData = [...allUsers];
+
+            if (filterValue !== 'all') {
+                filteredData = filteredData.filter(user => {
+                    if (columnDataName === 'email_active') {
+
+                        return Boolean(user.email_active) === (filterValue === 'true');
+                    } else if (columnDataName === 'disabled_at') {
+
+                        const isDisabledInUser = (user.disabled_at !== null && user.disabled_at !== '0000-00-00 00:00:00');
+                        return isDisabledInUser === (filterValue === 'true');
+                    } else if (columnDataName === 'verified_at') {
+
+                        const isVerifiedInUser = (user.verified_at !== null && user.verified_at !== '0000-00-00 00:00:00');
+                        return isVerifiedInUser === (filterValue === 'true');
+                    } else if (columnDataName === 'total_success_orders') {
+                        if (filterValue === '>10') {
+                            return (user.total_success_orders || 0) > 10;
+                        } else if (filterValue === '0') {
+                            return (user.total_success_orders || 0) === 0;
+                        }
+
+                        return String(user.total_success_orders || 0) === filterValue;
+                    } else if (columnDataName === 'total_cancelled_orders') {
+                        if (filterValue === '>0') {
+                            return (user.total_cancelled_orders || 0) > 0;
+                        } else if (filterValue === '0') {
+                            return (user.total_cancelled_orders || 0) === 0;
+                        }
+
+                        return String(user.total_cancelled_orders || 0) === filterValue;
+                    }
+
+                    return String(user[columnDataName] || "").toLowerCase() === String(filterValue).toLowerCase();
+                });
+            }
+            currentFilteredUsers = filteredData;
+            renderUsersTable(currentFilteredUsers);
+        }
+
+        // Function to filter users based on search input
+        function filterUsersBySearch(searchTerm) {
+            const filteredBySearch = allUsers.filter(user => {
+                const name = (user.name || '').toLowerCase();
+                // const email = (user.email || '').toLowerCase();
+                // const phone = (user.phone || '').toLowerCase();
+                // const role = (user.role || '').toLowerCase();
+                // const category = (user.category || '').toLowerCase();
+                // const status = (user.status || '').toLowerCase();
+                // const purchasedProducts = String(user.total_success_orders || '').toLowerCase();
+                // const cancelledProducts = String(user.total_cancelled_orders || '').toLowerCase();
+
+                return name.includes(searchTerm)
+                    // email.includes(searchTerm) ||
+                    // phone.includes(searchTerm) ||
+                    // role.includes(searchTerm) ||
+                    // category.includes(searchTerm) ||
+                    // status.includes(searchTerm) ||
+                    // purchasedProducts.includes(searchTerm) ||
+                    // cancelledProducts.includes(searchTerm)
+                    // 
+                    ;
+            });
+            currentFilteredUsers = filteredBySearch;
+            renderUsersTable(currentFilteredUsers);
+        }
+
+
+        // --- API Calls ---
+
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+            console.error("Không tìm thấy token. Vui lòng đăng nhập lại.");
+            showToast("Bạn chưa đăng nhập hoặc phiên làm việc đã hết hạn.", "danger");
+            // window.location.href = '/'; 
+            return;
+        }
+
+        // Fetch users data
+        fetch("/api/users/admin", {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        })
+            .then((res) => {
+                if (!res.ok) {
+                    if (res.status === 401 || res.status === 403) {
+                        console.error("Không có quyền truy cập hoặc phiên làm việc đã hết hạn.");
+                        showToast("Không có quyền truy cập hoặc phiên làm việc đã hết hạn.", "danger");
+                    }
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                return res.json();
+            })
+            .then((data) => {
+                allUsers = data.users || [];
+                // Process data to ensure consistent types and add default values if needed
+                allUsers.forEach((user) => {
+                    user.email_active = Boolean(user.email_active); // Ensure boolean
+                    // Add default status if missing, though your API provides it
+                    user.status = user.status || "Không xác định";
+
+                    user.birth = user.birth;
+                    user.disabled_at = user.disabled_at;
+                    user.verified_at = user.verified_at;
+                });
+                currentFilteredUsers = [...allUsers];
+                renderUsersTable(allUsers);
+            })
+            .catch((err) => {
+                console.error("Lỗi khi tải dữ liệu người dùng:", err);
+                document.getElementById("usersTableBody").innerHTML =
+                    '<tr><td colspan="13" style="text-align: center; padding: 20px;">Không thể tải dữ liệu người dùng. Vui lòng thử lại sau.</td></tr>';
+                showToast("Lỗi khi tải dữ liệu người dùng.", "danger");
+            });
+
+        async function toggleAccountDisabledStatus(userId, shouldDisable) {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                showToast("Bạn chưa đăng nhập hoặc phiên làm việc đã hết hạn.", "danger");
+                return;
+            }
+
+            try {
+                const payload = {
+                    user_disabled_at: shouldDisable ? new Date().toISOString() : null
+                };
+
+                const response = await fetch(`/api/users/admin/${userId}`, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify(payload),
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    showToast(`Cập nhật trạng thái tài khoản thành công!`, "success");
+
+                    const userIndex = allUsers.findIndex(u => u.id === userId);
+                    if (userIndex !== -1) {
+                        allUsers[userIndex].disabled_at = shouldDisable ? new Date().toISOString() : null;
+
+                        allUsers[userIndex].status = shouldDisable ? "Vô hiệu" : "Hoạt động";
+                    }
+                    const filteredUserIndex = currentFilteredUsers.findIndex(u => u.id === userId);
+                    if (filteredUserIndex !== -1) {
+                        currentFilteredUsers[filteredUserIndex].disabled_at = shouldDisable ? new Date().toISOString() : null;
+                        currentFilteredUsers[filteredUserIndex].status = shouldDisable ? "Vô hiệu" : "Hoạt động";
+                    }
+                    renderUsersTable(currentFilteredUsers);
+                } else {
+                    console.error("Lỗi khi cập nhật trạng thái tài khoản:", result);
+                    showToast(result.error || "Cập nhật trạng thái tài khoản thất bại", "danger");
+                }
+            } catch (error) {
+                console.error("Lỗi mạng khi cập nhật trạng thái tài khoản:", error);
+                showToast("Có lỗi xảy ra khi gửi yêu cầu cập nhật trạng thái tài khoản.", "danger");
+            }
+        }
     });
 </script>

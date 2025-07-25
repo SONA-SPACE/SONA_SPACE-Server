@@ -3,10 +3,7 @@
   <div class="dashboard-header-row">
     <h2 class="dashboard-title">Không gian</h2>
     <div class="action-buttons">
-      <button
-        class="add-room-btn"
-        onclick="window.location.href='/dashboard/addroom'"
-      >
+      <button class="add-room-btn" onclick="window.location.href='/dashboard/addroom'">
         <i class="fas fa-plus"></i> Thêm không gian mới
       </button>
     </div>
@@ -16,11 +13,7 @@
   <div class="filter-row">
     <div class="search-container">
       <i class="fas fa-search search-icon"></i>
-      <input
-        type="text"
-        class="search-input"
-        placeholder="Tìm kiếm không gian..."
-      />
+      <input type="text" class="search-input" placeholder="Tìm kiếm không gian..." />
     </div>
     <div class="date-range">
       <i class="far fa-calendar-alt"></i>
@@ -81,21 +74,18 @@
             <td>
               <div class="room-info">
                 <div class="room-image">
-                  <img src="${room.room_image || "/images/default.jpg"}" alt="${
-          room.room_name
-        }">
+                  <img src="${room.room_image || "/images/default.jpg"}" alt="${room.room_name
+          }">
                 </div>
                 <div class="room-name">${room.room_name}</div>
               </div>
             </td>
             <td>${room.product_count || 0}</td>
             <td>
-              <span class="status-indicator ${
-                status === "visible" ? "visible" : "hidden"
-              }">
-                <i class="fas ${
-                  status === "visible" ? "fa-eye" : "fa-eye-slash"
-                }"></i>
+              <span class="status-indicator ${status === "visible" ? "visible" : "hidden"
+          }">
+                <i class="fas ${status === "visible" ? "fa-eye" : "fa-eye-slash"
+          }"></i>
                 ${status === "visible" ? "Hiển thị" : "Ẩn"}
               </span>
             </td>
@@ -104,25 +94,19 @@
             <td>${room.slug || "-"}</td>
             <td>
               <div class="action-cell">
-                <button class="action-button edit" data-id="${
-                  room.slug
-                }" onclick="window.location.href='/dashboard/editroom/${
-          room.slug
-        }'" title="Chỉnh sửa">
+                <button class="action-button edit" data-id="${room.slug
+          }" onclick="window.location.href='/dashboard/editroom/${room.slug
+          }'" title="Chỉnh sửa">
                   <i class="fas fa-edit"></i>
                 </button>
-                <button class="action-button visibility" data-slug="${
-                  room.slug
-                }" data-status="${status}" title="${
-          status === "visible" ? "Ẩn không gian" : "Hiển thị không gian"
-        }">
-                  <i class="fas ${
-                    status === "visible" ? "fa-eye-slash" : "fa-eye"
-                  }"></i>
+                <button class="action-button visibility" data-slug="${room.slug
+          }" data-status="${status}" title="${status === "visible" ? "Ẩn không gian" : "Hiển thị không gian"
+          }">
+                  <i class="fas ${status === "visible" ? "fa-eye-slash" : "fa-eye"
+          }"></i>
                 </button>
-                <button class="action-button delete" data-slug="${
-                  room.slug
-                }" data-name="${room.room_name}" title="Xóa không gian">
+                <button class="action-button delete" data-slug="${room.slug
+          }" data-name="${room.room_name}" title="Xóa không gian">
                   <i class="fas fa-trash"></i>
                 </button>
               </div>
@@ -215,8 +199,8 @@
     message = "Are you sure?",
     confirmText = "Xác nhận",
     cancelText = "Hủy",
-    onConfirm = () => {},
-    onCancel = () => {},
+    onConfirm = () => { },
+    onCancel = () => { },
   } = {}) {
     let confirmPopup = document.getElementById("confirmPopup");
     if (confirmPopup) confirmPopup.remove(); // Remove old popup if exists

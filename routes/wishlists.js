@@ -38,7 +38,7 @@ router.get("/", verifyToken, async (req, res) => {
 
         -- Product
         p.product_id,
-        p.product_name,
+        p.product_name ,
         p.product_slug AS slug,
         p.product_image AS product_image,
         p.category_id,
@@ -88,7 +88,117 @@ router.get("/", verifyToken, async (req, res) => {
   }
 });
 
+router.get("/wwww", verifyToken, async (req, res) => {
+  const userId = req.user.id;
+  const status = parseInt(req.query.status);
 
+  if (![0, 1].includes(status)) {
+    return res.status(400).json({ error: "Trạng thái không hợp lệ (phải là 0 hoặc 1)" });
+  }
+
+  try {
+    const [items] = await db.query(
+      `
+      SELECT 
+        w.wishlist_id,
+        w.quantity,
+        w.status,
+        w.created_at,
+
+        -- Variant
+        v.variant_id,
+        v.variant_product_price AS price,
+        v.variant_product_price_sale AS price_sale,
+        v.variant_product_price_sale AS priceSale,
+        v.variant_product_list_image AS image,
+
+        -- Màu chính của variant
+        c.color_id,
+        c.color_name,
+        c.color_hex,
+
+        -- Product
+        p.product_id,
+        p.product_name AS name,
+        p.product_slug AS slug,
+        p.product_image AS product_image,
+        p.category_id,
+
+        -- Category: mảng gồm id và name
+            (
+          SELECT JSON_OBJECT(
+            'id', cat.category_id,
+            'name', cat.category_name
+          )
+          FROM category cat
+          WHERE cat.category_id = p.category_id
+        ) AS category,
+
+        -- Mảng tất cả màu của sản phẩm
+     -- Mảng tất cả màu của sản phẩm
+    (
+  SELECT JSON_ARRAYAGG(col.color_hex)
+  FROM variant_product vp2
+  LEFT JOIN color col ON vp2.color_id = col.color_id
+  WHERE vp2.product_id = p.product_id
+) AS colors,
+
+
+
+        -- Comment stats
+        (SELECT COUNT(*) FROM comment WHERE product_id = p.product_id) AS comment_count,
+        (SELECT AVG(comment_rating) FROM comment WHERE product_id = p.product_id) AS average_rating
+
+      FROM wishlist w
+      JOIN variant_product v ON w.variant_id = v.variant_id
+      JOIN product p ON v.product_id = p.product_id
+      LEFT JOIN color c ON v.color_id = c.color_id
+
+      WHERE w.user_id = ? AND w.status = ?
+      ORDER BY w.created_at DESC
+      `,
+      [userId, status]
+    );
+
+    const result = items.map((item) => ({
+      ...item,
+      colors: item.colors ? JSON.parse(item.colors) : [],
+      category: item.category ? JSON.parse(item.category) : [],
+      isWishlist: true,
+    }));
+
+    res.status(200).json(result);
+  } catch (err) {
+    console.error("Error fetching wishlist/cart:", err);
+    res.status(500).json({ error: "Lỗi khi lấy dữ liệu giỏ hàng/wishlist" });
+  }
+});
+
+
+
+router.get('/variant/:variantId', verifyToken, async (req, res) => {
+  try {
+    const variantId = Number(req.params.variantId);
+    const userId = req.user.id;
+
+    if (isNaN(variantId)) {
+      return res.status(400).json({ error: 'Invalid variant ID' });
+    }
+
+    const [wishlistItem] = await db.query(
+      'SELECT wishlist_id FROM wishlist WHERE variant_id = ? AND user_id = ? AND status = 1',
+      [variantId, userId]
+    );
+
+    res.status(200).json({
+      exists: wishlistItem.length > 0,
+      wishlist_id: wishlistItem.length > 0 ? wishlistItem[0].wishlist_id : null
+    });
+  } catch (error) {
+    console.error('Error checking variant in wishlist:', error);
+    res.status(500).json({ error: 'Failed to check variant in wishlist' });
+  }
+});
 
 
 /**

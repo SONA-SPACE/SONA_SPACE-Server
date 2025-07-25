@@ -300,6 +300,7 @@
                 font-weight: 500;
                 color: $black-cl;
                 font-size: 14px;
+                cursor: pointer;
             }
 
             td {
@@ -526,7 +527,7 @@
     width: auto;
     min-width: 120px;
     text-align: left;
-    position: relative;
+    // position: relative;
     display: flex;
     align-items: center;
     text-align: center;

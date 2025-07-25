@@ -30,11 +30,11 @@ exports.verifyToken = async (req, res, next) => {
       if (req.path.startsWith("/api/")) {
         return res
           .status(401)
-          .json({ error: "Unauthorized - No token provided" });
+          .json({ error: "Không được phép - Không có token" });
       }
       // Nếu là web request, chuyển hướng về trang đăng nhập
       if (typeof next === "function") {
-        return next(new Error("No token provided"));
+        return next(new Error("Không có token"));
       } else {
         return res.redirect("/");
       }
@@ -53,10 +53,10 @@ exports.verifyToken = async (req, res, next) => {
       if (req.path.startsWith("/api/")) {
         return res
           .status(401)
-          .json({ error: "Unauthorized - Invalid token format" });
+          .json({ error: "Không được phép - Token không hợp lệ" });
       }
       if (typeof next === "function") {
-        return next(new Error("Invalid token format"));
+        return next(new Error("Token không hợp lệ"));
       } else {
         return res.redirect("/");
       }
@@ -70,10 +70,12 @@ exports.verifyToken = async (req, res, next) => {
 
     if (!users.length) {
       if (req.path.startsWith("/api/")) {
-        return res.status(401).json({ error: "Unauthorized - User not found" });
+        return res
+          .status(401)
+          .json({ error: "Không được phép - User không tồn tại" });
       }
       if (typeof next === "function") {
-        return next(new Error("User not found"));
+        return next(new Error("User không tồn tại"));
       } else {
         return res.redirect("/");
       }
@@ -93,10 +95,12 @@ exports.verifyToken = async (req, res, next) => {
       error.name === "TokenExpiredError"
     ) {
       if (req.path.startsWith("/api/")) {
-        return res.status(401).json({ error: "Unauthorized - Invalid token" });
+        return res
+          .status(401)
+          .json({ error: "Không được phép - Token không hợp lệ" });
       }
       if (typeof next === "function") {
-        return next(new Error("Invalid token"));
+        return next(new Error("Token không hợp lệ"));
       } else {
         return res.redirect("/");
       }
@@ -105,9 +109,7 @@ exports.verifyToken = async (req, res, next) => {
     console.error("Authentication error:", error);
 
     if (req.path.startsWith("/api/")) {
-      return res
-        .status(500)
-        .json({ error: "Internal server error during authentication" });
+      return res.status(500).json({ error: "Lỗi server" });
     }
     if (typeof next === "function") {
       return next(error);

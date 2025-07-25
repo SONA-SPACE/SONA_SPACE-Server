@@ -28,11 +28,11 @@ exports.verifyToken = async (req, res, next) => {
     if (!token) {
       // Nếu là API request, trả về JSON error
       if (req.path.startsWith('/api/')) {
-        return res.status(401).json({ error: 'Unauthorized - No token provided' });
+        return res.status(401).json({ error: 'Không được phép - Không có token' });
       }
       // Nếu là web request, chuyển hướng về trang đăng nhập
       if (typeof next === 'function') {
-        return next(new Error('No token provided'));
+        return next(new Error('Không có token'));
       } else {
         return res.redirect('/');
       }
@@ -49,10 +49,10 @@ exports.verifyToken = async (req, res, next) => {
     
     if (!userId) {
       if (req.path.startsWith('/api/')) {
-        return res.status(401).json({ error: 'Unauthorized - Invalid token format' });
+        return res.status(401).json({ error: 'Không được phép - Token không hợp lệ' });
       }
       if (typeof next === 'function') {
-        return next(new Error('Invalid token format'));
+        return next(new Error('Token không hợp lệ'));
       } else {
         return res.redirect('/');
       }
@@ -63,10 +63,10 @@ exports.verifyToken = async (req, res, next) => {
     
     if (!users.length) {
       if (req.path.startsWith('/api/')) {
-        return res.status(401).json({ error: 'Unauthorized - User not found' });
+        return res.status(401).json({ error: 'Không được phép - User không tồn tại' });
       }
       if (typeof next === 'function') {
-        return next(new Error('User not found'));
+        return next(new Error('User không tồn tại'));
       } else {
         return res.redirect('/');
       }
@@ -83,10 +83,10 @@ exports.verifyToken = async (req, res, next) => {
   } catch (error) {
     if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
       if (req.path.startsWith('/api/')) {
-        return res.status(401).json({ error: 'Unauthorized - Invalid token' });
+        return res.status(401).json({ error: 'Không được phép - Token không hợp lệ' });
       }
       if (typeof next === 'function') {
-        return next(new Error('Invalid token'));
+        return next(new Error('Token không hợp lệ'));
       } else {
         return res.redirect('/');
       }
@@ -95,7 +95,7 @@ exports.verifyToken = async (req, res, next) => {
     console.error('Authentication error:', error);
     
     if (req.path.startsWith('/api/')) {
-      return res.status(500).json({ error: 'Internal server error during authentication' });
+      return res.status(500).json({ error: 'Lỗi server' });
     }
     if (typeof next === 'function') {
       return next(error);
@@ -110,11 +110,11 @@ exports.verifyToken = async (req, res, next) => {
  */
 exports.isAdmin = async (req, res, next) => {
   try {
-    console.log('Checking admin role. Token role:', req.user?.role);
+    console.log('Kiểm tra quyền admin. Token role:', req.user?.role);
     console.log('User object:', JSON.stringify(req.user));
     
     if (!req.user || !req.user.id) {
-      return res.status(403).json({ error: 'Forbidden - Admin access required' });
+      return res.status(403).json({ error: 'Không có quyền truy cập' });
     }
     
     // Truy vấn trực tiếp quyền từ database
@@ -125,13 +125,13 @@ exports.isAdmin = async (req, res, next) => {
     if (adminCheck.length === 0 || 
         (!adminCheck[0].user_role || 
          adminCheck[0].user_role.toLowerCase() !== 'admin')) {
-      return res.status(403).json({ error: 'Forbidden - Admin access required' });
+      return res.status(403).json({ error: 'Không có quyền truy cập' });
     }
     
     next();
   } catch (error) {
-    console.error('Error checking admin role:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error('Lỗi kiểm tra quyền admin:', error);
+    return res.status(500).json({ error: 'Lỗi server' });
   }
 };
 

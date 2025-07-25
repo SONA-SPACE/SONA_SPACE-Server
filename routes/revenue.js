@@ -12,7 +12,10 @@ const { verifyToken, isAdmin, optionalAuth } = require("../middleware/auth");
 // 4. Theo năm:
 // GET /api/revenue?type=year → 5 năm mới nhất
 // GET /api/revenue?type=year&limit=3 → 3 năm mới nhất
+require("dayjs/locale/vi");
 const dayjs = require("dayjs");
+const isSameOrBefore = require("dayjs/plugin/isSameOrBefore");
+dayjs.extend(isSameOrBefore);
 
 router.get("/", verifyToken, isAdmin, async (req, res) => {
   try {
@@ -37,10 +40,11 @@ router.get("/", verifyToken, isAdmin, async (req, res) => {
       // Sinh dải ngày/tháng/năm từ from → to
       let start = dayjs(from);
       let end = dayjs(to);
-      while (
-        start.isBefore(end) ||
-        start.isSame(end, type === "day" ? "day" : type)
-      ) {
+      let unit;
+      if (type === "day") unit = "day";
+      else if (type === "month") unit = "month";
+      else unit = "year";
+      while (start.isSameOrBefore(end, unit)) {
         if (type === "day") {
           dateList.push(start.format("YYYY-MM-DD"));
           start = start.add(1, "day");
@@ -84,10 +88,23 @@ router.get("/", verifyToken, isAdmin, async (req, res) => {
     // Design contacts
     const [designContacts] = await db.query(
       `
-      SELECT DATE_FORMAT(created_at, ?) AS date, SUM(design_fee) AS revenue
-      FROM contact_form_design
-      WHERE status = 'RESOLVED' AND DATE_FORMAT(created_at, ?) IN (?)
-      GROUP BY DATE_FORMAT(created_at, ?)
+      SELECT 
+        DATE_FORMAT(d.created_at, ?) AS date,
+        SUM(d.design_fee) AS design_fee_total,
+        SUM(IFNULL(dd.products_total, 0)) AS products_total
+      FROM contact_form_design d
+      LEFT JOIN (
+          SELECT 
+            contact_form_design_id, 
+            SUM(total_price) AS products_total
+          FROM contact_form_design_details
+          WHERE deleted_at IS NULL
+          GROUP BY contact_form_design_id
+      ) dd ON d.contact_form_design_id = dd.contact_form_design_id
+      WHERE d.status = 'RESOLVED'
+        AND DATE_FORMAT(d.created_at, ?) IN (?)
+      GROUP BY DATE_FORMAT(d.created_at, ?)
+
       `,
       [dateFormat, dateFormat, dateList, dateFormat]
     );
@@ -102,9 +119,14 @@ router.get("/", verifyToken, isAdmin, async (req, res) => {
         resultMap[row.date].orderRevenue = Number(row.revenue) || 0;
     });
     designContacts.forEach((row) => {
-      if (resultMap[row.date])
-        resultMap[row.date].designRevenue = Number(row.revenue) || 0;
+      if (resultMap[row.date]) {
+        // Cộng luôn 2 khoản vào designRevenue
+        const designFee = Number(row.design_fee_total) || 0;
+        const productsTotal = Number(row.products_total) || 0;
+        resultMap[row.date].designRevenue = designFee + productsTotal;
+      }
     });
+
     const result = dateList.map((date) => resultMap[date]);
 
     res.json(result);
@@ -202,6 +224,65 @@ router.get("/user", verifyToken, isAdmin, async (req, res) => {
     console.error("Error fetching user:", error);
     res.status(500).json({ error: "Internal server error" });
   }
+});
+
+// Node.js/Express (ví dụ)
+router.get("/stats", verifyToken, isAdmin, async (req, res) => {
+  const currentMonth = dayjs().locale("vi").format("MMMM");
+  const fullMonth =
+    currentMonth.charAt(0).toUpperCase() + currentMonth.slice(1);
+
+  const [[{ totalOrder } = {}]] = await db.query(
+    `SELECT COUNT(*) AS totalOrder FROM orders`
+  );
+  const [[{ completedOrder } = {}]] = await db.query(
+    `SELECT COUNT(*) AS completedOrder FROM orders WHERE current_status='SUCCESS'`
+  );
+  const [[{ shippingOrder } = {}]] = await db.query(
+    `SELECT COUNT(*) AS shippingOrder FROM orders WHERE current_status='SHIPPING'`
+  );
+  const [[{ revenueThisMonth } = {}]] = await db.query(
+    `SELECT SUM(order_total_final) AS revenueThisMonth FROM orders WHERE current_status='SUCCESS' AND MONTH(created_at)=MONTH(CURDATE()) AND YEAR(created_at)=YEAR(CURDATE())`
+  );
+  const [[{ revenueThisMonthDesign } = {}]] = await db.query(
+    `SELECT SUM(design_fee + IFNULL(products_total, 0)) AS revenueThisMonthDesign 
+    FROM contact_form_design 
+    LEFT JOIN (
+      SELECT contact_form_design_id, SUM(total_price) AS products_total
+      FROM contact_form_design_details
+      WHERE deleted_at IS NULL
+      GROUP BY contact_form_design_id
+    ) dd ON contact_form_design.contact_form_design_id = dd.contact_form_design_id
+    WHERE status='RESOLVED' AND MONTH(created_at)=MONTH(CURDATE()) AND YEAR(created_at)=YEAR(CURDATE())`
+  );
+  const [[{ revenueTotal } = {}]] = await db.query(
+    `SELECT SUM(order_total_final) AS revenueTotal FROM orders WHERE current_status='SUCCESS'`
+  );
+  const [[{ revenueTotalDesign } = {}]] = await db.query(
+    `SELECT SUM(design_fee + IFNULL(products_total, 0)) AS revenueTotalDesign 
+    FROM contact_form_design 
+    LEFT JOIN (
+      SELECT contact_form_design_id, SUM(total_price) AS products_total
+      FROM contact_form_design_details
+      WHERE deleted_at IS NULL
+      GROUP BY contact_form_design_id
+    ) dd ON contact_form_design.contact_form_design_id = dd.contact_form_design_id
+    WHERE status='RESOLVED'`
+  );
+  res.json({
+    totalOrder: Number(totalOrder) || 0,
+    completedOrder: Number(completedOrder) || 0,
+    shippingOrder: Number(shippingOrder) || 0,
+    revenueThisMonth: {
+      total: Number(revenueThisMonth) + Number(revenueThisMonthDesign) || 0,
+      design: Number(revenueThisMonthDesign) || 0,
+    },
+    revenueTotal: {
+      total: Number(revenueTotal) + Number(revenueTotalDesign) || 0,
+      design: Number(revenueTotalDesign) || 0,
+    },
+    monthName: fullMonth,
+  });
 });
 
 module.exports = router;

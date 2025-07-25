@@ -110,7 +110,7 @@ app.use(
 
 // Base routes
 app.get("/", (req, res) => {
-  res.render("main", {
+  res.render("index", {
     title: "Sona Space - Admin Login",
   });
 });

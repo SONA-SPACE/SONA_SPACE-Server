@@ -239,6 +239,7 @@ router.put("/:id", verifyToken, isAdmin, async (req, res) => {
       "budget",
       "different_information",
       "design_fee",
+      "design_deposits",
       "user_id",
       "remarks",
       "drive",
@@ -271,17 +272,12 @@ router.put("/:id", verifyToken, isAdmin, async (req, res) => {
       const validTransitions = {
         PENDING: ["IN_PROGRESS"],
         IN_PROGRESS: ["RESOLVED", "REJECTED"],
-        RESOLVED: ["CLOSED"],
-        REJECTED: ["CLOSED"],
-        CLOSED: [],
       };
       if (status === "IN_PROGRESS" && forms[0].user_id === null) {
-        return res
-          .status(400)
-          .json({
-            error:
-              "Vui lòng chọn nhân viên thực hiện trước khi chuyển trạng thái",
-          });
+        return res.status(400).json({
+          error:
+            "Vui lòng chọn nhân viên thực hiện trước khi chuyển trạng thái",
+        });
       }
       if (
         status !== currentStatus &&

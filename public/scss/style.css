@@ -6475,23 +6475,19 @@ textarea.form-control {
 
 .status-indicator.PENDING {
   background-color: rgba(255, 193, 7, 0.1);
-  color: #ffc107;
+  color: #F5B400;
 }
 .status-indicator.REJECTED {
   background-color: rgba(255, 0, 0, 0.1);
-  color: #ff0000;
+  color: #D83B01;
 }
 .status-indicator.IN_PROGRESS {
   background-color: rgba(23, 162, 184, 0.1);
-  color: #17a2b8;
+  color: #0078D7;
 }
 .status-indicator.RESOLVED {
   background-color: rgba(40, 167, 69, 0.1);
-  color: #28a745;
-}
-.status-indicator.CLOSED {
-  background-color: rgba(108, 117, 125, 0.1);
-  color: #6c757d;
+  color: #3AA655;
 }
 
 @media (max-width: 1200px) {
@@ -6534,19 +6530,16 @@ textarea.form-control {
   font-size: 13px;
 }
 .detail-form-container .form-column .form-section .form-section-header .form-section-header-left .status-text.status-pending {
-  color: var(--primary-color);
+  color: #F5B400;
 }
-.detail-form-container .form-column .form-section .form-section-header .form-section-header-left .status-text.status-in-progress {
-  color: var(--warning-color);
+.detail-form-container .form-column .form-section .form-section-header .form-section-header-left .status-text.status-in_progress {
+  color: #0078D7;
 }
 .detail-form-container .form-column .form-section .form-section-header .form-section-header-left .status-text.status-resolved {
-  color: var(--success-color);
+  color: #3AA655;
 }
 .detail-form-container .form-column .form-section .form-section-header .form-section-header-left .status-text.status-rejected {
-  color: var(--danger-color);
-}
-.detail-form-container .form-column .form-section .form-section-header .form-section-header-left .status-text.status-closed {
-  color: var(--text-secondary);
+  color: #D83B01;
 }
 .detail-form-container .form-column .form-section .form-section-header .form-section-header-right select {
   padding: 10px 18px;
@@ -7014,7 +7007,7 @@ textarea.form-control {
   margin-top: 20px;
 }
 .print-button:hover {
-  background-color: rgb(213.4615384615, 88.4615384615, 11.5384615385);
+  background-color: #d5580c;
 }
 
 @media print {

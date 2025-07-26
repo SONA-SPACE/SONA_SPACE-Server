@@ -184,6 +184,20 @@ router.get("/orders", (req, res) => {
   });
 });
 
+// notify management
+router.get("/notify", (req, res) => {
+  res.render("dashboard/notify/notify", {
+    title: "Orders Management",
+    layout: "layouts/dashboard",
+  });
+});
+router.get("/notify/addNotify", (req, res) => {
+  res.render("dashboard/notify/addNotify", {
+    title: "Orders Management",
+    layout: "layouts/dashboard",
+  });
+});
+
 // voucher management
 router.get("/voucher", (req, res) => {
   res.render("dashboard/voucher/voucher", {

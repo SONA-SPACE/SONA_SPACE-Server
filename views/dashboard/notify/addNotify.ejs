@@ -1,0 +1,130 @@
+<div class="dashboard-header-row">
+  <h2 class="dashboard-title">Tạo Thông Báo</h2>
+</div>
+
+<div class="add-voucher-container">
+  <div class="voucher-form-column">
+    <div class="form-section-voucher">
+      <h3 class="section-title">Thông tin Thông Báo</h3>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="notifyTitle">Tiêu đề</label>
+          <input type="text" id="notifyTitle" class="form-control" placeholder="Nhập tiêu đề" />
+        </div>
+                <div class="form-group">
+          <label for="notifyType">Loại thông báo</label>
+          <div class="select-wrapper">
+            <select id="notifyType" class="form-control">
+              <option value="general">Chung</option>
+              <option value="voucher">Voucher</option>
+              <option value="order">Đơn hàng</option>
+            </select>
+            <i class="fas fa-chevron-down"></i>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="notifyContent">Nội dung</label>
+          <textarea id="notifyContent" class="form-control" placeholder="Nhập nội dung"></textarea>
+        </div>
+
+
+      </div>
+
+      <div class="form-row">
+                <div class="form-group">
+          <label for="notifyStatus">Trạng thái</label>
+          <div class="select-wrapper">
+            <select id="notifyStatus" class="form-control">
+              <option value="1">Hiển thị</option>
+              <option value="0">Ẩn</option>
+            </select>
+            <i class="fas fa-chevron-down"></i>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="notifyImage">Ảnh thông báo (URL)</label>
+          <input type="text" id="notifyImage" class="form-control" placeholder="Nhập URL ảnh (nếu có)" />
+        </div>
+      </div>
+
+      <div class="form-actionss">
+        <button type="button" class="btn btn-cancel">Hủy</button>
+        <button type="button" class="btn btn-save">Tạo thông báo</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelector(".btn-save").addEventListener("click", async () => {
+    const title = document.getElementById("notifyTitle").value.trim();
+    const content = document.getElementById("notifyContent").value.trim();
+    const type = document.getElementById("notifyType").value;
+    const image = document.getElementById("notifyImage").value.trim();
+    const status = parseInt(document.getElementById("notifyStatus").value);
+
+    if (!title || !content) {
+      showToast("Vui lòng điền đầy đủ tiêu đề và nội dung", "danger");
+      return;
+    }
+
+    const payload = { title, content, type, image, status };
+
+    try {
+      const res = await fetch("/api/notifications", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        showToast("Tạo thông báo thành công");
+        setTimeout(() => location.reload(), 1500);
+      } else {
+        showToast(data.error || "Lỗi tạo thông báo", "danger");
+      }
+    } catch (err) {
+      console.error("Lỗi:", err);
+      showToast("Lỗi máy chủ", "danger");
+    }
+  });
+});
+
+function showToast(message, type = "success") {
+  let toastContainer = document.getElementById("toastContainer");
+  if (!toastContainer) {
+    toastContainer = document.createElement("div");
+    toastContainer.id = "toastContainer";
+    toastContainer.className = "position-fixed top-0 end-0 p-3";
+    toastContainer.style.zIndex = "1050";
+    document.body.appendChild(toastContainer);
+  }
+
+  const toast = document.createElement("div");
+  toast.className = `toast align-items-center text-white bg-${type} border-0`;
+  toast.setAttribute("role", "alert");
+  toast.innerHTML = `
+    <div class="d-flex">
+      <div class="toast-body">${message}</div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  `;
+
+  toastContainer.appendChild(toast);
+  const bsToast = new bootstrap.Toast(toast, { delay: 4000 });
+  bsToast.show();
+  toast.addEventListener("hidden.bs.toast", () => toast.remove());
+}
+</script>

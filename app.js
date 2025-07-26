@@ -49,6 +49,7 @@ var uploadRouter = require("./routes/upload");
 var bannersRouter = require("./routes/banners");
 var materialsRouter = require("./routes/materials");
 var revenueRouter = require("./routes/revenue");
+var NotifyRouter = require("./routes/notify");
 var app = express();
 
 // App version and startup time for health checks
@@ -143,7 +144,7 @@ app.use("/api/upload", uploadRouter);
 app.use("/api/banners", bannersRouter);
 app.use("/api/materials", materialsRouter);
 app.use("/api/revenue", revenueRouter);
-
+app.use("/api/notify", NotifyRouter);
 app.use(function (req, res, next) {
   console.warn("Route not found:", req.method, req.originalUrl);
   next(createError(404));

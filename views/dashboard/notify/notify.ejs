@@ -1,0 +1,129 @@
+<div class="room_page">
+  <div class="dashboard-header-row">
+    <h2 class="dashboard-title">Thông báo</h2>
+    <div class="action-buttons">
+      <button class="add-product-btn" onclick="window.location.href='/dashboard/notify/addNotify'">
+        <i class="fas fa-plus"></i> Thêm thông báo
+      </button>
+    </div>
+  </div>
+
+  <div class="filter-row">
+    <div class="search-container">
+      <i class="fas fa-search search-icon"></i>
+      <input type="text" class="search-input" placeholder="Tìm tiêu đề...">
+    </div>
+    <div class="results-info">
+      Hiển thị 0 thông báo
+    </div>
+  </div>
+
+  <div class="room-table-container">
+    <table class="room-table" id="notifyTable">
+      <thead>
+        <tr>
+          <th>Tiêu đề</th>
+          <th>Loại</th>
+          <th>Nội dung</th>
+          <th>Người tạo</th>
+          <th>Ngày tạo</th>
+          <th>Hành động</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Dữ liệu sẽ được JS đổ vào -->
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const URL_API = "http://localhost:3501/api";
+
+    function getNotifications() {
+      fetch(URL_API + "/notify")
+        .then((res) => res.json())
+        .then((data) => {
+            console.log(data);
+          renderNotifications(data);
+        })
+        .catch((err) => {
+          console.error("Lỗi khi tải thông báo:", err);
+          document.querySelector(".results-info").textContent = "Không thể tải dữ liệu.";
+        });
+    }
+
+    function renderNotifications(list) {
+      const tableBody = document.querySelector("#notifyTable tbody");
+      tableBody.innerHTML = "";
+
+      list.forEach((item) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${item.title || "-"}</td>
+          <td>${item.type_code || "-"}</td>
+          <td>${item.message || "-"}</td>
+          <td>${item.created_by || "-"}</td>
+          <td>${formatDate(item.created_at)}</td>
+          <td>
+            <div class="action-cell">
+              <button class="action-button edit" title="Chỉnh sửa"
+                onclick="window.location.href='/dashboard/notifications/edit/${item.id}'">
+                <i class="fas fa-edit"></i>
+              </button> 
+              
+              <button class="action-button delete" data-id="${item.id}" data-title="${item.title}" title="Xóa">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </td>
+        `;
+        tableBody.appendChild(row);
+      });
+
+      document.querySelector(".results-info").textContent = `Hiển thị ${list.length} thông báo`;
+
+      // Gắn sự kiện xóa
+      document.querySelectorAll(".action-button.delete").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const id = btn.getAttribute("data-id");
+          const title = btn.getAttribute("data-title");
+          deleteNotification(id, title);
+        });
+      });
+    }
+
+    function deleteNotification(id, title) {
+      if (!confirm(`Bạn có chắc chắn muốn xóa thông báo "${title}"?`)) return;
+      const token = localStorage.getItem("token");
+
+      fetch(`${URL_API}/notify/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.error) {
+            alert("Lỗi: " + data.error);
+          } else {
+            alert("Đã xóa thông báo.");
+            getNotifications();
+          }
+        })
+        .catch((err) => {
+          console.error("Lỗi khi xóa thông báo:", err);
+          alert("Xảy ra lỗi khi xóa.");
+        });
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return "-";
+      return new Date(dateStr).toLocaleDateString("vi-VN");
+    }
+
+    getNotifications();
+  });
+</script>

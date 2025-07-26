@@ -29,7 +29,7 @@ router.get("/", async (req, res) => {
     console.log("Fetching categories...");
 
     const sql = `
-      SELECT 
+      SELECT
         c.*,
         (SELECT COUNT(*) FROM product WHERE category_id = c.category_id) as product_count
       FROM category c WHERE category_status = 1
@@ -71,7 +71,7 @@ router.get("/admin", verifyToken, isAdmin, async (req, res) => {
     console.log("Fetching categories...");
 
     const sql = `
-      SELECT 
+      SELECT
         c.*,
         (SELECT COUNT(*) FROM product WHERE category_id = c.category_id) as product_count
       FROM category c
@@ -104,35 +104,10 @@ router.get("/admin", verifyToken, isAdmin, async (req, res) => {
 });
 
 /**
- * @route   GET /api/categories/:slug
- * @desc    Lấy thông tin một danh mục theo slug
+ * @route   GET /api/categories/atts/:categoryId
+ * @desc    Lấy thuộc tính danh mục theo ID danh mục
  * @access  Public
  */
-router.get("/:slug", async (req, res) => {
-  let slug = req.params.slug;
-  if (!slug) return res.status(400).json({ message: "Slug is required" });
-  try {
-    const sql = `
-      SELECT 
-        c.*,
-        c.slug,
-        (SELECT COUNT(*) FROM product WHERE category_id = c.category_id) as product_count
-      FROM category c
-      WHERE c.slug = ?
-    `;
-    const [category] = await db.query(sql, [slug]);
-
-    if (!category || category.length === 0) {
-      return res.status(404).json({ error: "Category not found" });
-    }
-
-    res.json(category[0]);
-  } catch (error) {
-    console.error("Error fetching category:", error);
-    res.status(500).json({ error: "Failed to fetch category" });
-  }
-});
-
 router.get("/:categoryId", async (req, res) => {
   try {
     const categoryId = req.params.categoryId;
@@ -164,6 +139,11 @@ router.get("/:categoryId", async (req, res) => {
   }
 });
 
+/**
+ * @route   GET /api/categories/:categoryId/attributes
+ * @desc    Lấy thuộc tính danh mục theo ID danh mục (alternative path)
+ * @access  Public
+ */
 router.get("/:categoryId/attributes", async (req, res) => {
   const { categoryId } = req.params;
 
@@ -200,6 +180,36 @@ router.get("/:categoryId/attributes", async (req, res) => {
       success: false,
       message: `Lỗi máy chủ khi lấy danh sách thuộc tính cho danh mục ID ${categoryId}.`,
     });
+  }
+});
+
+/**
+ * @route   GET /api/categories/:slug
+ * @desc    Lấy thông tin một danh mục theo slug
+ * @access  Public
+ */
+router.get("/:slug", async (req, res) => {
+  let slug = req.params.slug;
+  if (!slug) return res.status(400).json({ message: "Slug is required" });
+  try {
+    const sql = `
+      SELECT
+        c.*,
+        c.slug,
+        (SELECT COUNT(*) FROM product WHERE category_id = c.category_id) as product_count
+      FROM category c
+      WHERE c.slug = ?
+    `;
+    const [category] = await db.query(sql, [slug]);
+
+    if (!category || category.length === 0) {
+      return res.status(404).json({ error: "Category not found" });
+    }
+
+    res.json(category[0]);
+  } catch (error) {
+    console.error("Error fetching category:", error);
+    res.status(500).json({ error: "Failed to fetch category" });
   }
 });
 
@@ -317,8 +327,8 @@ router.put("/:slug", verifyToken, isAdmin, async (req, res) => {
     // 4. Cập nhật
     await db.query(
       `
-      UPDATE category 
-      SET 
+      UPDATE category
+      SET
         category_name = COALESCE(?, category_name),
         category_image = COALESCE(?, category_image),
         category_banner = COALESCE(?, category_banner),
@@ -463,7 +473,7 @@ router.get("/:slug/products", async (req, res) => {
     // Query sản phẩm
     const [products] = await db.query(
       `
-       SELECT 
+       SELECT
   p.product_id AS id,
   p.product_name AS name,
   p.product_slug AS slug,
@@ -474,7 +484,7 @@ router.get("/:slug/products", async (req, res) => {
   p.created_at,
   p.updated_at,
 
-  
+
  (
   SELECT vp2.variant_product_price
   FROM variant_product vp2
@@ -498,7 +508,7 @@ router.get("/:slug/products", async (req, res) => {
         LEFT JOIN variant_product vp ON p.product_id = vp.product_id
         LEFT JOIN color col ON vp.color_id = col.color_id
         WHERE p.category_id = ?
-        GROUP BY p.product_id 
+        GROUP BY p.product_id
         ORDER BY p.${sort_by} ${sort_order}
         LIMIT ?, ?
     `,

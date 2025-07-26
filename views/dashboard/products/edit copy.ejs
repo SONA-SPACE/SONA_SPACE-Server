@@ -1,0 +1,1592 @@
+<!-- Trang Sửa Sản phẩm -->
+
+<!-- Tiêu đề -->
+<div class="dashboard-header-row">
+  <h2 class="dashboard-title">Sửa sản phẩm</h2>
+</div>
+
+<form id="addProductForm" novalidate>
+  <!-- Container chính - chia 2 cột -->
+  <div class="add-product-container">
+    <!-- Cột trái: Form thông tin sản phẩm -->
+    <div class="product-form-column">
+      <!-- ===== Thông tin sản phẩm cơ bản ===== -->
+      <div class="form-section">
+        <h3 class="section-title">Thông tin sản phẩm</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="productName">Tên sản phẩm</label>
+            <input type="text" id="productName" class="form-control" placeholder="Nhập tên sản phẩm" />
+            <div class="invalid-feedback"></div>
+          </div>
+          <div class="form-group">
+            <label for="productSlug">Slug</label>
+            <input type="text" id="productSlug" class="form-control" placeholder="Có thể tự tạo nếu bỏ trống" />
+            <div class="invalid-feedback"></div>
+          </div>
+          <div class="form-group">
+            <label for="productStatus">Trạng thái</label>
+            <div class="select-wrapper">
+              <select id="productStatus" class="form-control">
+                <option value="">Chọn trạng thái</option>
+                <option value="1">Hiển thị</option>
+                <option value="0">Ẩn</option>
+              </select>
+              <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="invalid-feedback"></div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="productCategory">Danh mục</label>
+            <div class="select-wrapper">
+              <select id="productCategory" class="form-control"></select>
+              <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="invalid-feedback"></div>
+          </div>
+          <div class="form-group">
+            <label for="productRooms">Danh mục phòng</label>
+            <div class="select-wrapper">
+              <select id="productRooms" class="form-control"></select>
+              <i class="fas fa-chevron-down"></i>
+            </div>
+            <div class="invalid-feedback"></div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group full-width">
+            <label for="productDescription">Mô tả</label>
+            <textarea id="productDescription" class="form-control" rows="5" placeholder="Nhập mô tả"></textarea>
+            <div class="invalid-feedback"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== Thông tin bổ sung ===== -->
+      <div class="form-section">
+        <h3 class="section-title">Thông tin bổ sung</h3>
+        <div id="dynamicAttributesContainer" class="form-row flex-wrap"></div>
+      </div>
+      <!-- Cột phải: Ảnh và biến thể -->
+
+    </div>
+
+    <div class="right-column">
+      <!-- ===== Ảnh chính ===== -->
+      <div class="form-section">
+        <h3 class="section-title">Ảnh chính sản phẩm</h3>
+        <div class="main-image-upload" id="mainImageUpload" style="display: none">
+          <div class="upload-zone">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <p>Kéo thả hoặc click để tải ảnh</p>
+            <p class="upload-hint">Định dạng: JPG, PNG (Tối đa 5MB)</p>
+            <input type="file" id="mainImageFile" accept="image/*" hidden />
+          </div>
+        </div>
+        <div class="main-image-preview" style="display: none">
+          <img src="" alt="Preview" />
+          <button class="remove-image"><i class="fas fa-times"></i></button>
+        </div>
+      </div>
+
+      <!-- ===== Biến thể ===== -->
+      <div class="form-section">
+        <div class="variant-header">
+          <h3 class="section-title">Biến thể sản phẩm</h3>
+          <button type="button" class="btn btn-add-variant">
+            <i class="fas fa-plus"></i> Thêm biến thể
+          </button>
+        </div>
+        <div id="variantsList">
+          <!-- Template Biến thể -->
+          <div class="variant-item" style="display: none" id="variantTemplate">
+            <div class="variant-header">
+              <h4 class="variant-title">Biến thể mới</h4>
+              <div class="variant-actions">
+                <button class="btn-toggle-variant">
+                  <i class="fas fa-chevron-down"></i>
+                  <i class="fas fa-chevron-up"></i>
+                </button>
+                <button class="btn-remove-variant">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="variant-content">
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Tên màu</label>
+                  <div class="select-wrapper">
+                    <select class="form-control variant-color">
+                      <option value="">Chọn màu</option>
+                    </select>
+                    <i class="fas fa-chevron-down"></i>
+                  </div>
+                  <div class="invalid-feedback"></div>
+                </div>
+                <div class="form-group">
+                  <label>Slug</label>
+                  <input type="text" class="form-control variant-slug" placeholder="Tự động tạo nếu để trống" />
+                  <div class="invalid-feedback"></div>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Số lượng</label>
+                  <input type="number" class="form-control variant-quantity" min="0" placeholder="Nhập số lượng" />
+                  <div class="invalid-feedback"></div>
+                </div>
+                <div class="form-group">
+                  <label>Giá gốc</label>
+                  <input type="number" class="form-control variant-price" min="0" placeholder="Nhập giá gốc" />
+                  <div class="invalid-feedback"></div>
+                </div>
+                <div class="form-group">
+                  <label>Giá giảm</label>
+                  <input type="number" class="form-control variant-sale-price" min="0" placeholder="Nhập giá giảm" />
+                  <div class="invalid-feedback"></div>
+                </div>
+              </div>
+
+              <div class="variant-images">
+                <label>Hình ảnh biến thể</label>
+                <div class="variant-image-grid"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div class="form-actions">
+    <button type="button" class="btn btn-cancel">Hủy</button>
+    <button type="button" class="btn btn-save">Lưu</button>
+  </div>
+</form>
+
+<div id="toastContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 1050"></div>
+
+<script>
+  // Standardize API_URL to include /api
+  const API_URL = "http://localhost:3501/api";
+  let allColors = [];
+  let allMaterials = [];
+
+  // Utility Functions
+  function showToast(message, type = "success") {
+    let toastContainer = document.getElementById("toastContainer");
+    if (!toastContainer) {
+      toastContainer = document.createElement("div");
+      toastContainer.id = "toastContainer";
+      toastContainer.className = "position-fixed top-0 end-0 p-3";
+      toastContainer.style.zIndex = "1050";
+      document.body.appendChild(toastContainer);
+    }
+
+    const toast = document.createElement("div");
+    toast.className = `toast align-items-center text-white bg-${type} border-0`;
+    toast.setAttribute("role", "alert");
+    toast.setAttribute("aria-live", "assertive");
+    toast.setAttribute("aria-atomic", "true");
+
+    toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body" style="font-size: 24px;">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+
+    toastContainer.appendChild(toast);
+    const bsToast = new bootstrap.Toast(toast, { delay: 3000 });
+    bsToast.show();
+
+    toast.addEventListener("hidden.bs.toast", () => toast.remove());
+  }
+
+  async function uploadImage(file, folder = "", subfolder = "") {
+    console.log(`[uploadImage] Attempting to upload file: ${file ? file.name : 'No file'} to folder: ${folder}/${subfolder}`);
+    if (!file) return null;
+    const formData = new FormData();
+    formData.append("image", file);
+    formData.append("folder", folder);
+    if (subfolder) formData.append("subfolder", subfolder);
+
+    try {
+      const res = await fetch(`${API_URL}/upload/product`, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        console.error(`[uploadImage] Server error response:`, data);
+        throw new Error(data.message || `Server responded with ${res.status}`);
+      }
+      console.log(`[uploadImage] Upload successful, URL: ${data.url}`);
+      return data.url || null;
+    } catch (error) {
+      console.error("[uploadImage] Error uploading image:", error);
+      showToast("Lỗi khi tải ảnh lên: " + error.message, "danger");
+      return null;
+    }
+  }
+
+  // Robust generateSlug function
+  function generateSlug(str) {
+    return str
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[đĐ]/g, "d")
+      .replace(/[^a-z0-9\s-]/g, "") // Allow spaces and hyphens initially
+      .replace(/\s+/g, "-") // Replace spaces with single hyphens
+      .replace(/-+/g, "-") // Replace multiple hyphens with single
+      .replace(/^-+|-+$/g, ""); // Trim hyphens from start/end
+  }
+
+  async function fetchAPI(endpoint) {
+    console.log(`[fetchAPI] Fetching from: ${API_URL}${endpoint}`);
+    try {
+      const response = await fetch(`${API_URL}${endpoint}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[fetchAPI] Network response not ok: ${response.status} ${response.statusText} - ${errorText}`);
+        throw new Error(
+          `Network response was not ok: ${response.status} ${response.statusText} - ${errorText}`
+        );
+      }
+      const data = await response.json();
+      console.log(`[fetchAPI] Data received from ${endpoint}:`, data);
+      return data;
+    } catch (error) {
+      console.error("[fetchAPI] Error fetching from " + endpoint + ":", error);
+      showToast("Lỗi khi tải dữ liệu: " + error.message, "danger");
+      return null;
+    }
+  }
+
+  // --- ProductFormManager Class ---
+  class ProductFormManager {
+    constructor() {
+      console.log("[ProductFormManager] Constructor called.");
+      this.elements = {
+        productName: document.getElementById("productName"),
+        productSlug: document.getElementById("productSlug"),
+        productStatus: document.getElementById("productStatus"),
+        productCategory: document.getElementById("productCategory"),
+        productRooms: document.getElementById("productRooms"),
+        productDescription: document.getElementById("productDescription"),
+        dynamicAttributesContainer: document.getElementById("dynamicAttributesContainer"),
+        mainImageUploadZone: document.getElementById("mainImageUpload"),
+        mainImageFileInput: document.getElementById("mainImageFile"),
+        mainImagePreviewContainer: document.querySelector(".main-image-preview"),
+        mainImagePreviewImg: document.querySelector(".main-image-preview img"),
+        removeMainImageBtn: document.querySelector(".main-image-preview .remove-image"),
+        variantsList: document.getElementById("variantsList"),
+        variantTemplate: document.getElementById("variantTemplate"),
+        addVariantBtn: document.querySelector(".btn-add-variant"),
+        saveButton: document.querySelector(".btn-save"),
+        cancelButton: document.querySelector(".btn-cancel"),
+      };
+
+      this.currentProductSlug = window.location.pathname.split("/").pop(); // Get slug from URL
+      this.mainImageFile = null; // Stores the actual file object for new main image upload
+      this.removedImagesPublicIds = []; // Stores public IDs of images removed from Cloudinary
+      this.variantImageCounters = new Map(); // Map to track image counts per variant element
+      this.validationErrors = []; // To store client-side validation errors
+
+      this.setupEventListeners();
+    }
+
+    setupEventListeners() {
+      console.log("[ProductFormManager] Setting up event listeners.");
+      // Main Product Info
+      if (this.elements.productName) {
+        this.elements.productName.addEventListener("input", () => this.handleProductNameInput());
+      }
+      if (this.elements.productCategory) {
+        this.elements.productCategory.addEventListener("change", () => this.handleCategoryChange());
+      }
+      if (this.elements.cancelButton) {
+        this.elements.cancelButton.addEventListener("click", () => this.handleCancel());
+      }
+
+      // Main Image Upload
+      if (this.elements.mainImageUploadZone) {
+        this.elements.mainImageUploadZone.addEventListener("click", () => {
+          console.log("[MainImage] Upload zone clicked, triggering file input.");
+          this.elements.mainImageFileInput.click();
+        });
+      }
+      if (this.elements.mainImageFileInput) {
+        this.elements.mainImageFileInput.addEventListener("change", (e) => this.handleMainImageFileSelect(e));
+      }
+      if (this.elements.removeMainImageBtn) {
+        this.elements.removeMainImageBtn.addEventListener("click", (e) => this.handleRemoveMainImage(e));
+      }
+
+      // Add Variant Button
+      if (this.elements.addVariantBtn) {
+        this.elements.addVariantBtn.addEventListener("click", () => this.addVariant());
+      }
+
+      // Save Button
+      if (this.elements.saveButton) {
+        this.elements.saveButton.addEventListener("click", (e) => this.handleSave(e));
+      }
+
+      // General validation clearing on input/change
+      document.addEventListener("input", (e) => clearFieldError(e.target)); // Use global clearFieldError
+      document.addEventListener("change", (e) => clearFieldError(e.target)); // Use global clearFieldError
+    }
+
+    async initializeForm() {
+      console.log("[ProductFormManager] Initializing form data for product slug:", this.currentProductSlug);
+      try {
+        // Load static data first
+        await Promise.all([
+          this.loadAllMaterials(),
+          this.loadAllColors(),
+        ]);
+
+        // Then load product details and populate form
+        await this.loadProductDetail(this.currentProductSlug);
+
+      } catch (error) {
+        console.error("[ProductFormManager] Error initializing form:", error);
+        showToast("Lỗi khởi tạo form", "danger");
+      }
+    }
+
+    // --- Handlers for main product info ---
+    handleProductNameInput() {
+      console.log("[ProductName] Input changed.");
+      const slug = generateSlug(this.elements.productName.value); // Use the robust generateSlug
+      this.elements.productSlug.value = slug;
+    }
+
+    handleCategoryChange() {
+      console.log(`[Category] Selected category changed to: ${this.elements.productCategory.value}`);
+      this.loadCategoryAttributes(this.elements.productCategory.value, []); // Pass empty array for new attributes
+    }
+
+    handleCancel() {
+      console.log("[CancelButton] Clicked, redirecting.");
+      window.location.href = "/dashboard/products";
+    }
+
+    // --- Main Image Upload Logic ---
+    handleMainImageFileSelect(e) {
+      const file = e.target.files[0];
+      console.log(`[MainImage] File selected: ${file ? file.name : 'None'}`);
+      if (file && file.type.startsWith("image/")) {
+        this.mainImageFile = file; // Store the actual file
+        const reader = new FileReader();
+        reader.onload = (readerEvent) => {
+          this.elements.mainImagePreviewImg.src = readerEvent.target.result;
+          this.elements.mainImagePreviewContainer.style.display = "block";
+          this.elements.mainImageUploadZone.style.display = "none";
+          console.log("[MainImage] Preview displayed, upload zone hidden.");
+          clearFieldError(this.elements.mainImageUploadZone); // Use global clearFieldError
+        };
+        reader.readAsDataURL(file);
+      } else {
+        this.mainImageFile = null; // Reset if invalid file selected
+        this.elements.mainImageFileInput.value = ""; // Clear file input
+        this.elements.mainImagePreviewContainer.style.display = "none";
+        this.elements.mainImageUploadZone.style.display = "block";
+        console.log("[MainImage] Invalid file selected or no file, showing upload zone.");
+        showFieldError(this.elements.mainImageUploadZone, "Vui lòng chọn một file ảnh hợp lệ."); // Use global showFieldError
+      }
+    }
+
+    handleRemoveMainImage(e) {
+      e.preventDefault(); // Prevent default button behavior (e.g., form submission)
+      console.log("[MainImage] Removing main image. Before: mainImageFile is", this.mainImageFile);
+
+      const currentMainImageUrl = this.elements.mainImagePreviewImg.src;
+      if (currentMainImageUrl && !currentMainImageUrl.startsWith("data:image/")) { // If it's an existing Cloudinary URL
+        const publicId = this.extractPublicIdFromUrl(currentMainImageUrl);
+        if (publicId) {
+          this.removedImagesPublicIds.push(publicId);
+          console.log("[REMOVE IMAGE] Marked main image for deletion from Cloudinary:", publicId);
+        }
+      }
+
+      this.elements.mainImagePreviewImg.src = "";
+      this.elements.mainImagePreviewContainer.style.display = "none";
+      this.elements.mainImageUploadZone.style.display = "block";
+      this.elements.mainImageFileInput.value = ""; // Clear file input
+      this.mainImageFile = null; // Clear stored file for new upload
+      console.log("[MainImage] Main image removed from DOM. After: mainImageFile is", this.mainImageFile);
+      clearFieldError(this.elements.mainImageUploadZone); // Use global clearFieldError
+    }
+
+    // --- Variant Image Upload Logic ---
+    setupVariantImageUpload(variantElement) {
+      const imageGrid = variantElement.querySelector(".variant-image-grid");
+      const maxImages = 7;
+      console.log(`[VariantImageUpload] Setting up for variant: ${variantElement.id}. Initializing counter.`);
+
+      // Initialize or reset counter for this specific variant
+      this.variantImageCounters.set(variantElement, 0);
+
+      // Clear existing image boxes when setting up a variant (important for cloned templates)
+      imageGrid.innerHTML = '';
+
+      // Function to create a new empty image box
+      const createImageBox = () => {
+        console.log(`[VariantImageUpload:${variantElement.id}] Creating new image box.`);
+        const div = document.createElement("div");
+        div.className = "variant-image-item active variant-upload-box"; // 'active' means it's an upload slot
+        div.innerHTML = `
+                    <div class="upload-placeholder">
+                        <i class="fas fa-plus"></i>
+                        <input type="file" hidden accept="image/*">
+                    </div>
+                `;
+        return div;
+      };
+
+      // Function to set up event listeners for an image box
+      const setupImageBox = (imageBox) => {
+        const input = imageBox.querySelector('input[type="file"]');
+        const placeholder = imageBox.querySelector(".upload-placeholder");
+
+        imageBox.addEventListener("click", () => {
+          console.log(`[VariantImageUpload:${variantElement.id}] Image box clicked, triggering file input.`);
+          input.click();
+        });
+
+        input.addEventListener("change", (e) => {
+          const file = e.target.files[0];
+          console.log(`[VariantImageUpload:${variantElement.id}] File selected for box. File: ${file ? file.name : 'None'}`);
+          if (file && file.type.startsWith("image/")) {
+            const reader = new FileReader();
+            reader.onload = (readerEvent) => {
+              // Replace the upload box with a loaded image box
+              const loadedBox = this.addLoadedImageBox(readerEvent.target.result, imageGrid, file);
+              imageGrid.replaceChild(loadedBox, imageBox); // Replace the upload box with the loaded one
+
+              // Increment image count for this specific variant
+              this.variantImageCounters.set(variantElement, this.variantImageCounters.get(variantElement) + 1);
+              console.log(`[VariantImageUpload:${variantElement.id}] Image loaded. Current count: ${this.variantImageCounters.get(variantElement)}`);
+
+              // After an image is successfully loaded, if we haven't reached maxImages,
+              // add a new empty image box for the next upload.
+              if (this.variantImageCounters.get(variantElement) < maxImages && imageGrid.querySelectorAll('.variant-upload-box').length === 0) {
+                console.log(`[VariantImageUpload:${variantElement.id}] Adding new empty upload box after successful upload.`);
+                const newUploadBox = createImageBox();
+                imageGrid.appendChild(newUploadBox);
+                setupImageBox(newUploadBox);
+              }
+
+              // Clear validation feedback if this action resolves the error
+              clearFieldError(imageGrid); // Use global clearFieldError
+            };
+            reader.readAsDataURL(file);
+          } else {
+            e.target.value = ''; // Clear the invalid file
+            console.warn(`[VariantImageUpload:${variantElement.id}] Invalid file type selected.`);
+            showToast("Vui lòng chọn một file ảnh hợp lệ.", "danger");
+          }
+        });
+      };
+
+      // Helper to add a loaded image box (for existing images or newly uploaded)
+      this.addLoadedImageBox = (imgUrl, imageGrid, file = null) => {
+        const loadedBox = document.createElement("div");
+        loadedBox.className = "variant-image-item loaded";
+        // Store the file object directly if it's a new upload
+        if (file) {
+          loadedBox.dataset.isNew = "true";
+          loadedBox._file = file; // Store the file object for later access
+        } else {
+          loadedBox.dataset.isNew = "false";
+        }
+
+        loadedBox.innerHTML = `
+                    <img src="${imgUrl}" alt="Preview" style="width:80px;margin:5px;">
+                    <button class="remove-image"><i class="fas fa-times"></i></button>
+                `;
+
+        loadedBox.querySelector(".remove-image").addEventListener("click", (removeEvent) => {
+          removeEvent.preventDefault(); // Prevent default button behavior
+          removeEvent.stopPropagation(); // Prevent click from bubbling
+
+          console.log(`[VariantImageUpload:${variantElement.id}] Removing image from box.`);
+          if (loadedBox.dataset.isNew === "false") { // Only mark for deletion if it's an existing image (not a newly added one)
+            const publicId = this.extractPublicIdFromUrl(imgUrl);
+            if (publicId) {
+              this.removedImagesPublicIds.push(publicId);
+              console.log("[REMOVE IMAGE] Marked variant image for deletion from Cloudinary:", publicId);
+            }
+          }
+          loadedBox.remove(); // Remove the image box from the DOM
+
+          // Decrement the count for this variant
+          this.variantImageCounters.set(variantElement, this.variantImageCounters.get(variantElement) - 1);
+          console.log(`[VariantImageUpload:${variantElement.id}] Image removed. Current count: ${this.variantImageCounters.get(variantElement)}`);
+
+          // Ensure there's an upload box if needed
+          const currentLoadedImages = imageGrid.querySelectorAll('.variant-image-item.loaded').length;
+          const currentUploadBoxes = imageGrid.querySelectorAll('.variant-upload-box').length;
+          if (currentUploadBoxes === 0 && currentLoadedImages < maxImages) {
+            console.log(`[VariantImageUpload:${variantElement.id}] Adding new empty upload box after removal.`);
+            const newUploadBox = createImageBox();
+            imageGrid.appendChild(newUploadBox);
+            setupImageBox(newUploadBox);
+          }
+          // Re-validate the grid if no images are left
+          if (currentLoadedImages === 0) {
+            showFieldError(imageGrid, "Cần ít nhất 1 ảnh cho biến thể."); // Use global showFieldError
+          } else {
+            clearFieldError(imageGrid); // Use global clearFieldError
+          }
+        });
+        return loadedBox;
+      };
+
+      // Render existing images for this variant
+      const existingImages = variantElement.variantData?.list_image || [];
+      existingImages.forEach((imgUrl) => {
+        const loadedBox = this.addLoadedImageBox(imgUrl, imageGrid);
+        imageGrid.appendChild(loadedBox);
+        this.variantImageCounters.set(variantElement, this.variantImageCounters.get(variantElement) + 1);
+      });
+
+      // Add initial upload box if max images not reached
+      if (this.variantImageCounters.get(variantElement) < maxImages) {
+        const initialUploadBox = createImageBox();
+        imageGrid.appendChild(initialUploadBox);
+        setupImageBox(initialUploadBox);
+      }
+    }
+
+
+    // --- Variant Management Logic ---
+    addVariant() {
+      console.log("[AddVariant] Button clicked.");
+      const newVariant = this.elements.variantTemplate.cloneNode(true);
+      newVariant.id = `variant-${Date.now()}`; // Unique ID for new variant
+      newVariant.style.display = "block";
+      newVariant.setAttribute("data-id", "new"); // Mark as new for backend
+      newVariant.classList.add("is-expanded"); // Add for initial expansion
+      newVariant.querySelector(".variant-title").textContent = `Biến thể mới`;
+      console.log(`[AddVariant] New variant created: ${newVariant.id}`);
+
+      // Reset validation states on cloned element
+      newVariant.querySelectorAll(".is-invalid").forEach((el) => el.classList.remove("is-invalid"));
+      newVariant.querySelectorAll(".invalid-feedback").forEach((el) => (el.textContent = ""));
+
+      // Populate colors for the new variant's color select
+      const newVariantColorSelect = newVariant.querySelector(".variant-color");
+      if (newVariantColorSelect && allColors.length > 0) {
+        newVariantColorSelect.innerHTML = `
+                    <option value="">Chọn màu</option>
+                    ${allColors.map(color => `
+                        <option value="${color.color_id}" data-hex="${color.color_hex}">
+                            ${color.color_name}
+                        </option>
+                    `).join("")}
+                `;
+        console.log(`[AddVariant:${newVariant.id}] Populated color options.`);
+      }
+
+      // Initialize variantData for new variants
+      newVariant.variantData = {
+        color_id: null,
+        variant_slug: "",
+        quantity: 0,
+        price: 0,
+        price_sale: 0,
+        list_image: [],
+      };
+
+      this.setupVariantEvents(newVariant);
+      this.elements.variantsList.appendChild(newVariant);
+
+      // Ensure content expands with transition for newly added variant
+      const content = newVariant.querySelector(".variant-content");
+      if (content) {
+        content.style.display = 'block';
+        requestAnimationFrame(() => {
+          content.style.maxHeight = content.scrollHeight + "px";
+          console.log(`[AddVariant:${newVariant.id}] Setting initial maxHeight for transition: ${content.scrollHeight}px`);
+          content.addEventListener('transitionend', function handler() {
+            content.style.maxHeight = 'none'; // Allow dynamic height after transition
+            console.log(`[AddVariant:${newVariant.id}] Transition ended, maxHeight set to 'none'.`);
+            content.removeEventListener('transitionend', handler);
+          }, { once: true });
+        });
+      }
+      showToast("Đã thêm một biến thể mới.", "success");
+      newVariant.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    setupVariantEvents(variantElement) {
+      const toggleButton = variantElement.querySelector(".btn-toggle-variant");
+      const content = variantElement.querySelector(".variant-content");
+      console.log(`[VariantEvents] Setting up events for variant: ${variantElement.id}`);
+
+      // Initial state for toggle button (based on is-expanded class)
+      if (variantElement.classList.contains("is-expanded")) {
+        toggleButton.querySelector(".fa-chevron-down").style.display = "none";
+        toggleButton.querySelector(".fa-chevron-up").style.display = "inline-block";
+        content.style.display = 'block'; // Ensure content is visible if expanded
+        content.style.maxHeight = 'none'; // Allow content to take natural height
+      } else {
+        toggleButton.querySelector(".fa-chevron-down").style.display = "inline-block";
+        toggleButton.querySelector(".fa-chevron-up").style.display = "none";
+        content.style.display = 'none'; // Ensure content is hidden if collapsed
+        content.style.maxHeight = '0';
+      }
+
+      // Toggle logic for variant content
+      if (toggleButton) {
+        toggleButton.addEventListener("click", (e) => {
+          e.preventDefault(); // Prevent default button behavior
+          const isExpanded = variantElement.classList.contains('is-expanded');
+          console.log(`[VariantEvents:${variantElement.id}] Toggle button clicked. Currently expanded: ${isExpanded}`);
+          if (isExpanded) {
+            content.style.maxHeight = content.scrollHeight + "px"; // Set explicit height before transition
+            requestAnimationFrame(() => {
+              content.style.maxHeight = "0";
+              variantElement.classList.remove("is-expanded");
+              console.log(`[VariantEvents:${variantElement.id}] Collapsing variant.`);
+            });
+            content.addEventListener('transitionend', function handler() {
+              content.style.display = 'none';
+              toggleButton.querySelector(".fa-chevron-down").style.display = "inline-block";
+              toggleButton.querySelector(".fa-chevron-up").style.display = "none";
+              console.log(`[VariantEvents:${variantElement.id}] Collapsed transition ended, display none.`);
+              content.removeEventListener('transitionend', handler);
+            }, { once: true });
+          } else {
+            content.style.display = 'block';
+            content.style.maxHeight = "0"; // Ensure starting from 0 for transition
+            requestAnimationFrame(() => {
+              content.style.maxHeight = content.scrollHeight + "px";
+              variantElement.classList.add("is-expanded");
+              console.log(`[VariantEvents:${variantElement.id}] Expanding variant.`);
+            });
+            content.addEventListener('transitionend', function handler() {
+              content.style.maxHeight = 'none'; // Allow dynamic height after transition
+              toggleButton.querySelector(".fa-chevron-down").style.display = "none";
+              toggleButton.querySelector(".fa-chevron-up").style.display = "inline-block";
+              console.log(`[VariantEvents:${variantElement.id}] Expanded transition ended, maxHeight none.`);
+              content.removeEventListener('transitionend', handler);
+            }, { once: true });
+          }
+        });
+      }
+
+      // Remove variant
+      const removeButton = variantElement.querySelector(".btn-remove-variant");
+      if (removeButton) {
+        removeButton.addEventListener("click", async (e) => { // Added async
+          e.preventDefault(); // Prevent default button behavior
+          console.log(`[VariantEvents:${variantElement.id}] Remove button clicked.`);
+          if (confirm("Bạn có chắc muốn xóa biến thể này?")) {
+            console.log(`[VariantEvents:${variantElement.id}] Confirming removal.`);
+            const variantId = variantElement.getAttribute("data-id");
+            if (variantId && variantId !== "new") {
+              const success = await this.deleteVariant(variantId);
+              if (!success) {
+                console.log(`[VariantEvents:${variantElement.id}] Failed to delete variant from backend.`);
+                return; // Stop if backend deletion failed
+              }
+            }
+            variantElement.remove();
+            this.variantImageCounters.delete(variantElement); // Remove counter entry
+            console.log(`[VariantEvents:${variantElement.id}] Variant removed from DOM and counter map.`);
+            showToast("Đã xóa biến thể.", "info");
+          } else {
+            console.log(`[VariantEvents:${variantElement.id}] Removal cancelled.`);
+          }
+        });
+      }
+
+      // Auto-generate slug on color select
+      const colorSelect = variantElement.querySelector(".variant-color");
+      const slugInput = variantElement.querySelector(".variant-slug");
+      if (colorSelect && slugInput) {
+        colorSelect.addEventListener("change", () => {
+          console.log(`[VariantEvents:${variantElement.id}] Color select changed.`);
+          const selectedOption = colorSelect.options[colorSelect.selectedIndex];
+          const colorName = selectedOption?.textContent?.trim() || "";
+          if (colorName) { // Only generate if colorName is not empty
+            slugInput.value = generateSlug(colorName); // Use the robust generateSlug
+            console.log(`[VariantEvents:${variantElement.id}] Slug generated: ${slugInput.value}`);
+          } else {
+            slugInput.value = ""; // Clear slug if no color selected
+          }
+          clearFieldError(slugInput); // Use global clearFieldError
+        });
+      }
+
+      // Setup image upload for this specific variant
+      this.setupVariantImageUpload(variantElement);
+
+      // Add event listeners for validation clearing on inputs within the variant
+      variantElement.querySelectorAll("input, select, textarea").forEach((input) => {
+        input.addEventListener("input", () => clearFieldError(input)); // Use global clearFieldError
+        input.addEventListener("change", () => clearFieldError(input)); // Use global clearFieldError
+      });
+    }
+
+    // --- Data Loading Functions ---
+    async loadSelectData(selectElement, endpoint, valueKey, textKey, placeholder = "Chọn...") {
+      console.log(`[LoadData] Loading data for select element from ${endpoint}`);
+      if (!selectElement) {
+        console.warn(`[LoadData] Select element not provided.`);
+        return;
+      }
+
+      try {
+        const data = await fetchAPI(endpoint);
+        if (!data || !Array.isArray(data)) {
+          throw new Error("Dữ liệu không hợp lệ hoặc rỗng");
+        }
+
+        selectElement.innerHTML =
+          `<option value="">${placeholder}</option>` +
+          data
+            .map((item) => `<option value="${item[valueKey]}">${item[textKey]}</option>`)
+            .join("");
+        console.log(`[LoadData] Successfully loaded data for select element.`);
+      } catch (error) {
+        console.error(`[LoadData] Error loading select data from ${endpoint}:`, error);
+        selectElement.innerHTML = `<option value="">Lỗi tải dữ liệu</option>`;
+        showToast(`Lỗi khi tải dữ liệu cho ${placeholder}: ${error.message}`, "danger");
+      }
+    }
+
+    async loadAllColors() {
+      console.log("[LoadData] Loading all colors.");
+      try {
+        const colors = await fetchAPI("/color/filter");
+        if (!colors || !Array.isArray(colors)) {
+          throw new Error("Dữ liệu màu không hợp lệ");
+        }
+        allColors = colors; // Store globally for new variants
+        console.log("[LoadData] All colors loaded:", allColors);
+      } catch (error) {
+        console.error("[LoadData] Error loading colors:", error);
+        showToast("Lỗi khi tải dữ liệu màu sắc", "danger");
+      }
+    }
+
+    async loadAllMaterials() {
+      console.log("[LoadData] Loading all materials.");
+      try {
+        const materials = await fetchAPI("/materials");
+        if (!materials || !Array.isArray(materials)) {
+          throw new Error("Dữ liệu chất liệu không hợp lệ");
+        }
+        allMaterials = materials;
+        console.log("[LoadData] All materials loaded:", allMaterials);
+      } catch (error) {
+        console.error("[LoadData] Error loading all materials:", error);
+        showToast("Lỗi khi tải danh sách chất liệu.", "danger");
+      }
+    }
+
+    async loadCategoryAttributes(categoryId, productAttributes = []) {
+      const container = this.elements.dynamicAttributesContainer;
+      container.innerHTML = "";
+      console.log(`[LoadData] Loading category attributes for categoryId: ${categoryId}`);
+
+      if (!categoryId) {
+        console.log("[LoadData] No categoryId provided, skipping attribute load.");
+        return;
+      }
+
+      try {
+        const attributesMeta = await fetchAPI(`/categories/${categoryId}`);
+        if (!attributesMeta || !Array.isArray(attributesMeta) || attributesMeta.length === 0) {
+          showToast("Không tìm thấy thuộc tính cho danh mục này.", "info");
+          console.log("[LoadData] No attributes found for this category.");
+          return;
+        }
+
+        let formRowsHtml = "";
+        let attributesInCurrentRow = 0;
+
+        for (let i = 0; i < attributesMeta.length; i++) {
+          const attrMeta = attributesMeta[i];
+          const isRequired = attrMeta.is_required ? "required" : "";
+          const requiredAsterisk = attrMeta.is_required ? '<span class="text-danger">*</span>' : "";
+          let inputHtml = "";
+
+          const existingAttr = productAttributes.find(pa => pa.attribute_id === attrMeta.attribute_id);
+          let initialValue = '';
+          if (existingAttr) {
+            initialValue = attrMeta.value_type === 'material_id' ? (existingAttr.material_id || '') : (existingAttr.value ?? '');
+          }
+
+          if (attrMeta.attribute_name.toLowerCase().includes("chất liệu")) {
+            const materialOptions = allMaterials.map(
+              (mat) => `<option value="${mat.material_id}" ${initialValue == mat.material_id ? 'selected' : ''}>${mat.material_name}</option>`
+            ).join("");
+            inputHtml = `
+                            <div class="select-wrapper">
+                                <select id="attr-${attrMeta.attribute_id}" class="form-control dynamic-attribute"
+                                        data-attribute-id="${attrMeta.attribute_id}" data-value-type="material_id" ${isRequired}>
+                                    <option value="">Chọn chất liệu</option>
+                                    ${materialOptions}
+                                </select>
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                        `;
+          } else {
+            inputHtml = `
+                            <input type="${attrMeta.value_type === 'number' ? 'number' : 'text'}"
+                                   id="attr-${attrMeta.attribute_id}" class="form-control dynamic-attribute"
+                                   data-attribute-id="${attrMeta.attribute_id}" data-value-type="${attrMeta.value_type}" ${isRequired}
+                                   placeholder="Nhập ${attrMeta.attribute_name.toLowerCase()}" value="${initialValue}" />
+                        `;
+          }
+
+          // Start new row if it's the first attribute in a row or if previous row is full
+          if (attributesInCurrentRow % 2 === 0) {
+            formRowsHtml += '<div class="form-row">';
+          }
+
+          formRowsHtml += `
+                        <div class="form-group form-infor">
+                            <label for="attr-${attrMeta.attribute_id}">${attrMeta.attribute_name} ${attrMeta.unit ? `(${attrMeta.unit})` : ""}${requiredAsterisk}</label>
+                            ${inputHtml}
+                            <div class="invalid-feedback"></div>
+                        </div>
+                    `;
+          attributesInCurrentRow++;
+
+          // Close row if it's the second attribute in a row or the last attribute
+          if (attributesInCurrentRow % 2 === 0 || i === attributesMeta.length - 1) {
+            formRowsHtml += '</div>';
+          }
+        }
+        container.innerHTML = formRowsHtml;
+        console.log("[LoadData] Dynamic attributes rendered.");
+
+        // Attach event listeners to newly created dynamic inputs
+        container.querySelectorAll(".dynamic-attribute").forEach(input => {
+          input.addEventListener("input", () => clearFieldError(input));
+          input.addEventListener("change", () => clearFieldError(input));
+        });
+
+      } catch (error) {
+        console.error("[LoadData] Error loading category attributes:", error);
+        showToast("Lỗi khi tải thuộc tính danh mục: " + error.message, "danger");
+      }
+    }
+
+    async loadProductDetail(slug) {
+      console.log(`[loadProductDetail] Loading product details for slug: ${slug}`);
+      try {
+        const res = await fetch(`${API_URL}/products/admin/${slug}`);
+        if (!res.ok) {
+          throw new Error(`Could not fetch product details: ${res.statusText}`);
+        }
+        const data = await res.json();
+        const product = data.product;
+        console.log("[loadProductDetail] Product data received:", product);
+
+        // Populate main product info
+        this.elements.productName.value = product.name || "";
+        this.elements.productSlug.value = product.slug || "";
+        this.elements.productStatus.value = product.status ?? "";
+        this.elements.productDescription.value = product.description || "";
+
+        // Populate Category and Rooms selects
+        await this.loadSelectData(this.elements.productCategory, "/categories", "category_id", "category_name", "Chọn danh mục");
+        this.elements.productCategory.value = product.category_id ?? "";
+
+        await this.loadSelectData(this.elements.productRooms, "/rooms/filter", "room_id", "room_name", "Chọn phòng");
+        if (product.rooms && Array.isArray(product.rooms)) {
+          // Select multiple rooms
+          const roomIds = product.rooms.map(r => r.room_id.toString());
+          Array.from(this.elements.productRooms.options).forEach(option => {
+            if (roomIds.includes(option.value)) {
+              option.selected = true;
+            }
+          });
+        }
+
+        // Load dynamic attributes based on product's category and existing attributes
+        await this.loadCategoryAttributes(product.category_id, product.attributes);
+
+        // Display main image
+        if (product.main_image) {
+          this.elements.mainImagePreviewImg.src = product.main_image;
+          this.elements.mainImagePreviewContainer.style.display = "block";
+          this.elements.mainImageUploadZone.style.display = "none";
+          this.mainImageFile = null; // Ensure no new file is marked for upload unless selected
+        } else {
+          this.elements.mainImagePreviewImg.src = "";
+          this.elements.mainImagePreviewContainer.style.display = "none";
+          this.elements.mainImageUploadZone.style.display = "block";
+          this.mainImageFile = null;
+        }
+
+        // Populate variants
+        this.elements.variantsList.innerHTML = ""; // Clear template variant
+        if (product.variants && Array.isArray(product.variants)) {
+          product.variants.forEach((variant) => {
+            const clone = this.elements.variantTemplate.cloneNode(true);
+            clone.style.display = "block";
+            clone.removeAttribute("id");
+            clone.setAttribute("data-id", variant.variant_id);
+            clone.classList.add("variant-item");
+            clone.classList.add("is-expanded"); // Start expanded for existing variants
+
+            clone.querySelector(".variant-title").textContent = variant.color_name || `Biến thể ${variant.variant_id}`;
+            const colorSelect = clone.querySelector(".variant-color");
+            colorSelect.innerHTML = `<option value="">Chọn màu</option>` + allColors
+              .map((color) => `<option value="${color.color_id}" ${color.color_id == variant.color_id ? "selected" : ""}>${color.color_name}</option>`)
+              .join("");
+            colorSelect.value = variant.color_id;
+            clone.querySelector(".variant-slug").value = variant.slug || "";
+            clone.querySelector(".variant-quantity").value = variant.quantity ?? 0;
+            clone.querySelector(".variant-price").value = variant.price ?? 0;
+            clone.querySelector(".variant-sale-price").value = variant.price_sale ?? 0;
+
+            // Store variant data directly on the DOM element for easier access during save
+            clone.variantData = {
+              variant_id: variant.variant_id, // Keep original ID
+              color_id: variant.color_id,
+              variant_slug: variant.slug || "",
+              quantity: variant.quantity,
+              price: variant.price ?? 0,
+              price_sale: variant.price_sale ?? 0,
+              list_image: Array.isArray(variant.list_image) ? variant.list_image : [],
+            };
+
+            this.elements.variantsList.appendChild(clone);
+            this.setupVariantEvents(clone);
+          });
+        }
+        console.log("[loadProductDetail] Product data successfully loaded and form populated.");
+
+      } catch (err) {
+        console.error("Lỗi load sản phẩm:", err);
+        showToast("Không thể tải sản phẩm", "danger");
+      }
+    }
+
+    extractPublicIdFromUrl(url) {
+      const matches = url.match(
+        /upload\/(?:v\d+\/)?([^\.]+)\.(jpg|jpeg|png|webp|gif)/
+      );
+      if (!matches || !matches[1]) return null;
+      return matches[1];
+    }
+
+    // --- Validation Logic ---
+    addValidationError(element, message) {
+      console.log(`[Validation] Adding error for element: ${element.id || element.className}, Message: "${message}"`);
+      element.classList.add("is-invalid");
+      let feedbackEl;
+
+      // Handle specific cases for elements not inside .form-group
+      if (element.id === "mainImageUpload") {
+        feedbackEl = element.nextElementSibling; // Might be a temporary feedback div
+        if (!feedbackEl || !feedbackEl.classList.contains("invalid-feedback")) {
+          feedbackEl = document.createElement("div");
+          feedbackEl.className = "invalid-feedback d-block";
+          element.parentNode.insertBefore(feedbackEl, element.nextSibling);
+        }
+      } else if (element.classList.contains("variant-image-grid")) {
+        feedbackEl = element.nextElementSibling; // Might be a temporary feedback div
+        if (!feedbackEl || !feedbackEl.classList.contains("invalid-feedback")) {
+          feedbackEl = document.createElement("div");
+          feedbackEl.className = "invalid-feedback d-block";
+          element.parentNode.insertBefore(feedbackEl, element.nextSibling);
+        }
+      } else {
+        feedbackEl = element.closest(".form-group")?.querySelector(".invalid-feedback");
+      }
+
+      if (feedbackEl) feedbackEl.textContent = message;
+      this.validationErrors.push({ element, message });
+      console.log("[Validation] Current validationErrors array:", this.validationErrors);
+    }
+
+    clearAllValidationErrors() {
+      console.log("[Validation] Clearing all validation errors.");
+      document.querySelectorAll(".is-invalid").forEach((el) => el.classList.remove("is-invalid"));
+      document.querySelectorAll(".invalid-feedback").forEach((el) => el.remove()); // Remove dynamic feedback divs
+      this.validationErrors = []; // Reset stored errors
+    }
+
+    // clearFieldError and showFieldError are now global functions, not class methods.
+    // They are called directly.
+
+    // --- Save Logic ---
+    async handleSave(e) {
+      e.preventDefault(); // Prevent default form submission
+      console.log("[Save] Save button clicked. Starting validation process.");
+      const originalButtonText = this.elements.saveButton.textContent;
+      this.elements.saveButton.textContent = "Đang lưu...";
+      this.elements.saveButton.disabled = true;
+      this.elements.saveButton.classList.add("btn-loading");
+
+      this.clearAllValidationErrors();
+      this.validationErrors = []; // Re-initialize for current validation run
+
+      // --- Client-side Validation ---
+      const name = this.elements.productName.value.trim();
+      const slugValue = this.elements.productSlug.value.trim() || generateSlug(name);
+      const status = parseInt(this.elements.productStatus.value);
+      const category_id = parseInt(this.elements.productCategory.value);
+      const room_ids = Array.from(this.elements.productRooms.selectedOptions).map(opt => parseInt(opt.value));
+      const description = this.elements.productDescription.value.trim();
+
+      if (!name) showFieldError(this.elements.productName, "Tên sản phẩm không được để trống.");
+      if (!slugValue) showFieldError(this.elements.productSlug, "Slug không được để trống.");
+      if (isNaN(status)) showFieldError(this.elements.productStatus, "Vui lòng chọn trạng thái.");
+      if (isNaN(category_id)) showFieldError(this.elements.productCategory, "Vui lòng chọn danh mục.");
+      if (!description) showFieldError(this.elements.productDescription, "Mô tả không được để trống.");
+      if (room_ids.length === 0) showFieldError(this.elements.productRooms, "Vui lòng chọn ít nhất một phòng.");
+
+      // Main Image Validation
+      const currentMainImageUrl = this.elements.mainImagePreviewImg.src;
+      console.log("[Save Validation] Current main image URL from DOM (before any new upload):", currentMainImageUrl);
+      console.log("[Save Validation] New main image file to upload (if any):", this.mainImageFile);
+
+      if (!this.mainImageFile && (!currentMainImageUrl || currentMainImageUrl.startsWith("data:image/"))) {
+        // If no new file is selected AND (there's no current image OR current image is a data URL (meaning it's a new image not yet uploaded))
+        // This implies a missing image if it's not a data URL (already uploaded) and no new file.
+        // The logic here needs to check if an image is *actually* present and valid, not just if a new file is selected.
+        // If mainImagePreviewImg.src is empty and mainImageFile is null, then it's truly missing.
+        // If mainImagePreviewImg.src is a valid http/https URL, it means an image is already present.
+        // If mainImagePreviewImg.src is a data:image/ URL, it means a new image was selected but not yet uploaded.
+        if (!currentMainImageUrl && !this.mainImageFile) { // No image at all
+          showFieldError(this.elements.mainImageUploadZone, "Ảnh chính sản phẩm là bắt buộc.");
+        } else if (currentMainImageUrl.startsWith("data:image/") && !this.mainImageFile) {
+          // This case should not happen if handleMainImageFileSelect correctly sets this.mainImageFile
+          // when a data:image is present. Re-evaluate if this.mainImageFile is always set for data:image
+          // For now, assume if it's data:image, it implies a new file is pending.
+          // If the user loads an image, then clears it, mainImageFile becomes null, and src becomes "".
+          // If src is data:image and mainImageFile is null, it's a bug in setting mainImageFile.
+          // For safety, if it's a data:image, we should assume it's pending upload.
+          // The actual check should be: is there a valid URL OR a pending file?
+          // If no valid URL AND no pending file, then it's missing.
+          // This is handled by the `finalMainImageUrl` logic below.
+        }
+      }
+
+
+      // Dynamic Attributes Validation
+      const dynamicAttributeInputs = this.elements.dynamicAttributesContainer.querySelectorAll(".dynamic-attribute");
+      const attributes = [];
+      let hasAttributeErrors = false;
+
+      const attributesMeta = await fetchAPI(`/categories/${category_id}`); // Re-fetch meta for validation
+      const attributesMetaMap = new Map(attributesMeta.map((attr) => [attr.attribute_id, attr]));
+
+      dynamicAttributeInputs.forEach((input) => {
+        const attribute_id = parseInt(input.dataset.attributeId);
+        const attrMeta = attributesMetaMap.get(attribute_id);
+
+        if (!attrMeta) {
+          console.warn(`Thuộc tính ID ${attribute_id} không tìm thấy metadata hoặc không thuộc danh mục này.`);
+          return;
+        }
+
+        const valueType = attrMeta.value_type;
+        let value = input.value.trim();
+        let material_id = null;
+
+        clearFieldError(input);
+
+        if (valueType === "material_id") {
+          material_id = value === "" ? null : parseInt(value);
+          value = null;
+        } else {
+          if (valueType === "number") {
+            value = value === "" ? null : parseFloat(value);
+          } else {
+            value = value === "" ? null : value;
+          }
+        }
+
+        if (attrMeta.is_required) {
+          if (valueType === "material_id") {
+            if (material_id === null) {
+              showFieldError(input, `"${attrMeta.attribute_name}" là bắt buộc.`);
+              hasAttributeErrors = true;
+            }
+          } else {
+            if (value === null || value === "") {
+              showFieldError(input, `"${attrMeta.attribute_name}" là bắt buộc.`);
+              hasAttributeErrors = true;
+            }
+          }
+        }
+
+        if (valueType === "number" && value !== null && isNaN(value)) {
+          showFieldError(input, `"${attrMeta.attribute_name}" phải là số hợp lệ.`);
+          hasAttributeErrors = true;
+        }
+
+        attributes.push({
+          attribute_id: attribute_id,
+          value: value,
+          material_id: material_id,
+        });
+      });
+      if (hasAttributeErrors) this.validationErrors.push({ element: this.elements.dynamicAttributesContainer, message: "Thông tin bổ sung không hợp lệ." });
+
+
+      // Variants Validation
+      const variantElements = Array.from(document.querySelectorAll("#variantsList .variant-item"));
+      let hasVariantValidationErrors = false;
+      const variantsData = []; // This will hold processed variant data for submission
+
+      if (variantElements.length === 0) {
+        showFieldError(this.elements.addVariantBtn, "Sản phẩm phải có ít nhất 1 biến thể!");
+      }
+
+      for (const variantEl of variantElements) {
+        let variantHasErrors = false;
+
+        const colorSelect = variantEl.querySelector(".variant-color");
+        const slugInput = variantEl.querySelector(".variant-slug");
+        const quantityInput = variantEl.querySelector(".variant-quantity");
+        const priceInput = variantEl.querySelector(".variant-price");
+        const salePriceInput = variantEl.querySelector(".variant-sale-price");
+        const imageGrid = variantEl.querySelector(".variant-image-grid");
+
+        // Clear previous variant-specific errors for this variant element
+        clearFieldError(colorSelect);
+        clearFieldError(slugInput);
+        clearFieldError(quantityInput);
+        clearFieldError(priceInput);
+        clearFieldError(salePriceInput);
+        clearFieldError(imageGrid);
+
+        const color_id = parseInt(colorSelect?.value);
+        const variantSlug = slugInput?.value.trim();
+        const quantity = parseInt(quantityInput?.value);
+        const price = parseFloat(priceInput?.value);
+        const price_sale = parseFloat(salePriceInput?.value);
+
+        if (isNaN(color_id) || color_id === 0) {
+          showFieldError(colorSelect, "Vui lòng chọn màu cho biến thể.");
+          variantHasErrors = true;
+        }
+        if (!variantSlug) {
+          showFieldError(slugInput, "Slug biến thể là bắt buộc.");
+          variantHasErrors = true;
+        }
+        if (isNaN(quantity) || quantity < 0) {
+          showFieldError(quantityInput, "Số lượng phải là số không âm.");
+          variantHasErrors = true;
+        }
+        if (isNaN(price) || price <= 0) {
+          showFieldError(priceInput, "Vui lòng nhập giá bán.");
+          variantHasErrors = true;
+        }
+        if (!isNaN(price_sale) && price_sale > price) {
+          showFieldError(salePriceInput, "Giá khuyến mãi không được lớn hơn giá bán.");
+          variantHasErrors = true;
+        }
+
+        const loadedImageBoxes = Array.from(variantEl.querySelectorAll(".variant-image-item.loaded"));
+        if (loadedImageBoxes.length === 0) {
+          showFieldError(imageGrid, "Cần ít nhất 1 ảnh cho biến thể.");
+          variantHasErrors = true;
+        }
+
+        if (variantHasErrors) {
+          hasVariantValidationErrors = true;
+          // Scroll to the first error in this variant
+          const firstInvalidInVariant = variantEl.querySelector(".is-invalid");
+          if (firstInvalidInVariant) {
+            firstInvalidInVariant.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+        } else {
+          // Collect image files/URLs for this variant
+          const list_image_urls = [];
+          const list_image_files_to_upload = [];
+
+          for (const box of loadedImageBoxes) {
+            const img = box.querySelector("img");
+            if (!img) continue;
+
+            const src = img.src;
+            if (box.dataset.isNew === "true" && box._file) { // New image uploaded in this session
+              list_image_files_to_upload.push(box._file);
+            } else if (src.startsWith("http")) { // Existing image from server
+              list_image_urls.push(src);
+            }
+          }
+
+          variantsData.push({
+            variant_id: variantEl.getAttribute("data-id"), // Will be "new" for new variants
+            color_id,
+            slug: variantSlug,
+            quantity,
+            price,
+            price_sale,
+            list_image: list_image_urls, // Existing URLs
+            list_image_files_to_upload: list_image_files_to_upload, // New files to upload
+          });
+        }
+      }
+
+      if (hasVariantValidationErrors) {
+        this.validationErrors.push({ element: this.elements.variantsList, message: "Có lỗi trong thông tin biến thể." });
+      }
+
+      // --- Check for any client-side validation errors ---
+      if (this.validationErrors.length > 0) {
+        console.warn("[Save] Client-side validation errors found.", this.validationErrors);
+        showToast("Vui lòng điền đầy đủ và chính xác các thông tin bắt buộc.", "danger");
+        const firstInvalid = document.querySelector(".is-invalid");
+        if (firstInvalid) {
+          firstInvalid.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+        this.elements.saveButton.textContent = originalButtonText;
+        this.elements.saveButton.disabled = false;
+        this.elements.saveButton.classList.remove("btn-loading");
+        return;
+      }
+
+      // --- Proceed with image uploads and API submission ---
+      console.log("[Save] Client-side validation passed. Proceeding with image uploads and API calls.");
+      let finalMainImageUrl = this.elements.mainImagePreviewImg.src || null; // Start with current displayed URL
+
+      try {
+        // Upload new main image if selected
+        if (this.mainImageFile) {
+          finalMainImageUrl = await uploadImage(this.mainImageFile, "SonaSpace/Product", "main");
+          if (!finalMainImageUrl) {
+            throw new Error("Không thể tải ảnh chính lên.");
+          }
+        }
+        // If main image was removed and no new one uploaded, finalMainImageUrl will be null
+        // If it was an existing image and not changed, finalMainImageUrl will still be its original URL
+
+        // Delete marked images from Cloudinary
+        if (this.removedImagesPublicIds.length > 0) {
+          for (const publicId of this.removedImagesPublicIds) {
+            try {
+              const res = await fetch(`${API_URL}/upload/${publicId}`, { method: "DELETE" });
+              if (!res.ok) {
+                const result = await res.json();
+                console.warn("❌ Lỗi xoá ảnh Cloudinary:", publicId, result.error || res.statusText);
+              } else {
+                console.log("🗑️ Đã xoá ảnh Cloudinary:", publicId);
+              }
+            } catch (err) {
+              console.error("❌ Lỗi kết nối khi xoá ảnh Cloudinary:", err);
+            }
+          }
+          this.removedImagesPublicIds = []; // Clear after processing
+        }
+
+        // Upload new variant images and prepare final variant data
+        const finalVariantsPayload = [];
+        for (const variantData of variantsData) {
+          const uploadedVariantImageUrls = [...variantData.list_image]; // Start with existing URLs
+
+          for (const file of variantData.list_image_files_to_upload) {
+            const url = await uploadImage(file, "SonaSpace/Product", "variant");
+            if (url) {
+              uploadedVariantImageUrls.push(url);
+            } else {
+              throw new Error(`Không thể tải ảnh biến thể ${file.name} lên.`);
+            }
+          }
+
+          finalVariantsPayload.push({
+            variant_id: variantData.variant_id === "new" ? undefined : variantData.variant_id, // Send undefined for new variants
+            color_id: variantData.color_id,
+            slug: variantData.slug,
+            quantity: variantData.quantity,
+            price: variantData.price,
+            price_sale: variantData.price_sale,
+            list_image: uploadedVariantImageUrls,
+          });
+        }
+        console.log("[Save] All images processed. Final variants payload:", finalVariantsPayload);
+
+
+        // Main Product Payload
+        const mainProductPayload = {
+          name: name,
+          slug: slugValue,
+          description: description,
+          category_id: category_id,
+          status: status,
+          main_image: finalMainImageUrl, // This will be null if removed and not replaced
+          room_ids: room_ids,
+          attributes: attributes,
+        };
+        console.log("[PRODUCT PAYLOAD] Main product data:", mainProductPayload);
+
+        // Update Main Product
+        const updateRes = await fetch(`${API_URL}/products/admin/${this.currentProductSlug}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(mainProductPayload),
+        });
+        const updateResult = await updateRes.json();
+
+        if (!updateRes.ok) {
+          console.error("[Save] Server responded with an error during main product update:", updateResult);
+          if (updateResult.errors && Array.isArray(updateResult.errors)) {
+            updateResult.errors.forEach((err) => {
+              let targetElement = null;
+              if (err.field === "name") targetElement = this.elements.productName;
+              else if (err.field === "slug") targetElement = this.elements.productSlug;
+              else if (err.field === "description") targetElement = this.elements.productDescription;
+              else if (err.field === "category_id") targetElement = this.elements.productCategory;
+              else if (err.field === "status") targetElement = this.elements.productStatus;
+              else if (err.field === "main_image") targetElement = this.elements.mainImageUploadZone;
+              else if (err.field === "room_ids") targetElement = this.elements.productRooms;
+              else if (err.field.startsWith("attributes[")) {
+                const attrIdMatch = err.field.match(/attributes\[(\d+)\](?:\.(.+))?/);
+                if (attrIdMatch) {
+                  const attrInput = document.getElementById(`attr-${attrIdMatch[1]}`);
+                  if (attrInput) targetElement = attrInput;
+                }
+              }
+              if (targetElement) {
+                showFieldError(targetElement, err.message); // Use global showFieldError
+              } else {
+                showToast(`Lỗi trường '${err.field}': ${err.message}`, "danger");
+              }
+            });
+            if (this.validationErrors.length > 0) {
+              const firstInvalid = document.querySelector(".is-invalid");
+              if (firstInvalid) {
+                firstInvalid.scrollIntoView({ behavior: "smooth", block: "center" });
+              }
+              let delay = 0;
+              for (const error of this.validationErrors) {
+                setTimeout(() => { showToast(error.message, "danger"); }, delay);
+                delay += 500;
+              }
+            }
+          } else {
+            showToast(updateResult.error || "Lỗi không xác định khi cập nhật sản phẩm.", "danger");
+          }
+          return; // Stop if main product update failed
+        }
+
+        showToast("Cập nhật thông tin sản phẩm thành công!", "success");
+
+        const productId = updateResult.product?.product_id || updateResult.product_id;
+        if (!productId) {
+          throw new Error("Không tìm thấy ID sản phẩm sau khi cập nhật.");
+        }
+
+        const allVariantElementsBeforeSave = Array.from(document.querySelectorAll("#variantsList .variant-item[data-id]"));
+        const currentVariantIdsInDom = new Set(Array.from(variantElements).map(el => el.getAttribute("data-id")).filter(id => id && id !== "new"));
+        const deletedVariantIds = allVariantElementsBeforeSave
+          .map(el => el.getAttribute("data-id"))
+          .filter(id => id && id !== "new" && !currentVariantIdsInDom.has(id));
+
+        for (const delId of deletedVariantIds) {
+          await this.deleteVariant(delId);
+        }
+
+        let allVariantsProcessedSuccessfully = true;
+        for (const variantPayload of finalVariantsPayload) {
+          if (variantPayload.variant_id) {
+            const updateSuccess = await this.updateVariant(variantPayload.variant_id, variantPayload);
+            if (!updateSuccess) allVariantsProcessedSuccessfully = false;
+          } else {
+            const createdVariant = await this.addVariant(productId, variantPayload);
+            if (!createdVariant || !createdVariant.variant_id) {
+              allVariantsProcessedSuccessfully = false;
+            } else {
+              const tempVariantEl = Array.from(document.querySelectorAll("#variantsList .variant-item[data-id='new']")).find(el => {
+                const color_id_dom = parseInt(el.querySelector(".variant-color")?.value);
+                const slug_dom = el.querySelector(".variant-slug")?.value.trim();
+                return color_id_dom === variantPayload.color_id && slug_dom === variantPayload.slug;
+              });
+              if (tempVariantEl) {
+                tempVariantEl.setAttribute("data-id", createdVariant.variant_id);
+              }
+            }
+          }
+        }
+
+        if (allVariantsProcessedSuccessfully) {
+          showToast("Tất cả biến thể đã được cập nhật thành công!", "success");
+        } else {
+          showToast("Có lỗi xảy ra khi cập nhật một hoặc nhiều biến thể. Vui lòng kiểm tra lại.", "danger");
+        }
+
+        // Ensure the main image display is correct after save
+        if (finalMainImageUrl) {
+          this.elements.mainImagePreviewImg.src = finalMainImageUrl;
+          this.elements.mainImagePreviewContainer.style.display = "block";
+          this.elements.mainImageUploadZone.style.display = "none";
+        } else {
+          this.elements.mainImagePreviewImg.src = "";
+          this.elements.mainImagePreviewContainer.style.display = "none";
+          this.elements.mainImageUploadZone.style.display = "block";
+        }
+
+
+        // Optional: Redirect after a short delay
+        // setTimeout(() => {
+        //     window.location.href = "/dashboard/products";
+        // }, 1500);
+
+      } catch (err) {
+        console.error("Lỗi khi lưu sản phẩm:", err);
+        showToast("Lỗi khi lưu sản phẩm: " + err.message, "danger");
+      } finally {
+        this.elements.saveButton.disabled = false;
+        this.elements.saveButton.textContent = originalButtonText;
+        this.elements.saveButton.classList.remove("btn-loading");
+      }
+    }
+
+    async deleteVariant(variantId) {
+      console.log(`[deleteVariant] Attempting to delete variant: ${variantId}`);
+      try {
+        const res = await fetch(`${API_URL}/variants/${variantId}`, {
+          method: "DELETE",
+        });
+        const result = await res.json();
+        if (!res.ok) {
+          showToast(`Xoá biến thể ${variantId} thất bại: ` + (result.error || ""), "danger");
+          console.error("Lỗi xoá biến thể:", result);
+          return false;
+        }
+        console.log("✅ Xoá biến thể thành công:", variantId);
+        return true;
+      } catch (err) {
+        console.error("❌ Lỗi khi gọi deleteVariant:", err);
+        showToast("Lỗi kết nối khi xoá biến thể", "danger");
+        return false;
+      }
+    }
+
+    async updateVariant(variantId, data) {
+      console.log(`[updateVariant] Attempting to update variant: ${variantId} with data:`, data);
+      try {
+        const res = await fetch(`${API_URL}/variants/${variantId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+        const result = await res.json();
+        if (!res.ok) {
+          console.error("❌ Lỗi cập nhật variant:", result);
+          showToast("Cập nhật biến thể thất bại", "danger");
+          return null;
+        }
+        console.log("✅ Cập nhật variant thành công:", result);
+        return result;
+      } catch (err) {
+        console.error("❌ Lỗi kết nối khi gọi updateVariant:", err);
+        showToast("Lỗi kết nối khi cập nhật biến thể", "danger");
+        return null;
+      }
+    }
+
+    async addVariant(productId, data) {
+      console.log("[ADD VARIANT PAYLOAD] for productId:", productId, "Data:", data);
+      try {
+        const res = await fetch(`${API_URL}/variants/${productId}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+        const result = await res.json();
+        if (!res.ok) {
+          console.error("❌ Lỗi tạo biến thể:", result);
+          showToast("Tạo biến thể thất bại", "danger");
+          return null;
+        }
+        console.log("✅ Tạo biến thể thành công:", result);
+        return result;
+      } catch (err) {
+        console.error("❌ Lỗi kết nối khi gọi addVariant:", err);
+        showToast("Lỗi kết nối khi tạo biến thể", "danger");
+        return null;
+      }
+    }
+  }
+
+  // Global helper functions (not part of the class, but used by it)
+  function showFieldError(element, message) {
+    if (!element) return;
+    element.classList.add("is-invalid");
+    let feedbackEl = element.nextElementSibling; // Try to find feedback as immediate sibling
+
+    // If not immediate sibling, look within the common parent (.form-infor or .form-group)
+    if (!feedbackEl || !feedbackEl.classList.contains("invalid-feedback")) {
+      const parentContainer = element.closest(".form-infor") || element.closest(".form-group");
+      if (parentContainer) {
+        feedbackEl = parentContainer.querySelector(".invalid-feedback");
+      }
+    }
+
+    // Special handling for variant-image-grid and mainImageUpload if feedback is external
+    if (!feedbackEl && (element.classList.contains("variant-image-grid") || element.id === "mainImageUpload")) {
+      let existingSiblingFeedback = element.nextElementSibling;
+      if (existingSiblingFeedback && existingSiblingFeedback.classList.contains("invalid-feedback")) {
+        feedbackEl = existingSiblingFeedback;
+      } else {
+        feedbackEl = document.createElement("div");
+        feedbackEl.className = "invalid-feedback d-block"; // d-block to ensure display
+        element.parentNode.insertBefore(feedbackEl, element.nextSibling);
+      }
+    }
+
+    if (feedbackEl) {
+      feedbackEl.textContent = message;
+      feedbackEl.style.display = "block"; // Ensure it displays
+    }
+  }
+
+  function clearFieldError(element) {
+    if (!element) return;
+    element.classList.remove("is-invalid");
+    let feedbackEl = element.nextElementSibling;
+
+    if (!feedbackEl || !feedbackEl.classList.contains("invalid-feedback")) {
+      const parentContainer = element.closest(".form-infor") || element.closest(".form-group");
+      if (parentContainer) {
+        feedbackEl = parentContainer.querySelector(".invalid-feedback");
+      }
+    }
+
+    // Special handling for variant-image-grid and mainImageUpload if feedback is external
+    if (element.classList.contains("variant-image-grid") || element.id === "mainImageUpload") {
+      let existingSiblingFeedback = element.nextElementSibling;
+      if (existingSiblingFeedback && existingSiblingFeedback.classList.contains("invalid-feedback")) {
+        existingSiblingFeedback.remove(); // Remove completely
+        return; // Exit after removal
+      }
+    }
+
+    if (feedbackEl) {
+      feedbackEl.textContent = "";
+      feedbackEl.style.display = "none"; // Hide it
+    }
+  }
+
+  // Initialize the form manager when the DOM is fully loaded
+  document.addEventListener("DOMContentLoaded", () => {
+    console.log("[DOMContentLoaded] Initializing ProductFormManager for Edit Product.");
+    const productForm = new ProductFormManager();
+    productForm.initializeForm();
+  });
+</script>

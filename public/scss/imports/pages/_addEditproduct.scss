@@ -1,4 +1,34 @@
-/* Product Add/Edit Form Styles */
+/* CSS để quản lý trạng thái đóng/mở của biến thể */
+// .variant-content {
+//   display: none;
+//   transition: max-height 0.3s ease-in-out;
+
+//   overflow: hidden;
+
+//   max-height: 0;
+// }
+
+// .variant-item.is-expanded .variant-content {
+//   /* Khi có lớp is-expanded, max-height sẽ được JS điều chỉnh để mở rộng */
+//   /* display: block; sẽ được JS thêm vào trước khi transition */
+// }
+
+
+// .btn-toggle-variant i.fa-chevron-up {
+//   display: none;
+
+// }
+
+// .variant-item.is-expanded .btn-toggle-variant i.fa-chevron-down {
+//   display: none;
+
+// }
+
+// .variant-item.is-expanded .btn-toggle-variant i.fa-chevron-up {
+//   display: inline-block;
+
+// }
+
 .add-product-container {
   display: flex;
   gap: 24px;
@@ -431,7 +461,6 @@ textarea.form-control {
   color: var(--primary-color);
 }
 
-/* Variant image grid (kết hợp với CSS đã ghi nhớ trước đó) */
 .variant-images {
   margin-top: 16px;
 }

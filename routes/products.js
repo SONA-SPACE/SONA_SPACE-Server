@@ -1238,7 +1238,6 @@ router.delete("/:slug", async (req, res) => {
     const variantIds = variants.map((v) => v.variant_id);
 
     if (variantIds.length > 0) {
-      yảy;
       const [orderItems] = await connection.query(
         `SELECT order_item_id FROM order_items WHERE variant_id IN (${variantIds
           .map(() => "?")

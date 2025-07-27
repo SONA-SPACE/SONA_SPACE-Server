@@ -21,9 +21,6 @@ async function verifyGoogleToken(token) {
     });
     const payload = ticket.getPayload();
 
-    // Có thể kiểm tra thêm, ví dụ:
-    // if (!payload.email_verified) throw new Error("Email Google chưa xác minh!");
-
     return payload;
   } catch (error) {
     console.error("verifyGoogleToken error:", error);
@@ -36,72 +33,6 @@ async function verifyGoogleToken(token) {
  * @desc    Đăng ký người dùng mới
  * @access  Public
  */
-// router.post("/register", async (req, res) => {
-//   try {
-//     const { email, password, full_name, phone, address } = req.body;
-
-//     const errors = {};
-
-//     // Validate cơ bản
-//     if (!email || !password || !full_name) {
-//       return res
-//         .status(400)
-//         .json({ error: "Vui lòng nhập đủ thông tin bắt buộc" });
-//     }
-
-//     // Kiểm tra email đã tồn tại
-//     const [emailCheck] = await db.query(
-//       "SELECT user_id FROM user WHERE user_gmail = ?",
-//       [email]
-//     );
-//     if (emailCheck.length > 0) {
-//       errors.email = "Email đã được sử dụng.";
-//     }
-
-//     // Kiểm tra số điện thoại đã tồn tại
-//     if (phone) {
-//       const [phoneCheck] = await db.query(
-//         "SELECT user_id FROM user WHERE user_number = ?",
-//         [phone]
-//       );
-//       if (phoneCheck.length > 0) {
-//         errors.phone = "Số điện thoại đã được sử dụng";
-//       }
-//     }
-
-//     // Nếu có lỗi, trả về
-//     if (Object.keys(errors).length > 0) {
-//       return res.status(400).json({ errors });
-//     }
-
-//     // Mã hóa mật khẩu
-//     const hashedPassword = await bcrypt.hash(password, 10);
-
-//     // Lưu người dùng
-//     const result = await db.query(
-//       "INSERT INTO user (user_gmail, user_password, user_name, user_number, user_address, user_role, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())",
-//       [email, hashedPassword, full_name, phone || null, address || null, "user"]
-//     );
-
-//     const userId = result[0].insertId;
-//     const token = generateToken(userId);
-
-//     res.status(201).json({
-//       message: "Đăng ký thành công",
-//       token,
-//       user: {
-//         id: userId,
-//         email,
-//         full_name,
-//         role: "user",
-//       },
-//     });
-//   } catch (error) {
-//     console.error("Lỗi đăng ký:", error);
-//     res.status(500).json({ error: "Lỗi máy chủ khi đăng ký" });
-//   }
-// });
-
 router.post("/register", async (req, res) => {
   try {
     const { email, password, full_name, phone, address } = req.body;
@@ -279,7 +210,6 @@ router.get("/verify-email", async (req, res) => {
 
     const user = users[0];
 
-    // ✅ Nếu email đã xác thực và token đã bị xóa => đã từng xác thực trước đó
     if (user.user_email_active && !user.user_token) {
       return res.redirect(
         `${frontendBaseUrl}/xac-thuc-email?status=success&message=` +
@@ -289,7 +219,6 @@ router.get("/verify-email", async (req, res) => {
       );
     }
 
-    // ⛔ Nếu token không khớp (đã từng dùng trước đó)
     if (user.user_token !== token) {
       return res.redirect(
         `${frontendBaseUrl}/xac-thuc-email?status=error&message=` +
@@ -299,7 +228,6 @@ router.get("/verify-email", async (req, res) => {
       );
     }
 
-    // ✅ Cập nhật xác thực thành công
     await db.query(
       `UPDATE user 
        SET user_email_active = 1, user_verified_at = NOW(), user_token = NULL
@@ -336,7 +264,7 @@ router.post("/google-login", async (req, res) => {
     const { email, name, picture } = payload;
 
     const [users] = await db.query(
-      "SELECT user_id, user_gmail, user_name, user_image, user_role, created_at FROM user WHERE user_gmail = ?",
+      "SELECT user_id, user_gmail, user_name, user_image, user_role, created_at, user_address, user_number FROM user WHERE user_gmail = ?",
       [email]
     );
 
@@ -366,6 +294,8 @@ router.post("/google-login", async (req, res) => {
         email: u.user_gmail,
         full_name: u.user_name,
         image: u.user_image,
+        address: u.user_address,
+        phone: u.user_number,
         role: u.user_role,
         created_at: u.created_at,
       };
@@ -618,8 +548,11 @@ router.post("/admin-login", async (req, res) => {
 
     const user = users[0];
 
-    // Kiểm tra role - chỉ cho phép admin đăng nhập
-    if (!user.user_role || user.user_role.toLowerCase() !== "admin") {
+    const allowedRoles = ["admin", "staff"];
+    if (
+      !user.user_role ||
+      !allowedRoles.includes(user.user_role.toLowerCase())
+    ) {
       return res
         .status(403)
         .json({ error: "Bạn không có quyền truy cập vào trang quản trị" });
@@ -651,7 +584,7 @@ router.post("/admin-login", async (req, res) => {
     const token = jwt.sign(
       {
         id: user.user_id,
-        role: "admin",
+        role: user.user_role.toLowerCase(),
       },
       JWT_SECRET,
       { expiresIn: "24h" }

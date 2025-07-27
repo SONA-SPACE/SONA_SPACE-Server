@@ -558,6 +558,7 @@ router.post("/", verifyToken, async (req, res) => {
     const {
       order_id,
       order_total,
+      order_total_final,
       method,
       amount,
       order_hash,
@@ -652,7 +653,7 @@ router.post("/", verifyToken, async (req, res) => {
           defaultPhone,
           finalNumber2,
           order_total,
-          order_total,
+          order_total_final,
           shipping_fee,
           order_discount,
           "PENDING",
@@ -717,6 +718,48 @@ router.post("/", verifyToken, async (req, res) => {
         [orderId]
       );
 
+      if ((couponcode_id || coupon_code) && user_id) {
+        let couponcodeId = couponcode_id || null;
+        let coupon = null;
+
+        if (!couponcodeId && coupon_code) {
+          const [[result]] = await db.query(
+            `SELECT * FROM couponcode WHERE code = ?`,
+            [coupon_code]
+          );
+          if (result) {
+            couponcodeId = result.couponcode_id;
+            coupon = result;
+          }
+        }
+
+        if (couponcodeId && !coupon) {
+          const [[result2]] = await db.query(
+            `SELECT * FROM couponcode WHERE couponcode_id = ?`,
+            [couponcodeId]
+          );
+          coupon = result2;
+        }
+
+        // Nếu tìm thấy coupon và còn lượt
+        if (coupon && coupon.used > 0) {
+          // Trừ lượt sử dụng
+          await db.query(
+            'UPDATE couponcode SET used = used - 1 WHERE couponcode_id = ? AND used > 0',
+            [coupon.couponcode_id]
+          );
+
+          // Ghi nhận vào user_has_coupon
+          await db.query(`
+      INSERT INTO user_has_coupon (user_id, couponcode_id, status)
+      VALUES (?, ?, 1)
+      ON DUPLICATE KEY UPDATE status = 1
+    `, [user_id, coupon.couponcode_id]);
+        }
+      }
+
+
+
       // Gửi email xác nhận
       const emailData = {
         name: orderNameNew || defaultName,
@@ -766,14 +809,15 @@ router.post("/", verifyToken, async (req, res) => {
       const orderId = req.body.order_id || `SNA-${Date.now()}`;
 
       const requestId = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-      const redirectUrl = `https://6c86ca6c5a20.ngrok-free.app/api/orders/redirect/momo`;
-      const ipnUrl = `https://6c86ca6c5a20.ngrok-free.app/api/orders/payment/momo`;
+      const redirectUrl = `https://bd1e38c0949f.ngrok-free.app/api/orders/redirect/momo`;
+      const ipnUrl = `https://bd1e38c0949f.ngrok-free.app/api/orders/payment/momo`;
       const orderInfo = "Thanh toán đơn hàng";
 
       const extraData = Buffer.from(JSON.stringify({
         order_id: orderId,
         user_id,
         order_total,
+        order_total_final,
         order_address_new,
         order_number2,
         order_name_new,
@@ -922,6 +966,7 @@ router.post("/payment/momo", async (req, res) => {
     const {
       user_id,
       order_total,
+      order_total_final,
       cart_items = [],
       order_name_new,
       order_email_new,
@@ -974,7 +1019,7 @@ router.post("/payment/momo", async (req, res) => {
       defaultPhone,
       finalPhone,
       order_total,
-      order_total,
+      order_total_final,
       shipping_fee,
       order_discount,
       "PENDING",
@@ -1036,6 +1081,46 @@ router.post("/payment/momo", async (req, res) => {
       INSERT INTO order_status_log (order_id, from_status, to_status, trigger_by, step, created_at)
       VALUES (?, NULL, 'PAID', 'system', 'Khởi tạo đơn', NOW())
     `, [order_id]);
+
+    if ((couponcode_id || coupon_code) && user_id) {
+      let couponcodeId = couponcode_id || null;
+      let coupon = null;
+
+      if (!couponcodeId && coupon_code) {
+        const [[result]] = await db.query(
+          `SELECT * FROM couponcode WHERE code = ?`,
+          [coupon_code]
+        );
+        if (result) {
+          couponcodeId = result.couponcode_id;
+          coupon = result;
+        }
+      }
+
+      if (couponcodeId && !coupon) {
+        const [[result2]] = await db.query(
+          `SELECT * FROM couponcode WHERE couponcode_id = ?`,
+          [couponcodeId]
+        );
+        coupon = result2;
+      }
+
+      // Nếu tìm thấy coupon và còn lượt
+      if (coupon && coupon.used > 0) {
+        // Trừ lượt sử dụng
+        await db.query(
+          'UPDATE couponcode SET used = used - 1 WHERE couponcode_id = ? AND used > 0',
+          [coupon.couponcode_id]
+        );
+
+        // Ghi nhận vào user_has_coupon
+        await db.query(`
+      INSERT INTO user_has_coupon (user_id, couponcode_id, status)
+      VALUES (?, ?, 1)
+      ON DUPLICATE KEY UPDATE status = 1
+    `, [user_id, coupon.couponcode_id]);
+      }
+    }
 
     // Gửi email xác nhận
     const emailData = {
@@ -1823,9 +1908,9 @@ router.post("/return/:orderHash", verifyToken, async (req, res) => {
     const isAdmin = req.user.role === 'admin';
 
     if (!reason) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Vui lòng cung cấp lý do trả hàng" 
+      return res.status(400).json({
+        success: false,
+        message: "Vui lòng cung cấp lý do trả hàng"
       });
     }
 
@@ -1840,25 +1925,25 @@ router.post("/return/:orderHash", verifyToken, async (req, res) => {
     );
 
     if (!order) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "Không tìm thấy đơn hàng" 
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy đơn hàng"
       });
     }
 
     // Kiểm tra quyền truy cập (chỉ admin hoặc chủ đơn hàng)
     if (!isAdmin && user_id !== order.user_id) {
-      return res.status(403).json({ 
-        success: false, 
-        message: "Bạn không có quyền trả lại đơn hàng này" 
+      return res.status(403).json({
+        success: false,
+        message: "Bạn không có quyền trả lại đơn hàng này"
       });
     }
 
     // Kiểm tra trạng thái đơn hàng (chỉ cho phép trả hàng khi đơn hàng đã hoàn thành)
     if (order.current_status !== 'SUCCESS') {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Chỉ có thể trả lại đơn hàng đã giao thành công" 
+      return res.status(400).json({
+        success: false,
+        message: "Chỉ có thể trả lại đơn hàng đã giao thành công"
       });
     }
 
@@ -1881,27 +1966,27 @@ router.post("/return/:orderHash", verifyToken, async (req, res) => {
       // Nếu có danh sách sản phẩm cụ thể được yêu cầu trả lại
       let itemsToReturn = orderItems;
       let totalRefundAmount = 0;
-      
+
       if (items && Array.isArray(items) && items.length > 0) {
         // Lọc ra các sản phẩm được yêu cầu trả lại
-        itemsToReturn = orderItems.filter(item => 
-          items.some(returnItem => 
-            returnItem.order_item_id === item.order_item_id && 
-            returnItem.quantity > 0 && 
+        itemsToReturn = orderItems.filter(item =>
+          items.some(returnItem =>
+            returnItem.order_item_id === item.order_item_id &&
+            returnItem.quantity > 0 &&
             returnItem.quantity <= item.quantity
           )
         );
-        
+
         if (itemsToReturn.length === 0) {
           throw new Error('Không tìm thấy sản phẩm hợp lệ để trả lại');
         }
-        
+
         // Tính tổng số tiền hoàn lại
         for (const item of itemsToReturn) {
           const returnItem = items.find(i => i.order_item_id === item.order_item_id);
           const returnQuantity = Math.min(returnItem.quantity, item.quantity);
           totalRefundAmount += returnQuantity * item.product_price;
-          
+
           // Khôi phục số lượng tồn kho
           if (item.product_id) {
             await connection.query(
@@ -1915,7 +2000,7 @@ router.post("/return/:orderHash", verifyToken, async (req, res) => {
         // Tính tổng số tiền hoàn lại
         for (const item of itemsToReturn) {
           totalRefundAmount += item.quantity * item.product_price;
-          
+
           // Khôi phục số lượng tồn kho
           if (item.product_id) {
             await connection.query(
@@ -1933,14 +2018,14 @@ router.post("/return/:orderHash", verifyToken, async (req, res) => {
         ) VALUES (?, ?, ?, 'REFUND', ?, 'PENDING', NOW())`,
         [order.order_id, user_id, reason, totalRefundAmount]
       );
-      
+
       const returnId = result.insertId;
-      
+
       // Lưu chi tiết sản phẩm trả lại
       for (const item of itemsToReturn) {
         const returnItem = items ? items.find(i => i.order_item_id === item.order_item_id) : item;
         const returnQuantity = returnItem ? returnItem.quantity : item.quantity;
-        
+
         if (returnQuantity > 0) {
           await connection.query(
             `INSERT INTO return_items (
@@ -1958,7 +2043,7 @@ router.post("/return/:orderHash", verifyToken, async (req, res) => {
            note = CONCAT(IFNULL(note, ''), ?) WHERE order_id = ?`,
           [isAdmin ? 'admin' : 'user', `\nĐơn hàng đã được trả lại. Lý do: ${reason}`, order.order_id]
         );
-        
+
         // Ghi log trạng thái
         await connection.query(
           `INSERT INTO order_status_log (order_id, from_status, to_status, trigger_by, step, created_at) 
@@ -1974,20 +2059,20 @@ router.post("/return/:orderHash", verifyToken, async (req, res) => {
           const [tables] = await connection.query(
             "SHOW TABLES LIKE 'notifications'"
           );
-          
+
           if (tables.length > 0) {
             // Lấy tên các cột trong bảng notifications
             const [columns] = await connection.query(
               "SHOW COLUMNS FROM notifications"
             );
-            
+
             const columnNames = columns.map(col => col.Field);
-            
+
             // Tìm admin để gửi thông báo
             const [[admin]] = await connection.query(
               "SELECT user_id FROM user WHERE role = 'admin' LIMIT 1"
             );
-            
+
             if (admin && columnNames.includes('user_id')) {
               await connection.query(
                 `INSERT INTO notifications (user_id, type, message, related_id, created_at, is_read)
@@ -2047,12 +2132,12 @@ router.get('/return/count', verifyToken, isAdmin, async (req, res) => {
   try {
     // Check if order_returns table exists
     let count = 0;
-    
+
     try {
       const [tables] = await db.query(
         "SHOW TABLES LIKE 'order_returns'"
       );
-      
+
       if (tables.length > 0) {
         // If the table exists, count the number of return requests
         const [result] = await db.query(
@@ -2074,7 +2159,7 @@ router.get('/return/count', verifyToken, isAdmin, async (req, res) => {
       );
       count = result[0].count;
     }
-    
+
     return res.status(200).json({
       success: true,
       count

@@ -35,14 +35,24 @@
                         <i class="fas fa-chevron-down"></i>
                     </div>
                 </div>
-                <div class="form-group">
+               
+            </div>
+
+            <div class="form-row">
+                 <div class="form-group">
                     <label for="voucherused">Lượt sử dụng</label>
                     <input type="number" id="voucherused" class="form-control" placeholder="Nhập số lượt sử dụng"
                         min="1" value="1" />
                 </div>
+                <div class="form-group">
+                    <label for="minOrder">Đơn hàng tối thiểu</label>
+                    <input type="number" id="minOrder" class="form-control"
+                        placeholder="Nhập giá trị tối thiểu (VND)" />
+                </div>
+
             </div>
 
-            <div class="form-row">
+             <div class="form-row">
                 <div class="form-group">
                     <label for="voucherflash">Flash sale</label>
                     <div class="select-wrapper">
@@ -64,13 +74,8 @@
                         <i class="fas fa-chevron-down"></i>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label for="minOrder">Đơn hàng tối thiểu</label>
-                    <input type="number" id="minOrder" class="form-control"
-                        placeholder="Nhập giá trị tối thiểu (VND)" />
-                </div>
-
             </div>
+
             <div class="form-row">
                 <div class="form-group">
                     <label for="applyToAll">Áp dụng cho:</label>
@@ -120,14 +125,18 @@
             .querySelector(".btn-save")
             .addEventListener("click", handlesavevoucher);
     });
+    document.querySelector(".btn-cancel").addEventListener("click", () => {
+    window.history.back();
+});
+
     document.getElementById("applyToAll").addEventListener("change", function () {
         const selected = this.value;
         document.getElementById("userIdInput").style.display = selected === "custom" ? "block" : "none";
     });
-    document.addEventListener("DOMContentLoaded", async () => {
-        await loadUserOptions();
-        document.querySelector(".btn-save").addEventListener("click", handlesavevoucher);
-    });
+    // document.addEventListener("DOMContentLoaded", async () => {
+    //     await loadUserOptions();
+    //     document.querySelector(".btn-save").addEventListener("click", handlesavevoucher);
+    // });
 
     async function handlesavevoucher() {
         const title = document.getElementById("vouchertitle").value.trim();
@@ -158,10 +167,27 @@
         saveBtn.disabled = true;
         saveBtn.innerText = "Đang lưu...";
 
-        if (!title || !code || isNaN(discount) || !exp_time) {
+        if (!title || !code || isNaN(discount) || !exp_time || !start_time || !description ) {
             showToast("Vui lòng điền đầy đủ thông tin", "danger");
             saveBtn.disabled = false;
             saveBtn.innerText = "Lưu";
+            return;
+        }
+        if (discount_type === "percentage" && (discount < 1 || discount > 100)) {
+            showToast("Giá giảm phần trăm phải từ 1% đến 100%", "danger");
+            saveBtn.disabled = false;
+            saveBtn.innerText = "Lưu";
+            return;
+        }
+
+        if (discount_type === "fixed" && discount < 1000) {
+            showToast("Giá giảm cố định phải lớn hơn hoặc bằng 1 VND", "danger");
+            saveBtn.disabled = false;
+            saveBtn.innerText = "Lưu";
+            return;
+        }
+        if (min_order < 0) {
+            showToast("Đơn hàng tối thiểu không được nhỏ hơn 0", "danger");
             return;
         }
 

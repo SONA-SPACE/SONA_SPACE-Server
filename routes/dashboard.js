@@ -376,6 +376,8 @@ router.get("/orders/detail/:id", isAdmin, async (req, res) => {
             return "Thất bại";
           case "CANCELLED":
             return "Đã hủy";
+          case "RETURN":
+            return "Đang hoàn trả";
           default:
             return status || "Chờ xác nhận";
         }

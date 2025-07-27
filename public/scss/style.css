@@ -5772,6 +5772,50 @@ textarea.form-control {
   border-radius: 50%;
   background-color: #FF9500;
 }
+.order-detail-page .order-header .order-status .status-item .status-value.return {
+  color: #fd7e14;
+}
+.order-detail-page .order-header .order-status .status-item .status-value.return::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #fd7e14;
+}
+.order-detail-page .order-header .order-status .status-item .status-value.pending {
+  color: #6c757d;
+}
+.order-detail-page .order-header .order-status .status-item .status-value.pending::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #6c757d;
+}
+.order-detail-page .order-header .order-status .status-item .status-value.failed {
+  color: #dc3545;
+}
+.order-detail-page .order-header .order-status .status-item .status-value.failed::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #dc3545;
+}
+.order-detail-page .order-header .order-status .status-item .status-value.cancelled {
+  color: #dc3545;
+}
+.order-detail-page .order-header .order-status .status-item .status-value.cancelled::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #dc3545;
+}
 .order-detail-page .order-header .order-status .status-item .status-value .dropdown-toggle {
   cursor: pointer;
   color: #FF9500;

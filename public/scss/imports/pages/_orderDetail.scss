@@ -100,6 +100,58 @@
                         }
                     }
 
+                    &.return {
+                        color: #fd7e14;
+
+                        &::before {
+                            content: '';
+                            display: inline-block;
+                            width: 8px;
+                            height: 8px;
+                            border-radius: 50%;
+                            background-color: #fd7e14;
+                        }
+                    }
+
+                    &.pending {
+                        color: #6c757d;
+
+                        &::before {
+                            content: '';
+                            display: inline-block;
+                            width: 8px;
+                            height: 8px;
+                            border-radius: 50%;
+                            background-color: #6c757d;
+                        }
+                    }
+
+                    &.failed {
+                        color: #dc3545;
+
+                        &::before {
+                            content: '';
+                            display: inline-block;
+                            width: 8px;
+                            height: 8px;
+                            border-radius: 50%;
+                            background-color: #dc3545;
+                        }
+                    }
+
+                    &.cancelled {
+                        color: #dc3545;
+
+                        &::before {
+                            content: '';
+                            display: inline-block;
+                            width: 8px;
+                            height: 8px;
+                            border-radius: 50%;
+                            background-color: #dc3545;
+                        }
+                    }
+
                     .dropdown-toggle {
                         cursor: pointer;
                         color: #FF9500;

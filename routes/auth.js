@@ -264,7 +264,7 @@ router.post("/google-login", async (req, res) => {
     const { email, name, picture } = payload;
 
     const [users] = await db.query(
-      "SELECT user_id, user_gmail, user_name, user_image, user_role, created_at FROM user WHERE user_gmail = ?",
+      "SELECT user_id, user_gmail, user_name, user_image, user_role, created_at, user_address, user_number FROM user WHERE user_gmail = ?",
       [email]
     );
 
@@ -294,6 +294,8 @@ router.post("/google-login", async (req, res) => {
         email: u.user_gmail,
         full_name: u.user_name,
         image: u.user_image,
+        address: u.user_address,
+        phone: u.user_number,
         role: u.user_role,
         created_at: u.created_at,
       };

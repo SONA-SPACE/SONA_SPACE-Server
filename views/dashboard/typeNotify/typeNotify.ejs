@@ -1,0 +1,139 @@
+<div class="room_page">
+    <div class="dashboard-header-row">
+        <h2 class="dashboard-title">Thông báo</h2>
+        <div class="action-buttons">
+            <button class="add-product-btn" onclick="window.location.href='/dashboard/typeNotify/addtypeNotify'">
+                <i class="fas fa-plus"></i> Thêm kiểu thông báo
+            </button>
+        </div>
+    </div>
+
+    <div class="filter-row">
+        <div class="search-container">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" class="search-input" placeholder="Tìm tiêu đề...">
+        </div>
+        <div class="results-info">
+            Hiển thị 0 thông báo
+        </div>
+    </div>
+
+    <div class="room-table-container">
+        <table class="room-table" id="notifyTable">
+            <thead>
+                <tr>
+                    <th>Kiểu thông báo</th>
+                    <th>Mô tả</th>
+                    <th>Trạng thái</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Dữ liệu sẽ được JS đổ vào -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const URL_API = "http://localhost:3501/api";
+
+        function getNotificationTypes() {
+            fetch(URL_API + "/typeNotify")
+                .then((res) => res.json())
+                .then((data) => {
+                    console.log(data);
+                    renderNotificationTypes(data);
+                })
+                .catch((err) => {
+                    console.error("Lỗi khi tải loại thông báo:", err);
+                    document.querySelector(".results-info").textContent = "Không thể tải dữ liệu.";
+                });
+        }
+
+        function renderNotificationTypes(list) {
+            const tableBody = document.querySelector("#notifyTable tbody");
+            tableBody.innerHTML = "";
+
+            list.forEach((item) => {
+                const isActive = item.is_active === 1 || item.is_active === true;
+                const statusText = isActive ? "Hiển thị" : "Ẩn";
+                const statusIcon = isActive ? "fa-eye" : "fa-eye-slash";
+                const statusClass = isActive ? "visible" : "hidden";
+
+                const row = document.createElement("tr");
+                row.innerHTML = `
+      <td>${item.type_code || "-"}</td>
+      <td>${item.description || "-"}</td>
+      <td>
+        <span class="status-indicator ${statusClass}">
+          <i class="fas ${statusIcon}"></i> ${statusText}
+        </span>
+      </td>
+      <td>
+        <div class="action-cell">
+          <button class="action-button edit" title="Chỉnh sửa"
+            onclick="window.location.href='/dashboard/typeNotify/edittypenotify/${item.id}'">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="action-button visibility" data-id="${item.id
+                    }" data-status="${statusClass}" title="${statusClass === "visible" ? "Ẩn voucher" : "Hiển thị voucher"
+                    }">
+                    <i class="fas ${statusClass === "visible" ? "fa-eye-slash" : "fa-eye"
+                    }"></i>
+                    </button>
+         <button class="action-button delete" data-id="${item.id}" data-typecode="${item.type_code}" title="Xóa">
+  <i class="fas fa-trash"></i>
+</button>
+
+        </div>
+      </td>
+    `;
+                tableBody.appendChild(row);
+            });
+
+            document.querySelector(".results-info").textContent = `Hiển thị ${list.length} loại thông báo`;
+
+            // Gắn sự kiện xóa
+            document.querySelectorAll(".action-button.delete").forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    const id = btn.getAttribute("data-id");
+                    const type_code = btn.getAttribute("data-typecode");
+                    deleteNotificationType(id, type_code);
+                });
+            });
+
+        }
+
+
+        function deleteNotificationType(id, type_code) {
+            if (!confirm(`Bạn có chắc chắn muốn xóa loại thông báo "${type_code}"?`)) return;
+            const token = localStorage.getItem("token");
+
+            fetch(`${URL_API}/typeNotify/${id}`, {
+                method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            })
+                .then((res) => res.json())
+                .then((data) => {
+                    if (data.error) {
+                        alert("Lỗi: " + data.error);
+                    } else {
+                        alert("Đã xóa loại thông báo.");
+                        getNotificationTypes();
+                    }
+                })
+                .catch((err) => {
+                    console.error("Lỗi khi xóa loại thông báo:", err);
+                    alert("Xảy ra lỗi khi xóa.");
+                });
+        }
+
+
+        getNotificationTypes();
+    });
+
+</script>

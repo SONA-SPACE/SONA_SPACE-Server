@@ -64,13 +64,23 @@ router.post("/", verifyToken, async (req, res) => {
   }
 });
 router.delete('/:id', verifyToken, isAdmin, async (req, res) => {
-  const { id } = req.params;
+  const id = Number(req.params.id);
+  if (isNaN(id)) return res.status(400).json({ error: 'ID không hợp lệ' });
+
   try {
+    // 1. Xóa bản ghi liên kết phụ thuộc (nếu có)
+    await db.query('DELETE FROM user_notifications WHERE notification_id = ?', [id]);
+
+    // 2. Xóa thông báo chính
     const [result] = await db.query('DELETE FROM notifications WHERE id = ?', [id]);
-    console.log("Delete result:", result);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Không tìm thấy thông báo để xóa' });
+    }
+
     res.json({ message: 'Xóa thông báo thành công' });
   } catch (error) {
-    console.error('Lỗi khi xóa:', error);
+    console.error('Lỗi khi xóa thông báo:', error);
     res.status(500).json({ error: 'Lỗi server khi xóa thông báo' });
   }
 });

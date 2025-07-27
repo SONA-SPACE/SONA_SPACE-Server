@@ -198,6 +198,29 @@ router.get("/notify/addNotify", (req, res) => {
   });
 });
 
+
+// notify type management
+router.get("/typeNotify", (req, res) => {
+  res.render("dashboard/typeNotify/typeNotify", {
+    title: "Orders Management",
+    layout: "layouts/dashboard",
+  });
+});
+
+router.get("/typeNotify/addtypeNotify", (req, res) => {
+  res.render("dashboard/typeNotify/addtypeNotify", {
+    title: "Sona Space - Quản lý kiểu thông báo",
+    layout: "layouts/dashboard",
+  });
+});
+
+router.get("/typeNotify/edittypeNotify/:id", (req, res) => {
+  res.render("dashboard/typeNotify/edittypeNotify", {
+    title: "Sona Space - Chỉnh sửa kỉểu thông báo",
+    layout: "layouts/dashboard",
+  });
+});
+
 // voucher management
 router.get("/voucher", (req, res) => {
   res.render("dashboard/voucher/voucher", {

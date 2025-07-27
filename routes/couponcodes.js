@@ -58,6 +58,8 @@ router.get('/user-has-coupon', verifyToken, async (req, res) => {
         uhc.couponcode_id,
         uhc.status,
         c.code,
+        c.used,
+        c.status AS couponStatus,
         c.title AS discount,
         c.discount_type,
         c.value_price,
@@ -81,9 +83,6 @@ router.get('/user-has-coupon', verifyToken, async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch user coupons' });
   }
 });
-
-
-
 
 router.get('/codes', verifyToken, async (req, res) => {
   try {
@@ -248,6 +247,7 @@ router.get('/:id', verifyToken, isAdmin, async (req, res) => {
  * @desc    Tạo mã giảm giá mới
  * @access  Private (Admin only)
  */
+
 router.post('/', verifyToken, isAdmin, async (req, res) => {
   try {
     const {
@@ -282,7 +282,18 @@ router.post('/', verifyToken, isAdmin, async (req, res) => {
     if (isNaN(value_price) || Number(value_price) <= 0) {
       return res.status(400).json({ error: 'Giá giảm không hợp lệ' });
     }
-
+if (discount_type === 'percentage') {
+  if (value_price < 1 || value_price > 100) {
+    return res.status(400).json({ error: 'Giá giảm phần trăm phải từ 1 đến 100' });
+  }
+} else if (discount_type === 'fixed') {
+  if (value_price < 1) {
+    return res.status(400).json({ error: 'Giá giảm cố định phải lớn hơn hoặc bằng 1 VND' });
+  }
+}
+if (min_order !== null && min_order !== undefined && (isNaN(min_order) || Number(min_order) < 0)) {
+  return res.status(400).json({ error: 'Giá trị đơn hàng tối thiểu không hợp lệ' });
+}
     const startDate = start_time ? new Date(start_time) : new Date();
     const endDate = new Date(exp_time);
     if (endDate <= startDate) {
@@ -599,13 +610,19 @@ router.delete('/:id', verifyToken, isAdmin, async (req, res) => {
     const [exist] = await db.query('SELECT * FROM couponcode WHERE couponcode_id = ?', [id]);
     if (!exist.length) return res.status(404).json({ error: 'Không tìm thấy giảm giá' });
 
+    // Xoá dữ liệu liên quan trước
+    await db.query('DELETE FROM user_has_coupon WHERE couponcode_id = ?', [id]);
+
+    // Sau đó xóa voucher
     await db.query('DELETE FROM couponcode WHERE couponcode_id = ?', [id]);
+
     res.json({ message: 'Xóa mã giảm giá thành công' });
   } catch (error) {
     console.error('Error deleting coupon code:', error);
     res.status(500).json({ error: 'Không xóa được mã giảm giá' });
   }
 });
+
 
 /**
  * @route   POST /api/couponcodes/validate
@@ -626,7 +643,7 @@ router.post('/validate', verifyToken, async (req, res) => {
     `, [code]);
 
     if (coupons.length === 0) {
-      return res.status(404).json({ error: 'Voucher không tồn tại hoặc đã hết lượt sử dụng' });
+      return res.status(404).json({ error: 'Voucher đã hết lượt sử dụng' });
     }
 
     const coupon = coupons[0];

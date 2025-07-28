@@ -1102,7 +1102,7 @@
             <option value="SUCCESS" ${order.current_status === 'SUCCESS' ? 'selected' : ''} ${(order.current_status !== 'SHIPPING' && order.current_status !== 'SUCCESS') ? 'disabled' : ''}>Giao hàng thành công</option>
             <option value="FAILED" ${order.current_status === 'FAILED' ? 'selected' : ''}>Thất bại</option>
             <option value="CANCELLED" ${order.current_status === 'CANCELLED' ? 'selected' : ''}>Đã hủy</option>
-            <option value="RETURN" ${order.current_status === 'RETURN' ? 'selected' : ''}>Đang hoàn trả</option>
+            <option value="RETURN" ${order.current_status === 'RETURN' ? 'selected' : ''}>Đã hoàn trả</option>
           </select>
         </td>
         <td>${paymentMethod}</td>

@@ -92,7 +92,7 @@ router.get("/material", (req, res) => {
 
 // Add product
 router.get("/material/add", (req, res) => {
-  res.render("dashboard/products/add", {
+  res.render("dashboard/material/add", {
     title: "Sona Space - Thêm Sản phẩm mới",
     layout: "layouts/dashboard",
   });
@@ -264,7 +264,7 @@ router.get("/orders/detail/:id", isAdmin, async (req, res) => {
       console.log(`Found ${items.length} items in database`);
       order.items = items;
     }
-    
+
     // Fetch payment method from payments table if not available in order
     if (!order.payment || !order.payment.length) {
       try {
@@ -273,77 +273,98 @@ router.get("/orders/detail/:id", isAdmin, async (req, res) => {
           `SELECT method, status, transaction_code, paid_at FROM payments WHERE order_id = ? ORDER BY created_at DESC LIMIT 1`,
           [orderId]
         );
-        
+
         if (paymentInfo) {
           order.payment = [paymentInfo];
           console.log(`Found payment info:`, paymentInfo);
         } else {
-          order.payment = [{
-            method: 'N/A',
-            status: 'PENDING',
-            transaction_code: null,
-            paid_at: null
-          }];
+          order.payment = [
+            {
+              method: "N/A",
+              status: "PENDING",
+              transaction_code: null,
+              paid_at: null,
+            },
+          ];
         }
       } catch (error) {
         console.error("Error fetching payment method:", error);
-        order.payment = [{
-          method: 'N/A',
-          status: 'PENDING',
-          transaction_code: null,
-          paid_at: null
-        }];
+        order.payment = [
+          {
+            method: "N/A",
+            status: "PENDING",
+            transaction_code: null,
+            paid_at: null,
+          },
+        ];
       }
     }
-    
-    console.log("Order payment before rendering:", JSON.stringify(order.payment));
-    console.log("Payment status before rendering:", order.payment && order.payment.length > 0 ? order.payment[0].status : 'No payment data');
-    
+
+    console.log(
+      "Order payment before rendering:",
+      JSON.stringify(order.payment)
+    );
+    console.log(
+      "Payment status before rendering:",
+      order.payment && order.payment.length > 0
+        ? order.payment[0].status
+        : "No payment data"
+    );
+
     // Define available payment methods for dropdown
-    const paymentMethods = ['COD', 'BANK_TRANSFER', 'VNPAY', 'MOMO', 'ZALOPAY'];
-    
+    const paymentMethods = ["COD", "BANK_TRANSFER", "VNPAY", "MOMO", "ZALOPAY"];
+
     // Process status logs to group by status type
     const statusLogs = order.status_logs || [];
-    
+
     // Group status logs by type
-    const paymentStatusLogs = statusLogs.filter(log => 
-      log.to_status === 'PENDING' || 
-      log.to_status === 'PROCESSING' || 
-      log.to_status === 'SUCCESS' || 
-      log.to_status === 'FAILED' || 
-      log.to_status === 'CANCELLED'
+    const paymentStatusLogs = statusLogs.filter(
+      (log) =>
+        log.to_status === "PENDING" ||
+        log.to_status === "PROCESSING" ||
+        log.to_status === "SUCCESS" ||
+        log.to_status === "FAILED" ||
+        log.to_status === "CANCELLED"
     );
-    
-    const orderStatusLogs = statusLogs.filter(log => 
-      log.to_status === 'PENDING' || 
-      log.to_status === 'CONFIRMED' || 
-      log.to_status === 'SHIPPING' || 
-      log.to_status === 'SUCCESS' || 
-      log.to_status === 'FAILED' || 
-      log.to_status === 'CANCELLED'
+
+    const orderStatusLogs = statusLogs.filter(
+      (log) =>
+        log.to_status === "PENDING" ||
+        log.to_status === "CONFIRMED" ||
+        log.to_status === "SHIPPING" ||
+        log.to_status === "SUCCESS" ||
+        log.to_status === "FAILED" ||
+        log.to_status === "CANCELLED"
     );
-    
-    const shippingStatusLogs = statusLogs.filter(log => 
-      log.to_status === 'pending' || 
-      log.to_status === 'picking_up' || 
-      log.to_status === 'picked_up' || 
-      log.to_status === 'in_transit' || 
-      log.to_status === 'delivered' || 
-      log.to_status === 'delivery_failed' || 
-      log.to_status === 'returning' || 
-      log.to_status === 'returned' || 
-      log.to_status === 'canceled'
+
+    const shippingStatusLogs = statusLogs.filter(
+      (log) =>
+        log.to_status === "pending" ||
+        log.to_status === "picking_up" ||
+        log.to_status === "picked_up" ||
+        log.to_status === "in_transit" ||
+        log.to_status === "delivered" ||
+        log.to_status === "delivery_failed" ||
+        log.to_status === "returning" ||
+        log.to_status === "returned" ||
+        log.to_status === "canceled"
     );
-    
+
     // Get the most recent log for each status type
-    const latestPaymentLog = paymentStatusLogs.length > 0 ? 
-      paymentStatusLogs[paymentStatusLogs.length - 1] : null;
-      
-    const latestOrderLog = orderStatusLogs.length > 0 ? 
-      orderStatusLogs[orderStatusLogs.length - 1] : null;
-      
-    const latestShippingLog = shippingStatusLogs.length > 0 ? 
-      shippingStatusLogs[shippingStatusLogs.length - 1] : null;
+    const latestPaymentLog =
+      paymentStatusLogs.length > 0
+        ? paymentStatusLogs[paymentStatusLogs.length - 1]
+        : null;
+
+    const latestOrderLog =
+      orderStatusLogs.length > 0
+        ? orderStatusLogs[orderStatusLogs.length - 1]
+        : null;
+
+    const latestShippingLog =
+      shippingStatusLogs.length > 0
+        ? shippingStatusLogs[shippingStatusLogs.length - 1]
+        : null;
 
     // Helper functions for template
     const helpers = {
@@ -462,22 +483,22 @@ router.get("/orders/detail/:id", isAdmin, async (req, res) => {
         }
       },
       formatDateTime: (dateTimeStr) => {
-        if (!dateTimeStr) return '';
+        if (!dateTimeStr) return "";
         try {
           const date = new Date(dateTimeStr);
-          return date.toLocaleString('vi-VN', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
+          return date.toLocaleString("vi-VN", {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
           });
         } catch (error) {
           console.error("Error formatting date:", error);
           return dateTimeStr;
         }
-      }
+      },
     };
 
     console.log("Rendering order detail template with data");
@@ -493,7 +514,7 @@ router.get("/orders/detail/:id", isAdmin, async (req, res) => {
         shipping: shippingStatusLogs,
         latestPayment: latestPaymentLog,
         latestOrder: latestOrderLog,
-        latestShipping: latestShippingLog
+        latestShipping: latestShippingLog,
       },
       mapPaymentStatus: helpers.mapPaymentStatus,
       mapStatus: helpers.mapStatus,
@@ -501,14 +522,14 @@ router.get("/orders/detail/:id", isAdmin, async (req, res) => {
       mapShippingStatusClass: helpers.mapShippingStatusClass,
       mapShippingStatusIcon: helpers.mapShippingStatusIcon,
       formatPrice: helpers.formatPrice,
-      formatDateTime: helpers.formatDateTime
+      formatDateTime: helpers.formatDateTime,
     });
   } catch (error) {
     console.error("Error loading order details:", error);
     res.status(500).render("error", {
       message: "Không thể tải thông tin đơn hàng",
       error: { status: 500, stack: error.stack },
-      layout: "layouts/dashboard"
+      layout: "layouts/dashboard",
     });
   }
 });

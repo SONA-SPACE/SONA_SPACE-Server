@@ -1,0 +1,129 @@
+<div class="dashboard-header-row">
+    <h2 class="dashboard-title">Sửa loại thông báo</h2>
+</div>
+
+<div class="edit-notification-container">
+    <div class="form-section">
+        <div class="form-group">
+            <label for="typeCode">Mã loại thông báo</label>
+            <input type="text" id="typeCode" class="form-control" />
+        </div>
+        <div class="form-group">
+            <label for="description">Mô tả</label>
+            <input type="text" id="description" class="form-control" />
+        </div>
+        <div class="form-group">
+            <label for="isActive">Trạng thái</label>
+            <select id="isActive" class="form-control">
+                <option value="1">Hiển thị</option>
+                <option value="0">Ẩn</option>
+            </select>
+        </div>
+
+        <div class="form-actions">
+            <button type="button" class="btn btn-cancel" onclick="window.history.back()">Hủy</button>
+            <button type="button" class="btn btn-save">Lưu</button>
+        </div>
+    </div>
+</div>
+<script>
+    let notifyTypeId = null;
+
+    document.addEventListener("DOMContentLoaded", async () => {
+        const urlParts = window.location.pathname.split("/");
+        notifyTypeId = urlParts[urlParts.length - 1];
+
+        await loadNotificationType(notifyTypeId);
+        document.querySelector(".btn-save").addEventListener("click", handleUpdateNotificationType);
+    });
+document.querySelector(".btn-cancel").addEventListener("click", () => {
+    window.history.back();
+});
+
+   async function loadNotificationType(id) {
+    try {
+        const res = await fetch(`http://localhost:3501/api/typeNotify/${id}`, {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+        });
+
+        const data = await res.json();
+
+        if (data && !data.error) {
+            document.getElementById("typeCode").value = data.type_code || "";
+            document.getElementById("description").value = data.description || "";
+            document.getElementById("isActive").value = data.is_active ? "1" : "0";
+        } else {
+            showToast("Không tìm thấy dữ liệu loại thông báo", "danger");
+        }
+    } catch (err) {
+        console.error("Lỗi khi tải loại thông báo:", err);
+        showToast("Lỗi máy chủ", "danger");
+    }
+}
+
+
+    async function handleUpdateNotificationType() {
+        const type_code = document.getElementById("typeCode").value.trim();
+        const description = document.getElementById("description").value.trim();
+        const is_active = parseInt(document.getElementById("isActive").value);
+
+        if (!type_code || !description) {
+            showToast("Vui lòng điền đầy đủ thông tin", "danger");
+            return;
+        }
+
+        const payload = {
+            type_code,
+            description,
+            is_active,
+        };
+
+        try {
+            const res = await fetch(`http://localhost:3501/api/typeNotify/${notifyTypeId}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                },
+                body: JSON.stringify(payload),
+            });
+
+            const data = await res.json();
+
+            if (data.error) {
+                showToast(data.error, "danger");
+            } else {
+                showToast("Cập nhật thành công", "success");
+                setTimeout(() => window.location.href = "/dashboard/typeNotify", 1000);
+            }
+        } catch (err) {
+            console.error("Lỗi khi cập nhật loại thông báo:", err);
+            showToast("Lỗi máy chủ", "danger");
+        }
+    }
+
+    function showToast(message, type = "success") {
+        let toastContainer = document.getElementById("toastContainer");
+        if (!toastContainer) {
+            toastContainer = document.createElement("div");
+            toastContainer.id = "toastContainer";
+            toastContainer.className = "position-fixed top-0 end-0 p-3";
+            toastContainer.style.zIndex = "1050";
+            document.body.appendChild(toastContainer);
+        }
+
+        const toast = document.createElement("div");
+        toast.className = `toast align-items-center text-white bg-${type} border-0`;
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>`;
+        toastContainer.appendChild(toast);
+
+        new bootstrap.Toast(toast, { delay: 4000 }).show();
+        toast.addEventListener("hidden.bs.toast", () => toast.remove());
+    }
+</script>

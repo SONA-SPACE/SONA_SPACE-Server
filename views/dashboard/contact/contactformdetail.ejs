@@ -26,7 +26,6 @@
             <option value="IN_PROGRESS">Đang xử lý</option>
             <option value="RESOLVED">Đã xử lý</option>
             <option value="REJECTED">Từ chối</option>
-            <option value="CLOSED">Đã đóng</option>
           </select>
         </div>
       </div>
@@ -62,15 +61,6 @@
 
       <div class="form-row">
         <div class="form-group">
-          <label for="room_name">Không gian thiết kế</label>
-          <input
-            type="text"
-            id="room_name"
-            class="form-control"
-            placeholder="Ví dụ: phòng khách, phòng ngủ"
-          />
-        </div>
-        <div class="form-group">
           <label for="phone">Số điện thoại</label>
           <input
             type="text"
@@ -79,9 +69,6 @@
             placeholder="Ví dụ: 0909090909"
           />
         </div>
-      </div>
-
-      <div class="form-row">
         <div class="form-group">
           <label for="budget">Ngân sách của khách hàng</label>
           <input
@@ -91,6 +78,9 @@
             placeholder="Chưa bàn giao"
           />
         </div>
+      </div>
+
+      <div class="form-row">
         <div class="form-group">
           <label for="design_fee">Chi phí thiết kế</label>
           <input
@@ -100,6 +90,27 @@
             placeholder="Chưa bàn giao"
           />
         </div>
+        <div class="form-group">
+          <label for="design_deposits">Chi phí thu trước ( Tự động )</label>
+          <input
+            type="text"
+            id="design_deposits"
+            class="form-control"
+            readonly
+            style="pointer-events: none"
+            placeholder="Chưa bàn giao"
+          />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="room_name">Không gian thiết kế</label>
+        <input
+          type="text"
+          id="room_name"
+          class="form-control"
+          placeholder="Ví dụ: phòng khách, phòng ngủ"
+        />
       </div>
 
       <div class="form-row">
@@ -359,47 +370,72 @@
           "first_image_drop_area"
         ).innerHTML = `<img src="${selectedOption.dataset.image}" alt="${selectedOption.textContent}" style="height: 30%; width: 30%;">`;
       });
+
+    const designFeeInput = document.getElementById("design_fee");
+    const designDepositsInput = document.getElementById("design_deposits");
+
+    function handleDesignFeeInput(e) {
+      // Lấy số, bỏ dấu chấm
+      let raw = e.target.value.replace(/\./g, "").replace(/[^0-9]/g, "");
+      if (!raw) {
+        designFeeInput.value = "";
+        designDepositsInput.value = "";
+        return;
+      }
+
+      // Hiển thị lại design_fee theo dạng tiền Việt
+      designFeeInput.value = raw.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+
+      // Tính 30% và hiển thị vào design_deposits
+      const deposit = Math.floor(Number(raw) * 0.3);
+      designDepositsInput.value = deposit
+        .toString()
+        .replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    }
+
+    // Gắn sự kiện vào input design_fee
+    designFeeInput.addEventListener("input", handleDesignFeeInput);
   });
 
-  function loadDesignDetails() {
-    fetch(`/api/contact-form-design/${id}/details`)
-      .then((res) => res.json())
-      .then((details) => {
-        const tbody = document.getElementById("design-products-tbody");
-        tbody.innerHTML = "";
-        total_product_price = 0;
-        details.forEach((item) => {
-          const row = document.createElement("tr");
-          row.dataset.id = item.contact_form_design_detail_id;
-          row.innerHTML = `
-            <td style="white-space: nowrap; min-width: 100px;">
-              <div class="product-image-container">
-                <img src="${item.first_image}" alt="${
-            item.product_name
-          }" style="width: 80px; height: 35px;">
-              </div>
-            </td>
-            <td style="white-space: nowrap;">${item.product_name}</td>
-            <td style="white-space: nowrap;">${item.quantity}</td>
-            <td style="white-space: nowrap;">${formatCurrency(
-              Number(item.unit_price)
-            )}</td>
-            <td style="white-space: nowrap;">${formatCurrency(
-              Number(item.total_price)
-            )}</td>
-            <td><button class="btn-remove-product" onclick="handleRemoveProduct(${
-              item.variant_id
-            })"><i class="fas fa-trash-alt"></i></button></td>
-          `;
-          tbody.appendChild(row);
-          total_product_price += Number(item.total_price) || 0;
-        });
-        document.getElementById("total-product-price").textContent =
-          total_product_price > 0
-            ? formatCurrency(total_product_price)
-            : "0 VNĐ";
-        updateTotalPrice();
+  async function loadDesignDetails() {
+    const res = await fetch(`/api/contact-form-design/${id}/details`);
+    const data = await res.json();
+    if (res.ok) {
+      const tbody = document.getElementById("design-products-tbody");
+      tbody.innerHTML = "";
+      total_product_price = 0;
+      data.forEach((item) => {
+        const row = document.createElement("tr");
+        row.dataset.id = item.contact_form_design_detail_id;
+        row.innerHTML = `
+          <td style="white-space: nowrap; min-width: 100px;">
+            <div class="product-image-container">
+              <img src="${item.first_image}" alt="${
+          item.product_name
+        }" style="width: 80px; height: 35px;">
+            </div>
+          </td>
+          <td style="white-space: nowrap;">${item.product_name}</td>
+          <td style="white-space: nowrap;">${item.quantity}</td>
+          <td style="white-space: nowrap;">${formatCurrency(
+            Number(item.unit_price)
+          )}</td>
+          <td style="white-space: nowrap;">${formatCurrency(
+            Number(item.total_price)
+          )}</td>
+          <td><button class="btn-remove-product" onclick="handleRemoveProduct(${
+            item.variant_id
+          })"><i class="fas fa-trash-alt"></i></button></td>
+        `;
+        tbody.appendChild(row);
+        total_product_price += Number(item.total_price) || 0;
       });
+      document.getElementById("total-product-price").textContent =
+        total_product_price > 0 ? formatCurrency(total_product_price) : "0 VNĐ";
+      updateTotalPrice();
+    } else {
+      showToast(data.error || "Có lỗi xảy ra", "danger");
+    }
   }
 
   async function handleAddProduct() {
@@ -467,7 +503,6 @@
     fetch(`/api/contact-form-design/${id}`)
       .then((res) => res.json())
       .then((data) => {
-        console.log(data);
         design_fee = data.design_fee || 0;
         document.getElementById("design_fee_text").innerHTML = data.design_fee
           ? formatCurrency(Number(data.design_fee))
@@ -488,6 +523,15 @@
         document.getElementById("design_fee").value = data.design_fee
           ? Number(data.design_fee).toLocaleString("vi-VN")
           : "";
+        document.getElementById("design_deposits").value = data.design_deposits
+          ? Number(data.design_deposits).toLocaleString("vi-VN")
+          : "";
+        document
+          .getElementById("design_deposits")
+          .addEventListener("keydown", (e) => e.preventDefault());
+        document
+          .getElementById("design_deposits")
+          .addEventListener("paste", (e) => e.preventDefault());
         document.getElementById("design_description").value =
           data.design_description;
         document.getElementById("require_design").value = data.require_design;
@@ -510,7 +554,10 @@
   async function handleUpdate() {
     const user_id = document.getElementById("staff_name").value;
     if (user_id === "") {
-      showToast("Vui lòng chọn nhân viên thực hiện trước khi chuyển trạng thái", "danger");
+      showToast(
+        "Vui lòng chọn nhân viên thực hiện trước khi chuyển trạng thái",
+        "danger"
+      );
       return;
     }
     const name = document.getElementById("name").value;
@@ -526,6 +573,12 @@
     const design_fee = Number(
       document
         .getElementById("design_fee")
+        .value.replace(/,/g, "")
+        .replace(/\./g, "")
+    );
+    const design_deposits = Number(
+      document
+        .getElementById("design_deposits")
         .value.replace(/,/g, "")
         .replace(/\./g, "")
     );
@@ -548,6 +601,7 @@
         phone,
         budget,
         design_fee,
+        design_deposits,
         design_description,
         require_design,
         style_design,

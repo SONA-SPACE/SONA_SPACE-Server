@@ -23,19 +23,16 @@
             font-weight: 500;
             font-size: 13px;
             &.status-pending {
-              color: var(--primary-color);
+              color: $warning-cl;
             }
-            &.status-in-progress {
-              color: var(--warning-color);
+            &.status-in_progress {
+              color: $info-cl;
             }
             &.status-resolved {
-              color: var(--success-color);
+              color: $success-cl;
             }
             &.status-rejected {
-              color: var(--danger-color);
-            }
-            &.status-closed {
-              color: var(--text-secondary);
+              color: $error-cl;
             }
           }
         }

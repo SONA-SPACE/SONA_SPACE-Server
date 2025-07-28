@@ -160,27 +160,22 @@
 .status-indicator {
   &.PENDING {
     background-color: rgba(255, 193, 7, 0.1);
-    color: #ffc107;
+    color: $warning-cl;
   }
 
   &.REJECTED {
     background-color: rgba(255, 0, 0, 0.1);
-    color: #ff0000;
+    color: $error-cl;
   }
 
   &.IN_PROGRESS {
     background-color: rgba(23, 162, 184, 0.1);
-    color: #17a2b8;
+    color: $info-cl;
   }
 
   &.RESOLVED {
     background-color: rgba(40, 167, 69, 0.1);
-    color: #28a745;
-  }
-
-  &.CLOSED {
-    background-color: rgba(108, 117, 125, 0.1);
-    color: #6c757d;
+    color: $success-cl;
   }
 }
 

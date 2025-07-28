@@ -77,6 +77,149 @@
   .filter-dropdown .filter-item:hover {
     background-color: #f5f5f5;
   }
+
+  /* Return status badge styles */
+  .return-status.badge {
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-weight: 500;
+  }
+
+  .badge-warning {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+  }
+
+  .badge-info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
+  }
+
+  .badge-success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+  }
+
+  .badge-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+  }
+
+  .badge-primary {
+    background-color: #cce7ff;
+    color: #004085;
+    border: 1px solid #a6d5fa;
+  }
+
+  .badge-secondary {
+    background-color: #e2e3e5;
+    color: #383d41;
+    border: 1px solid #c6c8ca;
+  }
+
+  /* Return status select dropdown styles */
+  .return-status-select {
+    width: 100%;
+    min-width: 180px;
+    padding: 6px 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 12px;
+    background-color: #fff;
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+  }
+
+  .return-status-select:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  }
+
+  .return-status-select:hover {
+    border-color: #bbb;
+  }
+
+  .return-status-select option {
+    padding: 4px 8px;
+  }
+
+  .return-status-select option:disabled {
+    background-color: #f5f5f5;
+    color: #999;
+  }
+
+  /* Order status select dropdown styles */
+  .order-status-select {
+    width: 100%;
+    min-width: 150px;
+    padding: 6px 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    background-color: #fff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .order-status-select:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  }
+
+  .order-status-select:hover {
+    border-color: #bbb;
+  }
+
+  /* Order status colors based on current status */
+  .order-status-select[data-current-status="PENDING"] {
+    background-color: #fff3cd;
+    color: #856404;
+    border-color: #ffeaa7;
+  }
+
+  .order-status-select[data-current-status="CONFIRMED"] {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border-color: #bee5eb;
+  }
+
+  .order-status-select[data-current-status="SHIPPING"] {
+    background-color: #cce7ff;
+    color: #004085;
+    border-color: #a6d5fa;
+  }
+
+  .order-status-select[data-current-status="SUCCESS"] {
+    background-color: #d4edda;
+    color: #155724;
+    border-color: #c3e6cb;
+  }
+
+  .order-status-select[data-current-status="FAILED"] {
+    background-color: #f8d7da;
+    color: #721c24;
+    border-color: #f5c6cb;
+  }
+
+  .order-status-select[data-current-status="CANCELLED"] {
+    background-color: #e2e3e5;
+    color: #383d41;
+    border-color: #c6c8ca;
+  }
+
+  .order-status-select[data-current-status="RETURN"] {
+    background-color: #fde2e4;
+    color: #fd7e14;
+    border-color: #fd7e14;
+  }
 </style>
 
 <!-- Trang quản lý đơn hàng -->
@@ -207,16 +350,17 @@
                   </div>
                 </th>
                 <th class="filterable">
-                  Vận chuyển
+                  Hoàn trả ĐH
                   <div class="header-filter">
                     <i class="fas fa-chevron-down filter-icon"></i>
                     <div class="filter-dropdown">
-                      <a class="filter-item" href="#" data-sort="shipping-pending">Chờ lấy hàng</a>
-                      <a class="filter-item" href="#" data-sort="shipping-transit">Đang vận chuyển</a>
-                      <a class="filter-item" href="#" data-sort="shipping-delivered">Đã giao hàng</a>
-                      <a class="filter-item" href="#" data-sort="shipping-failed">Giao hàng thất bại</a>
-                      <a class="filter-item" href="#" data-sort="shipping-returned">Đã hoàn trả</a>
-                      <a class="filter-item" href="#" data-sort="shipping-all">Tất cả</a>
+                      <a class="filter-item" href="#" data-sort="return-none">Không có hoàn trả</a>
+                      <a class="filter-item" href="#" data-sort="return-pending">Đang chờ xử lý</a>
+                      <a class="filter-item" href="#" data-sort="return-approved">Đã duyệt trả hàng</a>
+                      <a class="filter-item" href="#" data-sort="return-cancel-confirmed">Xác nhận hủy đơn hàng</a>
+                      <a class="filter-item" href="#" data-sort="return-cancelled">Đã hủy hoàn tất</a>
+                      <a class="filter-item" href="#" data-sort="return-rejected">Từ chối trả hàng</a>
+                      <a class="filter-item" href="#" data-sort="return-all">Tất cả</a>
                     </div>
                   </div>
                 </th>
@@ -231,6 +375,7 @@
                       <a class="filter-item" href="#" data-sort="status-success">Giao hàng thành công</a>
                       <a class="filter-item" href="#" data-sort="status-failed">Thất bại</a>
                       <a class="filter-item" href="#" data-sort="status-cancelled">Đã hủy</a>
+                      <a class="filter-item" href="#" data-sort="status-return">Đang hoàn trả</a>
                       <a class="filter-item" href="#" data-sort="status-all">Tất cả</a>
                     </div>
                   </div>
@@ -561,6 +706,27 @@
     const tbody = document.getElementById('orders-list');
     const rows = Array.from(tbody.querySelectorAll('tr'));
 
+    // Helper function to parse custom date format "16:08:55 8-05-2025"
+    function parseCustomDate(dateStr) {
+      const parts = dateStr.trim().split(' ');
+      if (parts.length === 2) {
+        const timePart = parts[0]; // "16:08:55"
+        const datePart = parts[1]; // "8-05-2025"
+        const dateParts = datePart.split('-');
+        if (dateParts.length === 3) {
+          const day = parseInt(dateParts[0]);
+          const month = parseInt(dateParts[1]) - 1; // Month is 0-indexed
+          const year = parseInt(dateParts[2]);
+          const timeParts = timePart.split(':');
+          const hour = parseInt(timeParts[0]);
+          const minute = parseInt(timeParts[1]);
+          const second = parseInt(timeParts[2]);
+          return new Date(year, month, day, hour, minute, second);
+        }
+      }
+      return new Date(dateStr); // Fallback
+    }
+
     // Sắp xếp dựa trên loại sắp xếp
     switch (sortType) {
       case 'order-asc':
@@ -581,16 +747,20 @@
 
       case 'date-asc':
         rows.sort((a, b) => {
-          const aValue = new Date(a.querySelectorAll('td')[2].textContent);
-          const bValue = new Date(b.querySelectorAll('td')[2].textContent);
+          const aDateText = a.querySelectorAll('td')[2].textContent;
+          const bDateText = b.querySelectorAll('td')[2].textContent;
+          const aValue = parseCustomDate(aDateText);
+          const bValue = parseCustomDate(bDateText);
           return aValue - bValue;
         });
         break;
 
       case 'date-desc':
         rows.sort((a, b) => {
-          const aValue = new Date(a.querySelectorAll('td')[2].textContent);
-          const bValue = new Date(b.querySelectorAll('td')[2].textContent);
+          const aDateText = a.querySelectorAll('td')[2].textContent;
+          const bDateText = b.querySelectorAll('td')[2].textContent;
+          const aValue = parseCustomDate(aDateText);
+          const bValue = parseCustomDate(bDateText);
           return bValue - aValue;
         });
         break;
@@ -672,7 +842,51 @@
         });
         break;
 
-      // Thêm xử lý cho các trường hợp shipping status
+      // Thêm xử lý cho các trường hợp return status từ bảng order_returns
+      case 'return-pending':
+      case 'return-approved':
+      case 'return-cancel-confirmed':
+      case 'return-cancelled': 
+      case 'return-rejected':
+        // Lấy trạng thái trả hàng cần lọc
+        let returnStatusToFilter;
+        if (sortType === 'return-cancel-confirmed') {
+          returnStatusToFilter = 'CANCEL_CONFIRMED';
+        } else if (sortType === 'return-cancelled') {
+          returnStatusToFilter = 'CANCELLED';
+        } else {
+          returnStatusToFilter = sortType.replace('return-', '').toUpperCase();
+        }
+        
+        // Lọc các đơn hàng theo trạng thái trả hàng trong select dropdown
+        rows.forEach(row => {
+          const returnSelectElement = row.querySelectorAll('td')[7].querySelector('.return-status-select');
+          const returnStatus = returnSelectElement ? returnSelectElement.value : '';
+          
+          // Hiển thị đơn hàng nếu trạng thái khớp
+          row.style.display = (returnStatus === returnStatusToFilter) ? '' : 'none';
+        });
+        return; // Không cần sắp xếp lại
+
+      case 'return-none':
+        // Lọc chỉ hiển thị đơn hàng không có thông tin trả hàng (select value = '')
+        rows.forEach(row => {
+          const returnSelectElement = row.querySelectorAll('td')[7].querySelector('.return-status-select');
+          const returnStatus = returnSelectElement ? returnSelectElement.value : '';
+          
+          // Hiển thị nếu không có return status (rỗng)
+          row.style.display = (returnStatus === '' || !returnStatus) ? '' : 'none';
+        });
+        return; // Không cần sắp xếp lại
+
+      case 'return-all':
+        // Hiển thị tất cả đơn hàng
+        rows.forEach(row => {
+          row.style.display = '';
+        });
+        return; // Không cần sắp xếp lại
+
+      // Thêm xử lý cho các trường hợp shipping status (giữ nguyên để tương thích)
       case 'shipping-pending':
       case 'shipping-transit':
       case 'shipping-delivered':
@@ -717,6 +931,7 @@
       case 'status-success':
       case 'status-failed':
       case 'status-cancelled':
+      case 'status-return':
         // Lấy trạng thái đơn hàng cần lọc
         const statusToFilter = sortType.replace('status-', '').toUpperCase();
         // Lọc các đơn hàng theo trạng thái
@@ -849,27 +1064,12 @@
           const pendingOrders = statusData.find(item => item.status === 'PENDING')?.count || 0;
           const shippingOrders = statusData.find(item => item.status === 'SHIPPING')?.count || 0;
           const cancelledOrders = statusData.find(item => item.status === 'CANCELLED')?.count || 0;
+          const returnOrders = statusData.find(item => item.status === 'RETURN')?.count || 0;
 
           document.getElementById('pending-orders').textContent = pendingOrders;
           document.getElementById('shipping-orders').textContent = shippingOrders;
           document.getElementById('cancel-orders').textContent = cancelledOrders;
-
-          // For return orders, we need to count orders with RETURNED status or check the return_orders table
-          // For now, we'll just use 0 as a placeholder
-          document.getElementById('return-orders').textContent = 0;
-
-          // Try to fetch return orders count if there's an API for it
-          try {
-            const returnRes = await fetch('/api/orders/return/count', {
-              headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
-            });
-            const returnData = await returnRes.json();
-            if (returnData && returnData.count) {
-              document.getElementById('return-orders').textContent = returnData.count;
-            }
-          } catch (returnErr) {
-            console.error("Không thể lấy số lượng đơn hàng trả lại:", returnErr);
-          }
+          document.getElementById('return-orders').textContent = returnOrders;
         }
       } catch (statusErr) {
         console.error("Lỗi khi lấy thông tin trạng thái đơn hàng:", statusErr);
@@ -892,10 +1092,7 @@
         <td>${order.item_count} sản phẩm</td>
         <td>${formatPrice(order.order_total_final)} đ</td>
         <td>
-          <span class="badge ${mapShippingStatusClass(order.shipping_status)}">
-            <i class="fas ${mapShippingStatusIcon(order.shipping_status)} mr-1"></i>
-            ${mapShippingStatus(order.shipping_status)}
-          </span>
+          ${mapReturnStatus(order)}
         </td>
         <td>
           <select class="order-status-select" data-order-id="${order.order_id}" data-current-status="${order.current_status}" onchange="confirmStatusChange(this)">
@@ -905,6 +1102,7 @@
             <option value="SUCCESS" ${order.current_status === 'SUCCESS' ? 'selected' : ''} ${(order.current_status !== 'SHIPPING' && order.current_status !== 'SUCCESS') ? 'disabled' : ''}>Giao hàng thành công</option>
             <option value="FAILED" ${order.current_status === 'FAILED' ? 'selected' : ''}>Thất bại</option>
             <option value="CANCELLED" ${order.current_status === 'CANCELLED' ? 'selected' : ''}>Đã hủy</option>
+            <option value="RETURN" ${order.current_status === 'RETURN' ? 'selected' : ''}>Đang hoàn trả</option>
           </select>
         </td>
         <td>${paymentMethod}</td>
@@ -942,6 +1140,8 @@
       case 'SUCCESS': return 'Giao hàng thành công';
       case 'FAILED': return 'Thất bại';
       case 'CANCELLED': return 'Đã hủy';
+      case 'RETURN': return 'Đang hoàn trả';
+      case 'REFUND': return 'Hoàn tiền';
       default: return status;
     }
   }
@@ -1009,6 +1209,57 @@
       case 'canceled': return 'fa-ban';
       default: return 'fa-clock';
     }
+  }
+
+  function mapReturnStatus(order) {
+    // Chỉ cho phép thay đổi return status nếu current_status là 'RETURN'
+    if (order.current_status !== 'RETURN') {
+      return '<span class="badge badge-secondary">Không có hoàn trả</span>';
+    }
+
+    // Lấy thông tin return status theo thứ tự ưu tiên
+    let currentReturnStatus = null;
+
+    // 1. Kiểm tra returnInfo.return_status (từ cả admin API và hash API)
+    if (order.returnInfo && order.returnInfo.return_status) {
+      currentReturnStatus = order.returnInfo.return_status;
+    }
+    // 2. Kiểm tra return_status trực tiếp (fallback)
+    else if (order.return_status) {
+      currentReturnStatus = order.return_status;
+    }
+    // 3. Kiểm tra order_returns array (cho tương thích)
+    else if (order.order_returns && order.order_returns.length > 0) {
+      currentReturnStatus = order.order_returns[order.order_returns.length - 1].status;
+    }
+    // 4. Mặc định là PENDING nếu đơn hàng ở trạng thái RETURN nhưng chưa có return status
+    else {
+      currentReturnStatus = 'PENDING';
+    }
+
+    // Logic cho phép chuyển đổi trạng thái return
+    const canTransitionTo = (fromStatus, toStatus) => {
+      const transitions = {
+        'PENDING': ['APPROVED', 'REJECTED'],
+        'APPROVED': ['CANCEL_CONFIRMED', 'REJECTED'],
+        'CANCEL_CONFIRMED': ['CANCELLED'],
+        'REJECTED': ['PENDING'], // Cho phép tạo lại yêu cầu
+        'CANCELLED': [] // Trạng thái cuối, không thể chuyển
+      };
+      return transitions[fromStatus] ? transitions[fromStatus].includes(toStatus) : true;
+    };
+
+    // Tạo select dropdown cho return status (chỉ khi current_status = 'RETURN')
+    return `
+      <select class="return-status-select" data-order-id="${order.order_id}" data-current-return-status="${currentReturnStatus || ''}" onchange="confirmReturnStatusChange(this)">
+        <option value="" ${!currentReturnStatus ? 'selected' : ''}>Không có hoàn trả</option>
+        <option value="PENDING" ${currentReturnStatus === 'PENDING' ? 'selected' : ''} ${currentReturnStatus && !canTransitionTo(currentReturnStatus, 'PENDING') && currentReturnStatus !== 'PENDING' ? 'disabled' : ''}>Đang chờ xử lý (1)</option>
+        <option value="APPROVED" ${currentReturnStatus === 'APPROVED' ? 'selected' : ''} ${currentReturnStatus && !canTransitionTo(currentReturnStatus, 'APPROVED') && currentReturnStatus !== 'APPROVED' ? 'disabled' : ''}>Đã duyệt trả hàng (2)</option>
+        <option value="CANCEL_CONFIRMED" ${currentReturnStatus === 'CANCEL_CONFIRMED' ? 'selected' : ''} ${currentReturnStatus && !canTransitionTo(currentReturnStatus, 'CANCEL_CONFIRMED') && currentReturnStatus !== 'CANCEL_CONFIRMED' ? 'disabled' : ''}>Xác nhận hủy đơn hàng (3)</option>
+        <option value="CANCELLED" ${currentReturnStatus === 'CANCELLED' ? 'selected' : ''} ${currentReturnStatus && !canTransitionTo(currentReturnStatus, 'CANCELLED') && currentReturnStatus !== 'CANCELLED' ? 'disabled' : ''}>Đã hủy hoàn tất (4)</option>
+        <option value="REJECTED" ${currentReturnStatus === 'REJECTED' ? 'selected' : ''} ${currentReturnStatus && !canTransitionTo(currentReturnStatus, 'REJECTED') && currentReturnStatus !== 'REJECTED' ? 'disabled' : ''}>Từ chối trả hàng</option>
+      </select>
+    `;
   }
 
   function showStatusDropdown(element) {
@@ -1083,6 +1334,91 @@
     }
   }
 
+  function confirmReturnStatusChange(selectElement) {
+    const orderId = selectElement.getAttribute('data-order-id');
+    const previousReturnStatus = selectElement.getAttribute('data-current-return-status');
+    const newReturnStatus = selectElement.value;
+
+    // Nếu trạng thái không thay đổi, không làm gì cả
+    if (previousReturnStatus === newReturnStatus) {
+      return;
+    }
+
+    // Logic cho phép chuyển đổi trạng thái return (giống như trong mapReturnStatus)
+    const canTransitionTo = (fromStatus, toStatus) => {
+      const transitions = {
+        'PENDING': ['APPROVED', 'REJECTED'],
+        'APPROVED': ['CANCEL_CONFIRMED', 'REJECTED'],
+        'CANCEL_CONFIRMED': ['CANCELLED'],
+        'REJECTED': ['PENDING'], // Cho phép tạo lại yêu cầu
+        'CANCELLED': [], // Trạng thái cuối, không thể chuyển
+        '': ['PENDING'] // Từ không có hoàn trả có thể chuyển thành PENDING
+      };
+      return transitions[fromStatus] ? transitions[fromStatus].includes(toStatus) : true;
+    };
+
+    // Kiểm tra xem có được phép chuyển đổi không
+    if (!canTransitionTo(previousReturnStatus, newReturnStatus)) {
+      if (window.antd && window.antd.notification) {
+        window.antd.notification.error({
+          message: 'Không được phép',
+          description: `Không thể chuyển trạng thái từ "${mapReturnStatusText(previousReturnStatus)}" sang "${mapReturnStatusText(newReturnStatus)}"`,
+          placement: 'topRight'
+        });
+      } else {
+        alert(`Không thể chuyển trạng thái từ "${mapReturnStatusText(previousReturnStatus)}" sang "${mapReturnStatusText(newReturnStatus)}"`);
+      }
+
+      // Khôi phục giá trị cũ
+      selectElement.value = previousReturnStatus;
+      return;
+    }
+
+    // Lấy tên trạng thái để hiển thị
+    const previousStatusText = mapReturnStatusText(previousReturnStatus);
+    const newStatusText = mapReturnStatusText(newReturnStatus);
+
+    // Sử dụng Ant Design Modal để xác nhận
+    if (window.antd && window.antd.Modal) {
+      window.antd.Modal.confirm({
+        title: 'Xác nhận thay đổi trạng thái hoàn trả',
+        content: `Bạn có chắc chắn muốn thay đổi trạng thái hoàn trả từ "${previousStatusText}" sang "${newStatusText}"?`,
+        okText: 'Xác nhận',
+        cancelText: 'Hủy',
+        onOk: () => {
+          // Cập nhật data attribute ngay lập tức để tránh conflict
+          selectElement.setAttribute('data-current-return-status', newReturnStatus);
+          updateReturnStatus(orderId, newReturnStatus);
+        },
+        onCancel: () => {
+          // Khôi phục giá trị cũ
+          selectElement.value = previousReturnStatus;
+        }
+      });
+    } else {
+      // Fallback nếu không có Ant Design
+      if (confirm(`Bạn có chắc chắn muốn thay đổi trạng thái hoàn trả từ "${previousStatusText}" sang "${newStatusText}"?`)) {
+        selectElement.setAttribute('data-current-return-status', newReturnStatus);
+        updateReturnStatus(orderId, newReturnStatus);
+      } else {
+        // Khôi phục giá trị cũ
+        selectElement.value = previousReturnStatus;
+      }
+    }
+  }
+
+  function mapReturnStatusText(status) {
+    switch (status) {
+      case '': return 'Không có hoàn trả';
+      case 'PENDING': return 'Đang chờ xử lý';
+      case 'APPROVED': return 'Đã duyệt trả hàng';
+      case 'CANCEL_CONFIRMED': return 'Xác nhận hủy đơn hàng';
+      case 'CANCELLED': return 'Đã hủy hoàn tất';
+      case 'REJECTED': return 'Từ chối trả hàng';
+      default: return status;
+    }
+  }
+
   async function updateOrderStatus(orderId, newStatus) {
     try {
       const response = await fetch(`/api/orders/${orderId}/status`, {
@@ -1137,6 +1473,68 @@
         });
       } else {
         alert('Đã xảy ra lỗi khi cập nhật trạng thái đơn hàng');
+      }
+
+      // Cập nhật lại danh sách đơn hàng để đảm bảo hiển thị trạng thái chính xác
+      loadOrders();
+    }
+  }
+
+  async function updateReturnStatus(orderId, newReturnStatus) {
+    try {
+      // Gọi API để cập nhật return status
+      // Bạn cần tạo API endpoint này trong backend
+      const response = await fetch(`/api/orders/${orderId}/return-status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + localStorage.getItem('token')
+        },
+        body: JSON.stringify({ return_status: newReturnStatus })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Hiển thị thông báo thành công
+        if (window.antd && window.antd.notification) {
+          window.antd.notification.success({
+            message: 'Thành công',
+            description: data.message || 'Đã cập nhật trạng thái hoàn trả thành công',
+            placement: 'topRight'
+          });
+        } else {
+          alert(data.message || 'Đã cập nhật trạng thái hoàn trả thành công');
+        }
+
+        // Cập nhật lại danh sách đơn hàng
+        loadOrders();
+      } else {
+        // Hiển thị thông báo lỗi
+        if (window.antd && window.antd.notification) {
+          window.antd.notification.error({
+            message: 'Lỗi',
+            description: data.message || 'Không thể cập nhật trạng thái hoàn trả',
+            placement: 'topRight'
+          });
+        } else {
+          alert('Lỗi: ' + (data.message || 'Không thể cập nhật trạng thái hoàn trả'));
+        }
+
+        // Cập nhật lại danh sách đơn hàng để đảm bảo hiển thị trạng thái chính xác
+        loadOrders();
+      }
+    } catch (error) {
+      console.error('Lỗi khi cập nhật trạng thái hoàn trả:', error);
+
+      if (window.antd && window.antd.notification) {
+        window.antd.notification.error({
+          message: 'Lỗi',
+          description: 'Đã xảy ra lỗi khi cập nhật trạng thái hoàn trả',
+          placement: 'topRight'
+        });
+      } else {
+        alert('Đã xảy ra lỗi khi cập nhật trạng thái hoàn trả');
       }
 
       // Cập nhật lại danh sách đơn hàng để đảm bảo hiển thị trạng thái chính xác

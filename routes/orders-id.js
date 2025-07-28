@@ -45,6 +45,34 @@ router.get('/:userId', async (req, res) => {
     // Lấy toàn bộ order_id
     const orderIds = orders.map(o => o.order_id);
 
+    // Lấy thông tin hủy/trả đơn hàng từ bảng order_returns cho các đơn hàng có trạng thái CANCELLED hoặc RETURN
+    const cancelledOrReturnOrderIds = orders.filter(o => o.current_status === 'CANCELLED' || o.current_status === 'RETURN').map(o => o.order_id);
+    let orderReturnsMap = new Map();
+    
+    if (cancelledOrReturnOrderIds.length > 0) {
+      const [orderReturns] = await db.query(`
+        SELECT 
+          order_id,
+          return_id,
+          reason,
+          return_type,
+          total_refund,
+          status as return_status,
+          created_at as return_created_at,
+          updated_at as return_updated_at
+        FROM order_returns 
+        WHERE order_id IN (?)
+        ORDER BY created_at DESC
+      `, [cancelledOrReturnOrderIds]);
+
+      // Tạo map để tra cứu nhanh thông tin return theo order_id
+      for (const returnInfo of orderReturns) {
+        if (!orderReturnsMap.has(returnInfo.order_id)) {
+          orderReturnsMap.set(returnInfo.order_id, returnInfo);
+        }
+      }
+    }
+
     // Lấy sản phẩm chi tiết trong tất cả đơn hàng theo order_id
     const [items] = await db.query(`
       SELECT 
@@ -101,17 +129,57 @@ router.get('/:userId', async (req, res) => {
     // Gắn sản phẩm vào từng đơn hàng
     const fullOrders = orders.map(order => {
       const statusStepMap = {
+        // Quy trình đặt hàng thành công
         'PENDING': 1,
-        'CONFIRMED': 2,
+        'APPROVED': 2,
+        'CONFIRMED': 2, // Tương đương với APPROVED
         'SHIPPING': 3,
-        'SUCCESS': 4
+        'COMPLETED': 4,
+        'SUCCESS': 4, // Tương đương với COMPLETED
+        
+        // Quy trình hủy đơn hàng (từ bảng order_returns)
+        'CANCEL_REQUESTED': 1, // Khách hàng yêu cầu hủy
+        'CANCEL_PENDING': 2,   // Đang chờ xử lý hủy
+        'CANCEL_CONFIRMED': 3, // Xác nhận hủy
+        'CANCELLED': 4,        // Đã hủy hoàn tất
+        
+        // Quy trình trả hàng
+        'RETURN': 4,           // Đã trả hàng hoàn tất
+        
+        // Quy trình từ chối/thất bại
+        'REJECTED': 1,         // Đơn hàng bị từ chối
+        'FAILED': 1            // Đơn hàng thất bại
       };
-      return {
+
+      // Xác định loại quy trình và step dựa trên trạng thái
+      let processType = 'normal'; // Quy trình bình thường
+      let actualStatus = order.current_status;
+      let statusStep = statusStepMap[order.current_status] || 1;
+      let returnInfo = null;
+
+      // Kiểm tra xem đơn hàng có trong bảng order_returns không
+      if ((order.current_status === 'CANCELLED' || order.current_status === 'RETURN') && orderReturnsMap.has(order.order_id)) {
+        returnInfo = orderReturnsMap.get(order.order_id);
+        
+        if (order.current_status === 'CANCELLED') {
+          processType = 'cancellation';
+        } else if (order.current_status === 'RETURN') {
+          processType = 'return';
+        }
+        
+        actualStatus = returnInfo.return_status;
+        statusStep = statusStepMap[returnInfo.return_status] || statusStepMap[order.current_status] || 4;
+      } else if (['REJECTED', 'FAILED'].includes(order.current_status)) {
+        processType = 'failed';
+      }
+
+      const result = {
         id: order.order_id,
         order_hash: order.order_hash,
         date: order.created_at,
         status: order.current_status,
-        statusStep: statusStepMap[order.current_status] || 1,
+        statusStep: statusStep,
+        processType: processType, // Thêm thông tin loại quy trình
         recipientName: "Khách hàng",
         recipientPhone: order.order_number2 || order.order_number1,
         address: order.order_address_new || order.order_address_old,
@@ -121,6 +189,21 @@ router.get('/:userId', async (req, res) => {
         total: order.order_total_final,
         products: itemsMap.get(order.order_id) || []
       };
+
+      // Thêm thông tin return nếu có
+      if (returnInfo) {
+        result.returnInfo = {
+          return_id: returnInfo.return_id,
+          reason: returnInfo.reason,
+          return_type: returnInfo.return_type,
+          total_refund: returnInfo.total_refund,
+          return_status: returnInfo.return_status,
+          return_created_at: returnInfo.return_created_at,
+          return_updated_at: returnInfo.return_updated_at
+        };
+      }
+
+      return result;
     });
 
     res.json({
@@ -247,6 +330,17 @@ router.put('/cancel/:orderId', verifyToken, async (req, res) => {
       await connection.query(
         'UPDATE orders SET current_status = "CANCELLED", status_updated_by = ?, status_updated_at = NOW(), note = CONCAT(IFNULL(note, ""), ?) WHERE order_id = ?',
         [isAdmin ? 'admin' : 'user', reason ? `\nLý do hủy: ${reason}` : `\nĐã hủy bởi ${isAdmin ? 'admin' : 'khách hàng'}`, orderId]
+      );
+
+      // Tạo bản ghi hủy đơn hàng trong bảng order_returns
+      const returnReason = reason || (isAdmin ? 'Đơn hàng đã bị hủy bởi admin' : 'Đơn hàng đã được hủy bởi khách hàng');
+      const returnStatus = 'CANCELLED'; // Trạng thái hủy hoàn tất
+      
+      await connection.query(
+        `INSERT INTO order_returns (
+          order_id, user_id, reason, return_type, total_refund, status, created_at, updated_at
+        ) VALUES (?, ?, ?, 'DENY', 0.00, ?, NOW(), NOW())`,
+        [orderId, order.user_id, returnReason, returnStatus]
       );
 
       // Ghi log trạng thái

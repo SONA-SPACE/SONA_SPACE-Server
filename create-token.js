@@ -22,7 +22,7 @@ console.log(userToken);
 // Tạo token cho admin
 const adminToken = jwt.sign(
   { 
-    id: 3,  // ID của admin
+    id: 5,  // ID của admin (user_id: 5 là admin thật)
     role: 'admin' // Vai trò admin
   }, 
   SECRET_KEY,

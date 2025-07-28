@@ -49,6 +49,8 @@ var uploadRouter = require("./routes/upload");
 var bannersRouter = require("./routes/banners");
 var materialsRouter = require("./routes/materials");
 var revenueRouter = require("./routes/revenue");
+var NotifyRouter = require("./routes/notify");
+var typeNotifyRouter = require("./routes/typenotify");
 var attributeRouter = require("./routes/attributes");
 var app = express();
 
@@ -144,6 +146,8 @@ app.use("/api/upload", uploadRouter);
 app.use("/api/banners", bannersRouter);
 app.use("/api/materials", materialsRouter);
 app.use("/api/revenue", revenueRouter);
+app.use("/api/notify", NotifyRouter);
+app.use("/api/typeNotify", typeNotifyRouter);
 app.use("/api/attribute", attributeRouter);
 
 app.use(function (req, res, next) {

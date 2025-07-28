@@ -62,7 +62,13 @@
         </div>
       </div>
       <div class="form-section">
-        <h3 class="section-title">Thông tin bổ sung</h3>
+        <div class="variant-header">
+          <h3 class="section-title">Thông tin bổ sung</h3>
+          <button type="button" class="btn btn-add-attribute">
+            <i class="fas fa-plus"></i> Thêm thuộc tính
+          </button>
+        </div>
+        <div id="newAttributesContainer"></div>
         <div id="dynamicAttributesContainer"></div>
       </div>
     </div>
@@ -162,9 +168,71 @@
 </form>
 
 <script>
+
+
+  function showFieldError(element, message) {
+    if (!element) return;
+    element.classList.add("is-invalid");
+    let feedbackEl = element.nextElementSibling;
+    if (!feedbackEl || !feedbackEl.classList.contains("invalid-feedback")) {
+      const parentContainer = element.closest(".form-infor") || element.closest(".form-group");
+      if (parentContainer) {
+        feedbackEl = parentContainer.querySelector(".invalid-feedback");
+      }
+    }
+
+
+    if (!feedbackEl && (element.classList.contains("variant-image-grid") || element.id === "mainImageUpload")) {
+
+      let existingSiblingFeedback = element.nextElementSibling;
+      if (existingSiblingFeedback && existingSiblingFeedback.classList.contains("invalid-feedback")) {
+        feedbackEl = existingSiblingFeedback;
+      } else {
+
+        feedbackEl = document.createElement("div");
+        feedbackEl.className = "invalid-feedback d-block";
+        element.parentNode.insertBefore(feedbackEl, element.nextSibling);
+      }
+    }
+
+    if (feedbackEl) {
+      feedbackEl.textContent = message;
+      feedbackEl.style.display = "block";
+    }
+  }
+
+  function clearFieldError(element) {
+    if (!element) return;
+    element.classList.remove("is-invalid");
+    let feedbackEl = element.nextElementSibling;
+
+    if (!feedbackEl || !feedbackEl.classList.contains("invalid-feedback")) {
+      const parentContainer = element.closest(".form-infor") || element.closest(".form-group");
+      if (parentContainer) {
+        feedbackEl = parentContainer.querySelector(".invalid-feedback");
+      }
+    }
+
+    // Xử lý đặc biệt cho variant-image-grid và mainImageUpload nếu feedback nằm ngoài
+    if (element.classList.contains("variant-image-grid") || element.id === "mainImageUpload") {
+      let existingSiblingFeedback = element.nextElementSibling;
+      if (existingSiblingFeedback && existingSiblingFeedback.classList.contains("invalid-feedback")) {
+        existingSiblingFeedback.remove(); // Xóa hoàn toàn
+        return; // Thoát sau khi xóa
+      }
+    }
+
+    if (feedbackEl) {
+      feedbackEl.textContent = "";
+      feedbackEl.style.display = "none"; // Ẩn nó đi
+    }
+  }
+
+
   const API_URL = "http://localhost:3501/api";
   let mainImageInput;
   let mainImageUpload;
+  let newAttributeCounter = 0; // Counter for new attributes
 
   function showToast(message, type = "success") {
     let toastContainer = document.getElementById("toastContainer");
@@ -229,9 +297,9 @@
       .replace(/^-+|-+$/g, "");
   }
 
-  async function fetchAPI(endpoint) {
+  async function fetchAPI(endpoint, options = {}) {
     try {
-      const response = await fetch(`${API_URL}${endpoint}`);
+      const response = await fetch(`${API_URL}${endpoint}`, options);
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(
@@ -348,86 +416,87 @@
   }
 
   async function loadCategoryAttributes(categoryId) {
-    const dynamicAttributesContainer = document.getElementById(
-      "dynamicAttributesContainer"
-    );
-    dynamicAttributesContainer.innerHTML = "";
+    const dynamicAttributesContainer = document.getElementById("dynamicAttributesContainer");
+    dynamicAttributesContainer.innerHTML = ""; // Clear existing attributes
 
-    if (!categoryId) return;
+    if (!categoryId) {
+      console.log("No category ID provided for loading attributes.");
+      return;
+    }
 
+    console.log("Loading category attributes for category ID:", categoryId);
     try {
-      const attributes = await fetchAPI(`/categories/${categoryId}`);
-      if (
-        !attributes ||
-        !Array.isArray(attributes) ||
-        attributes.length === 0
-      ) {
-        showToast("Không tìm thấy thuộc tính cho danh mục này.", "info");
+      const attributes = await fetchAPI(`/categories/${categoryId}/attributes`);
+      console.log("API response for category attributes:", attributes);
+
+      if (!attributes || !Array.isArray(attributes) || attributes.length === 0) {
+        console.log("No attributes found for this category.");
+        // showToast("Không tìm thấy thuộc tính cho danh mục này.", "info"); // Removed this toast for cleaner UX
         return;
       }
 
       let formRowsHtml = "";
       let currentFormRow = '<div class="form-row">';
-      let attributesInCurrentRow = 0;
+      let rowCount = 0; // Track elements in current row
 
-      for (const attr of attributes) {
-        const isRequired = attr.is_required ? "required" : "";
-        const requiredAsterisk = attr.is_required
-          ? '<span class="text-danger">*</span>'
-          : "";
-        let inputHtml = "";
+      attributes.forEach((attr, index) => {
+        let inputHtml = '';
+        const inputId = `attribute-${attr.attribute_id}`;
+        const inputName = `attributes[${attr.attribute_id}]`;
 
-        if (attr.attribute_name.toLowerCase().includes("chất liệu")) {
-          const materialOptions = allMaterials
-            .map(
-              (mat) =>
-                `<option value="${mat.material_id}">${mat.material_name}</option>`
-            )
-            .join("");
+        if (attr.value_type === 'material_id') {
           inputHtml = `
-    <div class="select-wrapper">
-   <select id="attr-${attr.attribute_id}" class="form-control dynamic-attribute" data-attribute-id="${attr.attribute_id}" data-value-type="material_id" ${isRequired}>
-     <option value=""> ${attr.attribute_name}</option>
-     ${materialOptions}
-   </select>
-   <i class="fas fa-chevron-down"></i>
-    </div>
-  `;
-        } else if (attr.unit) {
-          inputHtml = `
-    <input type="number" id="attr-${attr.attribute_id}" class="form-control dynamic-attribute" data-attribute-id="${attr.attribute_id}" data-value-type="value" placeholder="Nhập ${attr.attribute_name}" ${isRequired} />
-  `;
+            <div class="select-wrapper">
+              <select class="form-control dynamic-attribute" id="${inputId}" name="${inputName}" data-attribute-id="${attr.attribute_id}" data-value-type="${attr.value_type}" ${attr.is_required ? 'required' : ''}>
+                <option value="">Chọn chất liệu</option>
+                ${allMaterials.map(material => `<option value="${material.material_id}">${material.material_name}</option>`).join('')}
+              </select>
+              <i class="fas fa-chevron-down"></i>
+            </div>
+          `;
         } else {
+          const type = attr.value_type === 'number' ? 'number' : 'text';
+          const placeholder = `Nhập ${attr.attribute_name}${attr.unit ? ` (${attr.unit})` : ''}`;
           inputHtml = `
-    <input type="text" id="attr-${attr.attribute_id}" class="form-control dynamic-attribute" data-attribute-id="${attr.attribute_id}" data-value-type="value" placeholder="Nhập ${attr.attribute_name}" ${isRequired} />
-  `;
+            <input
+              type="${type}"
+              class="form-control dynamic-attribute"
+              id="${inputId}"
+              name="${inputName}"
+              placeholder="${placeholder}"
+              data-attribute-id="${attr.attribute_id}"
+              data-value-type="${attr.value_type}"
+              ${attr.is_required ? 'required' : ''}
+            />
+          `;
         }
-        currentFormRow += `
-  <div class="form-infor">
-    <label for="attr-${attr.attribute_id}">${attr.attribute_name} ${attr.unit ? `(${attr.unit})` : ""
-          } ${requiredAsterisk}</label>
-    ${inputHtml}
-    <div class="invalid-feedback"></div>
-  </div>
-   `;
-        attributesInCurrentRow++;
 
-        if (
-          attributesInCurrentRow % 2 === 0 ||
-          attributesInCurrentRow === attributes.length
-        ) {
-          currentFormRow += "</div>";
+        currentFormRow += `
+          <div class="form-group col-md-6">
+            <label for="${inputId}">${attr.attribute_name}${attr.is_required ? ' <span class="required-asterisk">*</span>' : ''}</label>
+            ${inputHtml}
+            <div class="invalid-feedback"></div>
+          </div>
+        `;
+        rowCount++;
+
+        // Close row if it has 2 elements or if it's the last element
+        if (rowCount % 2 === 0 || index === attributes.length - 1) {
+          currentFormRow += '</div>'; // End the row
           formRowsHtml += currentFormRow;
-          currentFormRow = '<div class="form-row">';
-          attributesInCurrentRow = 0;
+          currentFormRow = '<div class="form-row">'; // Start a new row
+          rowCount = 0; // Reset row count
         }
-      }
+      });
+
       dynamicAttributesContainer.innerHTML = formRowsHtml;
+      console.log("Dynamic attributes container updated.");
     } catch (error) {
       console.error("Error loading category attributes:", error);
       showToast("Lỗi khi tải thuộc tính danh mục: " + error.message, "danger");
     }
   }
+
 
   // Khởi tạo form
   async function initializeForm() {
@@ -448,7 +517,7 @@
         "Chọn phòng"
       );
 
-      await loadAllMaterials();
+      await loadAllMaterials(); // Load materials for potential material_id attributes
 
       await loadVariantColors();
 
@@ -462,6 +531,8 @@
       const productCategorySelect = document.getElementById("productCategory");
       if (productCategorySelect) {
         productCategorySelect.addEventListener("change", function () {
+          // Clear new attributes container when category changes
+          document.getElementById("newAttributesContainer").innerHTML = '';
           loadCategoryAttributes(this.value);
         });
 
@@ -532,6 +603,9 @@
         setupVariantEvents(variant);
       }
     });
+
+    // Event listener for "Thêm thuộc tính" button
+    document.querySelector(".btn-add-attribute").addEventListener("click", addCustomAttributeRow);
   });
 
   document
@@ -596,7 +670,7 @@
       removeButton.addEventListener("click", function () {
         if (confirm("Bạn có chắc muốn xóa biến thể này?")) {
           variantElement.remove();
-          // Re-evaluate variant count validation if needed here
+
         }
       });
     }
@@ -622,35 +696,38 @@
     const imageGrid = variantElement.querySelector(".variant-image-grid");
     const maxImages = 7;
 
-    // Initialize _imageCount only if it's not already set
+
     if (typeof variantElement._imageCount === "undefined") {
       variantElement._imageCount = 0;
     } else {
-      // Reset for new variants, or if images were pre-loaded for existing ones
+
       variantElement._imageCount = imageGrid.querySelectorAll(
         ".variant-image-item.loaded"
       ).length;
     }
 
+
     function createImageBox() {
       const div = document.createElement("div");
       div.className = "variant-image-item active";
       div.innerHTML = `
-  <div class="upload-placeholder">
-    <i class="fas fa-plus"></i>
-    <input type="file" hidden accept="image/*">
-  </div>
-   `;
+      <div class="upload-placeholder">
+        <i class="fas fa-plus"></i>
+        <input type="file" hidden accept="image/*">
+      </div>
+    `;
       return div;
     }
+
 
     function setupImageBox(imageBox) {
       const input = imageBox.querySelector('input[type="file"]');
       const placeholder = imageBox.querySelector(".upload-placeholder");
 
+
       imageBox.addEventListener("click", () => input.click());
 
-      // Khi chọn file ảnh
+
       input.addEventListener("change", function (e) {
         const file = e.target.files[0];
         if (file && file.type.startsWith("image/")) {
@@ -666,17 +743,17 @@
             img.alt = "Preview";
             imageBox.appendChild(img);
 
-            // Nút xóa ảnh
+            // Add a remove button for the image
             const removeBtn = document.createElement("button");
             removeBtn.className = "remove-image";
             removeBtn.innerHTML = `<i class="fas fa-times"></i>`;
             imageBox.appendChild(removeBtn);
 
-            // Xử lý xóa ảnh
+            // Handle removing the image
             removeBtn.addEventListener("click", function (e) {
               e.stopPropagation();
               imageBox.remove();
-              variantElement._imageCount--;
+
 
               if (
                 imageGrid.querySelectorAll(".variant-image-item.active")
@@ -691,6 +768,15 @@
               input.dispatchEvent(new Event("change", { bubbles: true }));
             });
 
+            variantElement._imageCount++;
+
+            if (variantElement._imageCount < maxImages) {
+              const newBox = createImageBox();
+              imageGrid.appendChild(newBox);
+              setupImageBox(newBox);
+            }
+
+
             if (imageGrid.classList.contains("is-invalid")) {
               imageGrid.classList.remove("is-invalid");
               const feedback = imageGrid.nextElementSibling;
@@ -704,15 +790,15 @@
       });
     }
 
+
     imageGrid.innerHTML = "";
     variantElement._imageCount = 0;
+
 
     const firstBox = createImageBox();
     imageGrid.appendChild(firstBox);
     setupImageBox(firstBox);
-    variantElement._imageCount++;
   }
-
   function setupMainImageUpload() {
     mainImageUpload = document.getElementById("mainImageUpload");
     mainImageInput = mainImageUpload.querySelector('input[type="file"]');
@@ -763,6 +849,140 @@
     } else {
       console.warn("Product name or slug input not found.");
     }
+  }
+
+  // --- NEW: Function to save a newly added attribute ---
+  async function saveNewAttribute(rowElement, counter) {
+    const nameInput = rowElement.querySelector(`#newAttributeName-${counter}`);
+    const valueTypeSelect = rowElement.querySelector(`#newAttributeValueType-${counter}`);
+    const unitInput = rowElement.querySelector(`#newAttributeUnit-${counter}`);
+    const selectedCategoryId = document.getElementById("productCategory").value;
+
+    // Clear previous errors for this row
+    clearFieldError(nameInput);
+    clearFieldError(valueTypeSelect);
+    clearFieldError(unitInput);
+
+    const attribute_name = nameInput.value.trim();
+    const value_type = valueTypeSelect.value;
+    const unit = unitInput.value.trim() || null;
+    const is_required = false; // Always false for new custom attributes
+
+    let hasErrors = false;
+    if (!attribute_name) {
+      showFieldError(nameInput, "Tên thuộc tính là bắt buộc.");
+      hasErrors = true;
+    }
+    if (!value_type) {
+      showFieldError(valueTypeSelect, "Loại giá trị là bắt buộc.");
+      hasErrors = true;
+    }
+    if (!selectedCategoryId) {
+      showToast("Vui lòng chọn danh mục sản phẩm trước khi thêm thuộc tính.", "danger");
+      showFieldError(document.getElementById("productCategory"), "Vui lòng chọn danh mục.");
+      hasErrors = true;
+    }
+
+
+    if (hasErrors) {
+      return;
+    }
+
+    const payload = {
+      attribute_name,
+      value_type,
+      unit,
+      is_required,
+    };
+
+    console.log("Attempting to save new attribute:", payload); // Log payload
+    try {
+      const addAttributeRes = await fetchAPI(`/attribute/${selectedCategoryId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      console.log("API response for saving new attribute:", addAttributeRes); // Log API response
+
+      if (addAttributeRes && addAttributeRes.success) {
+        showToast(`Đã thêm thuộc tính mới: ${attribute_name}`, "success");
+        rowElement.remove(); // Remove the new attribute row from the DOM
+        console.log("New attribute saved successfully, removing row and reloading category attributes.");
+        // Reload dynamic attributes to show the newly added one
+        await loadCategoryAttributes(selectedCategoryId, []);
+        console.log("Category attributes reloaded.");
+      } else {
+        showToast(addAttributeRes?.message || "Không thể thêm thuộc tính mới.", "danger");
+        console.error("Failed to save new attribute:", addAttributeRes);
+      }
+    } catch (error) {
+      console.error("Lỗi khi thêm thuộc tính mới:", error);
+      showToast(`Lỗi khi thêm thuộc tính '${attribute_name}': ${error.message}`, "danger");
+    }
+  }
+
+  // --- New Functionality: Add Custom Attribute Row ---
+  function addCustomAttributeRow() {
+    const newAttributesContainer = document.getElementById("newAttributesContainer");
+    newAttributeCounter++;
+    const rowId = `new-attribute-row-${newAttributeCounter}`;
+
+    const newAttributeHtml = `
+      <div class="form-row new-attribute-row" id="${rowId}">
+        <div class="form-group col-md-3">
+          <label for="newAttributeName-${newAttributeCounter}">Tên thuộc tính</label>
+          <input type="text" id="newAttributeName-${newAttributeCounter}" class="form-control new-attribute-input" placeholder="Tên thuộc tính">
+          <div class="invalid-feedback"></div>
+        </div>
+        <div class="form-group col-md-3">
+          <label for="newAttributeValueType-${newAttributeCounter}">Loại giá trị</label>
+          <div class="select-wrapper">
+            <select id="newAttributeValueType-${newAttributeCounter}" class="form-control new-attribute-input">
+              <option value="">Chọn loại</option>
+              <option value="text">Text</option>
+              <option value="number">Number</option>
+              <option value="material_id">Chất liệu</option>
+            </select>
+            <i class="fas fa-chevron-down"></i>
+          </div>
+          <div class="invalid-feedback"></div>
+        </div>
+        <div class="form-group col-md-3">
+          <label for="newAttributeUnit-${newAttributeCounter}">Đơn vị (nếu có)</label>
+          <input type="text" id="newAttributeUnit-${newAttributeCounter}" class="form-control new-attribute-input" placeholder="Ví dụ: cm, kg">
+          <div class="invalid-feedback"></div>
+        </div>
+        <div class="form-group col-md-3 d-flex align-items-end justify-content-end gap-2">
+          <button type="button" class="btn btn-primary btn-sm save-new-attribute" data-row-id="${rowId}" data-counter="${newAttributeCounter}">
+           Lưu
+          </button>
+          <button type="button" class="btn btn-danger btn-sm remove-new-attribute" data-row-id="${rowId}">
+            Xóa
+          </button>
+        </div>
+      </div>
+    `;
+    newAttributesContainer.insertAdjacentHTML('beforeend', newAttributeHtml);
+
+    const newRowElement = document.getElementById(rowId);
+
+    // Add event listener for removing the new attribute row
+    newRowElement.querySelector(".remove-new-attribute").addEventListener("click", function () {
+      newRowElement.remove();
+    });
+
+    // Add event listener for saving the new attribute row
+    newRowElement.querySelector(".save-new-attribute").addEventListener("click", function () {
+      const counter = parseInt(this.dataset.counter);
+      saveNewAttribute(newRowElement, counter);
+    });
+
+    // Add input/change listeners to clear errors for new attribute fields
+    newRowElement.querySelectorAll(".new-attribute-input").forEach(input => {
+      input.addEventListener("input", () => clearFieldError(input));
+      input.addEventListener("change", () => clearFieldError(input));
+    });
   }
 
   document.querySelector(".btn-save").addEventListener("click", async () => {
@@ -846,10 +1066,10 @@
     if (room_ids.length === 0) {
       addValidationError(roomSelect, "Vui lòng chọn ít nhất một phòng.");
     }
-    // Validate dynamic attributes
-    const dynamicAttributeInputs =
-      document.querySelectorAll(".dynamic-attribute");
+    // Validate dynamic attributes (existing category attributes)
     const attributes = [];
+    const dynamicAttributeInputs =
+      document.querySelectorAll("#dynamicAttributesContainer .dynamic-attribute");
     dynamicAttributeInputs.forEach((input) => {
       const attribute_id = input.dataset.attributeId;
       const valueType = input.dataset.valueType;
@@ -867,21 +1087,22 @@
         }
       }
 
-      if (
-        input.hasAttribute("required") &&
-        (value === null ||
-          value === "" ||
-          material_id === null ||
-          material_id === "")
-      )
-        if (attribute_id) {
-          attributes.push({
-            attribute_id: parseInt(attribute_id),
-            value: value,
-            material_id: material_id,
-          });
-        }
+
+      if (input.hasAttribute("required") && (value === null || value === "" || material_id === null || material_id === "")) {
+        addValidationError(input, `Thông tin ${input.previousElementSibling.textContent.replace('<span class="required-asterisk">*</span>', '').trim()} là bắt buộc.`);
+      }
+
+      if (attribute_id) { // Ensure attribute_id exists for an existing attribute
+        attributes.push({
+          attribute_id: parseInt(attribute_id),
+          value: value,
+          material_id: material_id,
+        });
+      }
     });
+
+
+
 
     const variantElements = [
       ...document.querySelectorAll(".variant-item"),
@@ -955,7 +1176,7 @@
     }
 
     if (validationErrors.length > 0) {
-      // Cuộn đến phần tử lỗi đầu tiên
+
       validationErrors[0].element.scrollIntoView({
         behavior: "smooth",
         block: "center",
@@ -1072,6 +1293,7 @@
       });
     }
 
+
     try {
       const res = await fetch(`${API_URL}/products/add`, {
         method: "POST",
@@ -1100,8 +1322,22 @@
                 "dynamicAttributesContainer"
               );
               if (errorElement) {
-                errorElement.classList.add("is-invalid");
-                showToast(message, "danger");
+                // Find the specific attribute input if possible
+                const attrIdMatch = field.match(/attributes\[(\d+)\]/);
+                if (attrIdMatch) {
+                  const attrId = attrIdMatch[1];
+                  const specificInput = document.getElementById(`attribute-${attrId}`);
+                  if (specificInput) {
+                    addValidationError(specificInput, message);
+                  } else {
+                    // Fallback if specific input not found
+                    errorElement.classList.add("is-invalid");
+                    showToast(message, "danger");
+                  }
+                } else {
+                  errorElement.classList.add("is-invalid");
+                  showToast(message, "danger");
+                }
               }
               return;
             }
@@ -1203,7 +1439,6 @@
                   }
                 } else {
                   showToast(`Lỗi trường '${field}`, "danger");
-                  ss;
                 }
               } else {
                 showToast(`Lỗi trường '${field}`, "danger");
@@ -1259,10 +1494,6 @@
     if (e.target.id === "mainImageFile") {
       const mainImageUploadZone = document.getElementById("mainImageUpload");
       mainImageUploadZone.classList.remove("is-invalid");
-      const feedback = variantImageGrid.nextElementSibling;
-      if (feedback && feedback.classList.contains("invalid-feedback")) {
-        feedback.remove();
-      }
 
       const nextSibling = mainImageUploadZone.nextElementSibling;
       if (nextSibling && nextSibling.classList.contains("invalid-feedback")) {
@@ -1296,3 +1527,39 @@
     }
   });
 </script>
+
+<div id="toastContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 1050"></div>
+
+
+<!-- API -->
+<!-- GET /api/categories/:categoryId/attributes và GET /api/materials -->
+
+<!-- Lấy chi tiết sản phẩm -->
+<!-- GET /api/products/admin/:slug -->
+
+<!-- Lấy danh sách danh mục -->
+<!-- GET /api/categories -->
+
+<!-- Lấy danh sách phòng -->
+<!-- GET /api/rooms -->
+
+<!-- Lấy danh sách màu sắc -->
+<!-- GET /api/color/filter -->
+
+<!-- Cập nhật sản phẩm -->
+<!-- PUT /api/products/admin/:slug -->
+
+<!-- Thêm ảnh sản phẩm-->
+<!-- POST /api/upload/product -->
+
+<!-- Xoá ảnh sản phẩm -->
+<!-- DELETE /api/upload/:publicId -->
+
+<!-- Tạo biển thể mới -->
+<!-- POST /api/variants/:productId -->
+
+<!-- Cập nhật biến thể -->
+<!-- PUT /api/variants/:variantId -->
+
+<!-- Xoá biến thể -->
+<!-- DELETE /api/variants/:variantId -->

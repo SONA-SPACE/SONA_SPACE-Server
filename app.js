@@ -51,6 +51,7 @@ var materialsRouter = require("./routes/materials");
 var revenueRouter = require("./routes/revenue");
 var NotifyRouter = require("./routes/notify");
 var typeNotifyRouter = require("./routes/typenotify");
+var attributeRouter = require("./routes/attributes");
 var app = express();
 
 // App version and startup time for health checks
@@ -147,6 +148,8 @@ app.use("/api/materials", materialsRouter);
 app.use("/api/revenue", revenueRouter);
 app.use("/api/notify", NotifyRouter);
 app.use("/api/typeNotify", typeNotifyRouter);
+app.use("/api/attribute", attributeRouter);
+
 app.use(function (req, res, next) {
   console.warn("Route not found:", req.method, req.originalUrl);
   next(createError(404));

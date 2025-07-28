@@ -3442,7 +3442,7 @@ avatar-image .product-filters {
   color: #d32f2f;
 }
 
-/* Product Add/Edit Form Styles */
+/* CSS để quản lý trạng thái đóng/mở của biến thể */
 .add-product-container {
   display: flex;
   gap: 24px;
@@ -3866,7 +3866,6 @@ textarea.form-control {
   color: var(--primary-color);
 }
 
-/* Variant image grid (kết hợp với CSS đã ghi nhớ trước đó) */
 .variant-images {
   margin-top: 16px;
 }

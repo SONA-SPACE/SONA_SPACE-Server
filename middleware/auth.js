@@ -10,6 +10,8 @@ const JWT_SECRET = process.env.JWT_SECRET || "furnitown-secret-key";
  */
 exports.verifyToken = async (req, res, next) => {
   try {
+    console.log('🔍 verifyToken: Bắt đầu xác thực token cho:', req.path);
+    
     // Lấy token từ header Authorization hoặc cookie
     let token;
 
@@ -17,15 +19,18 @@ exports.verifyToken = async (req, res, next) => {
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith("Bearer ")) {
       token = authHeader.split(" ")[1];
+      console.log('🔍 Token từ header:', token?.substring(0, 20) + '...');
     }
 
     // Nếu không có trong header, thử lấy từ cookie
     if (!token && req.cookies && req.cookies.token) {
       token = req.cookies.token;
+      console.log('🔍 Token từ cookie:', token?.substring(0, 20) + '...');
     }
 
     // Nếu không tìm thấy token
     if (!token) {
+      console.log('❌ Không tìm thấy token');
       // Nếu là API request, trả về JSON error
       if (req.path.startsWith("/api/")) {
         return res
@@ -40,8 +45,10 @@ exports.verifyToken = async (req, res, next) => {
       }
     }
 
+    console.log('🔍 Đang verify token với JWT_SECRET...');
     // Xác minh token
     const decoded = jwt.verify(token, JWT_SECRET);
+    console.log('✅ Token decoded:', { id: decoded.id, role: decoded.role });
 
     // Hỗ trợ cả format cũ (userId) và mới (id)
     const userId = decoded.id || decoded.userId;
@@ -90,6 +97,13 @@ exports.verifyToken = async (req, res, next) => {
 
     next();
   } catch (error) {
+    console.error("Authentication error details:", {
+      name: error.name,
+      message: error.message,
+      path: req.path,
+      token: req.headers.authorization?.substring(0, 20) + '...'
+    });
+
     if (
       error.name === "JsonWebTokenError" ||
       error.name === "TokenExpiredError"
@@ -97,7 +111,7 @@ exports.verifyToken = async (req, res, next) => {
       if (req.path.startsWith("/api/")) {
         return res
           .status(401)
-          .json({ error: "Không được phép - Token không hợp lệ" });
+          .json({ error: { message: "Token không hợp lệ", status: 401 } });
       }
       if (typeof next === "function") {
         return next(new Error("Token không hợp lệ"));
@@ -109,7 +123,7 @@ exports.verifyToken = async (req, res, next) => {
     console.error("Authentication error:", error);
 
     if (req.path.startsWith("/api/")) {
-      return res.status(500).json({ error: "Lỗi server" });
+      return res.status(500).json({ error: { message: "Token không hợp lệ", status: 500 } });
     }
     if (typeof next === "function") {
       return next(error);

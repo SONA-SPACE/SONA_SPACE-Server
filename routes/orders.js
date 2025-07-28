@@ -24,6 +24,12 @@ function formatDateVNPay(date) {
  * @access  Private (Admin)
  */
 
+/**
+ * @route   GET /api/orders/count
+ * @desc    Lấy số lượng đơn hàng theo trạng thái (chỉ admin)
+ * @access  Private (Admin)
+ */
+
 router.get("/test-email", async (req, res) => {
   const result = await sendEmail1(
     "totrongnhan1209@example.com", // email test thật
@@ -2169,6 +2175,154 @@ router.get('/return/count', verifyToken, isAdmin, async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error while counting return orders",
+      error: error.message
+    });
+  }
+});
+
+/**
+ * @route   POST /api/orders/:id/send-apology-email
+ * @desc    Send apology email with discount voucher when order is cancelled
+ * @access  Private (Admin)
+ */
+router.post('/:id/send-apology-email', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const orderId = req.params.id;
+
+    // Lấy thông tin đơn hàng và khách hàng
+    const [[order]] = await db.query(`
+      SELECT 
+        o.order_id,
+        o.order_hash,
+        o.order_name_new,
+        o.order_name_old,
+        o.order_email_new,
+        o.order_email_old,
+        o.order_total_final,
+        o.current_status,
+        u.user_name,
+        u.user_gmail,
+        or_latest.return_status
+      FROM orders o
+      LEFT JOIN user u ON o.user_id = u.user_id
+      LEFT JOIN (
+        SELECT 
+          order_id,
+          status as return_status
+        FROM order_returns 
+        WHERE return_id IN (
+          SELECT MAX(return_id) 
+          FROM order_returns 
+          GROUP BY order_id
+        )
+      ) or_latest ON o.order_id = or_latest.order_id
+      WHERE o.order_id = ?
+    `, [orderId]);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy đơn hàng'
+      });
+    }
+
+    // Xác định email và tên khách hàng
+    const customerEmail = order.order_email_new || order.order_email_old || order.user_gmail;
+    const customerName = order.order_name_new || order.order_name_old || order.user_name || 'Quý khách';
+
+    if (!customerEmail) {
+      return res.status(400).json({
+        success: false,
+        message: 'Không tìm thấy email khách hàng'
+      });
+    }
+
+    // Tạo mã voucher giảm giá 20%
+    const voucherCode = `SORRY20-${Date.now().toString().slice(-6)}`;
+    const discountPercent = 20;
+    const validDays = 90; // 90 ngày
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + validDays);
+
+    // Bắt đầu transaction
+    const connection = await db.getConnection();
+    await connection.beginTransaction();
+
+    try {
+      // Tạo coupon trong database
+      await connection.query(`
+        INSERT INTO couponcode (
+          code,
+          title,
+          description,
+          discount_type,
+          value_price,
+          min_order,
+          used,
+          start_time,
+          exp_time,
+          status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?, 1)
+      `, [
+        voucherCode,
+        'Xin lỗi khách hàng - Giảm giá 20%',
+        `Mã giảm giá xin lỗi cho đơn hàng #${order.order_hash} bị hủy`,
+        'percentage',
+        discountPercent,
+        0, // min_order = 0 (không giới hạn)
+        1, // used = 1 (còn 1 lượt)
+        expiryDate,
+      ]);
+
+      // Chuẩn bị dữ liệu email
+      const emailData = {
+        customerName: customerName,
+        customerEmail: customerEmail,
+        orderHash: order.order_hash,
+        orderTotal: order.order_total_final ? 
+          Number(order.order_total_final).toLocaleString('vi-VN') + 'đ' : 'N/A',
+        voucherCode: voucherCode,
+        discountPercent: discountPercent,
+        expiryDate: expiryDate.toLocaleDateString('vi-VN'),
+        validDays: validDays
+      };
+
+      // Gửi email xin lỗi
+      await sendEmail1(
+        customerEmail,
+        `Xin lỗi về việc hủy đơn hàng #${order.order_hash} - Sona Space`,
+        emailData,
+        'apology' // template type
+      );
+
+      // Commit transaction
+      await connection.commit();
+
+      return res.status(200).json({
+        success: true,
+        message: 'Email xin lỗi đã được gửi thành công',
+        data: {
+          customerEmail: customerEmail,
+          customerName: customerName,
+          voucherCode: voucherCode,
+          discountPercent: discountPercent,
+          expiryDate: expiryDate.toLocaleDateString('vi-VN')
+        }
+      });
+
+    } catch (error) {
+      // Rollback nếu có lỗi
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+
+  } catch (error) {
+    console.error('Lỗi khi gửi email xin lỗi:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Lỗi máy chủ khi gửi email xin lỗi',
       error: error.message
     });
   }

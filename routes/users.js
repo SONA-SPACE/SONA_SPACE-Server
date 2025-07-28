@@ -100,17 +100,12 @@ router.get("/admin", verifyToken, isAdmin, async (req, res) => {
         u.user_gender,
         u.user_birth,
         u.user_email_active,
-        u.user_verified_at,      -- Thêm ngày kích hoạt
+        u.user_verified_at,
         u.user_disabled_at,
         u.created_at,
         u.updated_at,
-
-        -- Đếm đơn hàng đã mua (SUCCESS)
         COUNT(CASE WHEN o.current_status = 'SUCCESS' THEN 1 END) AS total_success_orders,
-
-        -- Đếm đơn hàng đã hủy (CANCELLED)
         COUNT(CASE WHEN o.current_status = 'CANCELLED' THEN 1 END) AS total_cancelled_orders
-
       FROM user u
       LEFT JOIN orders o ON u.user_id = o.user_id
       WHERE u.deleted_at IS NULL
@@ -118,7 +113,6 @@ router.get("/admin", verifyToken, isAdmin, async (req, res) => {
 
     let queryParams = [];
 
-    // Lấy vai trò người dùng hiện tại
     const requestingUserRole = req.user
       ? req.user.role.toLowerCase().trim()
       : "guest";
@@ -162,10 +156,23 @@ router.get("/admin", verifyToken, isAdmin, async (req, res) => {
         birth: birth ? birth.toLocaleDateString("vi-VN") : "",
         email_active: user.user_email_active,
         status: disabledAt ? "Vô hiệu" : "Hoạt động",
-        created_at: createdAt.toISOString(),
-        updated_at: updatedAt.toISOString(),
-        disabled_at: disabledAt ? disabledAt.toISOString() : null,
-        verified_at: verifiedAt ? verifiedAt.toISOString() : null, // Ngày kích hoạt
+        created_at:
+          createdAt instanceof Date && !isNaN(createdAt)
+            ? createdAt.toISOString()
+            : null,
+        updated_at:
+          updatedAt instanceof Date && !isNaN(updatedAt)
+            ? updatedAt.toISOString()
+            : null,
+        disabled_at:
+          disabledAt instanceof Date && !isNaN(disabledAt)
+            ? disabledAt.toISOString()
+            : null,
+        verified_at:
+          verifiedAt instanceof Date && !isNaN(verifiedAt)
+            ? verifiedAt.toISOString()
+            : null,
+
         total_success_orders: user.total_success_orders || 0,
         total_cancelled_orders: user.total_cancelled_orders || 0,
       };
@@ -173,7 +180,6 @@ router.get("/admin", verifyToken, isAdmin, async (req, res) => {
 
     res.json({ users });
   } catch (error) {
-    console.error("[GET /admin] Lỗi khi lấy danh sách người dùng:", error);
     res.status(500).json({ error: "Lỗi server khi lấy danh sách người dùng" });
   }
 });

@@ -11,7 +11,7 @@ const cloudinary = require("../config/cloudinary");
  * @desc    Lấy danh sách người dùng (chỉ admin)
  * @access  Private (Admin)
  */
-router.get("/", isAdmin, async (req, res) => {
+router.get("/", verifyToken, isAdmin, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
@@ -86,7 +86,7 @@ router.get("/simple", verifyToken, isAdmin, async (req, res) => {
   }
 });
 
-router.get("/admin", verifyToken, async (req, res) => {
+router.get("/admin", verifyToken, isAdmin, async (req, res) => {
   try {
     let sqlQuery = `
       SELECT 

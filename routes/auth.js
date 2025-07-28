@@ -263,8 +263,9 @@ router.post("/google-login", async (req, res) => {
 
     const { email, name, picture } = payload;
 
+    // *** select ***
     const [users] = await db.query(
-      "SELECT user_id, user_gmail, user_name, user_image, user_role, created_at, user_address, user_number FROM user WHERE user_gmail = ?",
+      "SELECT user_id, user_gmail, user_name, user_image, user_role, created_at, user_address, user_number, user_email_active FROM user WHERE user_gmail = ?",
       [email]
     );
 
@@ -273,7 +274,7 @@ router.post("/google-login", async (req, res) => {
     if (users.length === 0) {
       // User chưa có, tạo mới
       const newUserRes = await db.query(
-        "INSERT INTO user (user_gmail, user_name, user_image, user_role, created_at) VALUES (?, ?, ?, ?, NOW())",
+        "INSERT INTO user (user_gmail, user_name, user_image, user_role, user_email_active, user_verified_at, created_at) VALUES (?, ?, ?, ?, 1, NOW(), NOW())",
         [email, name, picture, "user"]
       );
       userId = newUserRes[0].insertId;
@@ -282,12 +283,24 @@ router.post("/google-login", async (req, res) => {
         email,
         full_name: name,
         image: picture,
+        address: null,
+        phone: null,
         role: "user",
         created_at: new Date(),
       };
     } else {
       // User đã tồn tại
       const u = users[0];
+
+      // Kiểm tra xác thực email
+      if (Number(u.user_email_active) !== 1) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Tài khoản của bạn chưa được xác thực email. Vui lòng kiểm tra email để xác thực trước khi đăng nhập.",
+        });
+      }
+
       userId = u.user_id;
       user = {
         id: u.user_id,
@@ -301,7 +314,7 @@ router.post("/google-login", async (req, res) => {
       };
     }
 
-    // Sinh access token cho user (app của bạn)
+    // Sinh access token cho user
     const accessToken = generateToken(userId);
 
     res.json({
@@ -318,6 +331,7 @@ router.post("/google-login", async (req, res) => {
     });
   }
 });
+
 
 /**
  * @route   POST /api/auth/login

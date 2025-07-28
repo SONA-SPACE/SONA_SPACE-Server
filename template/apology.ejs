@@ -1,0 +1,332 @@
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="vi">
+
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="x-apple-disable-message-reformatting" />
+    <meta name="format-detection" content="telephone=no, date=no, address=no, email=no, url=no" />
+    <meta name="color-scheme" content="light" />
+    <meta name="supported-color-schemes" content="light" />
+    <title>Xin lỗi về việc hủy đơn hàng - Sona Space</title>
+    <style type="text/css">
+        body,
+        table,
+        td,
+        a {
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
+        }
+
+        table,
+        td {
+            mso-table-lspace: 0pt;
+            mso-table-rspace: 0pt;
+        }
+
+        img {
+            -ms-interpolation-mode: bicubic;
+            border: 0;
+            height: auto;
+            line-height: 100%;
+            outline: none;
+            text-decoration: none;
+        }
+
+        table {
+            border-collapse: collapse !important;
+        }
+
+        body {
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+        }
+
+        a[x-apple-data-detectors] {
+            color: inherit !important;
+            text-decoration: none !important;
+            font-size: inherit !important;
+            font-family: inherit !important;
+            font-weight: inherit !important;
+            line-height: inherit !important;
+        }
+
+        @media screen and (max-width: 600px) {
+            .email-container {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+
+            .content-padding {
+                padding-left: 20px !important;
+                padding-right: 20px !important;
+            }
+
+            .main-heading {
+                font-size: 24px !important;
+                line-height: 1.3 !important;
+            }
+        }
+
+        .voucher-box {
+            background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            margin: 25px 0;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        .voucher-code {
+            background: #fff;
+            color: #ff6b6b;
+            font-size: 24px;
+            font-weight: bold;
+            padding: 15px 25px;
+            border-radius: 8px;
+            letter-spacing: 2px;
+            margin: 15px 0;
+            display: inline-block;
+            border: 2px dashed #ff6b6b;
+        }
+    </style>
+</head>
+
+<body style="
+      margin: 0;
+      padding: 0;
+      background-color: #fcfcfc;
+      font-family: Arial, Helvetica, sans-serif;
+      color: #1d1d1d;
+      width: 100% !important;
+    ">
+    <div role="article" aria-roledescription="email" lang="vi"
+        style="text-size-adjust: 100%; -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%"
+            style="margin: 0; padding: 0; width: 100%; height: 100%">
+            <tr>
+                <td style="margin: 0; padding: 40px 0; width: 100%; height: 100%">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600"
+                        style="margin: 0 auto; width: 600px; max-width: 600px" class="email-container">
+                        
+                        <!-- Header -->
+                        <tr>
+                            <td style="padding: 0 0 40px 0; text-align: center">
+                                <img src="https://sonaspaceserver.vercel.app/images/logo.png" 
+                                     alt="Sona Space Logo" 
+                                     style="width: 120px; height: auto; margin: 0 auto; display: block" />
+                            </td>
+                        </tr>
+
+                        <!-- Main Content -->
+                        <tr>
+                            <td style="
+                              background-color: #ffffff;
+                              padding: 50px;
+                              border-radius: 16px;
+                              box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+                            " class="content-padding">
+                                
+                                <!-- Apologetic Header -->
+                                <h1 style="
+                                  margin: 0 0 30px 0;
+                                  font-size: 28px;
+                                  line-height: 1.4;
+                                  color: #1d1d1d;
+                                  font-weight: 600;
+                                  text-align: center;
+                                " class="main-heading">
+                                    Chúng tôi xin lỗi về sự bất tiện này! 😔
+                                </h1>
+
+                                <!-- Greeting -->
+                                <p style="
+                                  margin: 0 0 25px 0;
+                                  font-size: 16px;
+                                  line-height: 1.6;
+                                  color: #4a4a4a;
+                                ">
+                                    Kính gửi <strong><%= customerName %></strong>,
+                                </p>
+
+                                <!-- Apology Message -->
+                                <p style="
+                                  margin: 0 0 25px 0;
+                                  font-size: 16px;
+                                  line-height: 1.6;
+                                  color: #4a4a4a;
+                                ">
+                                    Chúng tôi rất tiếc phải thông báo rằng đơn hàng <strong>#<%= orderHash %></strong> 
+                                    với tổng giá trị <strong><%= orderTotal %></strong> đã phải được hủy do những lý do bất khả kháng.
+                                </p>
+
+                                <p style="
+                                  margin: 0 0 30px 0;
+                                  font-size: 16px;
+                                  line-height: 1.6;
+                                  color: #4a4a4a;
+                                ">
+                                    Sona Space chân thành xin lỗi về sự bất tiện này và hiểu rằng điều này có thể gây ra 
+                                    sự thất vọng cho quý khách.
+                                </p>
+
+                                <!-- Voucher Section -->
+                                <div class="voucher-box">
+                                    <h3 style="
+                                      margin: 0 0 15px 0;
+                                      font-size: 20px;
+                                      color: #fff;
+                                      font-weight: 600;
+                                    ">
+                                        🎁 Quà tặng xin lỗi đặc biệt
+                                    </h3>
+                                    
+                                    <p style="
+                                      margin: 0 0 20px 0;
+                                      font-size: 16px;
+                                      color: #fff;
+                                      line-height: 1.5;
+                                    ">
+                                        Để bày tỏ sự xin lỗi chân thành, chúng tôi gửi tặng bạn mã giảm giá đặc biệt:
+                                    </p>
+
+                                    <div class="voucher-code">
+                                        <%= voucherCode %>
+                                    </div>
+
+                                    <p style="
+                                      margin: 15px 0 0 0;
+                                      font-size: 14px;
+                                      color: #fff;
+                                      opacity: 0.9;
+                                    ">
+                                        Giảm <strong><%= discountPercent %>%</strong> cho đơn hàng tiếp theo<br>
+                                        Có hiệu lực đến <strong><%= expiryDate %></strong>
+                                    </p>
+                                </div>
+
+                                <!-- How to use -->
+                                <div style="
+                                  background-color: #f8f9fa;
+                                  padding: 25px;
+                                  border-radius: 12px;
+                                  margin: 30px 0;
+                                  border-left: 4px solid #28a745;
+                                ">
+                                    <h4 style="
+                                      margin: 0 0 15px 0;
+                                      font-size: 18px;
+                                      color: #1d1d1d;
+                                      font-weight: 600;
+                                    ">
+                                        Cách sử dụng mã giảm giá:
+                                    </h4>
+                                    <ul style="
+                                      margin: 0;
+                                      padding-left: 20px;
+                                      font-size: 14px;
+                                      line-height: 1.6;
+                                      color: #4a4a4a;
+                                    ">
+                                        <li>Thêm sản phẩm yêu thích vào giỏ hàng</li>
+                                        <li>Nhập mã <strong><%= voucherCode %></strong> vào ô "Mã giảm giá" khi thanh toán</li>
+                                        <li>Nhận ngay ưu đãi <%= discountPercent %>% cho toàn bộ đơn hàng</li>
+                                        <li>Mã có hiệu lực trong <%= validDays %> ngày kể từ hôm nay</li>
+                                    </ul>
+                                </div>
+
+                                <!-- Commitment -->
+                                <p style="
+                                  margin: 0 0 25px 0;
+                                  font-size: 16px;
+                                  line-height: 1.6;
+                                  color: #4a4a4a;
+                                ">
+                                    Chúng tôi cam kết sẽ không để tình huống tương tự xảy ra trong tương lai và luôn 
+                                    nỗ lực mang đến trải nghiệm mua sắm tốt nhất cho quý khách.
+                                </p>
+
+                                <!-- Call to Action -->
+                                <div style="text-align: center; margin: 40px 0">
+                                    <a href="https://sonaspacestore.vercel.app" 
+                                       style="
+                                         display: inline-block;
+                                         background: linear-gradient(135deg, #667eea, #764ba2);
+                                         color: #ffffff;
+                                         text-decoration: none;
+                                         padding: 15px 35px;
+                                         border-radius: 8px;
+                                         font-size: 16px;
+                                         font-weight: 600;
+                                         text-align: center;
+                                         box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+                                       ">
+                                        Khám phá sản phẩm ngay 🛍️
+                                    </a>
+                                </div>
+
+                                <!-- Thank you -->
+                                <p style="
+                                  margin: 30px 0 0 0;
+                                  font-size: 16px;
+                                  line-height: 1.6;
+                                  color: #4a4a4a;
+                                ">
+                                    Một lần nữa, Sona Space xin chân thành cảm ơn sự thông cảm và tin tưởng của quý khách.
+                                </p>
+
+                                <p style="
+                                  margin: 25px 0 0 0;
+                                  font-size: 16px;
+                                  line-height: 1.6;
+                                  color: #4a4a4a;
+                                ">
+                                    Trân trọng,<br>
+                                    <strong>Đội ngũ Sona Space</strong>
+                                </p>
+                            </td>
+                        </tr>
+
+                        <!-- Footer -->
+                        <tr>
+                            <td style="
+                              padding: 40px 20px 20px 20px;
+                              text-align: center;
+                              border-top: 1px solid #e0e0e0;
+                              margin-top: 40px;
+                            ">
+                                <p style="
+                                  margin: 0 0 10px 0;
+                                  font-size: 14px;
+                                  color: #8a8a8a;
+                                  line-height: 1.5;
+                                ">
+                                    📧 <strong>Email:</strong> sonaspace.furniture@gmail.com<br>
+                                    📞 <strong>Hotline:</strong> 1900 xxx xxx<br>
+                                    🌐 <strong>Website:</strong> sonaspacestore.vercel.app
+                                </p>
+                                
+                                <p style="
+                                  margin: 20px 0 0 0;
+                                  font-size: 12px;
+                                  color: #b0b0b0;
+                                  line-height: 1.4;
+                                ">
+                                    © 2024 Sona Space. Tất cả quyền được bảo lưu.<br>
+                                    Email này được gửi tự động, vui lòng không trả lời.
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </div>
+</body>
+
+</html>

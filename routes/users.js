@@ -11,7 +11,7 @@ const cloudinary = require("../config/cloudinary");
  * @desc    Lấy danh sách người dùng (chỉ admin)
  * @access  Private (Admin)
  */
-router.get("/", isAdmin, async (req, res) => {
+router.get("/", verifyToken, isAdmin, async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
@@ -86,9 +86,7 @@ router.get("/simple", verifyToken, isAdmin, async (req, res) => {
   }
 });
 
-router.get("/admin", verifyToken, async (req, res) => {
-  console.log("📥 [GET] /admin - Nhận yêu cầu");
-
+router.get("/admin", verifyToken, isAdmin, async (req, res) => {
   try {
     let sqlQuery = `
       SELECT 
@@ -119,14 +117,10 @@ router.get("/admin", verifyToken, async (req, res) => {
       ? req.user.role.toLowerCase().trim()
       : "guest";
 
-    console.log("🔑 Token decoded - Role:", requestingUserRole);
-
     if (requestingUserRole === "staff") {
       sqlQuery += ` AND u.user_role = ?`;
       queryParams.push("user");
-      console.log("⚠️ Role là staff → chỉ xem user thường");
     } else if (requestingUserRole !== "admin") {
-      console.warn("⛔ Quyền bị từ chối - Không phải admin/staff");
       return res.status(403).json({
         error:
           "Forbidden - Bạn không có quyền truy cập danh sách người dùng này.",
@@ -138,11 +132,7 @@ router.get("/admin", verifyToken, async (req, res) => {
       ORDER BY u.created_at DESC
     `;
 
-    console.log("🧾 Final SQL Query:\n", sqlQuery);
-    console.log("📦 Query Params:", queryParams);
-
     const [rows] = await db.execute(sqlQuery, queryParams);
-    console.log(`✅ Truy vấn thành công. Tổng người dùng: ${rows.length}`);
 
     const users = rows.map((user) => {
       const birth = user.user_birth ? new Date(user.user_birth) : null;
@@ -190,7 +180,6 @@ router.get("/admin", verifyToken, async (req, res) => {
 
     res.json({ users });
   } catch (error) {
-    console.error("🔥 [GET /admin] Lỗi khi lấy danh sách người dùng:", error);
     res.status(500).json({ error: "Lỗi server khi lấy danh sách người dùng" });
   }
 });

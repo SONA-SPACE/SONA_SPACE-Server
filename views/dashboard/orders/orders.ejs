@@ -1483,7 +1483,6 @@
   async function updateReturnStatus(orderId, newReturnStatus) {
     try {
       // Gọi API để cập nhật return status
-      // Bạn cần tạo API endpoint này trong backend
       const response = await fetch(`/api/orders/${orderId}/return-status`, {
         method: 'PUT',
         headers: {
@@ -1496,15 +1495,69 @@
       const data = await response.json();
 
       if (data.success) {
-        // Hiển thị thông báo thành công
-        if (window.antd && window.antd.notification) {
-          window.antd.notification.success({
-            message: 'Thành công',
-            description: data.message || 'Đã cập nhật trạng thái hoàn trả thành công',
-            placement: 'topRight'
-          });
+        // Nếu trạng thái được cập nhật thành CANCEL_CONFIRMED, gửi email xin lỗi kèm voucher
+        if (newReturnStatus === 'CANCEL_CONFIRMED') {
+          try {
+            // Gọi API để gửi email xin lỗi kèm voucher
+            const emailResponse = await fetch(`/api/orders/${orderId}/send-apology-email`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + localStorage.getItem('token')
+              }
+            });
+
+            const emailData = await emailResponse.json();
+            
+            if (emailData.success) {
+              // Hiển thị thông báo thành công với thông tin voucher
+              if (window.antd && window.antd.notification) {
+                window.antd.notification.success({
+                  message: 'Thành công',
+                  description: `Đã cập nhật trạng thái và gửi email xin lỗi kèm voucher giảm giá 20% cho khách hàng. Mã voucher: ${emailData.data.voucherCode}`,
+                  placement: 'topRight',
+                  duration: 5
+                });
+              } else {
+                alert(`Đã cập nhật trạng thái và gửi email xin lỗi kèm voucher giảm giá 20%. Mã voucher: ${emailData.data.voucherCode}`);
+              }
+            } else {
+              // Nếu gửi email thất bại, vẫn thông báo cập nhật thành công nhưng có lỗi email
+              if (window.antd && window.antd.notification) {
+                window.antd.notification.warning({
+                  message: 'Cập nhật thành công',
+                  description: 'Đã cập nhật trạng thái nhưng không thể gửi email xin lỗi: ' + (emailData.message || 'Lỗi không xác định'),
+                  placement: 'topRight',
+                  duration: 5
+                });
+              } else {
+                alert('Đã cập nhật trạng thái nhưng không thể gửi email xin lỗi: ' + (emailData.message || 'Lỗi không xác định'));
+              }
+            }
+          } catch (emailError) {
+            console.error('Lỗi khi gửi email xin lỗi:', emailError);
+            // Vẫn thông báo cập nhật thành công nhưng có lỗi email
+            if (window.antd && window.antd.notification) {
+              window.antd.notification.warning({
+                message: 'Cập nhật thành công',
+                description: 'Đã cập nhật trạng thái nhưng có lỗi khi gửi email xin lỗi',
+                placement: 'topRight'
+              });
+            } else {
+              alert('Đã cập nhật trạng thái nhưng có lỗi khi gửi email xin lỗi');
+            }
+          }
         } else {
-          alert(data.message || 'Đã cập nhật trạng thái hoàn trả thành công');
+          // Hiển thị thông báo thành công bình thường cho các trạng thái khác
+          if (window.antd && window.antd.notification) {
+            window.antd.notification.success({
+              message: 'Thành công',
+              description: data.message || 'Đã cập nhật trạng thái hoàn trả thành công',
+              placement: 'topRight'
+            });
+          } else {
+            alert(data.message || 'Đã cập nhật trạng thái hoàn trả thành công');
+          }
         }
 
         // Cập nhật lại danh sách đơn hàng

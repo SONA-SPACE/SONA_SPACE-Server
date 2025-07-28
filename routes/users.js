@@ -87,6 +87,8 @@ router.get("/simple", verifyToken, isAdmin, async (req, res) => {
 });
 
 router.get("/admin", verifyToken, async (req, res) => {
+  console.log("📥 [GET] /admin - Nhận yêu cầu");
+
   try {
     let sqlQuery = `
       SELECT 
@@ -100,17 +102,12 @@ router.get("/admin", verifyToken, async (req, res) => {
         u.user_gender,
         u.user_birth,
         u.user_email_active,
-        u.user_verified_at,      -- Thêm ngày kích hoạt
+        u.user_verified_at,
         u.user_disabled_at,
         u.created_at,
         u.updated_at,
-
-        -- Đếm đơn hàng đã mua (SUCCESS)
         COUNT(CASE WHEN o.current_status = 'SUCCESS' THEN 1 END) AS total_success_orders,
-
-        -- Đếm đơn hàng đã hủy (CANCELLED)
         COUNT(CASE WHEN o.current_status = 'CANCELLED' THEN 1 END) AS total_cancelled_orders
-
       FROM user u
       LEFT JOIN orders o ON u.user_id = o.user_id
       WHERE u.deleted_at IS NULL
@@ -118,15 +115,18 @@ router.get("/admin", verifyToken, async (req, res) => {
 
     let queryParams = [];
 
-    // Lấy vai trò người dùng hiện tại
     const requestingUserRole = req.user
       ? req.user.role.toLowerCase().trim()
       : "guest";
 
+    console.log("🔑 Token decoded - Role:", requestingUserRole);
+
     if (requestingUserRole === "staff") {
       sqlQuery += ` AND u.user_role = ?`;
       queryParams.push("user");
+      console.log("⚠️ Role là staff → chỉ xem user thường");
     } else if (requestingUserRole !== "admin") {
+      console.warn("⛔ Quyền bị từ chối - Không phải admin/staff");
       return res.status(403).json({
         error:
           "Forbidden - Bạn không có quyền truy cập danh sách người dùng này.",
@@ -138,7 +138,11 @@ router.get("/admin", verifyToken, async (req, res) => {
       ORDER BY u.created_at DESC
     `;
 
+    console.log("🧾 Final SQL Query:\n", sqlQuery);
+    console.log("📦 Query Params:", queryParams);
+
     const [rows] = await db.execute(sqlQuery, queryParams);
+    console.log(`✅ Truy vấn thành công. Tổng người dùng: ${rows.length}`);
 
     const users = rows.map((user) => {
       const birth = user.user_birth ? new Date(user.user_birth) : null;
@@ -162,10 +166,23 @@ router.get("/admin", verifyToken, async (req, res) => {
         birth: birth ? birth.toLocaleDateString("vi-VN") : "",
         email_active: user.user_email_active,
         status: disabledAt ? "Vô hiệu" : "Hoạt động",
-        created_at: createdAt.toISOString(),
-        updated_at: updatedAt.toISOString(),
-        disabled_at: disabledAt ? disabledAt.toISOString() : null,
-        verified_at: verifiedAt ? verifiedAt.toISOString() : null, // Ngày kích hoạt
+        created_at:
+          createdAt instanceof Date && !isNaN(createdAt)
+            ? createdAt.toISOString()
+            : null,
+        updated_at:
+          updatedAt instanceof Date && !isNaN(updatedAt)
+            ? updatedAt.toISOString()
+            : null,
+        disabled_at:
+          disabledAt instanceof Date && !isNaN(disabledAt)
+            ? disabledAt.toISOString()
+            : null,
+        verified_at:
+          verifiedAt instanceof Date && !isNaN(verifiedAt)
+            ? verifiedAt.toISOString()
+            : null,
+
         total_success_orders: user.total_success_orders || 0,
         total_cancelled_orders: user.total_cancelled_orders || 0,
       };
@@ -173,7 +190,7 @@ router.get("/admin", verifyToken, async (req, res) => {
 
     res.json({ users });
   } catch (error) {
-    console.error("[GET /admin] Lỗi khi lấy danh sách người dùng:", error);
+    console.error("🔥 [GET /admin] Lỗi khi lấy danh sách người dùng:", error);
     res.status(500).json({ error: "Lỗi server khi lấy danh sách người dùng" });
   }
 });

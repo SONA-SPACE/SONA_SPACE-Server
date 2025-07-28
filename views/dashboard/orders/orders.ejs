@@ -153,6 +153,73 @@
     background-color: #f5f5f5;
     color: #999;
   }
+
+  /* Order status select dropdown styles */
+  .order-status-select {
+    width: 100%;
+    min-width: 150px;
+    padding: 6px 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    background-color: #fff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .order-status-select:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  }
+
+  .order-status-select:hover {
+    border-color: #bbb;
+  }
+
+  /* Order status colors based on current status */
+  .order-status-select[data-current-status="PENDING"] {
+    background-color: #fff3cd;
+    color: #856404;
+    border-color: #ffeaa7;
+  }
+
+  .order-status-select[data-current-status="CONFIRMED"] {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    border-color: #bee5eb;
+  }
+
+  .order-status-select[data-current-status="SHIPPING"] {
+    background-color: #cce7ff;
+    color: #004085;
+    border-color: #a6d5fa;
+  }
+
+  .order-status-select[data-current-status="SUCCESS"] {
+    background-color: #d4edda;
+    color: #155724;
+    border-color: #c3e6cb;
+  }
+
+  .order-status-select[data-current-status="FAILED"] {
+    background-color: #f8d7da;
+    color: #721c24;
+    border-color: #f5c6cb;
+  }
+
+  .order-status-select[data-current-status="CANCELLED"] {
+    background-color: #e2e3e5;
+    color: #383d41;
+    border-color: #c6c8ca;
+  }
+
+  .order-status-select[data-current-status="RETURN"] {
+    background-color: #fde2e4;
+    color: #fd7e14;
+    border-color: #fd7e14;
+  }
 </style>
 
 <!-- Trang quản lý đơn hàng -->
@@ -308,6 +375,7 @@
                       <a class="filter-item" href="#" data-sort="status-success">Giao hàng thành công</a>
                       <a class="filter-item" href="#" data-sort="status-failed">Thất bại</a>
                       <a class="filter-item" href="#" data-sort="status-cancelled">Đã hủy</a>
+                      <a class="filter-item" href="#" data-sort="status-return">Đang hoàn trả</a>
                       <a class="filter-item" href="#" data-sort="status-all">Tất cả</a>
                     </div>
                   </div>
@@ -638,6 +706,27 @@
     const tbody = document.getElementById('orders-list');
     const rows = Array.from(tbody.querySelectorAll('tr'));
 
+    // Helper function to parse custom date format "16:08:55 8-05-2025"
+    function parseCustomDate(dateStr) {
+      const parts = dateStr.trim().split(' ');
+      if (parts.length === 2) {
+        const timePart = parts[0]; // "16:08:55"
+        const datePart = parts[1]; // "8-05-2025"
+        const dateParts = datePart.split('-');
+        if (dateParts.length === 3) {
+          const day = parseInt(dateParts[0]);
+          const month = parseInt(dateParts[1]) - 1; // Month is 0-indexed
+          const year = parseInt(dateParts[2]);
+          const timeParts = timePart.split(':');
+          const hour = parseInt(timeParts[0]);
+          const minute = parseInt(timeParts[1]);
+          const second = parseInt(timeParts[2]);
+          return new Date(year, month, day, hour, minute, second);
+        }
+      }
+      return new Date(dateStr); // Fallback
+    }
+
     // Sắp xếp dựa trên loại sắp xếp
     switch (sortType) {
       case 'order-asc':
@@ -658,16 +747,20 @@
 
       case 'date-asc':
         rows.sort((a, b) => {
-          const aValue = new Date(a.querySelectorAll('td')[2].textContent);
-          const bValue = new Date(b.querySelectorAll('td')[2].textContent);
+          const aDateText = a.querySelectorAll('td')[2].textContent;
+          const bDateText = b.querySelectorAll('td')[2].textContent;
+          const aValue = parseCustomDate(aDateText);
+          const bValue = parseCustomDate(bDateText);
           return aValue - bValue;
         });
         break;
 
       case 'date-desc':
         rows.sort((a, b) => {
-          const aValue = new Date(a.querySelectorAll('td')[2].textContent);
-          const bValue = new Date(b.querySelectorAll('td')[2].textContent);
+          const aDateText = a.querySelectorAll('td')[2].textContent;
+          const bDateText = b.querySelectorAll('td')[2].textContent;
+          const aValue = parseCustomDate(aDateText);
+          const bValue = parseCustomDate(bDateText);
           return bValue - aValue;
         });
         break;
@@ -838,6 +931,7 @@
       case 'status-success':
       case 'status-failed':
       case 'status-cancelled':
+      case 'status-return':
         // Lấy trạng thái đơn hàng cần lọc
         const statusToFilter = sortType.replace('status-', '').toUpperCase();
         // Lọc các đơn hàng theo trạng thái
@@ -970,27 +1064,12 @@
           const pendingOrders = statusData.find(item => item.status === 'PENDING')?.count || 0;
           const shippingOrders = statusData.find(item => item.status === 'SHIPPING')?.count || 0;
           const cancelledOrders = statusData.find(item => item.status === 'CANCELLED')?.count || 0;
+          const returnOrders = statusData.find(item => item.status === 'RETURN')?.count || 0;
 
           document.getElementById('pending-orders').textContent = pendingOrders;
           document.getElementById('shipping-orders').textContent = shippingOrders;
           document.getElementById('cancel-orders').textContent = cancelledOrders;
-
-          // For return orders, we need to count orders with RETURNED status or check the return_orders table
-          // For now, we'll just use 0 as a placeholder
-          document.getElementById('return-orders').textContent = 0;
-
-          // Try to fetch return orders count if there's an API for it
-          try {
-            const returnRes = await fetch('/api/orders/return/count', {
-              headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
-            });
-            const returnData = await returnRes.json();
-            if (returnData && returnData.count) {
-              document.getElementById('return-orders').textContent = returnData.count;
-            }
-          } catch (returnErr) {
-            console.error("Không thể lấy số lượng đơn hàng trả lại:", returnErr);
-          }
+          document.getElementById('return-orders').textContent = returnOrders;
         }
       } catch (statusErr) {
         console.error("Lỗi khi lấy thông tin trạng thái đơn hàng:", statusErr);
@@ -1023,6 +1102,7 @@
             <option value="SUCCESS" ${order.current_status === 'SUCCESS' ? 'selected' : ''} ${(order.current_status !== 'SHIPPING' && order.current_status !== 'SUCCESS') ? 'disabled' : ''}>Giao hàng thành công</option>
             <option value="FAILED" ${order.current_status === 'FAILED' ? 'selected' : ''}>Thất bại</option>
             <option value="CANCELLED" ${order.current_status === 'CANCELLED' ? 'selected' : ''}>Đã hủy</option>
+            <option value="RETURN" ${order.current_status === 'RETURN' ? 'selected' : ''}>Đang hoàn trả</option>
           </select>
         </td>
         <td>${paymentMethod}</td>
@@ -1060,7 +1140,8 @@
       case 'SUCCESS': return 'Giao hàng thành công';
       case 'FAILED': return 'Thất bại';
       case 'CANCELLED': return 'Đã hủy';
-      case 'REFUND': return 'Đang hoàn trả';
+      case 'RETURN': return 'Đang hoàn trả';
+      case 'REFUND': return 'Hoàn tiền';
       default: return status;
     }
   }

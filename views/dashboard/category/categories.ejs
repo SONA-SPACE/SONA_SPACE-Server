@@ -55,7 +55,7 @@
     const URL_API = "http://localhost:3501/api";
 
     function getCategories() {
-      fetch(URL_API + "/categories/admin")
+      fetch(URL_API + "/categories/admin/all")
         .then((response) => response.json())
         .then((data) => {
           renderCategories(data);
@@ -82,7 +82,7 @@
             <div class="category-info">
               <div class="category-image">
                 <img src="${
-                  category.category_image || "/images/default.jpg"
+                  category.category_image || ""
                 }" alt="${category.category_name}">
               </div>
               <div class="category-name">${category.category_name}</div>

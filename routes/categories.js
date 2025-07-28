@@ -62,44 +62,32 @@ router.get("/", async (req, res) => {
 });
 
 /**
- * @route   GET /api/categories
- * @desc    Lấy tất cả danh mục sản phẩm
+ * @route   GET /api/categories/:slug
+ * @desc    Lấy thông tin một danh mục theo slug
  * @access  Public
  */
-router.get("/admin", verifyToken, isAdmin, async (req, res) => {
+router.get("/:slug", async (req, res) => {
+  let slug = req.params.slug;
+  if (!slug) return res.status(400).json({ message: "Slug is required" });
   try {
-    console.log("Fetching categories...");
-
     const sql = `
       SELECT
         c.*,
+        c.slug,
         (SELECT COUNT(*) FROM product WHERE category_id = c.category_id) as product_count
       FROM category c
-      ORDER BY c.category_priority ASC
+      WHERE c.slug = ?
     `;
+    const [category] = await db.query(sql, [slug]);
 
-    console.log("SQL Query:", sql);
-
-    try {
-      const [categories] = await db.query(sql);
-      console.log(`Found ${categories.length} categories`);
-
-      return res.json(categories);
-    } catch (dbError) {
-      console.error("Database error:", dbError);
-      console.error("SQL Error Code:", dbError.code);
-      console.error("SQL Error Number:", dbError.errno);
-      console.error("SQL Error Message:", dbError.message);
-      console.error("SQL Error State:", dbError.sqlState);
-      console.error("SQL Error Stack:", dbError.stack);
-
-      throw new Error(`Database error: ${dbError.message}`);
+    if (!category || category.length === 0) {
+      return res.status(404).json({ error: "Category not found" });
     }
+
+    res.json(category[0]);
   } catch (error) {
-    console.error("Error fetching categories:", error);
-    res
-      .status(500)
-      .json({ error: "Failed to fetch categories", details: error.message });
+    console.error("Error fetching category:", error);
+    res.status(500).json({ error: "Failed to fetch category" });
   }
 });
 
@@ -139,6 +127,47 @@ router.get("/:categoryId", async (req, res) => {
   }
 });
 
+/**
+ * @route   GET /api/categories/admin/all
+ * @desc    Lấy tất cả danh mục sản phẩm
+ * @access  Private (Admin only)
+ */
+router.get("/admin/all", verifyToken, isAdmin, async (req, res) => {
+  try {
+    console.log("Fetching categories...");
+
+    const sql = `
+      SELECT
+        c.*,
+        (SELECT COUNT(*) FROM product WHERE category_id = c.category_id) as product_count
+      FROM category c
+      ORDER BY c.category_priority ASC
+    `;
+
+    console.log("SQL Query:", sql);
+
+    try {
+      const [categories] = await db.query(sql);
+      console.log(`Found ${categories.length} categories`);
+
+      return res.json(categories);
+    } catch (dbError) {
+      console.error("Database error:", dbError);
+      console.error("SQL Error Code:", dbError.code);
+      console.error("SQL Error Number:", dbError.errno);
+      console.error("SQL Error Message:", dbError.message);
+      console.error("SQL Error State:", dbError.sqlState);
+      console.error("SQL Error Stack:", dbError.stack);
+
+      throw new Error(`Database error: ${dbError.message}`);
+    }
+  } catch (error) {
+    console.error("Error fetching categories:", error);
+    res
+      .status(500)
+      .json({ error: "Failed to fetch categories", details: error.message });
+  }
+});
 /**
  * @route   GET /api/categories/:categoryId/attributes
  * @desc    Lấy thuộc tính danh mục theo ID danh mục (alternative path)
@@ -180,36 +209,6 @@ router.get("/:categoryId/attributes", async (req, res) => {
       success: false,
       message: `Lỗi máy chủ khi lấy danh sách thuộc tính cho danh mục ID ${categoryId}.`,
     });
-  }
-});
-
-/**
- * @route   GET /api/categories/:slug
- * @desc    Lấy thông tin một danh mục theo slug
- * @access  Public
- */
-router.get("/:slug", async (req, res) => {
-  let slug = req.params.slug;
-  if (!slug) return res.status(400).json({ message: "Slug is required" });
-  try {
-    const sql = `
-      SELECT
-        c.*,
-        c.slug,
-        (SELECT COUNT(*) FROM product WHERE category_id = c.category_id) as product_count
-      FROM category c
-      WHERE c.slug = ?
-    `;
-    const [category] = await db.query(sql, [slug]);
-
-    if (!category || category.length === 0) {
-      return res.status(404).json({ error: "Category not found" });
-    }
-
-    res.json(category[0]);
-  } catch (error) {
-    console.error("Error fetching category:", error);
-    res.status(500).json({ error: "Failed to fetch category" });
   }
 });
 

@@ -24,12 +24,6 @@ function formatDateVNPay(date) {
  * @access  Private (Admin)
  */
 
-/**
- * @route   GET /api/orders/count
- * @desc    Lấy số lượng đơn hàng theo trạng thái (chỉ admin)
- * @access  Private (Admin)
- */
-
 router.get("/test-email", async (req, res) => {
   const result = await sendEmail1(
     "totrongnhan1209@example.com", // email test thật
@@ -47,7 +41,7 @@ router.get("/test-email", async (req, res) => {
 
 router.get("/complete/:orderHash", optionalAuth, async (req, res) => {
   const { orderHash } = req.params;
-  console.log("🔍 Truy vấn đơn hàng:", orderHash);
+  console.log(" Truy vấn đơn hàng:", orderHash);
 
   try {
     const [[order]] = await db.query(
@@ -195,16 +189,16 @@ router.get("/hash/:orderHash", optionalAuth, async (req, res) => {
       'SHIPPING': 3,
       'COMPLETED': 4,
       'SUCCESS': 4, // Tương đương với COMPLETED
-      
+
       // Quy trình hủy đơn hàng (từ bảng order_returns)
       'CANCEL_REQUESTED': 1, // Khách hàng yêu cầu hủy
       'CANCEL_PENDING': 2,   // Đang chờ xử lý hủy
       'CANCEL_CONFIRMED': 3, // Xác nhận hủy
       'CANCELLED': 4,        // Đã hủy hoàn tất
-      
+
       // Quy trình trả hàng
       'RETURN': 4,           // Đã trả hàng hoàn tất
-      
+
       // Quy trình từ chối/thất bại
       'REJECTED': 1,         // Đơn hàng bị từ chối
       'FAILED': 1            // Đơn hàng thất bại
@@ -781,6 +775,7 @@ router.post("/", verifyToken, async (req, res) => {
         }),
         current_status: "PENDING",
         order_total_final: amount.toLocaleString("vi-VN") + "đ",
+        discount: order_discount ? Number(order_discount).toLocaleString("vi-VN") + "đ" : null,
         products: cart_items.map((item) => ({
           name: item.name,
           quantity: item.quantity,
@@ -1141,6 +1136,7 @@ router.post("/payment/momo", async (req, res) => {
       created_at: new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" }),
       current_status: "PENDING",
       order_total_final: amount.toLocaleString("vi-VN") + "đ",
+      order_discount: order_discount ? Number(order_discount).toLocaleString("vi-VN") + "đ" : null,
       products: cart_items.map((item) => ({
         name: item.name,
         quantity: item.quantity,
@@ -1389,9 +1385,9 @@ router.put("/:id/return-status", verifyToken, isAdmin, async (req, res) => {
   ];
 
   if (!validReturnStatuses.includes(return_status)) {
-    return res.status(400).json({ 
-      success: false, 
-      message: "Trạng thái hoàn trả không hợp lệ" 
+    return res.status(400).json({
+      success: false,
+      message: "Trạng thái hoàn trả không hợp lệ"
     });
   }
 
@@ -1403,17 +1399,17 @@ router.put("/:id/return-status", verifyToken, isAdmin, async (req, res) => {
     );
 
     if (!order) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "Không tìm thấy đơn hàng" 
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy đơn hàng"
       });
     }
 
     // Kiểm tra xem đơn hàng có đang ở trạng thái RETURN không
     if (order.current_status !== 'RETURN' && return_status !== "") {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Chỉ có thể thay đổi trạng thái hoàn trả khi đơn hàng đang ở trạng thái RETURN" 
+      return res.status(400).json({
+        success: false,
+        message: "Chỉ có thể thay đổi trạng thái hoàn trả khi đơn hàng đang ở trạng thái RETURN"
       });
     }
 
@@ -1477,12 +1473,12 @@ router.put("/:id/return-status", verifyToken, isAdmin, async (req, res) => {
       // Commit transaction
       await connection.commit();
 
-      const statusText = return_status === "" ? "Không có hoàn trả" : 
-                        return_status === "PENDING" ? "Đang chờ xử lý" :
-                        return_status === "APPROVED" ? "Đã duyệt trả hàng" :
-                        return_status === "CANCEL_CONFIRMED" ? "Xác nhận hủy đơn hàng" :
-                        return_status === "CANCELLED" ? "Đã hủy hoàn tất" :
-                        return_status === "REJECTED" ? "Từ chối trả hàng" : return_status;
+      const statusText = return_status === "" ? "Không có hoàn trả" :
+        return_status === "PENDING" ? "Đang chờ xử lý" :
+          return_status === "APPROVED" ? "Đã duyệt trả hàng" :
+            return_status === "CANCEL_CONFIRMED" ? "Xác nhận hủy đơn hàng" :
+              return_status === "CANCELLED" ? "Đã hủy hoàn tất" :
+                return_status === "REJECTED" ? "Từ chối trả hàng" : return_status;
 
       return res.status(200).json({
         success: true,
@@ -1500,9 +1496,9 @@ router.put("/:id/return-status", verifyToken, isAdmin, async (req, res) => {
 
   } catch (err) {
     console.error("Lỗi cập nhật trạng thái hoàn trả:", err);
-    res.status(500).json({ 
-      success: false, 
-      message: "Lỗi máy chủ khi cập nhật trạng thái hoàn trả" 
+    res.status(500).json({
+      success: false,
+      message: "Lỗi máy chủ khi cập nhật trạng thái hoàn trả"
     });
   }
 });
@@ -2175,163 +2171,6 @@ router.get('/return/count', verifyToken, isAdmin, async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error while counting return orders",
-      error: error.message
-    });
-  }
-});
-
-/**
- * @route   POST /api/orders/:id/send-apology-email
- * @desc    Send apology email with discount voucher when order is cancelled
- * @access  Private (Admin)
- */
-router.post('/:id/send-apology-email', verifyToken, isAdmin, async (req, res) => {
-  try {
-    const orderId = req.params.id;
-
-    // Lấy thông tin đơn hàng và khách hàng
-    const [[order]] = await db.query(`
-      SELECT 
-        o.order_id,
-        o.user_id,
-        o.order_hash,
-        o.order_name_new,
-        o.order_name_old,
-        o.order_email_new,
-        o.order_email_old,
-        o.order_total_final,
-        o.current_status,
-        u.user_name,
-        u.user_gmail,
-        or_latest.return_status
-      FROM orders o
-      LEFT JOIN user u ON o.user_id = u.user_id
-      LEFT JOIN (
-        SELECT 
-          order_id,
-          status as return_status
-        FROM order_returns 
-        WHERE return_id IN (
-          SELECT MAX(return_id) 
-          FROM order_returns 
-          GROUP BY order_id
-        )
-      ) or_latest ON o.order_id = or_latest.order_id
-      WHERE o.order_id = ?
-    `, [orderId]);
-
-    if (!order) {
-      return res.status(404).json({
-        success: false,
-        message: 'Không tìm thấy đơn hàng'
-      });
-    }
-
-    // Xác định email và tên khách hàng
-    const customerEmail = order.order_email_new || order.order_email_old || order.user_gmail;
-    const customerName = order.order_name_new || order.order_name_old || order.user_name || 'Quý khách';
-
-    if (!customerEmail) {
-      return res.status(400).json({
-        success: false,
-        message: 'Không tìm thấy email khách hàng'
-      });
-    }
-
-    // Tạo mã voucher giảm giá 20%
-    const voucherCode = `SORRY20-${Date.now().toString().slice(-6)}`;
-    const discountPercent = 20;
-    const validDays = 90; // 90 ngày
-    const expiryDate = new Date();
-    expiryDate.setDate(expiryDate.getDate() + validDays);
-
-    // Bắt đầu transaction
-    const connection = await db.getConnection();
-    await connection.beginTransaction();
-
-    try {
-      // Tạo coupon trong database - RIÊNG CHỈ CHO USER NÀY
-      const [couponResult] = await connection.query(`
-        INSERT INTO couponcode (
-          code,
-          title,
-          description,
-          discount_type,
-          value_price,
-          min_order,
-          used,
-          start_time,
-          exp_time,
-          status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?, 1)
-      `, [
-        voucherCode,
-        'Xin lỗi khách hàng - Giảm giá 20%',
-        `Mã giảm giá xin lỗi cho đơn hàng #${order.order_hash} bị hủy`,
-        'percentage',
-        discountPercent,
-        0, // min_order = 0 (không giới hạn)
-        1, // used = 1 (còn 1 lượt)
-        expiryDate,
-      ]);
-
-      const couponId = couponResult.insertId;
-
-      // GÁN VOUCHER CHỈ CHO USER CỤ THỂ - NGĂN CHẶN ABUSE
-      await connection.query(`
-        INSERT INTO user_has_coupon (user_id, couponcode_id, status)
-        VALUES (?, ?, 0)
-      `, [order.user_id, couponId]);
-
-      // Chuẩn bị dữ liệu email
-      const emailData = {
-        customerName: customerName,
-        customerEmail: customerEmail,
-        orderHash: order.order_hash,
-        orderTotal: order.order_total_final ? 
-          Number(order.order_total_final).toLocaleString('vi-VN') + 'đ' : 'N/A',
-        voucherCode: voucherCode,
-        discountPercent: discountPercent,
-        expiryDate: expiryDate.toLocaleDateString('vi-VN'),
-        validDays: validDays
-      };
-
-      // Gửi email xin lỗi
-      await sendEmail1(
-        customerEmail,
-        `Xin lỗi về việc hủy đơn hàng #${order.order_hash} - Sona Space`,
-        emailData,
-        'apology' // template type
-      );
-
-      // Commit transaction
-      await connection.commit();
-
-      return res.status(200).json({
-        success: true,
-        message: 'Email xin lỗi đã được gửi thành công',
-        data: {
-          customerEmail: customerEmail,
-          customerName: customerName,
-          voucherCode: voucherCode,
-          discountPercent: discountPercent,
-          expiryDate: expiryDate.toLocaleDateString('vi-VN')
-        }
-      });
-
-    } catch (error) {
-      // Rollback nếu có lỗi
-      await connection.rollback();
-      throw error;
-    } finally {
-      connection.release();
-    }
-
-  } catch (error) {
-    console.error('Lỗi khi gửi email xin lỗi:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Lỗi máy chủ khi gửi email xin lỗi',
       error: error.message
     });
   }

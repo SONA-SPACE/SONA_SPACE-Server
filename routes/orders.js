@@ -2193,6 +2193,7 @@ router.post('/:id/send-apology-email', verifyToken, isAdmin, async (req, res) =>
     const [[order]] = await db.query(`
       SELECT 
         o.order_id,
+        o.user_id,
         o.order_hash,
         o.order_name_new,
         o.order_name_old,
@@ -2249,8 +2250,8 @@ router.post('/:id/send-apology-email', verifyToken, isAdmin, async (req, res) =>
     await connection.beginTransaction();
 
     try {
-      // Tạo coupon trong database
-      await connection.query(`
+      // Tạo coupon trong database - RIÊNG CHỈ CHO USER NÀY
+      const [couponResult] = await connection.query(`
         INSERT INTO couponcode (
           code,
           title,
@@ -2273,6 +2274,14 @@ router.post('/:id/send-apology-email', verifyToken, isAdmin, async (req, res) =>
         1, // used = 1 (còn 1 lượt)
         expiryDate,
       ]);
+
+      const couponId = couponResult.insertId;
+
+      // GÁN VOUCHER CHỈ CHO USER CỤ THỂ - NGĂN CHẶN ABUSE
+      await connection.query(`
+        INSERT INTO user_has_coupon (user_id, couponcode_id, status)
+        VALUES (?, ?, 0)
+      `, [order.user_id, couponId]);
 
       // Chuẩn bị dữ liệu email
       const emailData = {

@@ -145,7 +145,8 @@ router.get('/admin', verifyToken, async (req, res) => {
         start_time,
         used,
         status,
-        exp_time
+        exp_time,
+        min_order
       FROM couponcode
       WHERE exp_time > NOW()
       ORDER BY couponcode_id DESC
@@ -278,22 +279,28 @@ router.post('/', verifyToken, isAdmin, async (req, res) => {
     if (exist.length > 0) {
       return res.status(400).json({ error: 'Mã voucher đã tồn tại' });
     }
+    if (!/^[A-Z0-9_]{3,20}$/.test(code)) {
+      return res.status(400).json({ error: 'Mã code không hợp lệ (chỉ dùng chữ in hoa, số, dấu _)' });
+    }
+if (title.length > 100 || code.length > 50 || description?.length > 255) {
+  return res.status(400).json({ error: 'Dữ liệu vượt quá độ dài cho phép' });
+}
 
     if (isNaN(value_price) || Number(value_price) <= 0) {
       return res.status(400).json({ error: 'Giá giảm không hợp lệ' });
     }
-if (discount_type === 'percentage') {
-  if (value_price < 1 || value_price > 100) {
-    return res.status(400).json({ error: 'Giá giảm phần trăm phải từ 1 đến 100' });
-  }
-} else if (discount_type === 'fixed') {
-  if (value_price < 1) {
-    return res.status(400).json({ error: 'Giá giảm cố định phải lớn hơn hoặc bằng 1 VND' });
-  }
-}
-if (min_order !== null && min_order !== undefined && (isNaN(min_order) || Number(min_order) < 0)) {
-  return res.status(400).json({ error: 'Giá trị đơn hàng tối thiểu không hợp lệ' });
-}
+    if (discount_type === 'percentage') {
+      if (value_price < 1 || value_price > 100) {
+        return res.status(400).json({ error: 'Giá giảm phần trăm phải từ 1 đến 100' });
+      }
+    } else if (discount_type === 'fixed') {
+      if (value_price < 1) {
+        return res.status(400).json({ error: 'Giá giảm cố định phải lớn hơn hoặc bằng 1 VND' });
+      }
+    }
+    if (min_order !== null && min_order !== undefined && (isNaN(min_order) || Number(min_order) < 0)) {
+      return res.status(400).json({ error: 'Giá trị đơn hàng tối thiểu không hợp lệ' });
+    }
     const startDate = start_time ? new Date(start_time) : new Date();
     const endDate = new Date(exp_time);
     if (endDate <= startDate) {
@@ -638,17 +645,24 @@ router.post('/validate', verifyToken, async (req, res) => {
     }
 
     const [coupons] = await db.query(`
-      SELECT * FROM couponcode 
-      WHERE code = ? AND used > 0
-    `, [code]);
+  SELECT c.* FROM couponcode c
+  JOIN user_has_coupon uhc ON c.couponcode_id = uhc.couponcode_id
+  WHERE c.code = ? AND uhc.user_id = ? 
+`, [code, req.user.id]);
+
+
 
     if (coupons.length === 0) {
-      return res.status(404).json({ error: 'Voucher đã hết lượt sử dụng' });
+      return res.status(404).json({ error: 'Mã giảm giá không tồn tại' });
     }
+
 
     const coupon = coupons[0];
     const now = new Date();
 
+    if (coupon.used <= 0) {
+      return res.status(400).json({ error: 'Voucher đã hết lượt sử dụng' });
+    }
     //  Check quyền sử dụng (giới hạn theo user hoặc dùng chung)
     const [allowedUsers] = await db.query(
       `SELECT 1 FROM user_has_coupon WHERE couponcode_id = ?`,
@@ -725,8 +739,8 @@ router.post('/validate', verifyToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error validating coupon code:', error);
-    res.status(500).json({ error: 'Failed to validate coupon code' });
+    console.error('Lỗi mã giảm giá:', error);
+    res.status(500).json({ error: 'Không xác thực được mã  giảm giá' });
   }
 });
 

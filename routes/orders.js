@@ -41,7 +41,7 @@ router.get("/test-email", async (req, res) => {
 
 router.get("/complete/:orderHash", optionalAuth, async (req, res) => {
   const { orderHash } = req.params;
-  console.log("🔍 Truy vấn đơn hàng:", orderHash);
+  console.log(" Truy vấn đơn hàng:", orderHash);
 
   try {
     const [[order]] = await db.query(
@@ -129,6 +129,29 @@ router.get("/hash/:orderHash", optionalAuth, async (req, res) => {
         .json({ success: false, message: "Không tìm thấy đơn hàng" });
     }
 
+    // Lấy thông tin hủy/trả đơn hàng từ bảng order_returns nếu đơn hàng có trạng thái CANCELLED hoặc RETURN
+    let returnInfo = null;
+    if (order.current_status === 'CANCELLED' || order.current_status === 'RETURN') {
+      const [orderReturns] = await db.query(`
+        SELECT 
+          return_id,
+          reason,
+          return_type,
+          total_refund,
+          status as return_status,
+          created_at as return_created_at,
+          updated_at as return_updated_at
+        FROM order_returns 
+        WHERE order_id = ?
+        ORDER BY created_at DESC
+        LIMIT 1
+      `, [order.order_id]);
+
+      if (orderReturns.length > 0) {
+        returnInfo = orderReturns[0];
+      }
+    }
+
     const [items] = await db.query(
       `
       SELECT 
@@ -159,12 +182,45 @@ router.get("/hash/:orderHash", optionalAuth, async (req, res) => {
     );
 
     const statusStepMap = {
-      PENDING: 1,
-      CONFIRMED: 2,
-      SHIPPING: 3,
-      SUCCESS: 4,
+      // Quy trình đặt hàng thành công
+      'PENDING': 1,
+      'APPROVED': 2,
+      'CONFIRMED': 2, // Tương đương với APPROVED
+      'SHIPPING': 3,
+      'COMPLETED': 4,
+      'SUCCESS': 4, // Tương đương với COMPLETED
+
+      // Quy trình hủy đơn hàng (từ bảng order_returns)
+      'CANCEL_REQUESTED': 1, // Khách hàng yêu cầu hủy
+      'CANCEL_PENDING': 2,   // Đang chờ xử lý hủy
+      'CANCEL_CONFIRMED': 3, // Xác nhận hủy
+      'CANCELLED': 4,        // Đã hủy hoàn tất
+
+      // Quy trình trả hàng
+      'RETURN': 4,           // Đã trả hàng hoàn tất
+
+      // Quy trình từ chối/thất bại
+      'REJECTED': 1,         // Đơn hàng bị từ chối
+      'FAILED': 1            // Đơn hàng thất bại
     };
-    const statusStep = statusStepMap[order.current_status] || 1;
+
+    // Xác định loại quy trình và step dựa trên trạng thái
+    let processType = 'normal'; // Quy trình bình thường
+    let actualStatus = order.current_status;
+    let statusStep = statusStepMap[order.current_status] || 1;
+
+    // Kiểm tra xem đơn hàng có trong bảng order_returns không
+    if ((order.current_status === 'CANCELLED' || order.current_status === 'RETURN') && returnInfo) {
+      if (order.current_status === 'CANCELLED') {
+        processType = 'cancellation';
+      } else if (order.current_status === 'RETURN') {
+        processType = 'return';
+      }
+      actualStatus = returnInfo.return_status;
+      statusStep = statusStepMap[returnInfo.return_status] || statusStepMap[order.current_status] || 4;
+    } else if (['REJECTED', 'FAILED'].includes(order.current_status)) {
+      processType = 'failed';
+    }
 
     const cleanPrice = (value) => {
       if (!value) return 0;
@@ -184,56 +240,70 @@ router.get("/hash/:orderHash", optionalAuth, async (req, res) => {
     const recipientAddress =
       order.order_address_new?.trim() || order.order_address_old?.trim() || "";
 
+    const orderData = {
+      id: order.order_id,
+      order_hash: order.order_hash,
+      date: order.created_at,
+      status: order.current_status,
+      statusStep,
+      processType, // Thêm thông tin loại quy trình
+      couponCode: order.coupon_code || "",
+      couponValue: order.coupon_value || "",
+      recipientName,
+      recipientEmail,
+      recipientPhone,
+      address: recipientAddress,
+      order_name_old: order.order_name_old || "",
+      order_name_new: order.order_name_new || "",
+      order_email_old: order.order_email_old || "",
+      order_email_new: order.order_email_new || "",
+      order_address_old: order.order_address_old || "",
+      order_address_new: order.order_address_new || "",
+      order_number1: order.order_number1 || "",
+      order_number2: order.order_number2 || "",
+      paymentStatus: order.payment_status,
+      shippingStatus: order.shipping_status || "pending",
+      subtotal: order.order_total,
+      shippingFee: Number(order.shipping_fee) || 0,
+      discount: Number(order.order_discount) || 0,
+      total: order.order_total_final,
+
+      products: items.map((item) => ({
+        id: item.id,
+        name: item.product_name,
+        image: item.image || item.product_image || "/images/default.jpg",
+        price: item.price_sale ? cleanPrice(item.price_sale) : cleanPrice(item.price),
+        quantity: item.quantity,
+        slug: item.product_slug,
+        color: {
+          name: item.color_name,
+          hex: item.color_hex,
+        },
+        category: item.category,
+        rating: {
+          count: item.comment_count,
+          average: item.average_rating,
+        },
+        has_comment: item.has_comment,
+      })),
+    };
+
+    // Thêm thông tin return nếu có
+    if (returnInfo) {
+      orderData.returnInfo = {
+        return_id: returnInfo.return_id,
+        reason: returnInfo.reason,
+        return_type: returnInfo.return_type,
+        total_refund: returnInfo.total_refund,
+        return_status: returnInfo.return_status,
+        return_created_at: returnInfo.return_created_at,
+        return_updated_at: returnInfo.return_updated_at
+      };
+    }
+
     return res.status(200).json({
       success: true,
-      order: {
-        id: order.order_id,
-        order_hash: order.order_hash,
-        date: order.created_at,
-        status: order.current_status,
-        statusStep,
-        couponCode: order.coupon_code || "",
-        couponValue: order.coupon_value || "",
-        recipientName,
-        recipientEmail,
-        recipientPhone,
-        address: recipientAddress,
-        order_name_old: order.order_name_old || "",
-        order_name_new: order.order_name_new || "",
-        order_email_old: order.order_email_old || "",
-        order_email_new: order.order_email_new || "",
-        order_address_old: order.order_address_old || "",
-        order_address_new: order.order_address_new || "",
-        order_number1: order.order_number1 || "",
-        order_number2: order.order_number2 || "",
-        paymentStatus: order.payment_status,
-        shippingStatus: order.shipping_status || "pending",
-        subtotal: order.order_total,
-        shippingFee: Number(order.shipping_fee) || 0,
-        discount: Number(order.order_discount) || 0,
-        total: order.order_total_final,
-
-        products: items.map((item) => ({
-          id: item.id,
-          name: item.product_name,
-          image: item.image || item.product_image || "/images/default.jpg",
-          price: item.price_sale ? cleanPrice(item.price_sale) : cleanPrice(item.price),
-
-
-          quantity: item.quantity,
-          slug: item.product_slug,
-          color: {
-            name: item.color_name,
-            hex: item.color_hex,
-          },
-          category: item.category,
-          rating: {
-            count: item.comment_count,
-            average: item.average_rating,
-          },
-          has_comment: item.has_comment,
-        })),
-      },
+      order: orderData,
     });
   } catch (error) {
     console.error(" Lỗi khi truy vấn đơn hàng:", error.message);
@@ -260,7 +330,14 @@ router.get("/admin", verifyToken, isAdmin, async (req, res) => {
         u.user_name,
         p.method as payment_method,
         p.status as payment_status_from_payment,
-        COUNT(oi.order_item_id) AS item_count
+        COUNT(oi.order_item_id) AS item_count,
+        -- Thêm thông tin return từ bảng order_returns
+        or_latest.return_status,
+        or_latest.return_reason,
+        or_latest.return_type,
+        or_latest.total_refund,
+        or_latest.return_created_at,
+        or_latest.return_updated_at
       FROM orders o
       LEFT JOIN user u ON o.user_id = u.user_id
       LEFT JOIN order_items oi ON o.order_id = oi.order_id
@@ -273,11 +350,28 @@ router.get("/admin", verifyToken, isAdmin, async (req, res) => {
           GROUP BY order_id
         )
       ) p ON o.order_id = p.order_id
+      LEFT JOIN (
+        -- Lấy thông tin return mới nhất cho mỗi order
+        SELECT 
+          order_id,
+          status as return_status,
+          reason as return_reason,
+          return_type,
+          total_refund,
+          created_at as return_created_at,
+          updated_at as return_updated_at
+        FROM order_returns 
+        WHERE return_id IN (
+          SELECT MAX(return_id) 
+          FROM order_returns 
+          GROUP BY order_id
+        )
+      ) or_latest ON o.order_id = or_latest.order_id
       GROUP BY o.order_id
       ORDER BY o.created_at DESC
     `);
 
-    // Process orders to include payment array
+    // Process orders to include payment array and return info
     const processedOrders = orders.map(order => {
       // Create payment array if payment data exists
       if (order.payment_method || order.payment_status_from_payment) {
@@ -289,8 +383,26 @@ router.get("/admin", verifyToken, isAdmin, async (req, res) => {
         }];
       }
 
+      // Add return info if exists
+      if (order.return_status) {
+        order.returnInfo = {
+          return_status: order.return_status,
+          reason: order.return_reason,
+          return_type: order.return_type,
+          total_refund: order.total_refund,
+          return_created_at: order.return_created_at,
+          return_updated_at: order.return_updated_at
+        };
+      }
+
       // Remove the extra fields used for processing
       delete order.payment_status_from_payment;
+      delete order.return_status;
+      delete order.return_reason;
+      delete order.return_type;
+      delete order.total_refund;
+      delete order.return_created_at;
+      delete order.return_updated_at;
 
       return order;
     });
@@ -319,6 +431,7 @@ router.get("/count", async (req, res) => {
       { status: "SUCCESS", name: "Giao hàng thành công" },
       { status: "FAILED", name: "Thất bại" },
       { status: "CANCELLED", name: "Đã hủy" },
+      { status: "RETURN", name: "Đã trả hàng" },
     ];
 
     // Tạo đối tượng thống kê
@@ -662,6 +775,7 @@ router.post("/", verifyToken, async (req, res) => {
         }),
         current_status: "PENDING",
         order_total_final: amount.toLocaleString("vi-VN") + "đ",
+        discount: order_discount ? Number(order_discount).toLocaleString("vi-VN") + "đ" : null,
         products: cart_items.map((item) => ({
           name: item.name,
           quantity: item.quantity,
@@ -1022,6 +1136,7 @@ router.post("/payment/momo", async (req, res) => {
       created_at: new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" }),
       current_status: "PENDING",
       order_total_final: amount.toLocaleString("vi-VN") + "đ",
+      order_discount: order_discount ? Number(order_discount).toLocaleString("vi-VN") + "đ" : null,
       products: cart_items.map((item) => ({
         name: item.name,
         quantity: item.quantity,
@@ -1252,6 +1367,143 @@ router.put("/:id/status", verifyToken, isAdmin, async (req, res) => {
 });
 
 /**
+ * @route   PUT /api/orders/:id/return-status
+ * @desc    Cập nhật trạng thái hoàn trả đơn hàng
+ * @access  Private (Admin)
+ */
+router.put("/:id/return-status", verifyToken, isAdmin, async (req, res) => {
+  const orderId = req.params.id;
+  const { return_status } = req.body;
+
+  const validReturnStatuses = [
+    "",
+    "PENDING",      // Trạng thái mặc định khi tạo yêu cầu hoàn trả
+    "APPROVED",     // Đã duyệt yêu cầu hoàn trả
+    "CANCEL_CONFIRMED", // Xác nhận hủy đơn hàng
+    "CANCELLED",    // Đã hủy hoàn tất
+    "REJECTED"      // Từ chối yêu cầu hoàn trả
+  ];
+
+  if (!validReturnStatuses.includes(return_status)) {
+    return res.status(400).json({
+      success: false,
+      message: "Trạng thái hoàn trả không hợp lệ"
+    });
+  }
+
+  try {
+    // Kiểm tra đơn hàng tồn tại và lấy thông tin current_status
+    const [[order]] = await db.query(
+      "SELECT order_id, order_hash, current_status FROM orders WHERE order_id = ?",
+      [orderId]
+    );
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy đơn hàng"
+      });
+    }
+
+    // Kiểm tra xem đơn hàng có đang ở trạng thái RETURN không
+    if (order.current_status !== 'RETURN' && return_status !== "") {
+      return res.status(400).json({
+        success: false,
+        message: "Chỉ có thể thay đổi trạng thái hoàn trả khi đơn hàng đang ở trạng thái RETURN"
+      });
+    }
+
+    // Bắt đầu transaction
+    const connection = await db.getConnection();
+    await connection.beginTransaction();
+
+    try {
+      if (return_status === "") {
+        // Xóa tất cả bản ghi hoàn trả cho đơn hàng này
+        await connection.query(
+          "DELETE FROM order_returns WHERE order_id = ?",
+          [orderId]
+        );
+
+        // Cập nhật trạng thái đơn hàng về SUCCESS khi hủy yêu cầu hoàn trả
+        await connection.query(
+          "UPDATE orders SET current_status = 'SUCCESS' WHERE order_id = ?",
+          [orderId]
+        );
+
+        // Ghi log chuyển trạng thái
+        await connection.query(
+          `INSERT INTO order_status_log (
+            order_id, from_status, to_status, trigger_by, step, created_at
+          ) VALUES (?, 'RETURN', 'SUCCESS', 'admin', ?, NOW())`,
+          [orderId, 'Hủy yêu cầu hoàn trả']
+        );
+      } else {
+        // Kiểm tra xem đã có bản ghi return chưa
+        const [[existingReturn]] = await connection.query(
+          "SELECT return_id, status FROM order_returns WHERE order_id = ? ORDER BY created_at DESC LIMIT 1",
+          [orderId]
+        );
+
+        if (existingReturn) {
+          // Cập nhật trạng thái return hiện có trong bảng order_returns
+          await connection.query(
+            "UPDATE order_returns SET status = ?, updated_at = NOW() WHERE return_id = ?",
+            [return_status, existingReturn.return_id]
+          );
+        } else {
+          // Tạo bản ghi return mới nếu chưa có
+          await connection.query(
+            `INSERT INTO order_returns (
+              order_id, user_id, reason, return_type, total_refund, status, created_at
+            ) VALUES (?, ?, ?, 'REFUND', 0, ?, NOW())`,
+            [orderId, req.user.id, 'Được tạo bởi admin', return_status]
+          );
+        }
+
+        // Ghi log thay đổi trạng thái return
+        await connection.query(
+          `INSERT INTO order_status_log (
+            order_id, from_status, to_status, trigger_by, step, created_at
+          ) VALUES (?, ?, ?, 'admin', ?, NOW())`,
+          [orderId, existingReturn ? existingReturn.status : 'NEW', return_status, `Cập nhật trạng thái hoàn trả: ${return_status}`]
+        );
+      }
+
+      // Commit transaction
+      await connection.commit();
+
+      const statusText = return_status === "" ? "Không có hoàn trả" :
+        return_status === "PENDING" ? "Đang chờ xử lý" :
+          return_status === "APPROVED" ? "Đã duyệt trả hàng" :
+            return_status === "CANCEL_CONFIRMED" ? "Xác nhận hủy đơn hàng" :
+              return_status === "CANCELLED" ? "Đã hủy hoàn tất" :
+                return_status === "REJECTED" ? "Từ chối trả hàng" : return_status;
+
+      return res.status(200).json({
+        success: true,
+        message: `Đã cập nhật trạng thái hoàn trả thành: ${statusText}`,
+        return_status: return_status
+      });
+
+    } catch (error) {
+      // Rollback nếu có lỗi
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+
+  } catch (err) {
+    console.error("Lỗi cập nhật trạng thái hoàn trả:", err);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi máy chủ khi cập nhật trạng thái hoàn trả"
+    });
+  }
+});
+
+/**
  * @route   DELETE /api/orders/:id
  * @desc    Hủy đơn hàng (chỉ admin hoặc chủ đơn hàng mới tạo)
  * @access  Private
@@ -1395,6 +1647,7 @@ router.get("/status/count", isAdmin, async (req, res) => {
       { status: "SUCCESS", name: "Giao hàng thành công" },
       { status: "FAILED", name: "Thất bại" },
       { status: "CANCELLED", name: "Đã hủy" },
+      { status: "RETURN", name: "Đã trả hàng" },
     ];
 
     // Tạo đối tượng thống kê
@@ -1760,12 +2013,12 @@ router.post("/return/:orderHash", verifyToken, async (req, res) => {
         }
       }
 
-      // Tạo bản ghi trả hàng
+      // Tạo bản ghi trả hàng với return_type = 'REFUND'
       const [result] = await connection.query(
         `INSERT INTO order_returns (
           order_id, user_id, reason, return_type, total_refund, status, created_at
-        ) VALUES (?, ?, ?, ?, ?, 'PENDING', NOW())`,
-        [order.order_id, user_id, reason, return_type || 'REFUND', totalRefundAmount]
+        ) VALUES (?, ?, ?, 'REFUND', ?, 'PENDING', NOW())`,
+        [order.order_id, user_id, reason, totalRefundAmount]
       );
 
       const returnId = result.insertId;
@@ -1785,10 +2038,10 @@ router.post("/return/:orderHash", verifyToken, async (req, res) => {
         }
       }
 
-      // Cập nhật trạng thái đơn hàng nếu trả lại toàn bộ
+      // Cập nhật trạng thái đơn hàng thành 'RETURN' nếu trả lại toàn bộ
       if (!items || items.length === 0) {
         await connection.query(
-          `UPDATE orders SET current_status = 'RETURNED', status_updated_by = ?, status_updated_at = NOW(), 
+          `UPDATE orders SET current_status = 'RETURN', status_updated_by = ?, status_updated_at = NOW(), 
            note = CONCAT(IFNULL(note, ''), ?) WHERE order_id = ?`,
           [isAdmin ? 'admin' : 'user', `\nĐơn hàng đã được trả lại. Lý do: ${reason}`, order.order_id]
         );
@@ -1796,7 +2049,7 @@ router.post("/return/:orderHash", verifyToken, async (req, res) => {
         // Ghi log trạng thái
         await connection.query(
           `INSERT INTO order_status_log (order_id, from_status, to_status, trigger_by, step, created_at) 
-           VALUES (?, ?, 'RETURNED', ?, ?, NOW())`,
+           VALUES (?, ?, 'RETURN', ?, ?, NOW())`,
           [order.order_id, order.current_status, isAdmin ? 'admin' : 'user', `Đơn hàng đã được trả lại`]
         );
       }

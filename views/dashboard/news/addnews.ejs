@@ -151,7 +151,7 @@
     formData.append("folder", folder);
     if (subfolder) formData.append("subfolder", subfolder);
 
-    const res = await fetch("http://localhost:3501/api/upload/news", {
+    const res = await fetch("/api/upload/news", {
       method: "POST",
       body: formData,
     });
@@ -238,7 +238,7 @@
 
       const token = localStorage.getItem("token");
 
-      const res = await fetch("http://localhost:3501/api/news", {
+      const res = await fetch("/api/news", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -267,7 +267,7 @@
   async function loadNewsCategories() {
     const select = document.getElementById("newsCategory");
     try {
-      const res = await fetch("http://localhost:3501/api/news-categories");
+      const res = await fetch("/api/news-categories");
       const categories = await res.json();
 
       select.innerHTML = `<option value="">Chọn danh mục</option>`;

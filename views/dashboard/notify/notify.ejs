@@ -39,10 +39,9 @@
 
 <script>
   document.addEventListener("DOMContentLoaded", function () {
-    const URL_API = "http://localhost:3501/api";
 
     function getNotifications() {
-      fetch(URL_API + "/notify")
+      fetch("/api/notify")
         .then((res) => res.json())
         .then((data) => {
             console.log(data);
@@ -95,7 +94,7 @@
       if (!confirm(`Bạn có chắc chắn muốn xóa thông báo "${title}"?`)) return;
       const token = localStorage.getItem("token");
 
-      fetch(`${URL_API}/notify/${id}`, {
+      fetch(`/api/notify/${id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,

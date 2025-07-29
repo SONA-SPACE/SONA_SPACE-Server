@@ -42,10 +42,9 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
-        const URL_API = "http://localhost:3501/api";
 
         function getMaterials() {
-            fetch(URL_API + "/materials")
+            fetch("/api/materials")
                 .then((res) => res.json())
                 .then((materials) => {
                     renderMaterials(materials);

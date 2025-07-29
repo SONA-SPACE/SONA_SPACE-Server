@@ -81,7 +81,7 @@
 
     async function loadCategoryData(id) {
         try {
-            const res = await fetch(`http://localhost:3501/api/news-categories/${id}`);
+            const res = await fetch(`/api/news-categories/${id}`);
             const data = await res.json();
 
             if (data) {
@@ -149,7 +149,7 @@
 
             const token = localStorage.getItem("token");
 
-            const res = await fetch(`http://localhost:3501/api/news-categories/${oldSlug}`, {
+            const res = await fetch(`/api/news-categories/${oldSlug}`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
@@ -182,7 +182,7 @@
         formData.append("image", file);
         formData.append("folder", folder);
 
-        const res = await fetch("http://localhost:3501/api/upload/newscategorynews", {
+        const res = await fetch("/api/upload/newscategorynews", {
             method: "POST",
             body: formData
         });

@@ -208,7 +208,9 @@ router.post("/newscategorynews", upload.single("image"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "Thiếu file ảnh" });
 
-    const { folder, subfolder } = req.body;
+    const { folder = "SonaSpace", subfolder = "NewsCategories" } = req.body;
+
+
     const base64Image = `data:${
       req.file.mimetype
     };base64,${req.file.buffer.toString("base64")}`;

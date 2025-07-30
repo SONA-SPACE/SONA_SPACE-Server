@@ -78,7 +78,9 @@
 
         document.querySelector(".btn-save").addEventListener("click", handleUpdateCategory);
     });
-
+    document.querySelector(".btn-cancel").addEventListener("click", () => {
+        window.history.back();
+    });
     async function loadCategoryData(id) {
         try {
             const res = await fetch(`/api/news-categories/${id}`);

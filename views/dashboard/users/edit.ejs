@@ -1,16 +1,12 @@
-<!-- Tiêu đề trang -->
 <div class="dashboard-header-row">
     <h2 class="dashboard-title">Cập nhật thông tin người dùng</h2>
 </div>
 
-<!-- Layout chính của form -->
 <div class="add-room-container">
-    <!-- Cột bên trái: Form nhập liệu -->
     <div class="room-form-column">
         <div class="form-section">
             <h3 class="section-title">Thông tin người dùng</h3>
 
-            <!-- Hàng 1: Tên người dùng và Số điện thoại -->
             <div class="form-row">
                 <div class="form-group">
                     <label for="userName">Tên người dùng</label>
@@ -22,13 +18,11 @@
                 </div>
             </div>
 
-            <!-- Hàng 2: Ngày sinh và Quyền (Role) -->
             <div class="form-row">
                 <div class="form-group">
                     <label for="userBirth">Ngày sinh</label>
                     <input type="date" id="userBirth" class="form-control" placeholder="Nhập ngày sinh" />
                 </div>
-                <!-- Nhóm form cho trường Quyền (Role) -->
                 <div class="form-group">
                     <label for="userRole">Quyền</label>
                     <div class="select-wrapper">
@@ -37,12 +31,11 @@
                             <option value="admin">Admin</option>
                             <option value="staff">Staff</option>
                         </select>
-                        <i class="fas fa-chevron-down"></i> <!-- Icon mũi tên cho dropdown -->
+                        <i class="fas fa-chevron-down"></i>
                     </div>
                 </div>
             </div>
 
-            <!-- Hàng 3: Giới tính và Trạng thái tài khoản -->
             <div class="form-row">
                 <div class="form-group">
                     <label for="userGender">Giới tính</label>
@@ -52,15 +45,14 @@
                     <label for="userStatus">Trạng thái tài khoản</label>
                     <div class="select-wrapper">
                         <select id="userStatus" class="form-control">
-                            <option value="1">Hoạt động</option>
-                            <option value="0">Vô hiệu</option>
+                            <option value="active">Hoạt động</option>
+                            <option value="disabled">Vô hiệu</option>
                         </select>
                         <i class="fas fa-chevron-down"></i>
                     </div>
                 </div>
             </div>
 
-            <!-- Hàng 4: Email (Chỉ đọc) -->
             <div class="form-row">
                 <div class="form-group">
                     <label for="userEmail">Email</label>
@@ -69,7 +61,6 @@
                 </div>
             </div>
 
-            <!-- Hàng 5: Địa chỉ -->
             <div class="form-row">
                 <div class="form-group">
                     <label for="userAddress">Địa chỉ</label>
@@ -77,48 +68,57 @@
                 </div>
             </div>
 
-            <!-- Hàng 6: Sản phẩm đã mua và Loại khách hàng -->
             <div class="form-row">
                 <div class="form-group">
-                    <label for="userPurchased">Sản phẩm đã mua</label>
-                    <input type="text" id="userPurchased" class="form-control readonly-field"
-                        placeholder="Nhập sản phẩm đã mua" readonly />
+                    <label for="totalSuccessOrders">Tổng đơn hàng thành công</label>
+                    <input type="text" id="totalSuccessOrders" class="form-control readonly-field"
+                        placeholder="Số đơn hàng thành công" readonly />
                 </div>
+                <div class="form-group">
+                    <label for="totalCancelledOrders">Tổng đơn hàng đã hủy</label>
+                    <input type="text" id="totalCancelledOrders" class="form-control readonly-field"
+                        placeholder="Số đơn hàng đã hủy" readonly />
+                </div>
+            </div>
+
+            <div class="form-row">
                 <div class="form-group">
                     <label for="userCategory">Loại khách hàng</label>
                     <div class="select-wrapper">
-                        <select id="userCategory" class="form-control">
+                        <select id="userCategory" class="form-control" disabled>
                             <option value="Khách hàng mới">Khách hàng mới</option>
                             <option value="Khách hàng cũ">Khách hàng cũ</option>
                         </select>
                         <i class="fas fa-chevron-down"></i>
                     </div>
                 </div>
+                <div class="form-group">
+                    <label for="emailStatusDisplay">Trạng thái email</label>
+                    <input type="text" id="emailStatusDisplay" class="form-control readonly-field"
+                        placeholder="Trạng thái kích hoạt email" readonly />
+                </div>
             </div>
 
-            <!-- Hàng 7: Ngày xác thực và Ngày vô hiệu hóa tài khoản (Chỉ đọc) -->
             <div class="form-row">
                 <div class="form-group">
                     <label for="userVerifiedAt">Ngày xác thực tài khoản</label>
                     <input type="text" id="userVerifiedAt" class="form-control readonly-field"
-                        placeholder="Nhập ngày xác thực tài khoản" readonly />
+                        placeholder="Ngày xác thực tài khoản" readonly />
                 </div>
                 <div class="form-group">
-                    <label for="userDisabledAt">Ngày vô hiệu hoá tài khoản</label>
-                    <input type="text" id="userDisabledAt" class="form-control readonly-field"
-                        placeholder="Nhập ngày vô hiệu hoá tài khoản" readonly />
+                    <label for="userDisabledAtDisplay">Ngày vô hiệu hoá tài khoản</label>
+                    <input type="text" id="userDisabledAtDisplay" class="form-control readonly-field"
+                        placeholder="Ngày vô hiệu hoá tài khoản" readonly />
                 </div>
             </div>
         </div>
 
-        <!-- Nút hành động của form -->
         <div class="form-actions">
             <button type="button" class="btn btn-cancel">Hủy</button>
             <button type="button" class="btn btn-save" id="btnSaveUser">Lưu</button>
         </div>
     </div>
 
-    <!-- Cột bên phải: Khu vực tải ảnh đại diện -->
     <div class="image-upload-column">
         <div class="image-upload-container">
             <div class="upload-title">Ảnh đại diện</div>
@@ -134,50 +134,50 @@
     </div>
 </div>
 
-<!-- Container cho Toast Notifications (thông báo nhỏ) -->
 <div id="toastContainer" class="position-fixed top-0 end-0 p-3" style="z-index:1050"></div>
 
 <script>
-    // Các biến trạng thái toàn cục cho việc quản lý ảnh
-    let isRemoveImage = false; // Cờ báo hiệu có muốn xóa ảnh hiện tại không
-    let currentImageUrl = ''; // URL của ảnh hiện tại của người dùng
-    let selectedImageFile = null; // File ảnh mới được chọn từ input
+    let isRemoveImage = false;
+    let currentImageUrl = '';
+    let selectedImageFile = null;
 
-    // Lắng nghe sự kiện khi toàn bộ DOM đã được tải
     document.addEventListener('DOMContentLoaded', async () => {
         const urlParams = new URLSearchParams(window.location.search);
-        const userId = urlParams.get('id'); // Lấy ID người dùng từ URL
+        const userId = urlParams.get('id');
 
-        // Lấy tham chiếu đến các phần tử HTML liên quan đến trường "Quyền"
+        if (!userId) {
+            showToast('Không tìm thấy ID người dùng trên URL.', 'danger');
+            return;
+        }
+
         const userRoleSelect = document.getElementById('userRole');
+        const userStatusSelect = document.getElementById('userStatus');
         const userRoleFormGroup = userRoleSelect ? userRoleSelect.closest('.form-group') : null;
-        const selectWrapper = userRoleSelect ? userRoleSelect.closest('.select-wrapper') : null;
+        const selectWrapperRole = userRoleSelect ? userRoleSelect.closest('.select-wrapper') : null;
 
-        // Lấy vai trò của người dùng đang đăng nhập từ Local Storage
-        // Đảm bảo rằng bạn đã lưu 'userRole' vào localStorage sau khi đăng nhập thành công.
-        const currentUserRole = localStorage.getItem('userRole');
+        let currentUserRole = null;
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+            try {
+                const userData = JSON.parse(storedUser);
+                currentUserRole = userData.role;
+            } catch (e) {
+                console.error('Lỗi khi phân tích dữ liệu người dùng từ localStorage:', e);
+            }
+        }
 
-        // --- Logic điều khiển hiển thị và trạng thái của dropdown "Quyền" ---
-        if (userRoleSelect && userRoleFormGroup && selectWrapper) {
-            // Đảm bảo các phần tử cha của dropdown LUÔN HIỂN THỊ
-            userRoleFormGroup.style.display = ''; // Đặt lại display về giá trị mặc định của CSS
-            userRoleFormGroup.style.visibility = 'visible'; // Đảm bảo không bị ẩn bởi visibility: hidden
-            selectWrapper.style.display = ''; // Đặt lại display về giá trị mặc định của CSS
-            selectWrapper.style.visibility = 'visible'; // Đảm bảo không bị ẩn bởi visibility: hidden
+        if (userRoleSelect && userRoleFormGroup && selectWrapperRole) {
+            userRoleFormGroup.style.display = '';
+            userRoleFormGroup.style.visibility = 'visible';
+            selectWrapperRole.style.display = '';
+            selectWrapperRole.style.visibility = 'visible';
 
-            // Kiểm tra vai trò của người dùng hiện tại để quyết định quyền chỉnh sửa
             if (currentUserRole && currentUserRole.toLowerCase() === 'admin') {
-                // Nếu là ADMIN: Cho phép chỉnh sửa quyền
-                userRoleSelect.disabled = false; // Kích hoạt dropdown
-                userRoleSelect.classList.remove('disabled-field'); // Bỏ hiệu ứng disabled (nếu có)
-                // Đảm bảo tùy chọn 'Admin' có mặt (nếu nó bị xóa bởi logic khác)
-                // (Trong code hiện tại, option 'admin' chỉ bị xóa khi là staff, nên không cần thêm lại ở đây)
+                userRoleSelect.disabled = false;
+                userRoleSelect.classList.remove('disabled-field');
             } else {
-                // Nếu KHÔNG phải ADMIN (ví dụ: STAFF hoặc USER bình thường): Vô hiệu hóa dropdown
-                userRoleSelect.disabled = true; // Vô hiệu hóa dropdown
-                userRoleSelect.classList.add('disabled-field'); // Thêm class để tạo hiệu ứng disabled
-
-                // Loại bỏ tùy chọn 'Admin' khỏi dropdown cho người dùng không phải admin
+                userRoleSelect.disabled = true;
+                userRoleSelect.classList.add('disabled-field');
                 const adminOption = userRoleSelect.querySelector('option[value="admin"]');
                 if (adminOption) {
                     adminOption.remove();
@@ -186,37 +186,49 @@
         } else {
             console.warn("Lỗi: Không tìm thấy một hoặc nhiều phần tử điều khiển quyền người dùng.");
         }
-        // --- Kết thúc Logic điều khiển hiển thị và trạng thái của dropdown "Quyền" ---
 
-
-        // --- Tải dữ liệu người dùng từ API và điền vào form ---
         try {
-            const res = await fetch(`/api/users/admin/${userId}`); // Gọi API để lấy thông tin người dùng
-            const user = await res.json(); // Chuyển đổi phản hồi thành JSON
+            const res = await fetch(`/api/users/admin/${userId}`);
 
-            currentImageUrl = user.image || ''; // Cập nhật URL ảnh hiện tại
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error || `HTTP error! status: ${res.status}`);
+            }
 
-            // Điền dữ liệu người dùng vào các trường input
+            const user = await res.json();
+
+            currentImageUrl = user.image || '';
+
             document.getElementById('userName').value = user.full_name || '';
             document.getElementById('userPhone').value = user.phone || '';
-            // Định dạng ngày sinh cho input type="date"
             document.getElementById('userBirth').value = user.birth ? new Date(user.birth).toISOString().split('T')[0] : '';
 
-            // Đặt giá trị cho dropdown "Quyền" (userRoleSelect)
             if (userRoleSelect) {
                 userRoleSelect.value = user.role || 'user';
             }
-            // Các trường khác
             document.getElementById('userGender').value = user.gender || '';
-            document.getElementById('userStatus').value = user.email_active ? '1' : '0';
+
+            if (userStatusSelect) {
+                userStatusSelect.value = user.account_status === "Hoạt động" ? "active" : "disabled";
+            }
+
             document.getElementById('userEmail').value = user.email || '';
             document.getElementById('userAddress').value = user.address || '';
-            document.getElementById('userPurchased').value = user.purchasedProducts || '0';
-            document.getElementById('userCategory').value = user.category || 'Khách hàng mới';
-            document.getElementById('userVerifiedAt').value = user.verified_at || '';
-            document.getElementById('userDisabledAt').value = user.disabled_at || '';
 
-            // Hiển thị ảnh đại diện hoặc placeholder tải ảnh
+            document.getElementById('totalSuccessOrders').value = user.total_success_orders;
+            document.getElementById('totalCancelledOrders').value = user.total_cancelled_orders;
+
+            const userCategorySelect = document.getElementById('userCategory');
+            if (userCategorySelect) {
+                userCategorySelect.value = user.category || 'Khách hàng mới';
+            }
+
+            document.getElementById('emailStatusDisplay').value = user.email_status || '';
+
+            document.getElementById('userVerifiedAt').value = user.verified_at ? new Date(user.verified_at).toLocaleString('vi-VN') : '';
+            document.getElementById('userDisabledAtDisplay').value = user.disabled_at ? new Date(user.disabled_at).toLocaleString('vi-VN') : '';
+
+
             if (currentImageUrl) {
                 renderImagePreview(currentImageUrl);
             } else {
@@ -225,11 +237,10 @@
 
         } catch (err) {
             console.error('Lỗi khi tải dữ liệu người dùng:', err);
-            showToast('Không thể tải dữ liệu người dùng', 'danger');
+            showToast('Không thể tải dữ liệu người dùng: ' + err.message, 'danger');
         }
     });
 
-    // Lắng nghe sự kiện click cho nút "Lưu"
     document.getElementById('btnSaveUser').addEventListener('click', async () => {
         const userId = new URLSearchParams(window.location.search).get('id');
         if (!userId) {
@@ -237,80 +248,82 @@
             return;
         }
 
-        // Lấy JWT token từ Local Storage
         const token = localStorage.getItem('token');
         if (!token) {
             showToast('Bạn chưa đăng nhập hoặc phiên làm việc đã hết hạn. Vui lòng đăng nhập lại.', 'danger');
-            // Có thể chuyển hướng người dùng về trang đăng nhập
-            // window.location.href = '/login'; 
-            return; // Dừng hàm nếu không có token
+            return;
         }
 
-        // Tạo đối tượng FormData để gửi dữ liệu form (bao gồm cả file)
+        const submitBtn = document.getElementById('btnSaveUser');
+        const originalBtnText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang lưu...';
+
         const formData = new FormData();
         formData.append('user_name', document.getElementById('userName').value);
         formData.append('user_number', document.getElementById('userPhone').value);
         formData.append('user_gender', document.getElementById('userGender').value);
         formData.append('user_birth', document.getElementById('userBirth').value);
-        formData.append('user_role', document.getElementById('userRole').value); // Gửi giá trị quyền
+        formData.append('user_role', document.getElementById('userRole').value);
         formData.append('user_address', document.getElementById('userAddress').value);
-        formData.append('user_email_active', document.getElementById('userStatus').value);
-        formData.append('user_verified_at', document.getElementById('userVerifiedAt').value);
-        formData.append('user_disabled_at', document.getElementById('userDisabledAt').value);
-        formData.append('user_category', document.getElementById('userCategory').value);
+
+        const userStatusValue = document.getElementById('userStatus').value;
+        if (userStatusValue === 'disabled') {
+            formData.append('user_disabled_at', new Date().toISOString());
+        } else {
+            formData.append('user_disabled_at', null);
+        }
+
         formData.append('remove_image', isRemoveImage ? '1' : '0');
 
-        // Thêm file ảnh nếu có
         if (selectedImageFile) {
             formData.append('image', selectedImageFile);
         }
 
-        // --- Gửi yêu cầu PUT đến API backend ---
         try {
             const response = await fetch(`/api/users/admin/${userId}`, {
                 method: 'PUT',
                 headers: {
-                    'Authorization': `Bearer ${token}`, // Gửi token xác thực
+                    'Authorization': `Bearer ${token}`,
                 },
-                body: formData, // Gửi FormData
+                body: formData,
             });
 
-            const result = await response.json(); // Phân tích phản hồi JSON
+            const result = await response.json();
             if (response.ok) {
                 showToast('Cập nhật thành công!', 'success');
-                // Reset trạng thái ảnh sau khi cập nhật thành công
                 selectedImageFile = null;
                 isRemoveImage = false;
+                document.dispatchEvent(new Event('DOMContentLoaded'));
             } else {
-                // Xử lý lỗi từ server
                 console.error('Lỗi phản hồi từ server:', result);
                 showToast(result.error || 'Cập nhật thất bại', 'danger');
             }
         } catch (err) {
-            // Xử lý lỗi mạng hoặc lỗi khác trong quá trình gửi request
             console.error('Lỗi khi gửi dữ liệu:', err);
-            showToast('Có lỗi xảy ra khi gửi dữ liệu', 'danger');
+            showToast('Có lỗi xảy ra khi gửi dữ liệu: ' + err.message, 'danger');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
         }
     });
 
-    // Hàm xử lý khi người dùng chọn file ảnh mới
     function handleImageChange(e) {
         const file = e.target.files[0];
         if (file) {
             selectedImageFile = file;
             const reader = new FileReader();
             reader.onload = (ev) => {
-                renderImagePreview(ev.target.result); // Hiển thị ảnh xem trước
-                isRemoveImage = false; // Đặt lại cờ xóa ảnh
+                renderImagePreview(ev.target.result);
+                isRemoveImage = false;
             };
-            reader.readAsDataURL(file); // Đọc file dưới dạng Data URL
+            reader.readAsDataURL(file);
         }
     }
 
-    // Hàm hiển thị giao diện tải ảnh (khi chưa có ảnh hoặc đã xóa ảnh)
     function renderUploadPrompt() {
         const avatarDropArea = document.getElementById('avatarDropArea');
-        if (!avatarDropArea) return; // Đảm bảo phần tử tồn tại
+        if (!avatarDropArea) return;
 
         avatarDropArea.innerHTML = `
             <i class="fas fa-cloud-upload-alt"></i>
@@ -318,21 +331,18 @@
             <p class="upload-hint">Định dạng: JPG, PNG (Tối đa 5MB)</p>
             <input type="file" id="userImageInput" accept="image/*" style="display: none;" />
         `;
-        // Gắn lại event listener cho input file mới
         const userImageInput = document.getElementById('userImageInput');
         if (userImageInput) userImageInput.addEventListener('change', handleImageChange);
 
-        // Gắn event listener cho khu vực kéo thả để mở input file
         avatarDropArea.onclick = () => {
             const input = document.getElementById('userImageInput');
             if (input) input.click();
         };
     }
 
-    // Hàm hiển thị ảnh xem trước và nút xóa ảnh
     function renderImagePreview(imageSrc) {
         const avatarDropArea = document.getElementById('avatarDropArea');
-        if (!avatarDropArea) return; // Đảm bảo phần tử tồn tại
+        if (!avatarDropArea) return;
 
         avatarDropArea.innerHTML = `
             <div class="avatar-preview">
@@ -341,25 +351,21 @@
                 <input type="file" id="userImageInput" accept="image/*" style="display: none;" />
             </div>
         `;
-        // Gắn lại event listener cho input file mới
         const userImageInput = document.getElementById('userImageInput');
         if (userImageInput) userImageInput.addEventListener('change', handleImageChange);
 
-        // Gắn event listener cho nút xóa ảnh
         const removeAvatarBtn = document.getElementById('removeAvatarBtn');
         if (removeAvatarBtn) {
             removeAvatarBtn.addEventListener('click', (e) => {
-                e.stopPropagation(); // Ngăn sự kiện click lan truyền lên avatarDropArea
-                isRemoveImage = true; // Đặt cờ xóa ảnh
-                currentImageUrl = ''; // Xóa URL ảnh hiện tại
-                selectedImageFile = null; // Xóa file ảnh đã chọn
-                renderUploadPrompt(); // Hiển thị lại giao diện tải ảnh
+                e.stopPropagation();
+                isRemoveImage = true;
+                currentImageUrl = '';
+                selectedImageFile = null;
+                renderUploadPrompt();
             });
         }
 
-        // Gắn event listener cho khu vực ảnh để mở input file
         avatarDropArea.onclick = (event) => {
-            // Ngăn việc click nút xóa ảnh cũng mở input file
             if (event.target.id === 'removeAvatarBtn') {
                 return;
             }
@@ -368,7 +374,6 @@
         };
     }
 
-    // Hàm hiển thị thông báo Toast
     function showToast(message, type = "success") {
         let toastContainer = document.getElementById("toastContainer");
         if (!toastContainer) {
@@ -393,28 +398,25 @@
         `;
 
         toastContainer.appendChild(toast);
-        // Khởi tạo và hiển thị Bootstrap Toast
         const bsToast = new bootstrap.Toast(toast, { delay: 3000 });
         bsToast.show();
-
-        // Xóa toast khỏi DOM sau khi nó ẩn đi
         toast.addEventListener("hidden.bs.toast", () => toast.remove());
     }
 </script>
 
-<!-- CSS cho hiệu ứng disabled field (nếu chưa có) -->
 <style>
     .disabled-field {
         opacity: 0.7;
-        /* Làm mờ nhẹ */
         cursor: not-allowed;
-        /* Biểu tượng con trỏ không cho phép */
         background-color: #e9ecef;
-        /* Màu nền xám nhạt */
     }
 
-    /* Tùy chỉnh thêm để biểu tượng mũi tên dropdown cũng mờ đi */
     .select-wrapper .fas.fa-chevron-down {
         opacity: 0.7;
+    }
+
+    .readonly-field {
+        background-color: #e9ecef;
+        cursor: not-allowed;
     }
 </style>

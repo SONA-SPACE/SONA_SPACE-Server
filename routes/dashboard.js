@@ -82,6 +82,55 @@ router.get("/products/edit/:slug", (req, res) => {
     productId: req.params.slug,
   });
 });
+
+// Products management
+router.get("/colors", (req, res) => {
+  res.render("dashboard/colors/colors", {
+    title: "Sona Space - Quản lý Sản phẩm",
+    layout: "layouts/dashboard",
+  });
+});
+
+// Add product
+router.get("/colors/add", (req, res) => {
+  res.render("dashboard/colors/add", {
+    title: "Sona Space - Thêm Sản phẩm mới",
+    layout: "layouts/dashboard",
+  });
+});
+
+// Edit product
+router.get("/colors/edit/:slug", (req, res) => {
+  res.render("dashboard/colors/edit", {
+    title: "Sona Space - Chỉnh sửa Sản phẩm",
+    layout: "layouts/dashboard",
+    productId: req.params.slug,
+  });
+});
+// Products management
+router.get("/events", (req, res) => {
+  res.render("dashboard/events/events", {
+    title: "Sona Space - Quản lý Sản phẩm",
+    layout: "layouts/dashboard",
+  });
+});
+
+// Add product
+router.get("/events/add", (req, res) => {
+  res.render("dashboard/events/add", {
+    title: "Sona Space - Thêm Sản phẩm mới",
+    layout: "layouts/dashboard",
+  });
+});
+
+// Edit product
+router.get("/events/edit/:slug", (req, res) => {
+  res.render("dashboard/events/edit", {
+    title: "Sona Space - Chỉnh sửa Sản phẩm",
+    layout: "layouts/dashboard",
+    productId: req.params.slug,
+  });
+});
 // Products management
 router.get("/material", (req, res) => {
   res.render("dashboard/material/material", {
@@ -197,7 +246,6 @@ router.get("/notify/addNotify", (req, res) => {
     layout: "layouts/dashboard",
   });
 });
-
 
 // notify type management
 router.get("/typeNotify", (req, res) => {

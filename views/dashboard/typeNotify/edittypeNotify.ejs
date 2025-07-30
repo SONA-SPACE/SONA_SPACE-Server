@@ -42,7 +42,7 @@ document.querySelector(".btn-cancel").addEventListener("click", () => {
 
    async function loadNotificationType(id) {
     try {
-        const res = await fetch(`http://localhost:3501/api/typeNotify/${id}`, {
+        const res = await fetch(`/api/typeNotify/${id}`, {
             headers: {
                 Authorization: `Bearer ${localStorage.getItem("token")}`,
             },
@@ -81,7 +81,7 @@ document.querySelector(".btn-cancel").addEventListener("click", () => {
         };
 
         try {
-            const res = await fetch(`http://localhost:3501/api/typeNotify/${notifyTypeId}`, {
+            const res = await fetch(`/api/typeNotify/${notifyTypeId}`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",

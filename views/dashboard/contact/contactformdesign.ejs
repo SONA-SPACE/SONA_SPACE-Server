@@ -50,10 +50,9 @@
 <!-- Load Contact Form JS -->
 <script>
   document.addEventListener("DOMContentLoaded", function () {
-    const URL_API = "http://localhost:3501/api";
 
     function getContactForm() {
-      fetch(URL_API + "/contact-form-design")
+      fetch("/api/contact-form-design")
         .then((response) => response.json())
         .then((data) => {
           renderContactForm(data.forms);
@@ -196,7 +195,7 @@
     }
 
     function deleteContactForm(contactFormId) {
-      fetch(`${URL_API}/contact-form-design/${contactFormId}`, {
+      fetch(`/api/contact-form-design/${contactFormId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -218,7 +217,7 @@
     }
 
     function toggleContactFormVisibility(contactFormId, currentlyVisible) {
-      fetch(`${URL_API}/contact-form-design/${contactFormId}`, {
+      fetch(`/api/contact-form-design/${contactFormId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

@@ -44,10 +44,9 @@
 </div>
 <script>
   document.addEventListener("DOMContentLoaded", function () {
-    const URL_API = "http://localhost:3501/api";
 
     function getRooms() {
-      fetch(URL_API + "/rooms/admin")
+      fetch("/api/rooms/admin")
         .then((response) => response.json())
         .then((data) => {
           renderRooms(data);
@@ -139,7 +138,7 @@
 
     function changeStatus(roomSlug, roomStatus) {
       const token = localStorage.getItem("token");
-      fetch(`${URL_API}/rooms/${roomSlug}`, {
+      fetch(`/api/rooms/${roomSlug}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -164,7 +163,7 @@
         confirmText: "Xác nhận",
         cancelText: "Hủy",
         onConfirm: () => {
-          fetch(`${URL_API}/rooms/${roomSlug}`, {
+          fetch(`/api/rooms/${roomSlug}`, {
             method: "DELETE",
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,

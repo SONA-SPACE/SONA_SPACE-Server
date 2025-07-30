@@ -561,9 +561,9 @@
         // Fetch users data
         fetch("/api/users/admin", {
             method: "GET",
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
+            // headers: {
+            //     Authorization: `Bearer ${token}`,
+            // },
         })
             .then((res) => {
                 if (!res.ok) {

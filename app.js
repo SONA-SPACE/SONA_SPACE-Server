@@ -52,6 +52,7 @@ var revenueRouter = require("./routes/revenue");
 var NotifyRouter = require("./routes/notify");
 var typeNotifyRouter = require("./routes/typenotify");
 var attributeRouter = require("./routes/attributes");
+var eventsRouter = require("./routes/events");
 var app = express();
 
 // App version and startup time for health checks
@@ -118,6 +119,12 @@ app.get("/", (req, res) => {
   });
 });
 
+// dayjs
+app.use(
+  "/dayjs",
+  express.static(path.join(__dirname, "node_modules", "dayjs"))
+);
+
 // API routes
 app.use("/api/auth", authRouter);
 app.use("/dashboard", dashboardRouter);
@@ -149,6 +156,7 @@ app.use("/api/revenue", revenueRouter);
 app.use("/api/notify", NotifyRouter);
 app.use("/api/typeNotify", typeNotifyRouter);
 app.use("/api/attribute", attributeRouter);
+app.use("/api/events", eventsRouter);
 
 app.use(function (req, res, next) {
   console.warn("Route not found:", req.method, req.originalUrl);

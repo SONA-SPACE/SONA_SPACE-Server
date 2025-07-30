@@ -37,10 +37,9 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
-        const URL_API = "http://localhost:3501/api";
 
         function getNotificationTypes() {
-            fetch(URL_API + "/typeNotify")
+            fetch("/api/typeNotify")
                 .then((res) => res.json())
                 .then((data) => {
                     console.log(data);
@@ -111,7 +110,7 @@
             if (!confirm(`Bạn có chắc chắn muốn xóa loại thông báo "${type_code}"?`)) return;
             const token = localStorage.getItem("token");
 
-            fetch(`${URL_API}/typeNotify/${id}`, {
+            fetch(`/api/typeNotify/${id}`, {
                 method: "DELETE",
                 headers: {
                     Authorization: `Bearer ${token}`,

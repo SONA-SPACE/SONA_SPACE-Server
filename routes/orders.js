@@ -41,7 +41,7 @@ router.get("/test-email", async (req, res) => {
 
 router.get("/complete/:orderHash", optionalAuth, async (req, res) => {
   const { orderHash } = req.params;
-  console.log("🔍 Truy vấn đơn hàng:", orderHash);
+  console.log(" Truy vấn đơn hàng:", orderHash);
 
   try {
     const [[order]] = await db.query(
@@ -189,16 +189,16 @@ router.get("/hash/:orderHash", optionalAuth, async (req, res) => {
       'SHIPPING': 3,
       'COMPLETED': 4,
       'SUCCESS': 4, // Tương đương với COMPLETED
-      
+
       // Quy trình hủy đơn hàng (từ bảng order_returns)
       'CANCEL_REQUESTED': 1, // Khách hàng yêu cầu hủy
       'CANCEL_PENDING': 2,   // Đang chờ xử lý hủy
       'CANCEL_CONFIRMED': 3, // Xác nhận hủy
       'CANCELLED': 4,        // Đã hủy hoàn tất
-      
+
       // Quy trình trả hàng
       'RETURN': 4,           // Đã trả hàng hoàn tất
-      
+
       // Quy trình từ chối/thất bại
       'REJECTED': 1,         // Đơn hàng bị từ chối
       'FAILED': 1            // Đơn hàng thất bại
@@ -775,6 +775,7 @@ router.post("/", verifyToken, async (req, res) => {
         }),
         current_status: "PENDING",
         order_total_final: amount.toLocaleString("vi-VN") + "đ",
+        discount: order_discount ? Number(order_discount).toLocaleString("vi-VN") + "đ" : null,
         products: cart_items.map((item) => ({
           name: item.name,
           quantity: item.quantity,
@@ -1135,6 +1136,7 @@ router.post("/payment/momo", async (req, res) => {
       created_at: new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" }),
       current_status: "PENDING",
       order_total_final: amount.toLocaleString("vi-VN") + "đ",
+      order_discount: order_discount ? Number(order_discount).toLocaleString("vi-VN") + "đ" : null,
       products: cart_items.map((item) => ({
         name: item.name,
         quantity: item.quantity,
@@ -1383,9 +1385,9 @@ router.put("/:id/return-status", verifyToken, isAdmin, async (req, res) => {
   ];
 
   if (!validReturnStatuses.includes(return_status)) {
-    return res.status(400).json({ 
-      success: false, 
-      message: "Trạng thái hoàn trả không hợp lệ" 
+    return res.status(400).json({
+      success: false,
+      message: "Trạng thái hoàn trả không hợp lệ"
     });
   }
 
@@ -1397,17 +1399,17 @@ router.put("/:id/return-status", verifyToken, isAdmin, async (req, res) => {
     );
 
     if (!order) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "Không tìm thấy đơn hàng" 
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy đơn hàng"
       });
     }
 
     // Kiểm tra xem đơn hàng có đang ở trạng thái RETURN không
     if (order.current_status !== 'RETURN' && return_status !== "") {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Chỉ có thể thay đổi trạng thái hoàn trả khi đơn hàng đang ở trạng thái RETURN" 
+      return res.status(400).json({
+        success: false,
+        message: "Chỉ có thể thay đổi trạng thái hoàn trả khi đơn hàng đang ở trạng thái RETURN"
       });
     }
 
@@ -1471,12 +1473,12 @@ router.put("/:id/return-status", verifyToken, isAdmin, async (req, res) => {
       // Commit transaction
       await connection.commit();
 
-      const statusText = return_status === "" ? "Không có hoàn trả" : 
-                        return_status === "PENDING" ? "Đang chờ xử lý" :
-                        return_status === "APPROVED" ? "Đã duyệt trả hàng" :
-                        return_status === "CANCEL_CONFIRMED" ? "Xác nhận hủy đơn hàng" :
-                        return_status === "CANCELLED" ? "Đã hủy hoàn tất" :
-                        return_status === "REJECTED" ? "Từ chối trả hàng" : return_status;
+      const statusText = return_status === "" ? "Không có hoàn trả" :
+        return_status === "PENDING" ? "Đang chờ xử lý" :
+          return_status === "APPROVED" ? "Đã duyệt trả hàng" :
+            return_status === "CANCEL_CONFIRMED" ? "Xác nhận hủy đơn hàng" :
+              return_status === "CANCELLED" ? "Đã hủy hoàn tất" :
+                return_status === "REJECTED" ? "Từ chối trả hàng" : return_status;
 
       return res.status(200).json({
         success: true,
@@ -1494,9 +1496,9 @@ router.put("/:id/return-status", verifyToken, isAdmin, async (req, res) => {
 
   } catch (err) {
     console.error("Lỗi cập nhật trạng thái hoàn trả:", err);
-    res.status(500).json({ 
-      success: false, 
-      message: "Lỗi máy chủ khi cập nhật trạng thái hoàn trả" 
+    res.status(500).json({
+      success: false,
+      message: "Lỗi máy chủ khi cập nhật trạng thái hoàn trả"
     });
   }
 });

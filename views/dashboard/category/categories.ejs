@@ -52,10 +52,9 @@
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     // Initialize table sorting
-    const URL_API = "http://localhost:3501/api";
 
     function getCategories() {
-      fetch(URL_API + "/categories/admin/all")
+      fetch("/api/categories/admin/all")
         .then((response) => response.json())
         .then((data) => {
           renderCategories(data);
@@ -169,7 +168,7 @@
         confirmText: "Xác nhận",
         cancelText: "Hủy",
         onConfirm: () => {
-          fetch(`${URL_API}/categories/${categoryId}`, {
+          fetch(`/api/categories/${categoryId}`, {
             method: "DELETE",
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,

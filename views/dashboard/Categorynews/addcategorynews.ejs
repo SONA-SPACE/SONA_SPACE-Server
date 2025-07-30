@@ -72,6 +72,24 @@
             .addEventListener("click", handleSaveCategory);
     });
 
+    document.getElementById("roomName").addEventListener("input", () => {
+    const nameInput = document.getElementById("roomName");
+    const slugInput = document.getElementById("roomSlug");
+
+    // Chỉ tự động tạo slug nếu ô slug hiện tại còn trống hoặc đúng với slug cũ
+    if (!slugInput.dataset.manual) {
+        slugInput.value = generateSlug(nameInput.value);
+    }
+});
+    document.querySelector(".btn-cancel").addEventListener("click", () => {
+        window.history.back();
+    });
+document.getElementById("roomSlug").addEventListener("input", (e) => {
+    // Đánh dấu rằng người dùng đã chỉnh sửa slug thủ công
+    e.target.dataset.manual = true;
+});
+
+
     function bindUpload(selector, setter) {
         const dropArea = document.querySelector(selector);
         dropArea.addEventListener("click", () => {
@@ -106,73 +124,96 @@
         return data.url || null;
     }
 
-  function generateSlug(str) {
-  return str
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/đ/g, "d")
-    .replace(/[^a-z0-9\s-]/g, "")
-    .trim()
-    .replace(/\s+/g, "-")
-    .replace(/\-+/g, "-");
-}
+    function generateSlug(str) {
+        return str
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/đ/g, "d")
+            .replace(/[^a-z0-9\s-]/g, "")
+            .trim()
+            .replace(/\s+/g, "-")
+            .replace(/\-+/g, "-");
+    }
 
     async function handleSaveCategory() {
-  const name = document.getElementById("roomName").value.trim();
-  let slug = document.getElementById("roomSlug").value.trim();
-  const priority = parseInt(document.getElementById("roomPriority").value) || 0;
-  const status = parseInt(document.getElementById("roomStatus").value);
+        const name = document.getElementById("roomName").value.trim();
+        let slug = document.getElementById("roomSlug").value.trim();
+        const priorityRaw = document.getElementById("roomPriority").value.trim();
+        const status = parseInt(document.getElementById("roomStatus").value);
 
-  const saveBtn = document.querySelector(".btn-save");
-  saveBtn.disabled = true;
-  saveBtn.innerText = "Đang lưu...";
+        const saveBtn = document.querySelector(".btn-save");
+        saveBtn.disabled = true;
+        saveBtn.innerText = "Đang lưu...";
 
-  if (!name) {
-    showToast("Vui lòng nhập tên danh mục", "danger");
-    saveBtn.disabled = false;
-    saveBtn.innerText = "Lưu";
-    return;
-  }
+        if (!name) {
+            showToast("Vui lòng nhập tên danh mục tin", "danger");
+            resetBtn();
+            return;
+        }
 
-  if (!slug) {
-    slug = generateSlug(name);
-  }
+        if (priorityRaw === "") {
+            showToast("Vui lòng nhập độ ưu tiên", "danger");
+            resetBtn();
+            return;
+        }
 
-  try {
-    const image = await uploadImage(avatarFile);
-    const payload = {
-      name,
-      slug,
-      image,
-      priority,
-      status,
-    };
+        const priority = parseInt(priorityRaw);
+        if (isNaN(priority) || priority < 0) {
+            showToast("Độ ưu tiên phải là số lớn hơn hoặc bằng 0", "danger");
+            resetBtn();
+            return;
+        }
 
-    const res = await fetch("/api/news-categories", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+        if (!slug) {
+            slug = generateSlug(name);
+        }
 
-    const data = await res.json();
+        try {
+            const image = await uploadImage(avatarFile);
+            if (!image) {
+                showToast("Vui lòng chọn ảnh danh mục", "danger");
+                resetBtn();
+                return;
+            }
 
-    if (data.error) {
-      showToast(data.error, "danger");
-    } else {
-      showToast("Tạo danh mục thành công", "success");
-      setTimeout(() => {
-        window.location.href = "/dashboard/Categorynews";
-      }, 1500);
+            const payload = {
+                name,
+                slug,
+                image,
+                priority,
+                status,
+            };
+
+            const res = await fetch("/api/news-categories", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+
+            const data = await res.json();
+
+            if (data.error) {
+                showToast(data.error, "danger");
+            } else {
+                showToast("Tạo danh mục thành công", "success");
+                setTimeout(() => {
+                    window.location.href = "/dashboard/Categorynews";
+                }, 1500);
+            }
+        } catch (err) {
+            console.error("Lỗi:", err);
+            showToast("Có lỗi khi tạo danh mục", "danger");
+        } finally {
+            resetBtn();
+        }
+
+        function resetBtn() {
+            saveBtn.disabled = false;
+            saveBtn.innerText = "Lưu";
+        }
     }
-  } catch (err) {
-    console.error("Lỗi:", err);
-    showToast("Có lỗi khi tạo danh mục", "danger");
-  } finally {
-    saveBtn.disabled = false;
-    saveBtn.innerText = "Lưu";
-  }
-}
+
 
     function showToast(message, type = "success") {
         let toastContainer = document.getElementById("toastContainer");

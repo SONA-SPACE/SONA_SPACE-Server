@@ -231,10 +231,9 @@
 <!-- Load Products JS -->
 <script>
   document.addEventListener("DOMContentLoaded", function () {
-    const URL_API = "http://localhost:3501/api";
 
     function getProducts() {
-      fetch(URL_API + "/products/admin")
+      fetch("/api/products/admin")
         .then((response) => response.json())
         .then((products) => {
           if (!Array.isArray(products)) {
@@ -387,7 +386,7 @@
     }
 
     function deleteProduct(productSlug) {
-      fetch(`${URL_API}/products/${productSlug}`, {
+      fetch(`/api/products/${productSlug}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -410,7 +409,7 @@
 
 
     function toggleProductVisibility(productId, currentlyVisible) {
-      fetch(`${URL_API}/products/${productId}`, {
+      fetch(`/api/products/${productId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

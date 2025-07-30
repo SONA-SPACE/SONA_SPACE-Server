@@ -49,10 +49,8 @@
 <!-- <script src="/javascripts/news-categories.js"></script> -->
 <script>
     document.addEventListener("DOMContentLoaded", function () {
-        const URL_API = "http://localhost:3501/api";
-
         function getNewsCategories() {
-            fetch(URL_API + "/news-categories")
+            fetch("/api/news-categories")
                 .then((response) => response.json())
                 .then((data) => {
                     renderCategories(data); // data.news-categories từ API backend
@@ -133,7 +131,7 @@
 
             const token = localStorage.getItem("token") || sessionStorage.getItem("authToken");
 
-            fetch(`${URL_API}/news-categories/${id}`, {
+            fetch(`/api/news-categories/${id}`, {
                 method: "DELETE",
                 headers: {
                     "Authorization": `Bearer ${token}`,

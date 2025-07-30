@@ -56,7 +56,6 @@
 </div>
 <script>
     document.addEventListener("DOMContentLoaded", function () {
-        const URL_API = "http://localhost:3501/api";
         const AUTH_TOKEN = localStorage.getItem("token");
 
         const modal = document.getElementById('confirmationModal');
@@ -93,7 +92,7 @@
 
 
         function getComments() {
-            fetch(URL_API + "/comments/admin", {
+            fetch("/api/comments/admin", {
                 headers: {
                     'Authorization': `Bearer ${AUTH_TOKEN}`
                 }
@@ -182,7 +181,7 @@
 
         async function updateCommentStatus(commentId, newStatus) {
             try {
-                const response = await fetch(`${URL_API}/comments/${commentId}/status`, {
+                const response = await fetch(`/api/comments/${commentId}/status`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',

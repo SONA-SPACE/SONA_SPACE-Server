@@ -64,7 +64,7 @@ document.querySelector(".btn-cancel").addEventListener("click", () => {
     };
 
     try {
-      const res = await fetch("http://localhost:3501/api/typeNotify", {
+      const res = await fetch("/api/typeNotify", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

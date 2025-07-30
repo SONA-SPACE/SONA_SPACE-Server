@@ -46,13 +46,12 @@
 </div>
 <script>
     document.addEventListener("DOMContentLoaded", function () {
-        const URL_API = "http://localhost:3501/api";
         const formatPrice = (price) => {
             const rounded = Math.round(price); // Đảm bảo là số nguyên
             return rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
         };
         function getNews() {
-            fetch(URL_API + "/couponcodes/admin")
+            fetch("/api/couponcodes/admin")
                 .then((response) => response.json())
                 .then((data) => {
                     renderVoucher(data);
@@ -126,7 +125,7 @@
 
             const token = localStorage.getItem("token");
 
-            fetch(`${URL_API}/couponcodes/${voucherId}`, {
+            fetch(`/api/couponcodes/${voucherId}`, {
                 method: "DELETE",
                 headers: {
                     Authorization: `Bearer ${token}`,

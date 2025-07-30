@@ -279,7 +279,7 @@
     dynamicAttributesContainer.innerHTML = '';
     if (!categoryId) return;
     try {
-      const res = await fetch(`${API_URL}/api/categories/${categoryId}/attributes`);
+      const res = await fetch(`/api/categories/${categoryId}/attributes`);
       if (!res.ok) throw new Error("Could not fetch category attributes");
       const attributesMeta = await res.json();
 
@@ -377,7 +377,7 @@
 
   async function loadProductDetail() {
     try {
-      const res = await fetch(`${API_URL}/api/products/admin/${slug}`);
+      const res = await fetch(`/api/products/admin/${slug}`);
       const data = await res.json();
       const product = data.product;
 
@@ -463,10 +463,10 @@
     try {
       const [categoryRes, roomsRes, colorsRes, materialsRes] =
         await Promise.all([
-          fetch(`${API_URL}/api/categories`),
-          fetch(`${API_URL}/api/rooms`),
-          fetch(`${API_URL}/api/color/filter`),
-          fetch(`${API_URL}/api/materials`),
+          fetch(`/api/categories`),
+          fetch(`/api/rooms`),
+          fetch(`/api/color/filter`),
+          fetch(`/api/materials`),
         ]);
       const [categories, rooms, colors, materials] = await Promise.all([
         categoryRes.json(),
@@ -677,7 +677,7 @@
 
     console.log("Attempting to save new attribute:", payload);
     try {
-      const rawRes = await fetch(`${API_URL}/api/attribute/${selectedCategoryId}`, {
+      const rawRes = await fetch(`/api/attribute/${selectedCategoryId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -821,7 +821,7 @@
 
   async function deleteVariant(variantId) {
     try {
-      const res = await fetch(`${API_URL}/api/variants/${variantId}`, {
+      const res = await fetch(`/api/variants/${variantId}`, {
         method: "DELETE",
       });
       const result = await res.json();
@@ -900,7 +900,7 @@
       const dynamicAttributeInputs = dynamicAttributesContainer.querySelectorAll(".dynamic-attribute");
       let hasAttributeErrors = false;
 
-      const attributesMetaRes = await fetch(`${API_URL}/api/categories/${category_id}/attributes`);
+      const attributesMetaRes = await fetch(`/api/categories/${category_id}/attributes`);
       const attributesMeta = attributesMetaRes.ok ? await attributesMetaRes.json() : [];
       const attributesMetaMap = new Map(attributesMeta.map((attr) => [attr.attribute_id, attr]));
 
@@ -969,7 +969,7 @@
           formData.append("image", blob, "main-image.png");
           formData.append("folder", "SonaSpace/Product");
           formData.append("subfolder", "main");
-          const uploadRes = await fetch(`${API_URL}/api/upload/product`, {
+          const uploadRes = await fetch(`/api/upload/product`, {
             method: "POST",
             body: formData,
           });
@@ -1122,7 +1122,7 @@
       if (removedImages.length > 0) {
         for (const publicId of removedImages) {
           try {
-            const res = await fetch(`${API_URL}/api/upload/${publicId}`, {
+            const res = await fetch(`/api/upload/${publicId}`, {
               method: "DELETE",
             });
             if (!res.ok) {
@@ -1151,7 +1151,7 @@
       };
       console.log("[PRODUCT PAYLOAD]", payload);
 
-      const res = await fetch(`${API_URL}/api/products/admin/${slug}`, {
+      const res = await fetch(`/api/products/admin/${slug}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -1316,7 +1316,7 @@
 
   async function updateVariant(variantId, data) {
     try {
-      const res = await fetch(`${API_URL}/api/variants/${variantId}`, {
+      const res = await fetch(`/api/variants/${variantId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -1343,7 +1343,7 @@
   async function addVariant(productId, data) {
     try {
       console.log("[ADD VARIANT PAYLOAD] for productId:", productId, "Data:", data);
-      const res = await fetch(`${API_URL}/api/variants/${productId}`, {
+      const res = await fetch(`/api/variants/${productId}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1480,7 +1480,7 @@
         headers["Authorization"] = `Bearer ${token}`;
       }
 
-      const res = await fetch(`${API_URL}/api/upload/product`, {
+      const res = await fetch(`/api/upload/product`, {
         method: "POST",
         headers: headers,
         body: formData,

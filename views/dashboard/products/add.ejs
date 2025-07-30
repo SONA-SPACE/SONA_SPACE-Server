@@ -229,9 +229,8 @@
   }
 
 
-  const API_URL = "http://localhost:3501/api";
   let mainImageInput;
-  let mainImageUpload;
+  let mainImageUpload;  
   let newAttributeCounter = 0; // Counter for new attributes
 
   function showToast(message, type = "success") {
@@ -272,7 +271,7 @@
     if (subfolder) formData.append("subfolder", subfolder);
 
     try {
-      const res = await fetch(`${API_URL}/upload/product`, {
+      const res = await fetch(`/api/upload/product`, {
         method: "POST",
         body: formData,
       });
@@ -299,7 +298,7 @@
 
   async function fetchAPI(endpoint, options = {}) {
     try {
-      const response = await fetch(`${API_URL}${endpoint}`, options);
+      const response = await fetch(`/api${endpoint}`, options);
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(
@@ -356,7 +355,7 @@
   // Hàm load dữ liệu cho variant colors
   async function loadVariantColors() {
     try {
-      const colors = await fetchAPI("/color/filter");
+      const colors = await fetchAPI("/api/color/filter");
       if (!colors || !Array.isArray(colors)) {
         throw new Error("Dữ liệu màu không hợp lệ");
       }
@@ -404,7 +403,7 @@
   let allMaterials = [];
   async function loadAllMaterials() {
     try {
-      const materials = await fetchAPI("/materials");
+      const materials = await fetchAPI("/api/materials");
       if (!materials || !Array.isArray(materials)) {
         throw new Error("Dữ liệu chất liệu không hợp lệ");
       }
@@ -426,7 +425,7 @@
 
     console.log("Loading category attributes for category ID:", categoryId);
     try {
-      const attributes = await fetchAPI(`/categories/${categoryId}/attributes`);
+      const attributes = await fetchAPI(`/api/categories/${categoryId}/attributes`);
       console.log("API response for category attributes:", attributes);
 
       if (!attributes || !Array.isArray(attributes) || attributes.length === 0) {
@@ -897,7 +896,7 @@
 
     console.log("Attempting to save new attribute:", payload); // Log payload
     try {
-      const addAttributeRes = await fetchAPI(`/attribute/${selectedCategoryId}`, {
+      const addAttributeRes = await fetchAPI(`/api/attribute/${selectedCategoryId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -1295,7 +1294,7 @@
 
 
     try {
-      const res = await fetch(`${API_URL}/products/add`, {
+      const res = await fetch(`/api/products/add`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

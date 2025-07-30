@@ -119,6 +119,12 @@ app.get("/", (req, res) => {
   });
 });
 
+// dayjs
+app.use(
+  "/dayjs",
+  express.static(path.join(__dirname, "node_modules", "dayjs"))
+);
+
 // API routes
 app.use("/api/auth", authRouter);
 app.use("/dashboard", dashboardRouter);

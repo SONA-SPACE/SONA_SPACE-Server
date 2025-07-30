@@ -297,7 +297,7 @@ router.post("/google-login", async (req, res) => {
         return res.status(400).json({
           success: false,
           message:
-            "Tài khoản của bạn chưa được xác thực email. Vui lòng kiểm tra email để xác thực trước khi đăng nhập.",
+            "Tài khoản của bạn đã bị chặn khỏi nền tảng này. Vui lòng liên hệ với admin để được hỗ trợ.",
         });
       }
 

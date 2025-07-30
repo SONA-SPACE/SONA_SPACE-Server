@@ -226,31 +226,44 @@ router.get("/staff", async (req, res) => {
     res.status(500).json({ error: "Lỗi server khi lấy danh sách người dùng" });
   }
 });
+
 router.get("/admin/:id", async (req, res) => {
   try {
     const userId = Number(req.params.id);
-    if (isNaN(userId))
+    if (isNaN(userId)) {
       return res.status(400).json({ error: "ID không hợp lệ" });
+    }
 
     const [users] = await db.query(
       `
-      SELECT 
-        user_id, user_name, user_gmail, user_number, user_image, user_address,
-        user_role, user_gender, user_birth, user_email_active, user_verified_at, user_disabled_at,
-        created_at, updated_at
-      FROM user
-      WHERE user_id = ? AND deleted_at IS NULL
+      SELECT
+        u.user_id, u.user_name, u.user_gmail, u.user_number, u.user_image, u.user_address,
+        u.user_role, u.user_gender, u.user_birth, u.user_email_active, u.user_verified_at, u.user_disabled_at,
+        u.created_at, u.updated_at,
+        COUNT(CASE WHEN o.current_status = 'SUCCESS' THEN 1 END) AS total_success_orders,
+        COUNT(CASE WHEN o.current_status = 'CANCELLED' THEN 1 END) AS total_cancelled_orders
+      FROM user u
+      LEFT JOIN orders o ON u.user_id = o.user_id
+      WHERE u.user_id = ? AND u.deleted_at IS NULL
+      GROUP BY u.user_id
     `,
       [userId]
     );
 
-    if (users.length === 0)
+    if (users.length === 0) {
       return res.status(404).json({ error: "Không tìm thấy người dùng" });
+    }
 
     const user = users[0];
     const today = new Date();
     const createdAt = new Date(user.created_at);
     const diffDays = Math.floor((today - createdAt) / (1000 * 60 * 60 * 24));
+
+    // Determine account status based on user_disabled_at
+    const accountStatus = user.user_disabled_at ? "Vô hiệu" : "Hoạt động";
+
+    // Determine email status based on user_email_active
+    const emailStatus = user.user_email_active ? "Kích hoạt" : "Chưa kích hoạt";
 
     res.json({
       id: user.user_id,
@@ -262,12 +275,14 @@ router.get("/admin/:id", async (req, res) => {
       role: user.user_role,
       gender: user.user_gender,
       birth: user.user_birth,
-      email_active: user.user_email_active,
+      email_status: emailStatus, // Trạng thái kích hoạt email
+      account_status: accountStatus, // Trạng thái tài khoản (hoạt động/vô hiệu)
       verified_at: user.user_verified_at,
-      disabled_at: user.user_disabled_at || "-",
+      disabled_at: user.user_disabled_at || null, // Thay đổi "-" thành null nếu không có
       created_at: user.created_at,
       updated_at: user.updated_at,
-      purchasedProducts: 0,
+      total_success_orders: user.total_success_orders || 0, // Đơn hàng đã mua
+      total_cancelled_orders: user.total_cancelled_orders || 0, // Đơn hàng đã hủy
       category: diffDays <= 30 ? "Khách hàng mới" : "Khách hàng cũ",
     });
   } catch (err) {
@@ -275,6 +290,145 @@ router.get("/admin/:id", async (req, res) => {
     res.status(500).json({ error: "Lỗi server" });
   }
 });
+// router.put(
+//   "/admin/:id",
+//   verifyToken,
+//   upload.single("image"),
+//   async (req, res) => {
+//     try {
+//       const userId = Number(req.params.id);
+//       if (isNaN(userId)) {
+//         return res.status(400).json({ error: "ID không hợp lệ" });
+//       }
+
+//       const [existingUsers] = await db.query(
+//         "SELECT user_role, user_image, user_name, user_number, user_gender, user_birth, user_address, user_email_active, user_verified_at, user_disabled_at FROM user WHERE user_id = ?",
+//         [userId]
+//       );
+
+//       if (existingUsers.length === 0) {
+//         return res.status(404).json({ error: "Không tìm thấy người dùng" });
+//       }
+//       const existingUser = existingUsers[0];
+
+//       const {
+//         user_name,
+//         user_number,
+//         user_gender,
+//         user_birth,
+//         user_role,
+//         user_address,
+//         user_email_active,
+//         user_verified_at,
+//         user_disabled_at,
+//         remove_image,
+//       } = req.body;
+
+//       let finalUserRole = existingUser.user_role;
+
+//       if (user_role !== undefined && user_role !== null) {
+//         if (
+//           req.user &&
+//           req.user.role &&
+//           req.user.role.toLowerCase().trim() === "admin"
+//         ) {
+//           finalUserRole = user_role;
+//         } else {
+//           if (
+//             user_role.toLowerCase().trim() ===
+//             existingUser.user_role.toLowerCase().trim()
+//           ) {
+//             finalUserRole = existingUser.user_role;
+//           } else {
+//             return res.status(403).json({
+//               error:
+//                 "Chỉ quản trị viên mới được phép thay đổi quyền người dùng.",
+//             });
+//           }
+//         }
+//       }
+
+//       let imageUrl;
+
+//       if (req.file) {
+//         const base64Image = `data:${
+//           req.file.mimetype
+//         };base64,${req.file.buffer.toString("base64")}`;
+//         const result = await cloudinary.uploader.upload(base64Image, {
+//           folder: "SonaSpace/User",
+//         });
+//         imageUrl = result.secure_url;
+
+//         const oldImage = existingUser.user_image;
+//         if (oldImage && oldImage !== imageUrl) {
+//           try {
+//             const publicId = oldImage.split("/").slice(-1)[0].split(".")[0];
+//             await cloudinary.uploader.destroy(`SonaSpace/User/${publicId}`);
+//           } catch (destroyError) {}
+//         }
+//       } else if (remove_image === "1") {
+//         if (existingUser.user_image) {
+//           try {
+//             const publicId = existingUser.user_image
+//               .split("/")
+//               .slice(-1)[0]
+//               .split(".")[0];
+//             await cloudinary.uploader.destroy(`SonaSpace/User/${publicId}`);
+//           } catch (destroyError) {}
+//         }
+//         imageUrl = null;
+//       } else {
+//         imageUrl = existingUser.user_image || null;
+//       }
+
+//       const [updateResult] = await db.query(
+//         `UPDATE user SET
+//          user_name = ?,
+//          user_number = ?,
+//          user_gender = ?,
+//          user_birth = ?,
+//          user_role = ?,
+//          user_address = ?,
+//          user_email_active = ?,
+//          user_verified_at = ?,
+//          user_disabled_at = ?,
+//          user_image = ?,
+//          updated_at = NOW()
+//        WHERE user_id = ?`,
+//         [
+//           user_name !== undefined ? user_name : existingUser.user_name,
+//           user_number !== undefined ? user_number : existingUser.user_number,
+//           user_gender !== undefined ? user_gender : existingUser.user_gender,
+//           user_birth !== undefined ? user_birth : existingUser.user_birth,
+//           finalUserRole,
+//           user_address !== undefined ? user_address : existingUser.user_address,
+//           user_email_active !== undefined
+//             ? user_email_active
+//             : existingUser.user_email_active,
+//           user_verified_at !== undefined
+//             ? user_verified_at
+//             : existingUser.user_verified_at,
+//           user_disabled_at !== undefined
+//             ? user_disabled_at
+//             : existingUser.user_disabled_at,
+//           imageUrl,
+//           userId,
+//         ]
+//       );
+
+//       if (updateResult.affectedRows === 0) {
+//         return res.status(404).json({
+//           error:
+//             "Không tìm thấy người dùng hoặc không có thay đổi nào được thực hiện.",
+//         });
+//       }
+
+//       res.json({ message: "Cập nhật người dùng thành công" });
+//     } catch (error) {
+//       res.status(500).json({ error: "Lỗi server", detail: error.message });
+//     }
+//   }
+// );
 router.put(
   "/admin/:id",
   verifyToken,
@@ -287,7 +441,7 @@ router.put(
       }
 
       const [existingUsers] = await db.query(
-        "SELECT user_role, user_image, user_name, user_number, user_gender, user_birth, user_address, user_email_active, user_verified_at, user_disabled_at FROM user WHERE user_id = ?",
+        "SELECT user_role, user_image, user_name, user_number, user_gender, user_birth, user_address, user_verified_at, user_disabled_at FROM user WHERE user_id = ?",
         [userId]
       );
 
@@ -303,7 +457,6 @@ router.put(
         user_birth,
         user_role,
         user_address,
-        user_email_active,
         user_verified_at,
         user_disabled_at,
         remove_image,
@@ -368,18 +521,17 @@ router.put(
 
       const [updateResult] = await db.query(
         `UPDATE user SET
-         user_name = ?,
-         user_number = ?,
-         user_gender = ?,
-         user_birth = ?,
-         user_role = ?,
-         user_address = ?,
-         user_email_active = ?,
-         user_verified_at = ?,
-         user_disabled_at = ?,
-         user_image = ?,
-         updated_at = NOW()
-       WHERE user_id = ?`,
+          user_name = ?,
+          user_number = ?,
+          user_gender = ?,
+          user_birth = ?,
+          user_role = ?,
+          user_address = ?,
+          user_verified_at = ?,
+          user_disabled_at = ?,
+          user_image = ?,
+          updated_at = NOW()
+        WHERE user_id = ?`,
         [
           user_name !== undefined ? user_name : existingUser.user_name,
           user_number !== undefined ? user_number : existingUser.user_number,
@@ -387,9 +539,6 @@ router.put(
           user_birth !== undefined ? user_birth : existingUser.user_birth,
           finalUserRole,
           user_address !== undefined ? user_address : existingUser.user_address,
-          user_email_active !== undefined
-            ? user_email_active
-            : existingUser.user_email_active,
           user_verified_at !== undefined
             ? user_verified_at
             : existingUser.user_verified_at,
@@ -414,7 +563,6 @@ router.put(
     }
   }
 );
-
 /**
  * @route   GET /api/users/:id
  * @desc    Lấy thông tin người dùng theo ID

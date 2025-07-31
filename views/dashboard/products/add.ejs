@@ -96,7 +96,6 @@
           </button>
         </div>
         <div id="variantsList">
-          <!-- Template biến thể -->
           <div class="variant-item" style="display: none" id="variantTemplate">
             <div class="variant-header">
               <h4 class="variant-title">Biến thể mới</h4>
@@ -156,7 +155,6 @@
               </div>
             </div>
           </div>
-          <!-- end template -->
         </div>
       </div>
     </div>
@@ -168,8 +166,6 @@
 </form>
 
 <script>
-
-
   function showFieldError(element, message) {
     if (!element) return;
     element.classList.add("is-invalid");
@@ -230,7 +226,7 @@
 
 
   let mainImageInput;
-  let mainImageUpload;  
+  let mainImageUpload;
   let newAttributeCounter = 0; // Counter for new attributes
 
   function showToast(message, type = "success") {
@@ -257,7 +253,9 @@
 `;
 
     toastContainer.appendChild(toast);
-    const bsToast = new bootstrap.Toast(toast, { delay: 3000 });
+    const bsToast = new bootstrap.Toast(toast, {
+      delay: 3000
+    });
     bsToast.show();
 
     toast.addEventListener("hidden.bs.toast", () => toast.remove());
@@ -296,24 +294,6 @@
       .replace(/^-+|-+$/g, "");
   }
 
-  async function fetchAPI(endpoint, options = {}) {
-    try {
-      const response = await fetch(`/api${endpoint}`, options);
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(
-          `Network response was not ok: ${response.status} ${response.statusText} - ${errorText}`
-        );
-      }
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error("Error fetching from " + endpoint + ":", error);
-      showToast("Lỗi khi tải dữ liệu: " + error.message, "danger");
-      return null;
-    }
-  }
-
   // Hàm load dữ liệu cho select box
   async function loadSelectData(
     selectId,
@@ -329,7 +309,15 @@
     }
 
     try {
-      const data = await fetchAPI(endpoint);
+      const response = await fetch(`/api${endpoint}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `Network response was not ok: ${response.status} ${response.statusText} - ${errorText}`
+        );
+      }
+      const data = await response.json();
+
       if (!data || !Array.isArray(data)) {
         throw new Error("Dữ liệu không hợp lệ hoặc rỗng");
       }
@@ -355,23 +343,31 @@
   // Hàm load dữ liệu cho variant colors
   async function loadVariantColors() {
     try {
-      const colors = await fetchAPI("/api/color/filter");
+      const response = await fetch(`/api/color/filter`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `Network response was not ok: ${response.status} ${response.statusText} - ${errorText}`
+        );
+      }
+      const colors = await response.json();
+
       if (!colors || !Array.isArray(colors)) {
         throw new Error("Dữ liệu màu không hợp lệ");
       }
 
       const colorOptions = `
-   <option value="">Chọn màu</option>
-   ${colors
+    <option value="">Chọn màu</option>
+    ${colors
           .map(
             (color) => `
   <option value="${color.color_id}" data-hex="${color.color_hex}">
     ${color.color_name}
   </option>
-   `
+    `
           )
           .join("")}
- `;
+`;
 
       document.querySelectorAll(".variant-color").forEach((select) => {
         select.innerHTML = colorOptions;
@@ -403,7 +399,15 @@
   let allMaterials = [];
   async function loadAllMaterials() {
     try {
-      const materials = await fetchAPI("/api/materials");
+      const response = await fetch(`/api/materials`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `Network response was not ok: ${response.status} ${response.statusText} - ${errorText}`
+        );
+      }
+      const materials = await response.json();
+
       if (!materials || !Array.isArray(materials)) {
         throw new Error("Dữ liệu chất liệu không hợp lệ");
       }
@@ -425,7 +429,14 @@
 
     console.log("Loading category attributes for category ID:", categoryId);
     try {
-      const attributes = await fetchAPI(`/api/categories/${categoryId}/attributes`);
+      const response = await fetch(`/api/attribute/${categoryId}/attributes`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `Network response was not ok: ${response.status} ${response.statusText} - ${errorText}`
+        );
+      }
+      const attributes = await response.json();
       console.log("API response for category attributes:", attributes);
 
       if (!attributes || !Array.isArray(attributes) || attributes.length === 0) {
@@ -764,7 +775,9 @@
                 setupImageBox(newBox);
               }
 
-              input.dispatchEvent(new Event("change", { bubbles: true }));
+              input.dispatchEvent(new Event("change", {
+                bubbles: true
+              }));
             });
 
             variantElement._imageCount++;
@@ -798,6 +811,7 @@
     imageGrid.appendChild(firstBox);
     setupImageBox(firstBox);
   }
+
   function setupMainImageUpload() {
     mainImageUpload = document.getElementById("mainImageUpload");
     mainImageInput = mainImageUpload.querySelector('input[type="file"]');
@@ -828,7 +842,9 @@
           mainImageUpload.style.display = "block";
           mainImageInput.value = "";
 
-          mainImageInput.dispatchEvent(new Event("change", { bubbles: true }));
+          mainImageInput.dispatchEvent(new Event("change", {
+            bubbles: true
+          }));
         });
       }
     } else {
@@ -896,15 +912,18 @@
 
     console.log("Attempting to save new attribute:", payload); // Log payload
     try {
-      const addAttributeRes = await fetchAPI(`/api/attribute/${selectedCategoryId}`, {
+      const response = await fetch(`/api/attribute/${selectedCategoryId}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify(payload),
       });
 
+      const addAttributeRes = await response.json();
       console.log("API response for saving new attribute:", addAttributeRes); // Log API response
 
-      if (addAttributeRes && addAttributeRes.success) {
+      if (response.ok && addAttributeRes && addAttributeRes.success) {
         showToast(`Đã thêm thuộc tính mới: ${attribute_name}`, "success");
         rowElement.remove(); // Remove the new attribute row from the DOM
         console.log("New attribute saved successfully, removing row and reloading category attributes.");
@@ -954,7 +973,7 @@
         </div>
         <div class="form-group col-md-3 d-flex align-items-end justify-content-end gap-2">
           <button type="button" class="btn btn-primary btn-sm save-new-attribute" data-row-id="${rowId}" data-counter="${newAttributeCounter}">
-           Lưu
+            Lưu
           </button>
           <button type="button" class="btn btn-danger btn-sm remove-new-attribute" data-row-id="${rowId}">
             Xóa
@@ -1018,7 +1037,10 @@
         .closest(".form-group")
         ?.querySelector(".invalid-feedback");
       if (feedbackEl) feedbackEl.textContent = message;
-      validationErrors.push({ element, message });
+      validationErrors.push({
+        element,
+        message
+      });
     };
 
     // --- Validate Product Info ---
@@ -1181,8 +1203,8 @@
         block: "center",
       });
       // showToast(
-      //   "Vui lòng điền đầy đủ các thông tin bắt buộc.",
-      //   "danger"
+      //   "Vui lòng điền đầy đủ các thông tin bắt buộc.",
+      //   "danger"
       // );
       // Hiển thị từng toast một với độ trễ
       let delay = 0;
@@ -1296,7 +1318,9 @@
     try {
       const res = await fetch(`/api/products/add`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({
           name: name.value.trim(),
           slug: slug.value.trim(),
@@ -1313,7 +1337,10 @@
       const data = await res.json();
       if (!res.ok) {
         if (data.errors && Array.isArray(data.errors)) {
-          data.errors.forEach(({ field, message }) => {
+          data.errors.forEach(({
+            field,
+            message
+          }) => {
             let input = null;
 
             if (field.startsWith("attributes")) {
@@ -1428,7 +1455,9 @@
 
                     input
                       .closest(".form-section")
-                      ?.scrollIntoView({ behavior: "smooth" });
+                      ?.scrollIntoView({
+                        behavior: "smooth"
+                      });
                   } else {
                     input.classList.add("is-invalid");
                     const feedback = input
@@ -1528,37 +1557,3 @@
 </script>
 
 <div id="toastContainer" class="position-fixed top-0 end-0 p-3" style="z-index: 1050"></div>
-
-
-<!-- API -->
-<!-- GET /api/categories/:categoryId/attributes và GET /api/materials -->
-
-<!-- Lấy chi tiết sản phẩm -->
-<!-- GET /api/products/admin/:slug -->
-
-<!-- Lấy danh sách danh mục -->
-<!-- GET /api/categories -->
-
-<!-- Lấy danh sách phòng -->
-<!-- GET /api/rooms -->
-
-<!-- Lấy danh sách màu sắc -->
-<!-- GET /api/color/filter -->
-
-<!-- Cập nhật sản phẩm -->
-<!-- PUT /api/products/admin/:slug -->
-
-<!-- Thêm ảnh sản phẩm-->
-<!-- POST /api/upload/product -->
-
-<!-- Xoá ảnh sản phẩm -->
-<!-- DELETE /api/upload/:publicId -->
-
-<!-- Tạo biển thể mới -->
-<!-- POST /api/variants/:productId -->
-
-<!-- Cập nhật biến thể -->
-<!-- PUT /api/variants/:variantId -->
-
-<!-- Xoá biến thể -->
-<!-- DELETE /api/variants/:variantId -->

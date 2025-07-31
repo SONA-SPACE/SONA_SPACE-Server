@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const { verifyToken, isAdmin } = require('../middleware/auth');
-  function generateSlug(str) {
+function generateSlug(str) {
   return str
     .toLowerCase()
     .normalize("NFD")
@@ -115,20 +115,47 @@ router.get('/:slug', async (req, res) => {
  * @desc    [Disabled] Tạo danh mục tin tức mới
  * @access  Private (Admin only)
  */
-router.post('/', verifyToken, async (req, res) => {
-  const { name, status = 1, image, priority = 0 } = req.body;
+router.post('/', verifyToken, isAdmin, async (req, res) => {
+  const { name, status = 1, image, priority } = req.body;
 
-  if (!name) {
-    return res.status(400).json({ error: "Tên danh mục là bắt buộc" });
+  // Validate dữ liệu đầu vào
+  if (!name || typeof name !== 'string') {
+    return res.status(400).json({ error: "Tên danh mục là bắt buộc và phải là chuỗi." });
+  }
+
+  if (![0, 1].includes(Number(status))) {
+    return res.status(400).json({ error: "Trạng thái không hợp lệ." });
+  }
+  if (!image) {
+    return res
+      .status(400)
+      .json({ error: "Không thể upload danh mục tin không có hình ảnh " });
+  }
+
+    if (priority === undefined || priority === '' || isNaN(priority) || Number(priority) < 0) {
+    return res.status(400).json({ error: "Độ ưu tiên là bắt buộc và phải là số >= 0." });
+  }
+
+  if (priority < 0 || isNaN(priority)) {
+    return res.status(400).json({ error: "Độ ưu tiên không hợp lệ." });
   }
 
   try {
-    const slug = generateSlug(name);
+    const slug = req.body.slug || generateSlug(name);
+    const [slugCheck] = await db.query(
+      "SELECT * FROM news_category WHERE news_category_slug = ?",
+      [slug]
+    );
 
+    if (slugCheck.length > 0) {
+      return res.status(400).json({
+        error: "Slug đã tồn tại, vui lòng nhập tên khác hoặc chỉnh lại slug.",
+      });
+    }
     const [result] = await db.query(`
       INSERT INTO news_category (news_category_name, news_category_slug, news_category_image, news_category_status, news_category_priority)
       VALUES (?, ?, ?, ?, ?)
-    `, [name, slug, image || null, status, priority]);
+    `, [name, slug, image, status, priority]);
 
     res.status(201).json({
       message: "Tạo danh mục thành công",
@@ -136,7 +163,7 @@ router.post('/', verifyToken, async (req, res) => {
         id: result.insertId,
         name,
         slug,
-        image: image || null,
+        image: image,
         status,
         priority
       }
@@ -148,14 +175,43 @@ router.post('/', verifyToken, async (req, res) => {
 });
 
 
+
 /**
  * @route   PUT /api/news-categories/:id
  * @desc    [Disabled] Cập nhật danh mục tin tức
  * @access  Private (Admin only)
  */
 router.put('/:slug', verifyToken, isAdmin, async (req, res) => {
-  const { slug: oldSlug } = req.params; // slug cũ
-  const { name, slug: newSlug, image, priority, status } = req.body; // slug mới
+  const { slug: oldSlug } = req.params;
+  const {
+    name,
+    slug: newSlug,
+    image = null,
+    priority,
+    status
+  } = req.body;
+
+  // Validate name
+  if (!name || typeof name !== 'string' || name.trim() === '') {
+    return res.status(400).json({ error: "Tên danh mục tin là bắt buộc và phải là chuỗi." });
+  }
+
+  // Validate slug
+  if (!newSlug || typeof newSlug !== 'string' || newSlug.trim() === '') {
+    return res.status(400).json({ error: "Slug mới là bắt buộc và phải là chuỗi." });
+  }
+
+  // Validate status
+  const statusNumber = Number(status);
+  if (![0, 1].includes(statusNumber)) {
+    return res.status(400).json({ error: "Trạng thái không hợp lệ." });
+  }
+
+  // Validate priority
+  const priorityNumber = Number(priority);
+  if (isNaN(priorityNumber) || priorityNumber < 0) {
+    return res.status(400).json({ error: "Độ ưu tiên không hợp lệ." });
+  }
 
   try {
     const [result] = await db.query(`
@@ -167,18 +223,20 @@ router.put('/:slug', verifyToken, isAdmin, async (req, res) => {
         news_category_priority = ?,
         news_category_status = ?
       WHERE news_category_slug = ?
-    `, [name, newSlug, image, priority, status, oldSlug]);
+    `, [name.trim(), newSlug.trim(), image, priorityNumber, statusNumber, oldSlug]);
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Không tìm thấy danh mục theo slug.' });
     }
 
-    res.json({ message: 'Cập nhật thành công.' });
+    res.json({ message: 'Cập nhật danh mục thành công.' });
   } catch (err) {
-    console.error('Lỗi cập nhật slug:', err);
-    res.status(500).json({ error: 'Không thể cập nhật danh mục.' });
+    console.error('Lỗi cập nhật danh mục:', err);
+    res.status(500).json({ error: 'Không thể cập nhật danh mục. Vui lòng thử lại.' });
   }
 });
+
+
 
 
 
@@ -190,8 +248,8 @@ router.put('/:slug', verifyToken, isAdmin, async (req, res) => {
 router.delete('/:id', verifyToken, isAdmin, async (req, res) => {
   try {
     const categoryId = parseInt(req.params.id);
-    if (isNaN(categoryId)) {
-      return res.status(400).json({ error: 'Invalid category ID' });
+    if (isNaN(categoryId) || categoryId <= 0) {
+      return res.status(400).json({ error: 'ID danh mục không hợp lệ' });
     }
 
     // Kiểm tra danh mục tồn tại
@@ -201,10 +259,10 @@ router.delete('/:id', verifyToken, isAdmin, async (req, res) => {
     );
 
     if (categories.length === 0) {
-      return res.status(404).json({ error: 'Category not found' });
+      return res.status(404).json({ error: 'Không tìm thấy danh mục' });
     }
 
-    // Kiểm tra xem có bài viết nào dùng danh mục này không
+    // Kiểm tra xem có bài viết nào đang dùng danh mục này không
     const [usedNews] = await db.query(
       `SELECT COUNT(*) as count FROM news WHERE news_category_id = ?`,
       [categoryId]
@@ -216,15 +274,16 @@ router.delete('/:id', verifyToken, isAdmin, async (req, res) => {
       });
     }
 
-    // Tiến hành xóa danh mục
+    // Tiến hành xóa
     await db.query(`DELETE FROM news_category WHERE news_category_id = ?`, [categoryId]);
 
     res.json({ message: 'Xoá danh mục thành công' });
   } catch (error) {
     console.error('Error deleting category:', error);
-    res.status(500).json({ error: 'Failed to delete category' });
+    res.status(500).json({ error: 'Không thể xoá danh mục' });
   }
 });
+
 
 
 module.exports = router; 

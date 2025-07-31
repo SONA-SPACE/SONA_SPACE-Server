@@ -8,7 +8,7 @@ console.log("NODE_ENV:", process.env.NODE_ENV || 'not set');
 const WORKING_CONFIG = {
   host: 'fur.timefortea.io.vn',
   user: 'thainguyen0802',
-  password: 'cegatcn!080297',
+  password: 'Cegatcn!080297',
   database: 'furnitown',
   port: 3306,
   waitForConnections: true,

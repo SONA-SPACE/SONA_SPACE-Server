@@ -267,9 +267,30 @@ router.post('/', verifyToken, isAdmin, async (req, res) => {
       user_ids,
     } = req.body;
 
-    if (!code || !title || !value_price || !exp_time || !discount_type || status === undefined) {
-      return res.status(400).json({ error: 'Vui lòng nhập đầy đủ thông tin' });
+    if (!code) {
+      return res.status(400).json({ error: 'Vui lòng nhập mã giảm giá' });
     }
+
+    if (!title) {
+      return res.status(400).json({ error: 'Vui lòng nhập tiêu đề' });
+    }
+
+    if (!value_price) {
+      return res.status(400).json({ error: 'Vui lòng nhập giá giảm' });
+    }
+
+    if (!exp_time) {
+      return res.status(400).json({ error: 'Vui lòng chọn ngày hết hạn' });
+    }
+
+    if (!discount_type) {
+      return res.status(400).json({ error: 'Vui lòng chọn loại giảm giá' });
+    }
+
+    if (status === undefined) {
+      return res.status(400).json({ error: 'Vui lòng chọn trạng thái' });
+    }
+
 
     if (used !== undefined && (isNaN(used) || Number(used) <= 0)) {
       return res.status(400).json({ error: 'Lượt sử dụng không hợp lệ' });
@@ -282,9 +303,9 @@ router.post('/', verifyToken, isAdmin, async (req, res) => {
     if (!/^[A-Z0-9_]{3,20}$/.test(code)) {
       return res.status(400).json({ error: 'Mã code không hợp lệ (chỉ dùng chữ in hoa, số, dấu _)' });
     }
-if (title.length > 100 || code.length > 50 || description?.length > 255) {
-  return res.status(400).json({ error: 'Dữ liệu vượt quá độ dài cho phép' });
-}
+    if (title.length > 100 || code.length > 50 || description?.length > 255) {
+      return res.status(400).json({ error: 'Dữ liệu vượt quá độ dài cho phép' });
+    }
 
     if (isNaN(value_price) || Number(value_price) <= 0) {
       return res.status(400).json({ error: 'Giá giảm không hợp lệ' });
@@ -366,7 +387,7 @@ if (title.length > 100 || code.length > 50 || description?.length > 255) {
       notificationTypeId,
       notificationTitle,
       notificationMessage,
-      `${creator.user_name} (${creator.user_role})`
+      `${creator.user_role}`
     ]);
 
     const notificationId = notiResult.insertId;

@@ -173,44 +173,6 @@ router.get("/admin/all", verifyToken, isAdmin, async (req, res) => {
  * @desc    Lấy thuộc tính danh mục theo ID danh mục (alternative path)
  * @access  Public
  */
-router.get("/:categoryId/attributes", async (req, res) => {
-  const { categoryId } = req.params;
-
-  if (!categoryId) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Category ID là bắt buộc." });
-  }
-
-  try {
-    const sql = `
-      SELECT
-          attribute_id,
-          attribute_name,
-          value_type, -- Lấy trực tiếp từ cột value_type
-          unit,
-          is_required
-      FROM
-          attributes
-      WHERE
-          category_id = ?
-      ORDER BY attribute_name;
-    `;
-    const [attributes] = await db.query(sql, [categoryId]);
-
-    if (attributes.length === 0) {
-      return res.status(200).json([]);
-    }
-
-    res.status(200).json(attributes);
-  } catch (err) {
-    console.error(`Error fetching attributes for category ${categoryId}:`, err);
-    res.status(500).json({
-      success: false,
-      message: `Lỗi máy chủ khi lấy danh sách thuộc tính cho danh mục ID ${categoryId}.`,
-    });
-  }
-});
 
 /**
  * @route   POST /api/categories

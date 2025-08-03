@@ -25,6 +25,9 @@
             &.status-pending {
               color: $warning-cl;
             }
+            &.status-deposit {
+              color: $warning-cl;
+            }
             &.status-in_progress {
               color: $info-cl;
             }

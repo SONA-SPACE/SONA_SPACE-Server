@@ -1,85 +1,243 @@
-<!DOCTYPE html>
-<html>
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="vi">
 
 <head>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="x-apple-disable-message-reformatting" />
+    <meta name="format-detection" content="telephone=no, date=no, address=no, email=no, url=no" />
+    <meta name="color-scheme" content="light" />
+    <meta name="supported-color-schemes" content="light" />
+    <title>Xác thực tài khoản - Sona Space</title>
+    <style type="text/css">
+        body,
+        table,
+        td,
+        a {
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
         }
 
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            background-color: #f9f9f9;
+        table,
+        td {
+            mso-table-lspace: 0pt;
+            mso-table-rspace: 0pt;
         }
 
-        .header {
-            background-color: #007bff;
-            color: white;
-            padding: 15px 20px;
-            text-align: center;
-            border-radius: 8px 8px 0 0;
-        }
-
-        .content {
-            padding: 20px;
-        }
-
-        .button {
-            display: inline-block;
-            background-color: #28a745;
-            /* Màu xanh lá cho nút xác thực */
-            color: white;
-            padding: 12px 25px;
+        img {
+            -ms-interpolation-mode: bicubic;
+            border: 0;
+            height: auto;
+            line-height: 100%;
+            outline: none;
             text-decoration: none;
-            border-radius: 5px;
-            margin-top: 20px;
-            font-size: 1.1em;
-            font-weight: bold;
         }
 
-        .footer {
-            font-size: 0.85em;
-            color: #777;
-            text-align: center;
-            padding: 15px 20px;
-            border-top: 1px solid #eee;
-            margin-top: 25px;
+        table {
+            border-collapse: collapse !important;
+        }
+
+        body {
+            height: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+        }
+
+        a[x-apple-data-detectors] {
+            color: inherit !important;
+            text-decoration: none !important;
+            font-size: inherit !important;
+            font-family: inherit !important;
+            font-weight: inherit !important;
+            line-height: inherit !important;
+        }
+
+        @media screen and (max-width: 600px) {
+            .email-container {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+
+            .content-padding {
+                padding-left: 20px !important;
+                padding-right: 20px !important;
+            }
+
+            .main-heading {
+                font-size: 24px !important;
+                line-height: 1.3 !important;
+            }
         }
     </style>
 </head>
 
-<body>
-    <div class="container">
-        <div class="header">
-            <h2>Xác thực tài khoản của bạn</h2>
-        </div>
-        <div class="content">
-            <p>Xin chào <strong>
-                    <%= userName %>
-                </strong>,</p>
-            <p>Cảm ơn bạn đã đăng ký tài khoản tại Furnitown! Để hoàn tất quá trình đăng ký và kích hoạt tài khoản, vui
-                lòng nhấp vào liên kết dưới đây:</p>
-            <p style="text-align: center;">
-                <a href="<%= verificationLink %>" class="button">Xác thực tài khoản của tôi</a>
-            </p>
-            <p>Nếu nút trên không hoạt động, bạn có thể sao chép và dán liên kết này vào trình duyệt của mình:</p>
-            <p><small>
-                    <%= verificationLink %>
-                </small></p>
-            <p>Liên kết này chỉ có hiệu lực một lần. Nếu bạn không đăng ký tài khoản này, vui lòng bỏ qua email này.</p>
-            <p>Trân trọng,<br>Đội ngũ Furnitown</p>
-        </div>
-        <div class="footer">
-            <p>&copy; <%= new Date().getFullYear() %> Furnitown. Tất cả quyền được bảo lưu.</p>
-            <p>Địa chỉ: 123 Đường XYZ, Thành phố ABC</p>
-        </div>
-    </div>
+<body style="
+      margin: 0;
+      padding: 0;
+      background-color: #fcfcfc;
+      font-family: Arial, Helvetica, sans-serif;
+      color: #1d1d1d;
+      width: 100% !important;
+      -webkit-text-size-adjust: 100%;
+      -ms-text-size-adjust: 100%;
+    ">
+
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%"
+        style="background-color: #fcfcfc; margin: 0 auto; width: 100%">
+        <tr>
+            <td align="center" style="padding: 40px 0">
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="800"
+                    class="email-container" style="
+              background: #ffffff;
+              border-radius: 16px;
+              box-shadow: 0 4px 24px rgba(34, 29, 0, 0.08);
+              border: 1px solid #e0e0e0;
+              max-width: 800px;
+            ">
+                    <tr>
+                        <td style="
+                  padding: 40px 40px 32px 40px;
+                  text-align: center;
+                  border-bottom: 1px solid #eaeaea;
+                " class="content-padding">
+                            <img src="https://res.cloudinary.com/dmgrdgvcf/image/upload/v1750961757/sona_space_fq5wfj.jpg"
+                                width="180" height="auto" alt="Sona Space" style="
+                    display: block;
+                    margin: 0 auto;
+                    border: 0;
+                    width: 180px;
+                    height: auto;
+                  " />
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 0 40px" class="content-padding">
+                            <h1 style="
+                    margin: 32px 0 24px 0;
+                    font-size: 28px;
+                    line-height: 1.3;
+                    font-weight: bold;
+                    color: #f0a00a;
+                    font-family: Arial, Helvetica, sans-serif;
+                    text-align: center;
+                  " class="main-heading">
+                                Xác thực tài khoản của bạn
+                            </h1>
+
+                            <p style="
+                    margin: 0 0 20px 0;
+                    font-size: 16px;
+                    line-height: 1.6;
+                    color: #1d1d1d;
+                    font-family: Arial, Helvetica, sans-serif;
+                  ">
+                                Xin chào <strong style="color: #5e3e34">
+                                    <%= userName %>
+                                </strong>,
+                            </p>
+
+                            <p style="
+                    margin: 0 0 24px 0;
+                    font-size: 16px;
+                    line-height: 1.6;
+                    color: #1d1d1d;
+                    font-family: Arial, Helvetica, sans-serif;
+                  ">
+                                Cảm ơn bạn đã đăng ký tài khoản tại Sona Space! Để hoàn tất quá trình đăng ký và kích
+                                hoạt tài khoản, vui
+                                lòng nhấp vào liên kết dưới đây:
+                            </p>
+
+                            <div style="text-align: center; margin: 32px 0;">
+                                <a href="<%= verificationLink %>" style="
+                    display: inline-block;
+                    background: #f0a00a;
+                    color: #ffffff;
+                    text-decoration: none;
+                    padding: 14px 28px;
+                    border-radius: 6px;
+                    font-weight: bold;
+                    font-size: 16px;
+                    font-family: Arial, Helvetica, sans-serif;
+                  ">Xác thực tài khoản của tôi</a>
+                            </div>
+
+                            <p style="
+                    margin: 0 0 16px 0;
+                    font-size: 15px;
+                    line-height: 1.6;
+                    color: #8c8a8a;
+                    font-family: Arial, Helvetica, sans-serif;
+                  ">
+                                Nếu nút trên không hoạt động, bạn có thể sao chép và dán liên kết này vào trình duyệt
+                                của mình:
+                            </p>
+
+                            <div style="
+                    background: #fcfcfc;
+                    border-radius: 8px;
+                    padding: 16px;
+                    margin: 0 0 24px 0;
+                    border: 1px solid #e9ecef;
+                  ">
+                                <p style="
+                        margin: 0;
+                        font-size: 14px;
+                        color: #495057;
+                        font-family: monospace;
+                        word-break: break-all;
+                      ">
+                                    <%= verificationLink %>
+                                </p>
+                            </div>
+
+                            <p style="
+                    margin: 0 0 24px 0;
+                    font-size: 15px;
+                    line-height: 1.6;
+                    color: #1d1d1d;
+                    font-family: Arial, Helvetica, sans-serif;
+                  ">
+                                Liên kết này chỉ có hiệu lực một lần. Nếu bạn không đăng ký tài khoản này, vui lòng bỏ
+                                qua email này.
+                            </p>
+
+                            <p style="
+                    margin: 0;
+                    font-size: 15px;
+                    line-height: 1.6;
+                    color: #1d1d1d;
+                    font-family: Arial, Helvetica, sans-serif;
+                  ">
+                                Trân trọng,<br><strong style="color: #5e3e34">Đội ngũ Sona Space</strong>
+                            </p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="
+                  padding: 32px 0;
+                  text-align: center;
+                  background: #fcfcfc;
+                  border-top: 1px solid #eaeaea;    
+                  border-radius: 0 0 16px 16px;
+                ">
+                            <p style="margin: 0 0 8px 0; color: #8c8a8a; font-size: 13px">
+                                © 2025 Sona Space
+                            </p>
+                            <p style="margin: 0; color: #8c8a8a; font-size: 13px">
+                                Đây là email được gửi tự động, vui lòng không trả lời.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 </body>
 
 </html>

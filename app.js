@@ -54,6 +54,7 @@ var typeNotifyRouter = require("./routes/typenotify");
 var attributeRouter = require("./routes/attributes");
 var eventsRouter = require("./routes/events");
 var chatRouter = require("./routes/chat");
+var contactFormsRouter = require("./routes/contactForms");
 var app = express();
 
 // App version and startup time for health checks
@@ -159,6 +160,7 @@ app.use("/api/typeNotify", typeNotifyRouter);
 app.use("/api/attribute", attributeRouter);
 app.use("/api/events", eventsRouter);
 app.use("/api/chat", chatRouter);
+app.use("/api/contact-forms", contactFormsRouter);
 
 app.use(function (req, res, next) {
   console.warn("Route not found:", req.method, req.originalUrl);

@@ -3442,7 +3442,6 @@ avatar-image .product-filters {
   color: #d32f2f;
 }
 
-/* CSS để quản lý trạng thái đóng/mở của biến thể */
 .add-product-container {
   display: flex;
   gap: 24px;
@@ -3491,6 +3490,7 @@ avatar-image .product-filters {
   display: flex;
   gap: 20px;
   margin-bottom: 18px;
+  width: 100%;
 }
 
 #dynamicAttributesContainer {
@@ -3498,6 +3498,34 @@ avatar-image .product-filters {
   flex-wrap: wrap;
   gap: 20px;
   width: 100%;
+}
+
+.stat-card-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+  width: 100%;
+  border-bottom: 1px solid #8e8e8e;
+}
+
+.stat-card-title-product {
+  font-size: 14px;
+  font-family: Be-R;
+  line-height: normal;
+  color: #221D00;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  gap: 8px;
+}
+
+.stat-card-value-product {
+  font-size: 14px;
+  font-weight: 500;
+  color: #000;
+  text-decoration: none;
 }
 
 .form-infor {
@@ -3816,7 +3844,9 @@ textarea.form-control {
   margin-bottom: 16px;
 }
 
-.variant-header .btn-add-variant {
+.variant-header .btn-add-variant,
+.variant-header .btn-add-attribute,
+.save-new-attribute {
   background-color: var(--primary-color);
   color: white;
   padding: 8px 14px;
@@ -3826,10 +3856,6 @@ textarea.form-control {
   align-items: center;
   gap: 6px;
   transition: background-color 0.2s ease;
-}
-
-.variant-header .btn-add-variant:hover {
-  background-color: #315edb;
 }
 
 .variant-item {
@@ -6517,16 +6543,20 @@ textarea.form-control {
 }
 
 .status-indicator.PENDING {
+  background-color: rgba(243, 227, 181, 0.1);
+  color: #F5B400;
+}
+.status-indicator.IN_PROGRESS {
+  background-color: rgba(23, 162, 184, 0.1);
+  color: #0078D7;
+}
+.status-indicator.DEPOSIT {
   background-color: rgba(255, 193, 7, 0.1);
   color: #F5B400;
 }
 .status-indicator.REJECTED {
   background-color: rgba(255, 0, 0, 0.1);
   color: #D83B01;
-}
-.status-indicator.IN_PROGRESS {
-  background-color: rgba(23, 162, 184, 0.1);
-  color: #0078D7;
 }
 .status-indicator.RESOLVED {
   background-color: rgba(40, 167, 69, 0.1);
@@ -6573,6 +6603,9 @@ textarea.form-control {
   font-size: 13px;
 }
 .detail-form-container .form-column .form-section .form-section-header .form-section-header-left .status-text.status-pending {
+  color: #F5B400;
+}
+.detail-form-container .form-column .form-section .form-section-header .form-section-header-left .status-text.status-deposit {
   color: #F5B400;
 }
 .detail-form-container .form-column .form-section .form-section-header .form-section-header-left .status-text.status-in_progress {

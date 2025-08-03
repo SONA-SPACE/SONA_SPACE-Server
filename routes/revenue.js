@@ -88,10 +88,11 @@ router.get("/", verifyToken, isAdmin, async (req, res) => {
     // Design contacts
     const [designContacts] = await db.query(
       `
-      SELECT 
+     SELECT 
         DATE_FORMAT(d.created_at, ?) AS date,
-        SUM(d.design_fee) AS design_fee_total,
-        SUM(IFNULL(dd.products_total, 0)) AS products_total
+        SUM(CASE WHEN d.status = 'RESOLVED' THEN d.design_fee ELSE 0 END) AS design_fee_total,
+        SUM(CASE WHEN d.status = 'RESOLVED' THEN IFNULL(dd.products_total, 0) ELSE 0 END) AS products_total,
+        SUM(CASE WHEN d.status = 'DEPOSIT' THEN d.design_deposits ELSE 0 END) AS design_deposits_total
       FROM contact_form_design d
       LEFT JOIN (
           SELECT 
@@ -101,10 +102,9 @@ router.get("/", verifyToken, isAdmin, async (req, res) => {
           WHERE deleted_at IS NULL
           GROUP BY contact_form_design_id
       ) dd ON d.contact_form_design_id = dd.contact_form_design_id
-      WHERE d.status = 'RESOLVED'
+      WHERE d.status IN ('RESOLVED', 'DEPOSIT')
         AND DATE_FORMAT(d.created_at, ?) IN (?)
       GROUP BY DATE_FORMAT(d.created_at, ?)
-
       `,
       [dateFormat, dateFormat, dateList, dateFormat]
     );
@@ -123,7 +123,9 @@ router.get("/", verifyToken, isAdmin, async (req, res) => {
         // Cộng luôn 2 khoản vào designRevenue
         const designFee = Number(row.design_fee_total) || 0;
         const productsTotal = Number(row.products_total) || 0;
-        resultMap[row.date].designRevenue = designFee + productsTotal;
+        const designDeposits = Number(row.design_deposits_total) || 0;
+        resultMap[row.date].designRevenue = designFee + productsTotal + designDeposits;
+        // resultMap[row.date].depositRevenue = designDeposits; // Tiền cọc chờ xử lý
       }
     });
 

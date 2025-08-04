@@ -88,7 +88,10 @@
 <link rel="stylesheet" href="/javascripts/flatpickr/flatpickr.min.css" />
 <script src="/javascripts/flatpickr/flatpickr.min.js"></script>
 <script src="/javascripts/flatpickr/plugins/monthSelect/index.js"></script>
-<link rel="stylesheet" href="/javascripts/flatpickr/plugins/monthSelect/style.css" />
+<link
+  rel="stylesheet"
+  href="/javascripts/flatpickr/plugins/monthSelect/style.css"
+/>
 <script src="/javascripts/chart/chart.umd.js"></script>
 <script src="/dayjs/dayjs.min.js"></script>
 
@@ -254,17 +257,33 @@
               label: "Tổng doanh thu",
               data: totalRevenue,
               borderColor: "rgba(75,192,192,1)",
-              backgroundColor: "rgba(75,192,192,0.1)",
+              backgroundColor: "rgba(75,192,192,1)",
               tension: 0.3,
-              pointRadius: 5,
-              pointHoverRadius: 8,
+              pointRadius: 3,
+              pointHoverRadius: 3,
               fill: false,
+              borderWidth: 1.5,
             },
           ],
         },
         options: {
           responsive: true,
           plugins: {
+            legend: {
+              display: true,
+              labels: {
+                font: {
+                  size: 11,
+                  family: "'Inter', Arial, sans-serif",
+                  weight: "500",
+                },
+                color: "#555",
+                boxWidth: 10,
+                boxHeight: 10,
+                padding: 12,
+              },
+              align: "end",
+            },
             tooltip: {
               enabled: true,
               callbacks: {
@@ -310,25 +329,38 @@
     userChartInstance = new Chart(
       document.getElementById("userChart").getContext("2d"),
       {
-        type: "line",
+        type: "bar",
         data: {
           labels: userLabels,
           datasets: [
             {
               label: "Người dùng mới",
               data: userCounts,
-              borderColor: "rgba(54, 162, 235, 1)",
-              backgroundColor: "rgba(54, 162, 235, 0.1)",
-              tension: 0.3,
-              pointRadius: 5,
-              pointHoverRadius: 8,
-              fill: false,
+              backgroundColor: "rgba(54, 162, 235, 0.7)",
+              borderRadius: 6,
+              maxBarThickness: 32,
+              barPercentage: 0.7,
             },
           ],
         },
         options: {
           responsive: true,
           plugins: {
+            legend: {
+              display: true,
+              labels: {
+                font: {
+                  size: 11,
+                  family: "'Inter', Arial, sans-serif",
+                  weight: "500",
+                },
+                color: "#555",
+                boxWidth: 10,
+                boxHeight: 10,
+                padding: 16,
+              },
+              align: "end",
+            },
             tooltip: {
               enabled: true,
               callbacks: {
@@ -338,10 +370,22 @@
               },
             },
           },
+          layout: {
+            padding: {
+              top: 8,
+            },
+          },
           scales: {
-            x: { title: { display: true, text: "Tháng" } },
+            x: {
+              title: { display: true, text: "Tháng" },
+              grid: { display: false },
+            },
             y: {
               beginAtZero: true,
+              min: 0,
+              ticks: {
+
+              },
             },
           },
         },

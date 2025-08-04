@@ -24,6 +24,7 @@
           <select name="status" id="status">
             <option value="PENDING">Chờ xử lý</option>
             <option value="IN_PROGRESS">Đang xử lý</option>
+            <option value="DEPOSIT">Đã đặt cọc</option>
             <option value="RESOLVED">Đã xử lý</option>
             <option value="REJECTED">Từ chối</option>
           </select>
@@ -280,6 +281,8 @@
   const id = window.location.pathname.split("/").pop();
   let total_product_price = 0;
   let design_fee = 0;
+  const designFeeInput = document.getElementById("design_fee");
+  const designDepositsInput = document.getElementById("design_deposits");
 
   function formatDate(dateStr) {
     if (!dateStr) return "-";
@@ -294,21 +297,40 @@
     }).format(value);
   }
 
-  function loadStaff() {
-    fetch(`/api/users/staff`)
-      .then((res) => res.json())
-      .then((data) => {
-        const select = document.getElementById("staff_name");
-        select.innerHTML = '<option value="">Chọn nhân viên</option>';
-        data.users.forEach((staff) => {
-          const option = document.createElement("option");
-          option.value = staff.user_id;
-          option.textContent = staff.user_name;
-          select.appendChild(option);
-        });
-        // Gán value khi chắc chắn option đã render xong
-        select.value = data.staff_name || "";
+  function handleDesignFeeInput(e) {
+    // Lấy số, bỏ dấu chấm
+    let raw = e.target.value.replace(/\./g, "").replace(/[^0-9]/g, "");
+    if (!raw) {
+      designFeeInput.value = "";
+      designDepositsInput.value = "";
+      return;
+    }
+    // Hiển thị lại design_fee theo dạng tiền Việt
+    designFeeInput.value = raw.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    // Tính 30% và hiển thị vào design_deposits
+    const deposit = Math.floor(Number(raw) * 0.3);
+    designDepositsInput.value = deposit
+      .toString()
+      .replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  }
+
+  async function loadStaff() {
+    const res = await fetch(`/api/users/staff`);
+    const data = await res.json();
+    if (res.ok) {
+      const select = document.getElementById("staff_name");
+      select.innerHTML = '<option value="">Chọn nhân viên</option>';
+      data.users.forEach((staff) => {
+        const option = document.createElement("option");
+        option.value = staff.user_id;
+        option.textContent = staff.user_name;
+        select.appendChild(option);
       });
+      // Gán value khi chắc chắn option đã render xong
+      select.value = data.staff_name || "";
+    } else {
+      showToast(data.error || "Có lỗi xảy ra", "danger");
+    }
   }
 
   function loadVariants() {
@@ -344,9 +366,9 @@
       });
   }
 
-  document.addEventListener("DOMContentLoaded", () => {
+  document.addEventListener("DOMContentLoaded", async () => {
     loadData();
-    loadStaff();
+    await loadStaff();
     loadVariants();
     loadDesignDetails();
 
@@ -370,28 +392,6 @@
           "first_image_drop_area"
         ).innerHTML = `<img src="${selectedOption.dataset.image}" alt="${selectedOption.textContent}" style="height: 30%; width: 30%;">`;
       });
-
-    const designFeeInput = document.getElementById("design_fee");
-    const designDepositsInput = document.getElementById("design_deposits");
-
-    function handleDesignFeeInput(e) {
-      // Lấy số, bỏ dấu chấm
-      let raw = e.target.value.replace(/\./g, "").replace(/[^0-9]/g, "");
-      if (!raw) {
-        designFeeInput.value = "";
-        designDepositsInput.value = "";
-        return;
-      }
-
-      // Hiển thị lại design_fee theo dạng tiền Việt
-      designFeeInput.value = raw.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-
-      // Tính 30% và hiển thị vào design_deposits
-      const deposit = Math.floor(Number(raw) * 0.3);
-      designDepositsInput.value = deposit
-        .toString()
-        .replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-    }
 
     // Gắn sự kiện vào input design_fee
     designFeeInput.addEventListener("input", handleDesignFeeInput);
@@ -499,56 +499,73 @@
     }
   }
 
-  function loadData() {
-    fetch(`/api/contact-form-design/${id}`)
-      .then((res) => res.json())
-      .then((data) => {
-        design_fee = data.design_fee || 0;
-        document.getElementById("design_fee_text").innerHTML = data.design_fee
-          ? formatCurrency(Number(data.design_fee))
-          : "0 VNĐ";
-        document.getElementById("created_at").innerHTML = formatDate(
-          data.created_at
-        );
-        document.getElementById("updated_at").innerHTML = formatDate(
-          data.updated_at
-        );
-        document.getElementById("name").value = data.name;
-        document.getElementById("email").value = data.email;
-        document.getElementById("room_name").value = data.room_name;
-        document.getElementById("phone").value = data.phone;
-        document.getElementById("budget").value = data.budget
-          ? Number(data.budget).toLocaleString("vi-VN")
-          : "";
-        document.getElementById("design_fee").value = data.design_fee
-          ? Number(data.design_fee).toLocaleString("vi-VN")
-          : "";
-        document.getElementById("design_deposits").value = data.design_deposits
-          ? Number(data.design_deposits).toLocaleString("vi-VN")
-          : "";
-        document
-          .getElementById("design_deposits")
-          .addEventListener("keydown", (e) => e.preventDefault());
-        document
-          .getElementById("design_deposits")
-          .addEventListener("paste", (e) => e.preventDefault());
-        document.getElementById("design_description").value =
-          data.design_description;
-        document.getElementById("require_design").value = data.require_design;
-        document.getElementById("style_design").value = data.style_design;
-        document.getElementById("different_information").value =
-          data.different_information;
-        document.getElementById("status").value = data.status;
-        document.getElementById("status_text").innerHTML =
-          data.status.charAt(0).toUpperCase() + data.status.slice(1);
-        document
-          .getElementById("status_text")
-          .classList.add(`status-${data.status.toLowerCase()}`);
-        document.getElementById("remarks").value = data.remarks;
-        document.getElementById("staff_name").value = data.user_id;
-        document.getElementById("drive").value = data.drive;
-        updateTotalPrice();
-      });
+  async function loadData() {
+    const res = await fetch(`/api/contact-form-design/${id}`);
+    const data = await res.json();
+    if (res.ok) {
+      console.log(data);
+      design_fee = data.design_fee || 0;
+      document.getElementById("design_fee_text").innerHTML = data.design_fee
+        ? formatCurrency(Number(data.design_fee))
+        : "0 VNĐ";
+      document.getElementById("created_at").innerHTML = formatDate(
+        data.created_at
+      );
+      document.getElementById("updated_at").innerHTML = formatDate(
+        data.updated_at
+      );
+      document.getElementById("name").value = data.name;
+      document.getElementById("email").value = data.email;
+      document.getElementById("room_name").value = data.room_name;
+      document.getElementById("phone").value = data.phone;
+      document.getElementById("budget").value = data.budget
+        ? Number(data.budget).toLocaleString("vi-VN")
+        : "";
+      document.getElementById("design_fee").value = data.design_fee
+        ? Number(data.design_fee).toLocaleString("vi-VN")
+        : "";
+      document.getElementById("design_deposits").value = data.design_deposits
+        ? Number(data.design_deposits).toLocaleString("vi-VN")
+        : "";
+      document
+        .getElementById("design_deposits")
+        .addEventListener("keydown", (e) => e.preventDefault());
+      document
+        .getElementById("design_deposits")
+        .addEventListener("paste", (e) => e.preventDefault());
+      document.getElementById("design_description").value =
+        data.design_description;
+      document.getElementById("require_design").value = data.require_design;
+      document.getElementById("style_design").value = data.style_design;
+      document.getElementById("different_information").value =
+        data.different_information;
+      document.getElementById("status").value = data.status;
+      if (data.status === "IN_PROGRESS") {
+        document.getElementById("design_fee").disabled = false;
+        document.getElementById("design_fee").onkeydown = null;
+        document.getElementById("design_fee").onpaste = null;
+        document.getElementById("design_fee").oninput = null;
+      } else {
+        document.getElementById("design_fee").disabled = true;
+        document.getElementById("design_fee").onkeydown = (e) =>
+          e.preventDefault();
+        document.getElementById("design_fee").onpaste = (e) =>
+          e.preventDefault();
+        document.getElementById("design_fee").oninput = (e) =>
+          e.preventDefault();
+      }
+      document.getElementById("status_text").innerHTML =
+        data.status.charAt(0).toUpperCase() + data.status.slice(1);
+      document
+        .getElementById("status_text")
+        .classList.add(`status-${data.status.toLowerCase()}`);
+      document.getElementById("remarks").value = data.remarks;
+      document.getElementById("staff_name").value = data.user_id;
+      document.getElementById("drive").value = data.drive;
+      updateTotalPrice();
+    } else {
+      showToast(data.error || "Có lỗi xảy ra", "danger");
+    }
   }
 
   async function handleUpdate() {

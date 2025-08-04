@@ -654,6 +654,18 @@ router.post("/", verifyToken, async (req, res) => {
       if (existingOrders.length > 0) {
         return res.status(400).json({ error: "Đơn hàng đã tồn tại" });
       }
+      // Trước khi insert đơn hàng COD
+      for (const item of cart_items) {
+        const [[variant]] = await db.query(
+          `SELECT variant_product_quantity FROM variant_product WHERE variant_id = ?`,
+          [item.variant_id]
+        );
+        if (!variant || variant.variant_product_quantity < item.quantity) {
+          return res.status(400).json({
+            error: `Sản phẩm ${item.name} không đủ số lượng`,
+          });
+        }
+      }
 
       // Insert order
       await db.query(
@@ -825,8 +837,19 @@ router.post("/", verifyToken, async (req, res) => {
     }
 
     // MoMo: không lưu đơn → trả về payUrl
-    // MoMo: không lưu đơn → trả về payUrl
     if (method === "MOMO") {
+      // 1. Check tồn kho trước khi đặt chỗ
+      for (const item of cart_items) {
+        const [[variant]] = await db.query(
+          `SELECT variant_product_quantity, variant_reserved_quantity FROM variant_product WHERE variant_id = ?`,
+          [item.variant_id]
+        );
+        if (variant.variant_product_quantity < item.quantity) {
+          return res.status(400).json({
+            error: `Sản phẩm ${item.name} không đủ số lượng để đặt hàng`,
+          });
+        }
+      }
       const partnerCode = "MOMO";
       const accessKey = "F8BBA842ECF85";
       const secretKey = "K951B6PE1waDMi640xX08PD3vg6EkVlz";
@@ -835,8 +858,8 @@ router.post("/", verifyToken, async (req, res) => {
       const orderId = req.body.order_id || `SNA-${Date.now()}`;
 
       const requestId = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-      const redirectUrl = `https://cdeb1a14b76d.ngrok-free.app/api/orders/redirect/momo`;
-      const ipnUrl = `https://cdeb1a14b76d.ngrok-free.app/api/orders/payment/momo`;
+      const redirectUrl = `https://47d5b30ab207.ngrok-free.app/api/orders/redirect/momo`;
+      const ipnUrl = `https://47d5b30ab207.ngrok-free.app/api/orders/payment/momo`;
       const orderInfo = "Thanh toán đơn hàng";
 
       const extraData = Buffer.from(
@@ -888,7 +911,6 @@ router.post("/", verifyToken, async (req, res) => {
       return res.json({ payUrl: momoRes.data.payUrl });
     }
 
-    // VNPay: không lưu đơn → trả về payUrl
     if (method === "VNPAY") {
       const transactionCode = `VNP${Date.now()}${Math.floor(
         Math.random() * 1000
@@ -935,26 +957,15 @@ router.post("/", verifyToken, async (req, res) => {
 
 router.post("/payment/momo", async (req, res) => {
   const {
-    orderId,
-    amount,
-    resultCode,
-    requestId,
-    orderInfo,
-    orderType,
-    transId,
-    payType,
-    extraData,
-    signature,
-    message,
-    partnerCode,
-    responseTime,
+    orderId, amount, resultCode, requestId, orderInfo, orderType, transId,
+    payType, extraData, signature, message, partnerCode, responseTime
   } = req.body;
 
   const accessKey = "F8BBA842ECF85";
   const secretKey = "K951B6PE1waDMi640xX08PD3vg6EkVlz";
 
   try {
-    // Kiểm tra chữ ký hợp lệ
+    // 1. Kiểm tra chữ ký hợp lệ
     const rawSignature = `accessKey=${accessKey}&amount=${amount}&extraData=${extraData}&message=${message}&orderId=${orderId}&orderInfo=${orderInfo}&orderType=${orderType}&partnerCode=${partnerCode}&payType=${payType}&requestId=${requestId}&responseTime=${responseTime}&resultCode=${resultCode}&transId=${transId}`;
     const expectedSignature = crypto
       .createHmac("sha256", secretKey)
@@ -967,11 +978,8 @@ router.post("/payment/momo", async (req, res) => {
         .json({ message: "Chữ ký không hợp lệ hoặc thanh toán thất bại" });
     }
 
-    // Kiểm tra đơn đã tồn tại chưa
-    const [existingOrder] = await db.query(
-      "SELECT * FROM orders WHERE order_hash = ?",
-      [orderId]
-    );
+    // 2. Kiểm tra đơn hàng đã tồn tại
+    const [existingOrder] = await db.query("SELECT * FROM orders WHERE order_hash = ?", [orderId]);
     if (existingOrder.length > 0) {
       const existingOrderId = existingOrder[0].order_id;
 
@@ -1003,30 +1011,21 @@ router.post("/payment/momo", async (req, res) => {
         .json({ message: "Đơn hàng đã tồn tại và đã xử lý thanh toán." });
     }
 
-    // Giải mã extraData
+    // 3. Giải mã extraData
     const extra = JSON.parse(Buffer.from(extraData, "base64").toString("utf8"));
     const {
-      user_id,
-      order_total,
-      order_total_final,
-      cart_items = [],
-      order_name_new,
-      order_email_new,
-      order_address_new,
-      order_number2,
-      couponcode_id,
-      coupon_code,
-      shipping_fee,
-      order_discount,
+      user_id, order_total, order_total_final, cart_items = [],
+      order_name_new, order_email_new, order_address_new,
+      order_number2, couponcode_id, coupon_code, shipping_fee, order_discount
     } = extra;
 
     const order_hash = orderId;
 
-    // Lấy thông tin user mặc định
-    const [[userInfo]] = await db.query(
-      `SELECT user_address, user_number, user_name, user_gmail FROM user WHERE user_id = ?`,
-      [user_id]
-    );
+    // 4. Lấy thông tin người dùng
+    const [[userInfo]] = await db.query(`
+      SELECT user_address, user_number, user_name, user_gmail FROM user WHERE user_id = ?
+    `, [user_id]);
+
     const defaultName = userInfo.user_name?.trim() || "";
     const defaultEmail = userInfo.user_gmail?.trim() || "";
     const defaultAddress = userInfo.user_address?.trim() || "";
@@ -1049,6 +1048,7 @@ router.post("/payment/momo", async (req, res) => {
         ? order_number2.trim()
         : null;
 
+    // 5. Xử lý mã giảm giá
     let couponcodeId = couponcode_id || null;
     if (!couponcodeId && coupon_code) {
       const [[coupon]] = await db.query(
@@ -1058,8 +1058,8 @@ router.post("/payment/momo", async (req, res) => {
       if (coupon) couponcodeId = coupon.couponcode_id;
     }
 
-    await db.query(
-      `
+    // 6. Tạo đơn hàng
+    await db.query(`
       INSERT INTO orders (
         order_hash, user_id, order_address_old, order_address_new,
         order_number1, order_number2, order_total, order_total_final,
@@ -1096,44 +1096,45 @@ router.post("/payment/momo", async (req, res) => {
     );
     const order_id = orderRow.order_id;
 
-    for (const item of cart_items) {
-      const {
-        variant_id,
-        quantity,
-        name: product_name,
-        price: product_price,
-      } = item;
-      if (!variant_id || !quantity || !product_name || !product_price) continue;
+    // 7. Ghi từng sản phẩm trong đơn hàng + cập nhật tồn kho
+for (const item of cart_items) {
+  const { variant_id, quantity, name: product_name, price: product_price } = item;
+  if (!variant_id || !quantity || !product_name || !product_price) continue;
 
-      await db.query(
-        `
-        INSERT INTO order_items (order_id, variant_id, quantity, product_name, product_price, current_status, created_at)
-        VALUES (?, ?, ?, ?, ?, 'NORMAL', NOW())
-      `,
-        [order_id, variant_id, quantity, product_name, product_price]
-      );
+  // 1. Trừ kho nếu còn đủ hàng
+  const [updateResult] = await db.query(`
+    UPDATE variant_product
+    SET 
+variant_product_quantity = variant_product_quantity - ?
 
-      // Cập nhật số lượng tồn kho và sản phẩm bán
-      await db.query(
-        `
-        UPDATE variant_product SET variant_product_quantity = variant_product_quantity - ? WHERE variant_id = ?
-      `,
-        [quantity, variant_id]
-      );
+    WHERE variant_id = ? AND variant_product_quantity >= ?
+  `, [quantity, variant_id, quantity]);
 
-      await db.query(
-        `
-        UPDATE product
-        JOIN variant_product ON variant_product.product_id = product.product_id
-        SET product.product_sold = product.product_sold + ?
-        WHERE variant_product.variant_id = ?
-      `,
-        [quantity, variant_id]
-      );
-    }
+  if (updateResult.affectedRows === 0) {
+    return res.status(400).json({
+      message: `Sản phẩm '${product_name}' không còn đủ hàng hoặc đã được người khác mua.`,
+    });
+  }
 
+  // 2. Ghi vào order_items
+  await db.query(`
+    INSERT INTO order_items (order_id, variant_id, quantity, product_name, product_price, current_status, created_at)
+    VALUES (?, ?, ?, ?, ?, 'NORMAL', NOW())
+  `, [order_id, variant_id, quantity, product_name, product_price]);
+
+  // 3. Tăng product_sold
+  await db.query(`
+    UPDATE product
+    JOIN variant_product ON variant_product.product_id = product.product_id
+    SET product.product_sold = product.product_sold + ?
+    WHERE variant_product.variant_id = ?
+  `, [quantity, variant_id]);
+}
+
+
+
+    // 8. Xoá sản phẩm khỏi wishlist
     const wishlistIdsToDelete = [];
-
     for (const item of cart_items) {
       const [wishlistRows] = await db.query(
         `SELECT wishlist_id FROM wishlist WHERE user_id = ? AND variant_id = ?`,
@@ -1141,15 +1142,12 @@ router.post("/payment/momo", async (req, res) => {
       );
       wishlistRows.forEach((row) => wishlistIdsToDelete.push(row.wishlist_id));
     }
-
     if (wishlistIdsToDelete.length > 0) {
-      await db.query(`DELETE FROM wishlist WHERE wishlist_id IN (?)`, [
-        wishlistIdsToDelete,
-      ]);
+      await db.query(`DELETE FROM wishlist WHERE wishlist_id IN (?)`, [wishlistIdsToDelete]);
     }
 
-    await db.query(
-      `
+    // 9. Ghi nhận thanh toán
+    await db.query(`
       INSERT INTO payments (order_id, method, amount, status, transaction_code, created_at)
       VALUES (?, 'MOMO', ?, 'SUCCESS', ?, NOW())
     `,
@@ -1164,15 +1162,13 @@ router.post("/payment/momo", async (req, res) => {
       [order_id]
     );
 
+    // 10. Xử lý coupon sử dụng
     if ((couponcode_id || coupon_code) && user_id) {
       let couponcodeId = couponcode_id || null;
       let coupon = null;
 
       if (!couponcodeId && coupon_code) {
-        const [[result]] = await db.query(
-          `SELECT * FROM couponcode WHERE code = ?`,
-          [coupon_code]
-        );
+        const [[result]] = await db.query(`SELECT * FROM couponcode WHERE code = ?`, [coupon_code]);
         if (result) {
           couponcodeId = result.couponcode_id;
           coupon = result;
@@ -1180,34 +1176,25 @@ router.post("/payment/momo", async (req, res) => {
       }
 
       if (couponcodeId && !coupon) {
-        const [[result2]] = await db.query(
-          `SELECT * FROM couponcode WHERE couponcode_id = ?`,
-          [couponcodeId]
-        );
+        const [[result2]] = await db.query(`SELECT * FROM couponcode WHERE couponcode_id = ?`, [couponcodeId]);
         coupon = result2;
       }
 
-      // Nếu tìm thấy coupon và còn lượt
       if (coupon && coupon.used > 0) {
-        // Trừ lượt sử dụng
         await db.query(
           "UPDATE couponcode SET used = used - 1 WHERE couponcode_id = ? AND used > 0",
           [coupon.couponcode_id]
         );
 
-        // Ghi nhận vào user_has_coupon
-        await db.query(
-          `
-      INSERT INTO user_has_coupon (user_id, couponcode_id, status)
-      VALUES (?, ?, 1)
-      ON DUPLICATE KEY UPDATE status = 1
-    `,
-          [user_id, coupon.couponcode_id]
-        );
+        await db.query(`
+          INSERT INTO user_has_coupon (user_id, couponcode_id, status)
+          VALUES (?, ?, 1)
+          ON DUPLICATE KEY UPDATE status = 1
+        `, [user_id, coupon.couponcode_id]);
       }
     }
 
-    // Gửi email xác nhận
+    // 11. Gửi email
     const emailData = {
       name: finalName || defaultName,
       email: finalEmail || defaultEmail,
@@ -1240,6 +1227,7 @@ router.post("/payment/momo", async (req, res) => {
       console.error("Lỗi gửi email:", err.message);
     }
 
+    // 12. Trả về phản hồi
     return res.status(200).json({
       success: true,
       resultCode: 0,
@@ -1250,6 +1238,8 @@ router.post("/payment/momo", async (req, res) => {
     return res.status(500).json({ error: "Lỗi server khi xử lý IPN MoMo" });
   }
 });
+
+
 
 router.get("/redirect/momo", (req, res) => {
   const { resultCode, orderId } = req.query;

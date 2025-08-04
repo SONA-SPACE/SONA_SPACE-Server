@@ -150,30 +150,7 @@ router.get("/events/edit/:slug", (req, res) => {
     productId: req.params.slug,
   });
 });
-// Products management
-router.get("/material", (req, res) => {
-  res.render("dashboard/material/material", {
-    title: "Sona Space - Quản lý Sản phẩm",
-    layout: "layouts/dashboard",
-  });
-});
 
-// Add product
-router.get("/material/add", (req, res) => {
-  res.render("dashboard/material/add", {
-    title: "Sona Space - Thêm Sản phẩm mới",
-    layout: "layouts/dashboard",
-  });
-});
-
-// Edit product
-router.get("/material/edit/:slug", (req, res) => {
-  res.render("dashboard/material/edit", {
-    title: "Sona Space - Chỉnh sửa Sản phẩm",
-    layout: "layouts/dashboard",
-    productId: req.params.slug,
-  });
-});
 // Products management
 router.get("/comment", (req, res) => {
   res.render("dashboard/comment/comment", {
@@ -323,15 +300,21 @@ router.get("/orders/detail/:id", isAdmin, async (req, res) => {
     const orderId = req.params.id;
     console.log(`Fetching order details for ID: ${orderId}`);
 
+    // Build API URL based on environment
+    const protocol = req.protocol;
+    const host = req.get('host');
+    const apiUrl = process.env.NODE_ENV === 'production' 
+      ? `${protocol}://${host}/api/orders/${orderId}`
+      : `http://localhost:${process.env.PORT || 3501}/api/orders/${orderId}`;
+
+    console.log(`Order detail API URL: ${apiUrl}`);
+
     // Fetch order data from API
-    const response = await fetch(
-      `http://localhost:3501/api/orders/${orderId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${req.cookies.token}`,
-        },
-      }
-    );
+    const response = await fetch(apiUrl, {
+      headers: {
+        Authorization: `Bearer ${req.cookies.token}`,
+      },
+    });
 
     if (!response.ok) {
       console.error(
@@ -646,42 +629,21 @@ router.get("/orders/invoice/:id", async (req, res) => {
     const orderId = req.params.id;
     console.log(`Fetching invoice for order ID: ${orderId}`);
 
-    // Fetch order data from API
-    const response = await fetch(
-      `http://localhost:3501/api/orders/${orderId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${req.cookies.token}`,
-        },
-      }
-    );
+    // Build API URL based on environment
+    const protocol = req.protocol;
+    const host = req.get('host');
+    const apiUrl = process.env.NODE_ENV === 'production' 
+      ? `${protocol}://${host}/api/orders/${orderId}`
+      : `http://localhost:${process.env.PORT || 3501}/api/orders/${orderId}`;
 
-    if (!response.ok) {
-      console.error(
-        `API response not OK: ${response.status} ${response.statusText}`
-      );
-      throw new Error("Failed to fetch order details for invoice");
-    }
-
-    const orderData = await response.json();
-    console.log(
-      "API Response for invoice:",
-      JSON.stringify(orderData).substring(0, 200) + "..."
-    );
-
-    // Extract the order object from the response
-    const order = orderData.data || orderData;
-    console.log(`Fetching invoice for order ID: ${orderId}`);
+    console.log(`Invoice API URL: ${apiUrl}`);
 
     // Fetch order data from API
-    const response = await fetch(
-      `http://localhost:3501/api/orders/${orderId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${req.cookies.token}`,
-        },
-      }
-    );
+    const response = await fetch(apiUrl, {
+      headers: {
+        Authorization: `Bearer ${req.cookies.token}`,
+      },
+    });
 
     if (!response.ok) {
       console.error(
@@ -699,13 +661,6 @@ router.get("/orders/invoice/:id", async (req, res) => {
     // Extract the order object from the response
     const order = orderData.data || orderData;
 
-    // If items are missing, fetch them directly from the database
-    if (!order.items || order.items.length === 0) {
-      console.log(
-        "No items found in API response, fetching from database for invoice"
-      );
-      const db = require("../config/database");
-      const [items] = await db.query(
     // If items are missing, fetch them directly from the database
     if (!order.items || order.items.length === 0) {
       console.log(
@@ -714,11 +669,6 @@ router.get("/orders/invoice/:id", async (req, res) => {
       const db = require("../config/database");
       const [items] = await db.query(
         `
-        SELECT oi.*, p.product_name, vp.variant_product_price, vp.variant_product_price_sale
-        FROM order_items oi
-        LEFT JOIN variant_product vp ON oi.variant_id = vp.variant_id
-        LEFT JOIN product p ON vp.product_id = p.product_id
-        WHERE oi.order_id = ? AND oi.deleted_at IS NULL
         SELECT oi.*, p.product_name, vp.variant_product_price, vp.variant_product_price_sale
         FROM order_items oi
         LEFT JOIN variant_product vp ON oi.variant_id = vp.variant_id
@@ -832,7 +782,6 @@ router.get("/orders/invoice/:id", async (req, res) => {
     });
   } catch (error) {
     console.error("Lỗi khi hiển thị hóa đơn:", error);
-    res.status(500).send("Đã xảy ra lỗi khi tải hóa đơn: " + error.message);
     res.status(500).send("Đã xảy ra lỗi khi tải hóa đơn: " + error.message);
   }
 });

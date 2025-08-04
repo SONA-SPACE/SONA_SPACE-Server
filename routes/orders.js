@@ -131,8 +131,12 @@ router.get("/hash/:orderHash", optionalAuth, async (req, res) => {
 
     // Lấy thông tin hủy/trả đơn hàng từ bảng order_returns nếu đơn hàng có trạng thái CANCELLED hoặc RETURN
     let returnInfo = null;
-    if (order.current_status === 'CANCELLED' || order.current_status === 'RETURN') {
-      const [orderReturns] = await db.query(`
+    if (
+      order.current_status === "CANCELLED" ||
+      order.current_status === "RETURN"
+    ) {
+      const [orderReturns] = await db.query(
+        `
         SELECT 
           return_id,
           reason,
@@ -145,7 +149,9 @@ router.get("/hash/:orderHash", optionalAuth, async (req, res) => {
         WHERE order_id = ?
         ORDER BY created_at DESC
         LIMIT 1
-      `, [order.order_id]);
+      `,
+        [order.order_id]
+      );
 
       if (orderReturns.length > 0) {
         returnInfo = orderReturns[0];
@@ -183,43 +189,50 @@ router.get("/hash/:orderHash", optionalAuth, async (req, res) => {
 
     const statusStepMap = {
       // Quy trình đặt hàng thành công
-      'PENDING': 1,
-      'APPROVED': 2,
-      'CONFIRMED': 2, // Tương đương với APPROVED
-      'SHIPPING': 3,
-      'COMPLETED': 4,
-      'SUCCESS': 4, // Tương đương với COMPLETED
+      PENDING: 1,
+      APPROVED: 2,
+      CONFIRMED: 2, // Tương đương với APPROVED
+      SHIPPING: 3,
+      COMPLETED: 4,
+      SUCCESS: 4, // Tương đương với COMPLETED
 
       // Quy trình hủy đơn hàng (từ bảng order_returns)
-      'CANCEL_REQUESTED': 1, // Khách hàng yêu cầu hủy
-      'CANCEL_PENDING': 2,   // Đang chờ xử lý hủy
-      'CANCEL_CONFIRMED': 3, // Xác nhận hủy
-      'CANCELLED': 4,        // Đã hủy hoàn tất
+      CANCEL_REQUESTED: 1, // Khách hàng yêu cầu hủy
+      CANCEL_PENDING: 2, // Đang chờ xử lý hủy
+      CANCEL_CONFIRMED: 3, // Xác nhận hủy
+      CANCELLED: 4, // Đã hủy hoàn tất
 
       // Quy trình trả hàng
-      'RETURN': 4,           // Đã trả hàng hoàn tất
+      RETURN: 4, // Đã trả hàng hoàn tất
 
       // Quy trình từ chối/thất bại
-      'REJECTED': 1,         // Đơn hàng bị từ chối
-      'FAILED': 1            // Đơn hàng thất bại
+      REJECTED: 1, // Đơn hàng bị từ chối
+      FAILED: 1, // Đơn hàng thất bại
     };
 
     // Xác định loại quy trình và step dựa trên trạng thái
-    let processType = 'normal'; // Quy trình bình thường
+    let processType = "normal"; // Quy trình bình thường
     let actualStatus = order.current_status;
     let statusStep = statusStepMap[order.current_status] || 1;
 
     // Kiểm tra xem đơn hàng có trong bảng order_returns không
-    if ((order.current_status === 'CANCELLED' || order.current_status === 'RETURN') && returnInfo) {
-      if (order.current_status === 'CANCELLED') {
-        processType = 'cancellation';
-      } else if (order.current_status === 'RETURN') {
-        processType = 'return';
+    if (
+      (order.current_status === "CANCELLED" ||
+        order.current_status === "RETURN") &&
+      returnInfo
+    ) {
+      if (order.current_status === "CANCELLED") {
+        processType = "cancellation";
+      } else if (order.current_status === "RETURN") {
+        processType = "return";
       }
       actualStatus = returnInfo.return_status;
-      statusStep = statusStepMap[returnInfo.return_status] || statusStepMap[order.current_status] || 4;
-    } else if (['REJECTED', 'FAILED'].includes(order.current_status)) {
-      processType = 'failed';
+      statusStep =
+        statusStepMap[returnInfo.return_status] ||
+        statusStepMap[order.current_status] ||
+        4;
+    } else if (["REJECTED", "FAILED"].includes(order.current_status)) {
+      processType = "failed";
     }
 
     const cleanPrice = (value) => {
@@ -272,7 +285,9 @@ router.get("/hash/:orderHash", optionalAuth, async (req, res) => {
         id: item.id,
         name: item.product_name,
         image: item.image || item.product_image || "/images/default.jpg",
-        price: item.price_sale ? cleanPrice(item.price_sale) : cleanPrice(item.price),
+        price: item.price_sale
+          ? cleanPrice(item.price_sale)
+          : cleanPrice(item.price),
         quantity: item.quantity,
         slug: item.product_slug,
         color: {
@@ -297,7 +312,7 @@ router.get("/hash/:orderHash", optionalAuth, async (req, res) => {
         total_refund: returnInfo.total_refund,
         return_status: returnInfo.return_status,
         return_created_at: returnInfo.return_created_at,
-        return_updated_at: returnInfo.return_updated_at
+        return_updated_at: returnInfo.return_updated_at,
       };
     }
 
@@ -372,15 +387,20 @@ router.get("/admin", verifyToken, isAdmin, async (req, res) => {
     `);
 
     // Process orders to include payment array and return info
-    const processedOrders = orders.map(order => {
+    const processedOrders = orders.map((order) => {
       // Create payment array if payment data exists
       if (order.payment_method || order.payment_status_from_payment) {
-        order.payment = [{
-          method: order.payment_method || 'N/A',
-          status: order.payment_status_from_payment || order.payment_status || 'PENDING',
-          transaction_code: null,
-          paid_at: null
-        }];
+        order.payment = [
+          {
+            method: order.payment_method || "N/A",
+            status:
+              order.payment_status_from_payment ||
+              order.payment_status ||
+              "PENDING",
+            transaction_code: null,
+            paid_at: null,
+          },
+        ];
       }
 
       // Add return info if exists
@@ -391,7 +411,7 @@ router.get("/admin", verifyToken, isAdmin, async (req, res) => {
           return_type: order.return_type,
           total_refund: order.total_refund,
           return_created_at: order.return_created_at,
-          return_updated_at: order.return_updated_at
+          return_updated_at: order.return_updated_at,
         };
       }
 
@@ -571,7 +591,7 @@ router.post("/", verifyToken, async (req, res) => {
       coupon_code,
       shipping_fee,
       order_discount,
-      fromRedirect
+      fromRedirect,
     } = req.body;
 
     const user_id = req.user.id;
@@ -580,7 +600,9 @@ router.post("/", verifyToken, async (req, res) => {
       return res.status(400).json({ error: "Thiếu thông tin bắt buộc" });
     }
     if (method === "MOMO" && !fromRedirect) {
-      return res.status(400).json({ error: "Chờ IPN hoặc fromRedirect mới được tạo đơn" });
+      return res
+        .status(400)
+        .json({ error: "Chờ IPN hoặc fromRedirect mới được tạo đơn" });
     }
     // Lấy thông tin người dùng
     const [[userInfo]] = await db.query(
@@ -745,20 +767,21 @@ router.post("/", verifyToken, async (req, res) => {
         if (coupon && coupon.used > 0) {
           // Trừ lượt sử dụng
           await db.query(
-            'UPDATE couponcode SET used = used - 1 WHERE couponcode_id = ? AND used > 0',
+            "UPDATE couponcode SET used = used - 1 WHERE couponcode_id = ? AND used > 0",
             [coupon.couponcode_id]
           );
 
           // Ghi nhận vào user_has_coupon
-          await db.query(`
+          await db.query(
+            `
       INSERT INTO user_has_coupon (user_id, couponcode_id, status)
       VALUES (?, ?, 1)
       ON DUPLICATE KEY UPDATE status = 1
-    `, [user_id, coupon.couponcode_id]);
+    `,
+            [user_id, coupon.couponcode_id]
+          );
         }
       }
-
-
 
       // Gửi email xác nhận
       const emailData = {
@@ -775,7 +798,9 @@ router.post("/", verifyToken, async (req, res) => {
         }),
         current_status: "PENDING",
         order_total_final: amount.toLocaleString("vi-VN") + "đ",
-        discount: order_discount ? Number(order_discount).toLocaleString("vi-VN") + "đ" : null,
+        discount: order_discount
+          ? Number(order_discount).toLocaleString("vi-VN") + "đ"
+          : null,
         products: cart_items.map((item) => ({
           name: item.name,
           quantity: item.quantity,
@@ -810,32 +835,34 @@ router.post("/", verifyToken, async (req, res) => {
       const orderId = req.body.order_id || `SNA-${Date.now()}`;
 
       const requestId = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-      const redirectUrl = `https://1369253d11e1.ngrok-free.app/api/orders/redirect/momo`;
-      const ipnUrl = `https://1369253d11e1.ngrok-free.app/api/orders/payment/momo`;
+      const redirectUrl = `https://cdeb1a14b76d.ngrok-free.app/api/orders/redirect/momo`;
+      const ipnUrl = `https://cdeb1a14b76d.ngrok-free.app/api/orders/payment/momo`;
       const orderInfo = "Thanh toán đơn hàng";
 
-      const extraData = Buffer.from(JSON.stringify({
-        order_id: orderId,
-        user_id,
-        order_total,
-        order_total_final,
-        order_address_new,
-        order_number2,
-        order_name_new,
-        order_email_new,
-        couponcode_id,
-        cart_items,
-        coupon_code,
-        shipping_fee,
-        order_discount
-      })).toString('base64');
+      const extraData = Buffer.from(
+        JSON.stringify({
+          order_id: orderId,
+          user_id,
+          order_total,
+          order_total_final,
+          order_address_new,
+          order_number2,
+          order_name_new,
+          order_email_new,
+          couponcode_id,
+          cart_items,
+          coupon_code,
+          shipping_fee,
+          order_discount,
+        })
+      ).toString("base64");
 
       const rawSignature = `accessKey=${accessKey}&amount=${amount}&extraData=${extraData}&ipnUrl=${ipnUrl}&orderId=${orderId}&orderInfo=${orderInfo}&partnerCode=${partnerCode}&redirectUrl=${redirectUrl}&requestId=${requestId}&requestType=${requestType}`;
 
       const signature = crypto
-        .createHmac('sha256', secretKey)
+        .createHmac("sha256", secretKey)
         .update(rawSignature)
-        .digest('hex');
+        .digest("hex");
 
       const momoBody = {
         partnerCode,
@@ -849,18 +876,17 @@ router.post("/", verifyToken, async (req, res) => {
         extraData,
         requestType,
         signature,
-        lang: 'vi'
+        lang: "vi",
       };
 
       const momoRes = await axios.post(
-        'https://test-payment.momo.vn/v2/gateway/api/create',
+        "https://test-payment.momo.vn/v2/gateway/api/create",
         momoBody,
-        { headers: { 'Content-Type': 'application/json' } }
+        { headers: { "Content-Type": "application/json" } }
       );
 
       return res.json({ payUrl: momoRes.data.payUrl });
     }
-
 
     // VNPay: không lưu đơn → trả về payUrl
     if (method === "VNPAY") {
@@ -873,7 +899,7 @@ router.post("/", verifyToken, async (req, res) => {
         vnpayHost: "https://sandbox.vnpayment.vn",
         testMode: true,
         hashAlgorithm: "SHA512",
-        loggerFn: () => { },
+        loggerFn: () => {},
       });
 
       const tomorrow = new Date();
@@ -907,7 +933,6 @@ router.post("/", verifyToken, async (req, res) => {
   }
 });
 
-
 router.post("/payment/momo", async (req, res) => {
   const {
     orderId,
@@ -931,14 +956,22 @@ router.post("/payment/momo", async (req, res) => {
   try {
     // Kiểm tra chữ ký hợp lệ
     const rawSignature = `accessKey=${accessKey}&amount=${amount}&extraData=${extraData}&message=${message}&orderId=${orderId}&orderInfo=${orderInfo}&orderType=${orderType}&partnerCode=${partnerCode}&payType=${payType}&requestId=${requestId}&responseTime=${responseTime}&resultCode=${resultCode}&transId=${transId}`;
-    const expectedSignature = crypto.createHmac("sha256", secretKey).update(rawSignature).digest("hex");
+    const expectedSignature = crypto
+      .createHmac("sha256", secretKey)
+      .update(rawSignature)
+      .digest("hex");
 
     if (signature !== expectedSignature || parseInt(resultCode) !== 0) {
-      return res.status(400).json({ message: "Chữ ký không hợp lệ hoặc thanh toán thất bại" });
+      return res
+        .status(400)
+        .json({ message: "Chữ ký không hợp lệ hoặc thanh toán thất bại" });
     }
 
     // Kiểm tra đơn đã tồn tại chưa
-    const [existingOrder] = await db.query("SELECT * FROM orders WHERE order_hash = ?", [orderId]);
+    const [existingOrder] = await db.query(
+      "SELECT * FROM orders WHERE order_hash = ?",
+      [orderId]
+    );
     if (existingOrder.length > 0) {
       const existingOrderId = existingOrder[0].order_id;
 
@@ -948,18 +981,26 @@ router.post("/payment/momo", async (req, res) => {
       );
 
       if (existingPayment.length === 0) {
-        await db.query(`
+        await db.query(
+          `
           INSERT INTO payments (order_id, method, amount, status, transaction_code, created_at)
           VALUES (?, 'MOMO', ?, 'PAID', ?, NOW())
-        `, [existingOrderId, amount, transId]);
+        `,
+          [existingOrderId, amount, transId]
+        );
 
-        await db.query(`
+        await db.query(
+          `
           INSERT INTO order_status_log (order_id, from_status, to_status, trigger_by, step, created_at)
           VALUES (?, NULL, 'PAID', 'system', 'Xác nhận lại MoMo', NOW())
-        `, [existingOrderId]);
+        `,
+          [existingOrderId]
+        );
       }
 
-      return res.status(200).json({ message: "Đơn hàng đã tồn tại và đã xử lý thanh toán." });
+      return res
+        .status(200)
+        .json({ message: "Đơn hàng đã tồn tại và đã xử lý thanh toán." });
     }
 
     // Giải mã extraData
@@ -976,7 +1017,7 @@ router.post("/payment/momo", async (req, res) => {
       couponcode_id,
       coupon_code,
       shipping_fee,
-      order_discount
+      order_discount,
     } = extra;
 
     const order_hash = orderId;
@@ -991,18 +1032,34 @@ router.post("/payment/momo", async (req, res) => {
     const defaultAddress = userInfo.user_address?.trim() || "";
     const defaultPhone = userInfo.user_number?.trim() || "";
 
-    const finalName = order_name_new?.trim() && order_name_new.trim() !== defaultName ? order_name_new.trim() : null;
-    const finalEmail = order_email_new?.trim() && order_email_new.trim() !== defaultEmail ? order_email_new.trim() : null;
-    const finalAddress = order_address_new?.trim() && order_address_new.trim() !== defaultAddress ? order_address_new.trim() : null;
-    const finalPhone = order_number2?.trim() && order_number2.trim() !== defaultPhone ? order_number2.trim() : null;
+    const finalName =
+      order_name_new?.trim() && order_name_new.trim() !== defaultName
+        ? order_name_new.trim()
+        : null;
+    const finalEmail =
+      order_email_new?.trim() && order_email_new.trim() !== defaultEmail
+        ? order_email_new.trim()
+        : null;
+    const finalAddress =
+      order_address_new?.trim() && order_address_new.trim() !== defaultAddress
+        ? order_address_new.trim()
+        : null;
+    const finalPhone =
+      order_number2?.trim() && order_number2.trim() !== defaultPhone
+        ? order_number2.trim()
+        : null;
 
     let couponcodeId = couponcode_id || null;
     if (!couponcodeId && coupon_code) {
-      const [[coupon]] = await db.query(`SELECT couponcode_id FROM couponcode WHERE code = ?`, [coupon_code]);
+      const [[coupon]] = await db.query(
+        `SELECT couponcode_id FROM couponcode WHERE code = ?`,
+        [coupon_code]
+      );
       if (coupon) couponcodeId = coupon.couponcode_id;
     }
 
-    await db.query(`
+    await db.query(
+      `
       INSERT INTO orders (
         order_hash, user_id, order_address_old, order_address_new,
         order_number1, order_number2, order_total, order_total_final,
@@ -1012,48 +1069,67 @@ router.post("/payment/momo", async (req, res) => {
         order_email_old, order_email_new,
         couponcode_id
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?)
-    `, [
-      order_hash,
-      user_id,
-      defaultAddress,
-      finalAddress,
-      defaultPhone,
-      finalPhone,
-      order_total,
-      order_total_final,
-      shipping_fee,
-      order_discount,
-      "PENDING",
-      defaultName,
-      finalName,
-      defaultEmail,
-      finalEmail,
-      couponcodeId,
-    ]);
+    `,
+      [
+        order_hash,
+        user_id,
+        defaultAddress,
+        finalAddress,
+        defaultPhone,
+        finalPhone,
+        order_total,
+        order_total_final,
+        shipping_fee,
+        order_discount,
+        "PENDING",
+        defaultName,
+        finalName,
+        defaultEmail,
+        finalEmail,
+        couponcodeId,
+      ]
+    );
 
-    const [[orderRow]] = await db.query(`SELECT order_id FROM orders WHERE order_hash = ?`, [order_hash]);
+    const [[orderRow]] = await db.query(
+      `SELECT order_id FROM orders WHERE order_hash = ?`,
+      [order_hash]
+    );
     const order_id = orderRow.order_id;
 
     for (const item of cart_items) {
-      const { variant_id, quantity, name: product_name, price: product_price } = item;
+      const {
+        variant_id,
+        quantity,
+        name: product_name,
+        price: product_price,
+      } = item;
       if (!variant_id || !quantity || !product_name || !product_price) continue;
 
-      await db.query(`
+      await db.query(
+        `
         INSERT INTO order_items (order_id, variant_id, quantity, product_name, product_price, current_status, created_at)
         VALUES (?, ?, ?, ?, ?, 'NORMAL', NOW())
-      `, [order_id, variant_id, quantity, product_name, product_price]);
+      `,
+        [order_id, variant_id, quantity, product_name, product_price]
+      );
 
       // Cập nhật số lượng tồn kho và sản phẩm bán
-      await db.query(`
+      await db.query(
+        `
         UPDATE variant_product SET variant_product_quantity = variant_product_quantity - ? WHERE variant_id = ?
-      `, [quantity, variant_id]);
+      `,
+        [quantity, variant_id]
+      );
 
-      await db.query(`
+      await db.query(
+        `
         UPDATE product
         JOIN variant_product ON variant_product.product_id = product.product_id
         SET product.product_sold = product.product_sold + ?
         WHERE variant_product.variant_id = ?
-      `, [quantity, variant_id]);
+      `,
+        [quantity, variant_id]
+      );
     }
 
     const wishlistIdsToDelete = [];
@@ -1067,21 +1143,26 @@ router.post("/payment/momo", async (req, res) => {
     }
 
     if (wishlistIdsToDelete.length > 0) {
-      await db.query(
-        `DELETE FROM wishlist WHERE wishlist_id IN (?)`,
-        [wishlistIdsToDelete]
-      );
+      await db.query(`DELETE FROM wishlist WHERE wishlist_id IN (?)`, [
+        wishlistIdsToDelete,
+      ]);
     }
 
-    await db.query(`
+    await db.query(
+      `
       INSERT INTO payments (order_id, method, amount, status, transaction_code, created_at)
       VALUES (?, 'MOMO', ?, 'SUCCESS', ?, NOW())
-    `, [order_id, amount, transId]);
+    `,
+      [order_id, amount, transId]
+    );
 
-    await db.query(`
+    await db.query(
+      `
       INSERT INTO order_status_log (order_id, from_status, to_status, trigger_by, step, created_at)
       VALUES (?, NULL, 'PAID', 'system', 'Khởi tạo đơn', NOW())
-    `, [order_id]);
+    `,
+      [order_id]
+    );
 
     if ((couponcode_id || coupon_code) && user_id) {
       let couponcodeId = couponcode_id || null;
@@ -1110,16 +1191,19 @@ router.post("/payment/momo", async (req, res) => {
       if (coupon && coupon.used > 0) {
         // Trừ lượt sử dụng
         await db.query(
-          'UPDATE couponcode SET used = used - 1 WHERE couponcode_id = ? AND used > 0',
+          "UPDATE couponcode SET used = used - 1 WHERE couponcode_id = ? AND used > 0",
           [coupon.couponcode_id]
         );
 
         // Ghi nhận vào user_has_coupon
-        await db.query(`
+        await db.query(
+          `
       INSERT INTO user_has_coupon (user_id, couponcode_id, status)
       VALUES (?, ?, 1)
       ON DUPLICATE KEY UPDATE status = 1
-    `, [user_id, coupon.couponcode_id]);
+    `,
+          [user_id, coupon.couponcode_id]
+        );
       }
     }
 
@@ -1133,10 +1217,14 @@ router.post("/payment/momo", async (req, res) => {
       method: "MOMO",
       order_id,
       order_hash,
-      created_at: new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" }),
+      created_at: new Date().toLocaleString("vi-VN", {
+        timeZone: "Asia/Ho_Chi_Minh",
+      }),
       current_status: "PENDING",
       order_total_final: amount.toLocaleString("vi-VN") + "đ",
-      order_discount: order_discount ? Number(order_discount).toLocaleString("vi-VN") + "đ" : null,
+      order_discount: order_discount
+        ? Number(order_discount).toLocaleString("vi-VN") + "đ"
+        : null,
       products: cart_items.map((item) => ({
         name: item.name,
         quantity: item.quantity,
@@ -1157,13 +1245,11 @@ router.post("/payment/momo", async (req, res) => {
       resultCode: 0,
       message: "Đơn hàng đã thanh toán thành công qua MoMo",
     });
-
   } catch (error) {
     console.error("MoMo IPN error:", error);
     return res.status(500).json({ error: "Lỗi server khi xử lý IPN MoMo" });
   }
 });
-
 
 router.get("/redirect/momo", (req, res) => {
   const { resultCode, orderId } = req.query;
@@ -1211,7 +1297,9 @@ router.get("/:id", verifyToken, async (req, res) => {
       console.log("Order query result length:", orders.length);
     } catch (error) {
       console.error("Error in order query:", error);
-      return res.status(500).json({ error: "Failed to fetch order", details: error.message });
+      return res
+        .status(500)
+        .json({ error: "Failed to fetch order", details: error.message });
     }
 
     if (orders.length === 0) {
@@ -1221,12 +1309,14 @@ router.get("/:id", verifyToken, async (req, res) => {
     let order = orders[0];
 
     // Gộp thông tin thanh toán vào array `payment[]`, rồi xoá các field gốc
-    order.payment = [{
-      method: order.payment_method,
-      status: order.payment_status,
-      transaction_code: order.payment_transaction_code,
-      paid_at: order.payment_paid_at
-    }];
+    order.payment = [
+      {
+        method: order.payment_method,
+        status: order.payment_status,
+        transaction_code: order.payment_transaction_code,
+        paid_at: order.payment_paid_at,
+      },
+    ];
     delete order.payment_method;
     delete order.payment_status;
     delete order.payment_transaction_code;
@@ -1234,7 +1324,9 @@ router.get("/:id", verifyToken, async (req, res) => {
 
     // Kiểm tra quyền truy cập
     if (req.user.role !== "admin" && req.user.id !== order.user_id) {
-      return res.status(403).json({ error: "You do not have permission to view this order" });
+      return res
+        .status(403)
+        .json({ error: "You do not have permission to view this order" });
     }
 
     try {
@@ -1243,16 +1335,43 @@ router.get("/:id", verifyToken, async (req, res) => {
         SELECT 
           oi.*,
           p.product_name,
-          p.product_image
+          p.product_image,
+          p.product_slug,
+          vp.variant_product_price,
+          vp.variant_product_price_sale,
+          vp.variant_product_list_image,
+          vp.color_id as variant_color_id,
+          c.color_name,
+          c.color_hex,
+          cat.category_name AS category,
+          (SELECT COUNT(*) FROM comment WHERE product_id = p.product_id) AS comment_count,
+          (SELECT AVG(comment_rating) FROM comment WHERE product_id = p.product_id) AS average_rating
         FROM order_items oi
         LEFT JOIN variant_product vp ON oi.variant_id = vp.variant_id
         LEFT JOIN product p ON vp.product_id = p.product_id
+        LEFT JOIN color c ON vp.color_id = c.color_id
+        LEFT JOIN category cat ON p.category_id = cat.category_id
         WHERE oi.order_id = ?
       `;
 
       let orderItems;
       try {
         [orderItems] = await db.query(orderItemsQuery, [orderId]);
+
+        // Additional debug: Check variant_product table directly
+        if (orderItems.length > 0) {
+          const variantId = orderItems[0].variant_id;
+          const [[variantInfo]] = await db.query(
+            `SELECT variant_id, color_id FROM variant_product WHERE variant_id = ?`,
+            [variantId]
+          );
+          if (variantInfo && variantInfo.color_id) {
+            const [[colorInfo]] = await db.query(
+              `SELECT color_id, color_name, color_hex FROM color WHERE color_id = ?`,
+              [variantInfo.color_id]
+            );
+          }
+        }
         order.items = orderItems;
       } catch (error) {
         console.error("Error in order items query:", error);
@@ -1279,15 +1398,20 @@ router.get("/:id", verifyToken, async (req, res) => {
 
       res.json(order);
     } catch (error) {
-      res.status(500).json({ error: "Failed to fetch order details", details: error.message });
+      res
+        .status(500)
+        .json({
+          error: "Failed to fetch order details",
+          details: error.message,
+        });
     }
   } catch (error) {
     console.error("Error fetching order:", error);
-    res.status(500).json({ error: "Failed to fetch order", details: error.message });
+    res
+      .status(500)
+      .json({ error: "Failed to fetch order", details: error.message });
   }
 });
-
-
 
 /**
  * @route   PUT /api/orders/:id/status
@@ -1377,17 +1501,17 @@ router.put("/:id/return-status", verifyToken, isAdmin, async (req, res) => {
 
   const validReturnStatuses = [
     "",
-    "PENDING",      // Trạng thái mặc định khi tạo yêu cầu hoàn trả
-    "APPROVED",     // Đã duyệt yêu cầu hoàn trả
+    "PENDING", // Trạng thái mặc định khi tạo yêu cầu hoàn trả
+    "APPROVED", // Đã duyệt yêu cầu hoàn trả
     "CANCEL_CONFIRMED", // Xác nhận hủy đơn hàng
-    "CANCELLED",    // Đã hủy hoàn tất
-    "REJECTED"      // Từ chối yêu cầu hoàn trả
+    "CANCELLED", // Đã hủy hoàn tất
+    "REJECTED", // Từ chối yêu cầu hoàn trả
   ];
 
   if (!validReturnStatuses.includes(return_status)) {
     return res.status(400).json({
       success: false,
-      message: "Trạng thái hoàn trả không hợp lệ"
+      message: "Trạng thái hoàn trả không hợp lệ",
     });
   }
 
@@ -1401,15 +1525,16 @@ router.put("/:id/return-status", verifyToken, isAdmin, async (req, res) => {
     if (!order) {
       return res.status(404).json({
         success: false,
-        message: "Không tìm thấy đơn hàng"
+        message: "Không tìm thấy đơn hàng",
       });
     }
 
     // Kiểm tra xem đơn hàng có đang ở trạng thái RETURN không
-    if (order.current_status !== 'RETURN' && return_status !== "") {
+    if (order.current_status !== "RETURN" && return_status !== "") {
       return res.status(400).json({
         success: false,
-        message: "Chỉ có thể thay đổi trạng thái hoàn trả khi đơn hàng đang ở trạng thái RETURN"
+        message:
+          "Chỉ có thể thay đổi trạng thái hoàn trả khi đơn hàng đang ở trạng thái RETURN",
       });
     }
 
@@ -1420,10 +1545,9 @@ router.put("/:id/return-status", verifyToken, isAdmin, async (req, res) => {
     try {
       if (return_status === "") {
         // Xóa tất cả bản ghi hoàn trả cho đơn hàng này
-        await connection.query(
-          "DELETE FROM order_returns WHERE order_id = ?",
-          [orderId]
-        );
+        await connection.query("DELETE FROM order_returns WHERE order_id = ?", [
+          orderId,
+        ]);
 
         // Cập nhật trạng thái đơn hàng về SUCCESS khi hủy yêu cầu hoàn trả
         await connection.query(
@@ -1436,7 +1560,7 @@ router.put("/:id/return-status", verifyToken, isAdmin, async (req, res) => {
           `INSERT INTO order_status_log (
             order_id, from_status, to_status, trigger_by, step, created_at
           ) VALUES (?, 'RETURN', 'SUCCESS', 'admin', ?, NOW())`,
-          [orderId, 'Hủy yêu cầu hoàn trả']
+          [orderId, "Hủy yêu cầu hoàn trả"]
         );
       } else {
         // Kiểm tra xem đã có bản ghi return chưa
@@ -1457,7 +1581,7 @@ router.put("/:id/return-status", verifyToken, isAdmin, async (req, res) => {
             `INSERT INTO order_returns (
               order_id, user_id, reason, return_type, total_refund, status, created_at
             ) VALUES (?, ?, ?, 'REFUND', 0, ?, NOW())`,
-            [orderId, req.user.id, 'Được tạo bởi admin', return_status]
+            [orderId, req.user.id, "Được tạo bởi admin", return_status]
           );
         }
 
@@ -1466,26 +1590,38 @@ router.put("/:id/return-status", verifyToken, isAdmin, async (req, res) => {
           `INSERT INTO order_status_log (
             order_id, from_status, to_status, trigger_by, step, created_at
           ) VALUES (?, ?, ?, 'admin', ?, NOW())`,
-          [orderId, existingReturn ? existingReturn.status : 'NEW', return_status, `Cập nhật trạng thái hoàn trả: ${return_status}`]
+          [
+            orderId,
+            existingReturn ? existingReturn.status : "NEW",
+            return_status,
+            `Cập nhật trạng thái hoàn trả: ${return_status}`,
+          ]
         );
       }
 
       // Commit transaction
       await connection.commit();
 
-      const statusText = return_status === "" ? "Không có hoàn trả" :
-        return_status === "PENDING" ? "Đang chờ xử lý" :
-          return_status === "APPROVED" ? "Đã duyệt trả hàng" :
-            return_status === "CANCEL_CONFIRMED" ? "Xác nhận hủy đơn hàng" :
-              return_status === "CANCELLED" ? "Đã hủy hoàn tất" :
-                return_status === "REJECTED" ? "Từ chối trả hàng" : return_status;
+      const statusText =
+        return_status === ""
+          ? "Không có hoàn trả"
+          : return_status === "PENDING"
+          ? "Đang chờ xử lý"
+          : return_status === "APPROVED"
+          ? "Đã duyệt trả hàng"
+          : return_status === "CANCEL_CONFIRMED"
+          ? "Xác nhận hủy đơn hàng"
+          : return_status === "CANCELLED"
+          ? "Đã hủy hoàn tất"
+          : return_status === "REJECTED"
+          ? "Từ chối trả hàng"
+          : return_status;
 
       return res.status(200).json({
         success: true,
         message: `Đã cập nhật trạng thái hoàn trả thành: ${statusText}`,
-        return_status: return_status
+        return_status: return_status,
       });
-
     } catch (error) {
       // Rollback nếu có lỗi
       await connection.rollback();
@@ -1493,12 +1629,11 @@ router.put("/:id/return-status", verifyToken, isAdmin, async (req, res) => {
     } finally {
       connection.release();
     }
-
   } catch (err) {
     console.error("Lỗi cập nhật trạng thái hoàn trả:", err);
     res.status(500).json({
       success: false,
-      message: "Lỗi máy chủ khi cập nhật trạng thái hoàn trả"
+      message: "Lỗi máy chủ khi cập nhật trạng thái hoàn trả",
     });
   }
 });
@@ -1712,8 +1847,9 @@ router.post("/send-invoice", verifyToken, async (req, res) => {
     );
 
     // Tạo nội dung email
-    const invoiceUrl = `${process.env.SITE_URL || "http://localhost:3501"
-      }/dashboard/orders/invoice/${order_id}`;
+    const invoiceUrl = `${
+      process.env.SITE_URL || "http://localhost:3501"
+    }/dashboard/orders/invoice/${order_id}`;
 
     // Trong thực tế, bạn sẽ sử dụng một thư viện gửi email như nodemailer
     // Ví dụ mẫu này chỉ giả lập việc gửi email
@@ -1780,7 +1916,7 @@ router.patch("/:id", verifyToken, isAdmin, async (req, res) => {
     if (isNaN(parseInt(orderId))) {
       return res.status(400).json({
         success: false,
-        message: "Invalid order ID"
+        message: "Invalid order ID",
       });
     }
 
@@ -1793,7 +1929,7 @@ router.patch("/:id", verifyToken, isAdmin, async (req, res) => {
     if (!orderExists) {
       return res.status(404).json({
         success: false,
-        message: "Order not found"
+        message: "Order not found",
       });
     }
 
@@ -1804,11 +1940,11 @@ router.patch("/:id", verifyToken, isAdmin, async (req, res) => {
     try {
       // Allowed fields to update in orders table
       const allowedOrderFields = [
-        'order_name_new',
-        'order_email_new',
-        'order_number2',
-        'order_address_new',
-        'note'
+        "order_name_new",
+        "order_email_new",
+        "order_number2",
+        "order_address_new",
+        "note",
       ];
 
       // Special case for payment_method - this goes in the payments table
@@ -1826,8 +1962,8 @@ router.patch("/:id", verifyToken, isAdmin, async (req, res) => {
       // Update the order table if there are fields to update
       if (Object.keys(filteredData).length > 0) {
         const setClause = Object.keys(filteredData)
-          .map(key => `${key} = ?`)
-          .join(', ');
+          .map((key) => `${key} = ?`)
+          .join(", ");
 
         const values = [...Object.values(filteredData), orderId];
 
@@ -1840,9 +1976,15 @@ router.patch("/:id", verifyToken, isAdmin, async (req, res) => {
       // Update payment method if provided
       if (paymentMethod) {
         // Check if valid payment method
-        const validPaymentMethods = ['COD', 'BANK_TRANSFER', 'VNPAY', 'MOMO', 'ZALOPAY'];
+        const validPaymentMethods = [
+          "COD",
+          "BANK_TRANSFER",
+          "VNPAY",
+          "MOMO",
+          "ZALOPAY",
+        ];
         if (!validPaymentMethods.includes(paymentMethod)) {
-          throw new Error('Invalid payment method');
+          throw new Error("Invalid payment method");
         }
 
         // Check if payment record exists
@@ -1875,9 +2017,8 @@ router.patch("/:id", verifyToken, isAdmin, async (req, res) => {
       return res.status(200).json({
         success: true,
         message: "Order updated successfully",
-        updatedFields: Object.keys(filteredData)
+        updatedFields: Object.keys(filteredData),
       });
-
     } catch (error) {
       // Rollback the transaction on error
       await connection.rollback();
@@ -1886,13 +2027,12 @@ router.patch("/:id", verifyToken, isAdmin, async (req, res) => {
       // Release the connection
       connection.release();
     }
-
   } catch (error) {
     console.error("Error updating order:", error);
     return res.status(500).json({
       success: false,
       message: "Server error while updating order",
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -1907,12 +2047,12 @@ router.post("/return/:orderHash", verifyToken, async (req, res) => {
     const { orderHash } = req.params;
     const { reason, items, return_type } = req.body;
     const user_id = req.user.id;
-    const isAdmin = req.user.role === 'admin';
+    const isAdmin = req.user.role === "admin";
 
     if (!reason) {
       return res.status(400).json({
         success: false,
-        message: "Vui lòng cung cấp lý do trả hàng"
+        message: "Vui lòng cung cấp lý do trả hàng",
       });
     }
 
@@ -1929,7 +2069,7 @@ router.post("/return/:orderHash", verifyToken, async (req, res) => {
     if (!order) {
       return res.status(404).json({
         success: false,
-        message: "Không tìm thấy đơn hàng"
+        message: "Không tìm thấy đơn hàng",
       });
     }
 
@@ -1937,15 +2077,15 @@ router.post("/return/:orderHash", verifyToken, async (req, res) => {
     if (!isAdmin && user_id !== order.user_id) {
       return res.status(403).json({
         success: false,
-        message: "Bạn không có quyền trả lại đơn hàng này"
+        message: "Bạn không có quyền trả lại đơn hàng này",
       });
     }
 
     // Kiểm tra trạng thái đơn hàng (chỉ cho phép trả hàng khi đơn hàng đã hoàn thành)
-    if (order.current_status !== 'SUCCESS') {
+    if (order.current_status !== "SUCCESS") {
       return res.status(400).json({
         success: false,
-        message: "Chỉ có thể trả lại đơn hàng đã giao thành công"
+        message: "Chỉ có thể trả lại đơn hàng đã giao thành công",
       });
     }
 
@@ -1971,28 +2111,31 @@ router.post("/return/:orderHash", verifyToken, async (req, res) => {
 
       if (items && Array.isArray(items) && items.length > 0) {
         // Lọc ra các sản phẩm được yêu cầu trả lại
-        itemsToReturn = orderItems.filter(item =>
-          items.some(returnItem =>
-            returnItem.order_item_id === item.order_item_id &&
-            returnItem.quantity > 0 &&
-            returnItem.quantity <= item.quantity
+        itemsToReturn = orderItems.filter((item) =>
+          items.some(
+            (returnItem) =>
+              returnItem.order_item_id === item.order_item_id &&
+              returnItem.quantity > 0 &&
+              returnItem.quantity <= item.quantity
           )
         );
 
         if (itemsToReturn.length === 0) {
-          throw new Error('Không tìm thấy sản phẩm hợp lệ để trả lại');
+          throw new Error("Không tìm thấy sản phẩm hợp lệ để trả lại");
         }
 
         // Tính tổng số tiền hoàn lại
         for (const item of itemsToReturn) {
-          const returnItem = items.find(i => i.order_item_id === item.order_item_id);
+          const returnItem = items.find(
+            (i) => i.order_item_id === item.order_item_id
+          );
           const returnQuantity = Math.min(returnItem.quantity, item.quantity);
           totalRefundAmount += returnQuantity * item.product_price;
 
           // Khôi phục số lượng tồn kho
           if (item.product_id) {
             await connection.query(
-              'UPDATE product SET product_stock = product_stock + ? WHERE product_id = ?',
+              "UPDATE product SET product_stock = product_stock + ? WHERE product_id = ?",
               [returnQuantity, item.product_id]
             );
           }
@@ -2006,7 +2149,7 @@ router.post("/return/:orderHash", verifyToken, async (req, res) => {
           // Khôi phục số lượng tồn kho
           if (item.product_id) {
             await connection.query(
-              'UPDATE product SET product_stock = product_stock + ? WHERE product_id = ?',
+              "UPDATE product SET product_stock = product_stock + ? WHERE product_id = ?",
               [item.quantity, item.product_id]
             );
           }
@@ -2025,7 +2168,9 @@ router.post("/return/:orderHash", verifyToken, async (req, res) => {
 
       // Lưu chi tiết sản phẩm trả lại
       for (const item of itemsToReturn) {
-        const returnItem = items ? items.find(i => i.order_item_id === item.order_item_id) : item;
+        const returnItem = items
+          ? items.find((i) => i.order_item_id === item.order_item_id)
+          : item;
         const returnQuantity = returnItem ? returnItem.quantity : item.quantity;
 
         if (returnQuantity > 0) {
@@ -2043,14 +2188,23 @@ router.post("/return/:orderHash", verifyToken, async (req, res) => {
         await connection.query(
           `UPDATE orders SET current_status = 'RETURN', status_updated_by = ?, status_updated_at = NOW(), 
            note = CONCAT(IFNULL(note, ''), ?) WHERE order_id = ?`,
-          [isAdmin ? 'admin' : 'user', `\nĐơn hàng đã được trả lại. Lý do: ${reason}`, order.order_id]
+          [
+            isAdmin ? "admin" : "user",
+            `\nĐơn hàng đã được trả lại. Lý do: ${reason}`,
+            order.order_id,
+          ]
         );
 
         // Ghi log trạng thái
         await connection.query(
           `INSERT INTO order_status_log (order_id, from_status, to_status, trigger_by, step, created_at) 
            VALUES (?, ?, 'RETURN', ?, ?, NOW())`,
-          [order.order_id, order.current_status, isAdmin ? 'admin' : 'user', `Đơn hàng đã được trả lại`]
+          [
+            order.order_id,
+            order.current_status,
+            isAdmin ? "admin" : "user",
+            `Đơn hàng đã được trả lại`,
+          ]
         );
       }
 
@@ -2068,23 +2222,27 @@ router.post("/return/:orderHash", verifyToken, async (req, res) => {
               "SHOW COLUMNS FROM notifications"
             );
 
-            const columnNames = columns.map(col => col.Field);
+            const columnNames = columns.map((col) => col.Field);
 
             // Tìm admin để gửi thông báo
             const [[admin]] = await connection.query(
               "SELECT user_id FROM user WHERE role = 'admin' LIMIT 1"
             );
 
-            if (admin && columnNames.includes('user_id')) {
+            if (admin && columnNames.includes("user_id")) {
               await connection.query(
                 `INSERT INTO notifications (user_id, type, message, related_id, created_at, is_read)
                  VALUES (?, 'ORDER_RETURN', ?, ?, NOW(), 0)`,
-                [admin.user_id, `Đơn hàng #${order.order_hash} có yêu cầu trả hàng mới`, order.order_id]
+                [
+                  admin.user_id,
+                  `Đơn hàng #${order.order_hash} có yêu cầu trả hàng mới`,
+                  order.order_id,
+                ]
               );
             }
           }
         } catch (notificationError) {
-          console.error('Lỗi khi tạo thông báo:', notificationError);
+          console.error("Lỗi khi tạo thông báo:", notificationError);
           // Không throw lỗi để transaction vẫn tiếp tục
         }
       }
@@ -2094,19 +2252,22 @@ router.post("/return/:orderHash", verifyToken, async (req, res) => {
 
       return res.status(200).json({
         success: true,
-        message: 'Yêu cầu trả hàng đã được ghi nhận',
+        message: "Yêu cầu trả hàng đã được ghi nhận",
         data: {
           return_id: returnId,
           order_id: order.order_id,
           order_hash: order.order_hash,
           total_refund: totalRefundAmount,
-          items: itemsToReturn.map(item => ({
+          items: itemsToReturn.map((item) => ({
             order_item_id: item.order_item_id,
             product_name: item.product_name,
-            quantity: items ? items.find(i => i.order_item_id === item.order_item_id)?.quantity || 0 : item.quantity,
-            price: item.product_price
-          }))
-        }
+            quantity: items
+              ? items.find((i) => i.order_item_id === item.order_item_id)
+                  ?.quantity || 0
+              : item.quantity,
+            price: item.product_price,
+          })),
+        },
       });
     } catch (error) {
       // Rollback nếu có lỗi
@@ -2116,11 +2277,11 @@ router.post("/return/:orderHash", verifyToken, async (req, res) => {
       connection.release();
     }
   } catch (error) {
-    console.error('Lỗi khi xử lý yêu cầu trả hàng:', error);
+    console.error("Lỗi khi xử lý yêu cầu trả hàng:", error);
     return res.status(500).json({
       success: false,
-      message: 'Đã xảy ra lỗi khi xử lý yêu cầu trả hàng',
-      error: error.message
+      message: "Đã xảy ra lỗi khi xử lý yêu cầu trả hàng",
+      error: error.message,
     });
   }
 });
@@ -2130,15 +2291,13 @@ router.post("/return/:orderHash", verifyToken, async (req, res) => {
  * @desc    Count return order requests
  * @access  Private (Admin)
  */
-router.get('/return/count', verifyToken, isAdmin, async (req, res) => {
+router.get("/return/count", verifyToken, isAdmin, async (req, res) => {
   try {
     // Check if order_returns table exists
     let count = 0;
 
     try {
-      const [tables] = await db.query(
-        "SHOW TABLES LIKE 'order_returns'"
-      );
+      const [tables] = await db.query("SHOW TABLES LIKE 'order_returns'");
 
       if (tables.length > 0) {
         // If the table exists, count the number of return requests
@@ -2164,14 +2323,14 @@ router.get('/return/count', verifyToken, isAdmin, async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      count
+      count,
     });
   } catch (error) {
     console.error("Error counting return orders:", error);
     return res.status(500).json({
       success: false,
       message: "Server error while counting return orders",
-      error: error.message
+      error: error.message,
     });
   }
 });

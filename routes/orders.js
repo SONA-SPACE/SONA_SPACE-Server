@@ -810,8 +810,8 @@ router.post("/", verifyToken, async (req, res) => {
       const orderId = req.body.order_id || `SNA-${Date.now()}`;
 
       const requestId = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-      const redirectUrl = `https://bd1e38c0949f.ngrok-free.app/api/orders/redirect/momo`;
-      const ipnUrl = `https://bd1e38c0949f.ngrok-free.app/api/orders/payment/momo`;
+      const redirectUrl = `https://1369253d11e1.ngrok-free.app/api/orders/redirect/momo`;
+      const ipnUrl = `https://1369253d11e1.ngrok-free.app/api/orders/payment/momo`;
       const orderInfo = "Thanh toán đơn hàng";
 
       const extraData = Buffer.from(JSON.stringify({

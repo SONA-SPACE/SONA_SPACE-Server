@@ -271,7 +271,8 @@ router.put("/:id", verifyToken, isAdmin, async (req, res) => {
       const currentStatus = forms[0].status;
       const validTransitions = {
         PENDING: ["IN_PROGRESS"],
-        IN_PROGRESS: ["RESOLVED", "REJECTED"],
+        IN_PROGRESS: ["DEPOSIT"],
+        DEPOSIT: ["RESOLVED", "REJECTED"],
       };
       if (status === "IN_PROGRESS" && forms[0].user_id === null) {
         return res.status(400).json({
@@ -513,8 +514,7 @@ router.post("/:id/details", verifyToken, isAdmin, async (req, res) => {
  * @desc    Cập nhật sản phẩm trong chi tiết thiết kế
  * @access  Private (Admin only)
  */
-router.put(
-  "/:id/details/:variant_id",
+router.put("/:id/details/:variant_id",
   verifyToken,
   isAdmin,
   async (req, res) => {
@@ -594,8 +594,7 @@ router.put(
  * @desc    Xóa sản phẩm khỏi chi tiết thiết kế
  * @access  Private (Admin only)
  */
-router.delete(
-  "/:id/details/:variant_id",
+router.delete("/:id/details/:variant_id",
   verifyToken,
   isAdmin,
   async (req, res) => {

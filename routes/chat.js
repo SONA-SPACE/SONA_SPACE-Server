@@ -1,28 +1,30 @@
 const express = require("express");
 const router = express.Router();
 
-// Nếu dùng OpenAI, import ở đây
-// const { OpenAI } = require("openai");
-// const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const { OpenAI } = require("openai");
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 router.post("/", async (req, res) => {
   try {
     const { message } = req.body;
-    if (!message) return res.status(400).json({ error: "Message is required" });
+    if (!message) return res.status(400).json({ error: "Vui lòng nhập tin nhắn" });
+    if (message.length > 500) {
+      return res.status(400).json({ error: "Tin nhắn quá dài" });
+    }
 
-    // Demo trả lời giả lập (replace bằng call AI nếu muốn)
-    // Nếu muốn gọi OpenAI, thay đoạn này
-    // const completion = await openai.chat.completions.create({
-    //   model: "gpt-3.5-turbo",
-    //   messages: [{ role: "user", content: message }],
-    // });
-    // const reply = completion.choices[0].message.content;
-    const reply = `Bot: Bạn vừa nói "${message}"`;
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: message }],
+      max_tokens: 512,
+      temperature: 0.7,
+    });
+
+    const reply = completion.choices[0].message.content;
 
     return res.json({ reply });
   } catch (error) {
-    console.error("Chat API error:", error);
-    return res.status(500).json({ error: "Internal server error" });
+    console.error("Chat API đang có lỗi:", error);
+    return res.status(500).json({ error: "Lỗi server" });
   }
 });
 

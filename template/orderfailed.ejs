@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Đơn hàng thất bại</title>
+</head>
+
+<body style="font-family: Arial, sans-serif; color: #333; background-color: #f8f8f8; padding: 20px;">
+  <div style="max-width: 600px; margin: auto; background: white; border-radius: 10px; padding: 30px;">
+    <h2 style="color: #f0a00a;">Xin lỗi bạn <%= name %>, đơn hàng không thành công</h2>
+    <p>Chúng tôi rất tiếc vì đã xảy ra sự cố trong quá trình xử lý đơn hàng của bạn.</p>
+    <p>Chúng tôi xin xác nhận rằng <strong>khoản tiền thanh toán đã được hoàn trả thành công</strong> thông qua phương
+      thức bạn đã sử dụng (<%= method %>).</p>
+    <p><strong>Chi tiết:</strong></p>
+    <ul>
+      <li>Phương thức thanh toán: <%= method %>
+      </li>
+      <li>Email: <%= email %>
+      </li>
+      <li>Số điện thoại: <%= phone %>
+      </li>
+    </ul>
+
+    <p>Vui lòng thử lại hoặc liên hệ với đội ngũ hỗ trợ của chúng tôi nếu bạn cần thêm trợ giúp.</p>
+
+    <a href="mailto:support@sonaspace.com"
+      style="display:inline-block; margin-top:20px; padding:10px 20px; background-color:#f0a00a; color:#fff; text-decoration:none; border-radius:5px;">Liên
+      hệ hỗ trợ</a>
+
+    <p style="margin-top: 30px; font-size: 13px; color: #888;">© 2025 Sona Space - Đây là email tự động, vui lòng không
+      trả lời</p>
+  </div>
+</body>
+
+</html>

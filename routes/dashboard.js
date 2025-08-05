@@ -884,4 +884,12 @@ router.get("/banners/edit/:id", (req, res) => {
   });
 });
 
+// chat bot
+router.get("/chatbot", (req, res) => {
+  res.render("dashboard/context/context", {
+    title: "Sona Space - Chat bot",
+    layout: "layouts/dashboard",
+  });
+});
+
 module.exports = router;

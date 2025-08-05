@@ -30,7 +30,7 @@ router.get("/", verifyToken, async (req, res) => {
         v.variant_product_price AS price,
         v.variant_product_price_sale AS price_sale,
         v.variant_product_list_image AS image,
-
+        v.variant_product_quantity ,
         -- Màu chính của variant
         c.color_id,
         c.color_name,

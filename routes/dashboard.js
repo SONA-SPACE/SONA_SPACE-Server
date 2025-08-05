@@ -57,7 +57,26 @@ router.get("/contact-forms-design/:id", (req, res) => {
     layout: "layouts/dashboard",
   });
 });
-
+router.get("/material", (req, res) => {
+  res.render("dashboard/material/material", {
+    title: "Sona Space - Quản lý Sản phẩm",
+    layout: "layouts/dashboard",
+  });
+});
+router.get("/material/add", (req, res) => {
+  res.render("dashboard/material/add", {
+    title: "Sona Space - Quản lý Sản phẩm",
+    layout: "layouts/dashboard",
+  });
+});
+router.get("/material/edit/:slug", (req, res) => {
+  // NO /dashboard HERE, because app.use('/dashboard', ...) already handles it
+  res.render("dashboard/material/edit", {
+    title: "Sona Space - Quản lý Sản phẩm",
+    layout: "layouts/dashboard",
+    productId: req.params.slug, // Pass the slug to the view
+  });
+});
 // Products management
 router.get("/products", (req, res) => {
   res.render("dashboard/products/products", {
@@ -131,30 +150,7 @@ router.get("/events/edit/:slug", (req, res) => {
     productId: req.params.slug,
   });
 });
-// Products management
-router.get("/material", (req, res) => {
-  res.render("dashboard/material/material", {
-    title: "Sona Space - Quản lý Sản phẩm",
-    layout: "layouts/dashboard",
-  });
-});
 
-// Add product
-router.get("/material/add", (req, res) => {
-  res.render("dashboard/material/add", {
-    title: "Sona Space - Thêm Sản phẩm mới",
-    layout: "layouts/dashboard",
-  });
-});
-
-// Edit product
-router.get("/material/edit/:slug", (req, res) => {
-  res.render("dashboard/material/edit", {
-    title: "Sona Space - Chỉnh sửa Sản phẩm",
-    layout: "layouts/dashboard",
-    productId: req.params.slug,
-  });
-});
 // Products management
 router.get("/comment", (req, res) => {
   res.render("dashboard/comment/comment", {
@@ -304,15 +300,21 @@ router.get("/orders/detail/:id", isAdmin, async (req, res) => {
     const orderId = req.params.id;
     console.log(`Fetching order details for ID: ${orderId}`);
 
+    // Build API URL based on environment
+    const protocol = req.protocol;
+    const host = req.get('host');
+    const apiUrl = process.env.NODE_ENV === 'production' 
+      ? `${protocol}://${host}/api/orders/${orderId}`
+      : `http://localhost:${process.env.PORT || 3501}/api/orders/${orderId}`;
+
+    console.log(`Order detail API URL: ${apiUrl}`);
+
     // Fetch order data from API
-    const response = await fetch(
-      `http://localhost:3501/api/orders/${orderId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${req.cookies.token}`,
-        },
-      }
-    );
+    const response = await fetch(apiUrl, {
+      headers: {
+        Authorization: `Bearer ${req.cookies.token}`,
+      },
+    });
 
     if (!response.ok) {
       console.error(
@@ -627,15 +629,21 @@ router.get("/orders/invoice/:id", async (req, res) => {
     const orderId = req.params.id;
     console.log(`Fetching invoice for order ID: ${orderId}`);
 
+    // Build API URL based on environment
+    const protocol = req.protocol;
+    const host = req.get('host');
+    const apiUrl = process.env.NODE_ENV === 'production' 
+      ? `${protocol}://${host}/api/orders/${orderId}`
+      : `http://localhost:${process.env.PORT || 3501}/api/orders/${orderId}`;
+
+    console.log(`Invoice API URL: ${apiUrl}`);
+
     // Fetch order data from API
-    const response = await fetch(
-      `http://localhost:3501/api/orders/${orderId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${req.cookies.token}`,
-        },
-      }
-    );
+    const response = await fetch(apiUrl, {
+      headers: {
+        Authorization: `Bearer ${req.cookies.token}`,
+      },
+    });
 
     if (!response.ok) {
       console.error(
@@ -722,7 +730,7 @@ router.get("/orders/invoice/:id", async (req, res) => {
           return "Đã thanh toán";
         case "FAILED":
           return "Thanh toán thất bại";
-        case "REFUNDED":
+        case "CANCELLED":
           return "Đã hủy";
         default:
           return status || "Chờ thanh toán";

@@ -44,7 +44,7 @@
       fetch("/api/notify")
         .then((res) => res.json())
         .then((data) => {
-            console.log(data);
+          console.log(data);
           renderNotifications(data);
         })
         .catch((err) => {
@@ -103,15 +103,15 @@
         .then((res) => res.json())
         .then((data) => {
           if (data.error) {
-            alert("Lỗi: " + data.error);
+            showToast(data.error, "danger");
           } else {
-            alert("Đã xóa thông báo.");
+            showToast("Xóa thông báo thành công", "success");
             getNotifications();
           }
         })
         .catch((err) => {
           console.error("Lỗi khi xóa thông báo:", err);
-          alert("Xảy ra lỗi khi xóa.");
+          showToast("Xảy ra lỗi khi xóa thông báo", "danger");
         });
     }
 

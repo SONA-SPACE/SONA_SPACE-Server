@@ -11,7 +11,6 @@ router.get('/', verifyToken, isAdmin, async (req, res) => {
         n.id,
         n.title,
         n.message,
-        n.type,
         n.created_by,
         n.created_at,
         n.updated_at,
@@ -26,6 +25,20 @@ router.get('/', verifyToken, isAdmin, async (req, res) => {
   } catch (error) {
     console.error("Lỗi khi lấy tất cả thông báo:", error);
     res.status(500).json({ error: "Lỗi server khi lấy danh sách thông báo" });
+  }
+});
+router.get("/admin", async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      `SELECT * FROM notifications
+       WHERE target = 'admin'
+       ORDER BY created_at DESC
+       LIMIT 50`
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error("lỗi khi lấy thông báo:", err);
+    res.status(500).json({ error: "Internal Server Error" });
   }
 });
 

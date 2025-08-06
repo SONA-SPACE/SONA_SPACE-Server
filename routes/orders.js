@@ -700,10 +700,11 @@ router.post("/", verifyToken, async (req, res) => {
       );
 
       const [[orderRow]] = await db.query(
-        `SELECT order_id FROM orders WHERE order_hash = ?`,
-        [order_id]
+        `SELECT order_id, order_hash FROM orders WHERE order_hash = ?`,
+        [order_id, order_hash]
       );
       const orderId = orderRow.order_id;
+      const orderHash = orderRow.order_hash;
 
       for (const item of cart_items) {
         const {
@@ -751,6 +752,31 @@ router.post("/", verifyToken, async (req, res) => {
         `,
         [orderId]
       );
+
+      // Sau khi insert order_status_log → Gửi thông báo cho admin
+      // Lấy type_id từ bảng notification_types
+      const [typeRows] = await db.query(
+        `SELECT id FROM notification_types WHERE type_code = 'order' AND is_active = 1`
+      );
+
+      if (typeRows.length > 0) {
+        const notificationTypeId = typeRows[0].id;
+
+        await db.query(
+          `INSERT INTO notifications (type_id, title, message, link, target, created_by, created_at)
+     VALUES (?, ?, ?, ?, 'admin', 'system', NOW())`,
+          [
+            notificationTypeId,
+            "Đơn hàng mới từ khách hàng",
+            `Khách hàng ${orderNameNew || defaultName} vừa đặt đơn hàng COD mới (${orderHash})`,
+            `/admin/orders/${orderHash}`
+          ]
+        );
+      } else {
+        console.warn("Loại thông báo 'order' không tồn tại hoặc đã bị vô hiệu hóa.");
+      }
+
+
 
       if ((couponcode_id || coupon_code) && user_id) {
         let couponcodeId = couponcode_id || null;
@@ -841,7 +867,7 @@ router.post("/", verifyToken, async (req, res) => {
 
       for (const item of cart_items) {
         const [[variant]] = await db.query(
-          `SELECT variant_product_quantity, variant_reserved_quantity FROM variant_product WHERE variant_id = ?`,
+          `SELECT variant_product_quantity FROM variant_product WHERE variant_id = ?`,
           [item.variant_id]
         );
         if (variant.variant_product_quantity < item.quantity) {
@@ -858,8 +884,8 @@ router.post("/", verifyToken, async (req, res) => {
       const orderId = req.body.order_id || `SNA-${Date.now()}`;
 
       const requestId = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-      const redirectUrl = `https://94ebb177eed1.ngrok-free.app/api/orders/redirect/momo`;
-      const ipnUrl = `https://94ebb177eed1.ngrok-free.app/api/orders/payment/momo`;
+      const redirectUrl = `https://f3740882e27d.ngrok-free.app/api/orders/redirect/momo`;
+      const ipnUrl = `https://f3740882e27d.ngrok-free.app/api/orders/payment/momo`;
       const orderInfo = "Thanh toán đơn hàng";
 
       const extraData = Buffer.from(
@@ -978,10 +1004,7 @@ router.post("/payment/momo", async (req, res) => {
       .createHmac("sha256", secretKey)
       .update(rawSignature)
       .digest("hex");
-    console.log("MoMo Signature Verification:");
-    console.log("Raw Signature:", rawSignature);
-    console.log("Expected:", expectedSignature);
-    console.log("Received:", signature);
+
 
 
     const [existingOrder] = await db.query("SELECT * FROM orders WHERE order_hash = ?", [orderId]);
@@ -1024,8 +1047,10 @@ router.post("/payment/momo", async (req, res) => {
 
     await db.query("INSERT INTO orders (order_hash, user_id, order_address_old, order_address_new, order_number1, order_number2, order_total, order_total_final, shipping_fee, order_discount, current_status, created_at, order_name_old, order_name_new, order_email_old, order_email_new, couponcode_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?)", [order_hash, user_id, defaultAddress, finalAddress, defaultPhone, finalPhone, order_total, order_total_final, shipping_fee, order_discount, "PENDING", defaultName, finalName, defaultEmail, finalEmail, couponcodeId]);
 
-    const [[orderRow]] = await db.query("SELECT order_id FROM orders WHERE order_hash = ?", [order_hash]);
+    const [[orderRow]] = await db.query("SELECT order_id, order_hash FROM orders WHERE order_hash = ?", [order_hash]);
     const order_id = orderRow.order_id;
+    const orderHash = orderRow.order_hash;
+
 
     for (const item of cart_items) {
       const { variant_id, quantity, name: product_name, price: product_price } = item;
@@ -1072,7 +1097,7 @@ router.post("/payment/momo", async (req, res) => {
             image: item.image,
           })),
           message: `Sản phẩm "${failedItem.name}" đã hết hàng khi thanh toán. Hệ thống sẽ hoàn tiền tự động.`,
-        },'order-failed');
+        }, 'order-failed');
 
         try {
           const refundData = {
@@ -1129,6 +1154,29 @@ router.post("/payment/momo", async (req, res) => {
 
     await db.query("INSERT INTO payments (order_id, method, amount, status, transaction_code, created_at) VALUES (?, 'MOMO', ?, 'SUCCESS', ?, NOW())", [order_id, amount, transId]);
     await db.query("INSERT INTO order_status_log (order_id, from_status, to_status, trigger_by, step, created_at) VALUES (?, NULL, 'PAID', 'system', 'Khởi tạo đơn', NOW())", [order_id]);
+
+
+    const [typeRows] = await db.query(
+      `SELECT id FROM notification_types WHERE type_code = 'order' AND is_active = 1`
+    );
+
+    if (typeRows.length > 0) {
+      const notificationTypeId = typeRows[0].id;
+
+      await db.query(
+        `INSERT INTO notifications (type_id, title, message, link, target, created_by, created_at)
+     VALUES (?, ?, ?, ?, 'admin', 'system', NOW())`,
+        [
+          notificationTypeId,
+          "Đơn hàng mới từ khách hàng",
+          `Khách hàng ${finalName || defaultName} vừa đặt đơn hàng MOMO mới (${orderHash})`,
+          `/admin/orders/${orderHash}`
+        ]
+      );
+    } else {
+      console.warn("Loại thông báo 'order' không tồn tại hoặc đã bị vô hiệu hóa.");
+    }
+
 
     if ((couponcode_id || coupon_code) && user_id) {
       let coupon = null;
@@ -1370,6 +1418,7 @@ router.put("/:id/status", verifyToken, isAdmin, async (req, res) => {
     "FAILED",
     "CANCELLED",
   ];
+
   if (!validStatuses.includes(new_status)) {
     return res
       .status(400)
@@ -1377,38 +1426,39 @@ router.put("/:id/status", verifyToken, isAdmin, async (req, res) => {
   }
 
   try {
-    // Lấy trạng thái hiện tại
+    // Lấy trạng thái hiện tại của đơn + user_id + order_hash
     const [[order]] = await db.query(
-      "SELECT current_status FROM orders WHERE order_id = ?",
+      "SELECT current_status, user_id, order_hash FROM orders WHERE order_id = ?",
       [orderId]
     );
-    if (!order)
+
+    if (!order) {
       return res
         .status(404)
         .json({ success: false, message: "Không tìm thấy đơn hàng" });
+    }
 
     const fromStatus = order.current_status;
     const toStatus = new_status;
 
     if (fromStatus === toStatus) {
-      return res
-        .status(200)
-        .json({ success: true, message: "Trạng thái không thay đổi" });
+      return res.status(200).json({
+        success: true,
+        message: "Trạng thái không thay đổi",
+      });
     }
 
-    // Cập nhật trạng thái
-    await db.query("UPDATE orders SET current_status = ? WHERE order_id = ?", [
-      toStatus,
-      orderId,
-    ]);
+    // Cập nhật trạng thái đơn hàng
+    await db.query(
+      "UPDATE orders SET current_status = ? WHERE order_id = ?",
+      [toStatus, orderId]
+    );
 
     // Ghi log chuyển trạng thái
     await db.query(
-      `
-      INSERT INTO order_status_log (
+      `INSERT INTO order_status_log (
         order_id, from_status, to_status, trigger_by, step, created_at
-      ) VALUES (?, ?, ?, 'admin', ?, NOW())
-    `,
+      ) VALUES (?, ?, ?, 'admin', ?, NOW())`,
       [
         orderId,
         fromStatus,
@@ -1417,6 +1467,60 @@ router.put("/:id/status", verifyToken, isAdmin, async (req, res) => {
       ]
     );
 
+    // Gửi thông báo cho user
+    const userId = order.user_id;
+    const orderHash = order.order_hash;
+
+    if (userId) {
+      // Lấy loại thông báo 'order'
+      const [typeRows] = await db.query(
+        `SELECT id FROM notification_types WHERE type_code = 'order' AND is_active = 1`
+      );
+
+      if (typeRows.length > 0) {
+        const notificationTypeId = typeRows[0].id;
+
+        // Map trạng thái sang tiếng Việt
+        const statusMessageMap = {
+          PENDING: "Chờ xác nhận",
+          CONFIRMED: "Đã xác nhận",
+          SHIPPING: "Đang giao hàng",
+          SUCCESS: "Giao hàng thành công",
+          FAILED: "Giao hàng thất bại",
+          CANCELLED: "Đã hủy đơn",
+        };
+
+        const readableStatus = statusMessageMap[toStatus] || toStatus;
+        const notificationTitle = "Cập nhật trạng thái đơn hàng";
+        const notificationMessage = `Đơn hàng ${orderHash} của bạn đã được chuyển sang trạng thái "${readableStatus}".`;
+        const orderLink = `chi-tiet-don-hang/${orderHash}`;
+        // Ghi vào bảng notifications
+        const [notiResult] = await db.query(
+          `INSERT INTO notifications (type_id, title, message, link, created_by)
+          VALUES (?, ?, ?, ?, ?)`,
+          [
+            notificationTypeId,
+            notificationTitle,
+            notificationMessage,
+            orderLink,
+            "admin"
+          ]
+        );
+
+
+        const notificationId = notiResult.insertId;
+
+        // Ghi vào bảng user_notifications
+        await db.query(
+          `INSERT INTO user_notifications (user_id, notification_id, is_read, read_at, is_deleted)
+           VALUES (?, ?, 0, NULL, 0)`,
+          [userId, notificationId]
+        );
+      } else {
+        console.warn("Loại thông báo 'order' không tồn tại hoặc đã bị vô hiệu hóa.");
+      }
+    }
+
     return res.status(200).json({
       success: true,
       message: `Đã chuyển trạng thái đơn hàng sang ${toStatus}`,
@@ -1424,11 +1528,13 @@ router.put("/:id/status", verifyToken, isAdmin, async (req, res) => {
     });
   } catch (err) {
     console.error("Lỗi cập nhật trạng thái đơn hàng:", err);
-    res
-      .status(500)
-      .json({ success: false, message: "Lỗi máy chủ khi cập nhật trạng thái" });
+    res.status(500).json({
+      success: false,
+      message: "Lỗi máy chủ khi cập nhật trạng thái",
+    });
   }
 });
+
 
 /**
  * @route   PUT /api/orders/:id/return-status

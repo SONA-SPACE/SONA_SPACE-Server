@@ -31,6 +31,7 @@ router.get('/notification', verifyToken, async (req, res) => {
         un.id AS user_notification_id,
         un.notification_id,
         n.title,
+        n.link,
         n.message,
         n.created_at,
         un.is_read,

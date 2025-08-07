@@ -407,7 +407,7 @@
                 // console.log(`[DEBUG] noti ${noti.id} | type_id: ${noti.type_id} | created_at: ${notiDate} | isToday: ${isToday} | isOrderType: ${isOrderType}`);
                 return isOrderType && isToday;
               });
-              console.log("Số thông báo hôm nay:", todayNotifications.length);
+              // console.log("Số thông báo hôm nay:", todayNotifications.length);
               const countElement = document.getElementById("notification-count");
               countElement.textContent = todayNotifications.length;
               countElement.style.display = todayNotifications.length > 0 ? "inline-block" : "none";

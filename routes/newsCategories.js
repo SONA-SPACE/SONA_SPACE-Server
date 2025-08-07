@@ -188,6 +188,38 @@ router.post("/", verifyToken, isAdmin, async (req, res) => {
   }
 });
 
+router.put("/:id/status", verifyToken, isAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  const statusNumber = Number(status);
+  if (![0, 1].includes(statusNumber)) {
+    return res.status(400).json({ error: "Trạng thái không hợp lệ. Chỉ chấp nhận 0 hoặc 1." });
+  }
+
+  try {
+    const [result] = await db.query(
+      `
+      UPDATE news_category
+      SET news_category_status = ?
+      WHERE news_category_id = ?
+      `,
+      [statusNumber, id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Không tìm thấy danh mục theo ID." });
+    }
+
+    res.json({ message: "Cập nhật trạng thái danh mục thành công." });
+  } catch (err) {
+    console.error("Lỗi cập nhật trạng thái danh mục:", err);
+    res.status(500).json({ error: "Không thể cập nhật trạng thái. Vui lòng thử lại." });
+  }
+});
+
+
+
 /**
  * @route   PUT /api/news-categories/:id
  * @desc    [Disabled] Cập nhật danh mục tin tức

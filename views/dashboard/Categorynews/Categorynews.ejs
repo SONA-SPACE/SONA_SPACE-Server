@@ -45,9 +45,27 @@
         </table>
     </div>
 </div>
+
+<!-- Modal xác nhận ẩn/hiện danh mục -->
+<div id="confirmCategoryStatusModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <h3>Xác nhận thay đổi trạng thái danh mục</h3>
+        <p id="confirmCategoryMessage"></p>
+        <div class="modal-actions">
+            <button id="confirmCategoryBtn" class="btn btn-confirm">Có</button>
+            <button id="cancelCategoryBtn" class="btn btn-cancel">Không</button>
+        </div>
+    </div>
+</div>
+
 <!-- Load News Categories JS -->
 <!-- <script src="/javascripts/news-categories.js"></script> -->
 <script>
+    let pendingCategoryToggle = {
+        id: null,
+        newStatus: null
+    };
+
     document.addEventListener("DOMContentLoaded", function () {
         function getNewsCategories() {
             fetch("/api/news-categories")
@@ -123,6 +141,38 @@
             });
 
             document.querySelector(".results-info").textContent = `Hiển thị ${categories.length} kết quả`;
+
+            document.querySelectorAll(".action-button.visibility").forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    const categoryId = btn.getAttribute("data-id");
+                    const currentStatus = btn.getAttribute("data-status"); // 'visible' hoặc 'hidden'
+                    const newStatus = currentStatus === "visible" ? 0 : 1;
+
+                    pendingCategoryToggle = {
+                        id: categoryId,
+                        newStatus: newStatus
+                    };
+
+                    const actionText = newStatus === 1 ? "hiển thị" : "ẩn";
+                    document.getElementById("confirmCategoryMessage").textContent =
+                        `Bạn có chắc chắn muốn ${actionText} danh mục tin tức này?`;
+
+                    document.getElementById("confirmCategoryStatusModal").style.display = "flex";
+                });
+            });
+
+            document.getElementById("confirmCategoryBtn").addEventListener("click", () => {
+                if (pendingCategoryToggle.id !== null) {
+                    toggleCategoryVisibility(pendingCategoryToggle.id, pendingCategoryToggle.newStatus);
+                    pendingCategoryToggle = { id: null, newStatus: null };
+                }
+                document.getElementById("confirmCategoryStatusModal").style.display = "none";
+            });
+
+            document.getElementById("cancelCategoryBtn").addEventListener("click", () => {
+                pendingCategoryToggle = { id: null, newStatus: null };
+                document.getElementById("confirmCategoryStatusModal").style.display = "none";
+            });
         }
 
 
@@ -160,6 +210,34 @@
                 });
 
         }
+
+
+        function toggleCategoryVisibility(id, newStatus) {
+            const token = localStorage.getItem("token");
+
+            fetch(`/api/news-categories/${id}/status`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ status: newStatus })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.error) {
+                        showToast(data.error, "danger");
+                    } else {
+                        showToast(`Đã ${newStatus === 1 ? "hiển thị" : "ẩn"} danh mục`, "success");
+                        setTimeout(() => getNewsCategories(), 500);
+                    }
+                })
+                .catch(err => {
+                    console.error("Lỗi khi cập nhật trạng thái danh mục:", err);
+                    showToast("Lỗi khi thay đổi trạng thái", "danger");
+                });
+        }
+
         function formatDate(dateStr) {
             if (!dateStr) return "-";
             return new Date(dateStr).toLocaleDateString("vi-VN");

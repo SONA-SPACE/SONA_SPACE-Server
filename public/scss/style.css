@@ -7206,7 +7206,6 @@ th.filterable {
   justify-content: center;
   align-items: center;
   z-index: 2000;
-
   transition: opacity 0.3s ease;
 }
 

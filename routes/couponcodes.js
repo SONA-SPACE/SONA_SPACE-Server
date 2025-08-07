@@ -49,6 +49,34 @@ router.get('/notification', verifyToken, async (req, res) => {
   }
 });
 
+router.patch('/notification/read/:id', verifyToken, async (req, res) => {
+  const userId = req.user.id;
+  const notificationId = req.params.id;
+
+  try {
+    // Kiểm tra xem thông báo có tồn tại cho user không
+    const [rows] = await db.execute(
+      'SELECT * FROM user_notifications WHERE user_id = ? AND notification_id = ?',
+      [userId, notificationId]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'Thông báo không tồn tại' });
+    }
+
+    // Cập nhật trạng thái đã đọc
+    await db.execute(
+      'UPDATE user_notifications SET is_read = 1 WHERE user_id = ? AND notification_id = ?',
+      [userId, notificationId]
+    );
+
+    res.status(200).json({ message: 'Đã đánh dấu là đã đọc' });
+  } catch (error) {
+    console.error('Lỗi đánh dấu đã đọc:', error);
+    res.status(500).json({ message: 'Lỗi server khi đánh dấu đã đọc' });
+  }
+});
+
 router.get('/user-has-coupon', verifyToken, async (req, res) => {
   try {
     const userId = req.user.id;
@@ -241,7 +269,28 @@ router.get('/:id', verifyToken, isAdmin, async (req, res) => {
   }
 });
 
+router.post("/mark-all-read", verifyToken, async (req, res) => {
+  const userId = req.user.id;
 
+  try {
+    const [result] = await db.query(
+      "UPDATE user_notifications SET is_read = 1 WHERE user_id = ? AND is_read = 0",
+      [userId]
+    );
+
+    res.json({
+      success: true,
+      message: "Đã đánh dấu tất cả thông báo là đã đọc",
+      updatedRows: result.affectedRows,
+    });
+  } catch (error) {
+    console.error("Lỗi đánh dấu thông báo đã đọc:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi máy chủ",
+    });
+  }
+});
 
 /**
  * 
@@ -436,6 +485,36 @@ router.post('/', verifyToken, isAdmin, async (req, res) => {
   }
 });
 
+router.put('/:id/status', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const { status } = req.body;
+
+    // Kiểm tra id hợp lệ
+    if (isNaN(id)) {
+      return res.status(400).json({ error: 'ID voucher không hợp lệ' });
+    }
+
+    // Kiểm tra status hợp lệ
+    if (![0, 1].includes(Number(status))) {
+      return res.status(400).json({ error: 'Trạng thái không hợp lệ, chỉ chấp nhận 0 hoặc 1' });
+    }
+
+    // Kiểm tra voucher có tồn tại không
+    const [exist] = await db.query('SELECT * FROM couponcode WHERE couponcode_id = ?', [id]);
+    if (!exist.length) {
+      return res.status(404).json({ error: 'Không tìm thấy voucher' });
+    }
+
+    // Cập nhật status
+    await db.query('UPDATE couponcode SET status = ? WHERE couponcode_id = ?', [Number(status), id]);
+
+    res.json({ message: 'Cập nhật trạng thái thành công', newStatus: Number(status) });
+  } catch (error) {
+    console.error('Lỗi cập nhật trạng thái voucher:', error);
+    res.status(500).json({ error: 'Lỗi máy chủ khi cập nhật trạng thái voucher' });
+  }
+});
 
 /**
  * @route   PUT /api/couponcodes/:id

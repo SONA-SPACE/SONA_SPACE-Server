@@ -136,28 +136,7 @@
                         </div>
                     </div>
                 </th>
-                <th class="filterable" data-column="created_at">
-                    Ngày tạo
-                    <div class="header-filter">
-                        <i class="fas fa-chevron-down filter-icon"></i>
-                        <div class="filter-dropdown">
-                            <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
-                            <a class="filter-item" href="#" data-sort-order="desc">Mới nhất</a>
-                            <a class="filter-item" href="#" data-sort-order="asc">Cũ nhất</a>
-                        </div>
-                    </div>
-                </th>
-                <th class="filterable" data-column="updated_at">
-                    Ngày cập nhật
-                    <div class="header-filter">
-                        <i class="fas fa-chevron-down filter-icon"></i>
-                        <div class="filter-dropdown">
-                            <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
-                            <a class="filter-item" href="#" data-sort-order="desc">Mới nhất</a>
-                            <a class="filter-item" href="#" data-sort-order="asc">Cũ nhất</a>
-                        </div>
-                    </div>
-                </th>
+
                 <th></th>
             </tr>
         </thead>
@@ -335,7 +314,7 @@
             tbody.innerHTML = "";
 
             if (usersToRender.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="13" style="text-align: center; padding: 20px;">Không tìm thấy người dùng nào.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="11" style="text-align: center; padding: 20px;">Không tìm thấy người dùng nào.</td></tr>';
                 return;
             }
 
@@ -391,8 +370,6 @@
                         </td>
                          <td>${isVerified ? new Date(user.verified_at).toLocaleDateString('vi-VN') : "-"}</td>
                         <td>${isDisabled ? new Date(user.disabled_at).toLocaleDateString('vi-VN') : "-"}</td>
-                        <td>${user.created_at ? new Date(user.created_at).toLocaleDateString('vi-VN') : "-"}</td>
-                        <td>${user.updated_at ? new Date(user.updated_at).toLocaleDateString('vi-VN') : "-"}</td>
                         <td>
                             <div class="action-cell ">
                                 <button class="action-button edit" data-id="${user.id}" title="Chỉnh sửa">
@@ -457,8 +434,6 @@
                         valB = parseInt(b[columnDataName] || 0);
                         return sortOrder === 'asc' ? valA - valB : valB - valA;
                     case 'birth':
-                    case 'created_at':
-                    case 'updated_at':
                     case 'disabled_at':
                     case 'verified_at':
 
@@ -593,7 +568,7 @@
             .catch((err) => {
                 console.error("Lỗi khi tải dữ liệu người dùng:", err);
                 document.getElementById("usersTableBody").innerHTML =
-                    '<tr><td colspan="13" style="text-align: center; padding: 20px;">Không thể tải dữ liệu người dùng. Vui lòng thử lại sau.</td></tr>';
+                    '<tr><td colspan="11" style="text-align: center; padding: 20px;">Không thể tải dữ liệu người dùng. Vui lòng thử lại sau.</td></tr>';
                 showToast("Lỗi khi tải dữ liệu người dùng.", "danger");
             });
 

@@ -1,22 +1,22 @@
 <!-- HTML hiển thị danh sách vật liệu -->
 <div class="dashboard-header-row">
     <h2 class="dashboard-title">Quản lý bình luận</h2>
-    <div class="action-buttons">
+    <!-- <div class="action-buttons">
         <button class="add-category-btn" onclick="window.location.href='/dashboard/material/add'">
             <i class="fas fa-plus"></i> Thêm vật liệu
         </button>
-    </div>
+    </div> -->
 </div>
 
 <div class="filter-row">
     <div class="search-container">
         <i class="fas fa-search search-icon"></i>
-        <input type="text" class="search-input" placeholder="Tìm kiếm vật liệu..." />
+        <input type="text" class="search-input" placeholder="Tìm kiếm bình luận..." id="searchInput" />
     </div>
-    <div class="date-range">
+    <!-- <div class="date-range">
         <i class="far fa-calendar-alt"></i>
         <span>01/04/2023 - 30/04/2023</span>
-    </div>
+    </div> -->
     <div class="results-info">Đang tải dữ liệu...</div>
 </div>
 
@@ -24,18 +24,66 @@
     <table class="category-table" id="materialsTable">
         <thead>
             <tr>
-                <th>Mã đơn hàng </th>
-                <th>Khách hàng</th>
-                <th>Sản phẩm</th>
-                <th>Sao</th>
+                <th class="filterable" data-column="order_hash">Mã đơn hàng</th>
+                <th class="filterable" data-column="user_name">
+                    Khách hàng
+                    <div class="header-filter">
+                        <i class="fas fa-chevron-down filter-icon"></i>
+                        <div class="filter-dropdown">
+                            <a class="filter-item" href="#" data-sort-order="asc">A-Z</a>
+                            <a class="filter-item" href="#" data-sort-order="desc">Z-A</a>
+                            <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+                        </div>
+                    </div>
+                </th>
+                <th class="filterable" data-column="product_name">
+                    Sản phẩm
+                    <div class="header-filter">
+                        <i class="fas fa-chevron-down filter-icon"></i>
+                        <div class="filter-dropdown">
+                            <a class="filter-item" href="#" data-sort-order="asc">A-Z</a>
+                            <a class="filter-item" href="#" data-sort-order="desc">Z-A</a>
+                            <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+                        </div>
+                    </div>
+                </th>
+                <th class="filterable" data-column="comment_rating">
+                    Sao
+                    <div class="header-filter">
+                        <i class="fas fa-chevron-down filter-icon"></i>
+                        <div class="filter-dropdown">
+                            <a class="filter-item" href="#" data-sort-order="desc">Cao nhất</a>
+                            <a class="filter-item" href="#" data-sort-order="asc">Thấp nhất</a>
+                            <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+                        </div>
+                    </div>
+                </th>
                 <th>Tiêu đề</th>
                 <th>Bình luận</th>
                 <th>Lượt thích bình luận</th>
-                <th>Trạng thái</th>
-
-                <th>Ngày bình luận</th>
+                <th class="filterable" data-column="comment_status">
+                    Trạng thái
+                    <div class="header-filter">
+                        <i class="fas fa-chevron-down filter-icon"></i>
+                        <div class="filter-dropdown">
+                            <a class="filter-item" href="#" data-filter-value="1">Hiển thị</a>
+                            <a class="filter-item" href="#" data-filter-value="0">Ẩn</a>
+                            <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+                        </div>
+                    </div>
+                </th>
+                <th class="filterable" data-column="created_at">
+                    Ngày bình luận
+                    <div class="header-filter">
+                        <i class="fas fa-chevron-down filter-icon"></i>
+                        <div class="filter-dropdown">
+                            <a class="filter-item" href="#" data-sort-order="desc">Mới nhất</a>
+                            <a class="filter-item" href="#" data-sort-order="asc">Cũ nhất</a>
+                            <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+                        </div>
+                    </div>
+                </th>
                 <th>Ngày cập nhật</th>
-
                 <th>Thao tác</th>
             </tr>
         </thead>
@@ -57,6 +105,8 @@
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         const AUTH_TOKEN = localStorage.getItem("token");
+        let allComments = [];
+        let currentFilteredComments = [];
 
         const modal = document.getElementById('confirmationModal');
         const modalTitle = document.getElementById('modalTitle');
@@ -67,6 +117,7 @@
         let currentConfirmCallback = null;
 
         function showModal(title, message, onConfirmCallback) {
+            console.log('showModal called:', title, message);
             modalTitle.textContent = title;
             modalMessage.textContent = message;
             currentConfirmCallback = onConfirmCallback;
@@ -90,6 +141,86 @@
         });
 
 
+        // Tìm kiếm
+        document.getElementById("searchInput").addEventListener("keyup", function () {
+            const searchTerm = this.value.toLowerCase();
+            const filtered = allComments.filter(comment =>
+                (comment.user_name || "").toLowerCase().includes(searchTerm) ||
+                (comment.product_name || "").toLowerCase().includes(searchTerm) ||
+                (comment.comment_title || "").toLowerCase().includes(searchTerm) ||
+                (comment.comment_description || "").toLowerCase().includes(searchTerm)
+            );
+            currentFilteredComments = filtered;
+            renderComments(currentFilteredComments);
+        });
+
+        // Filter/sort logic
+        document.querySelectorAll('.header-filter').forEach(filter => {
+            filter.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.classList.toggle('active');
+                document.querySelectorAll('.header-filter').forEach(otherFilter => {
+                    if (otherFilter !== this) {
+                        otherFilter.classList.remove('active');
+                    }
+                });
+            });
+        });
+        document.querySelectorAll('.filter-dropdown .filter-item').forEach(item => {
+            item.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const th = this.closest('th');
+                const columnDataName = th.getAttribute('data-column');
+                const filterValue = this.getAttribute('data-filter-value');
+                const sortOrder = this.getAttribute('data-sort-order');
+                if (sortOrder) {
+                    sortComments(columnDataName, sortOrder);
+                } else if (filterValue) {
+                    filterCommentsByColumn(columnDataName, filterValue);
+                }
+                this.closest('.header-filter').classList.remove('active');
+            });
+        });
+        document.addEventListener('click', function () {
+            document.querySelectorAll('.header-filter').forEach(filter => {
+                filter.classList.remove('active');
+            });
+        });
+
+        function sortComments(columnDataName, sortOrder) {
+            let commentsToSort = [...currentFilteredComments];
+            commentsToSort.sort((a, b) => {
+                let valA, valB;
+                switch (columnDataName) {
+                    case 'user_name':
+                    case 'product_name':
+                        valA = (a[columnDataName] || '').toLowerCase();
+                        valB = (b[columnDataName] || '').toLowerCase();
+                        return sortOrder === 'asc' ? valA.localeCompare(valB, 'vi') : valB.localeCompare(valA, 'vi');
+                    case 'comment_rating':
+                        valA = parseInt(a.comment_rating || 0);
+                        valB = parseInt(b.comment_rating || 0);
+                        return sortOrder === 'asc' ? valA - valB : valB - valA;
+                    case 'created_at':
+                        valA = a.created_at ? new Date(a.created_at).getTime() : 0;
+                        valB = b.created_at ? new Date(b.created_at).getTime() : 0;
+                        return sortOrder === 'asc' ? valA - valB : valB - valA;
+                    default:
+                        return 0;
+                }
+            });
+            renderComments(commentsToSort);
+        }
+        function filterCommentsByColumn(columnDataName, filterValue) {
+            let filtered = [...allComments];
+            if (columnDataName === 'comment_status' && filterValue !== 'all') {
+                filtered = filtered.filter(comment => String(comment.comment_status) === filterValue);
+            }
+            currentFilteredComments = filtered;
+            renderComments(currentFilteredComments);
+        }
 
         function getComments() {
             fetch("/api/comments/admin", {
@@ -99,13 +230,14 @@
             })
                 .then((res) => {
                     if (!res.ok) {
-                        // If response is not OK, parse error message
                         return res.json().then(err => { throw new Error(err.error || 'Failed to fetch comments'); });
                     }
                     return res.json();
                 })
                 .then((comments) => {
-                    renderComments(comments);
+                    allComments = comments;
+                    currentFilteredComments = [...allComments];
+                    renderComments(currentFilteredComments);
                 })
                 .catch((err) => {
                     console.error("Lỗi khi tải bình luận:", err);
@@ -144,15 +276,11 @@
                     <td>${formatDate(comment.updated_at)}</td>
                     <td>
                         <div class="action-cell">
-                            <button class="action-button edit">
-                                <i class="fas fa-edit"></i>
-                            </button>
+                           
                             <button class="action-button visibility" data-id="${comment.comment_id}" data-status="${comment.comment_status}">
                                 <i class="fas ${statusIcon}"></i>
                             </button>
-                            <button class="action-button delete" data-id="${comment.comment_id}" data-name="${comment.comment_title}">
-                                <i class="fas fa-trash"></i>
-                            </button>
+                        
                         </div>
                     </td>
                 `;
@@ -162,14 +290,25 @@
                 const visibilityButton = row.querySelector(`.action-button.visibility`);
                 if (visibilityButton) {
                     visibilityButton.addEventListener('click', function () {
+                        console.log('Clicked eye icon', comment.comment_id);
                         const commentId = this.dataset.id;
                         const currentStatus = parseInt(this.dataset.status);
                         const newStatus = currentStatus === 1 ? 0 : 1;
                         const actionText = newStatus === 1 ? "hiển thị" : "ẩn";
                         const confirmMessage = `Bạn có chắc chắn muốn ${actionText} bình luận của ${comment.user_name} không?`;
-
                         showModal("Xác nhận thay đổi trạng thái", confirmMessage, () => {
-                            updateCommentStatus(commentId, newStatus);
+                            toggleCommentStatus(commentId);
+                        });
+                    });
+                }
+                const deleteButton = row.querySelector(`.action-button.delete`);
+                if (deleteButton) {
+                    deleteButton.addEventListener('click', function () {
+                        const commentId = this.dataset.id;
+                        const commentTitle = this.dataset.name;
+                        const confirmMessage = `Bạn có chắc chắn muốn xóa bình luận "${commentTitle}" không?`;
+                        showModal("Xác nhận xóa bình luận", confirmMessage, () => {
+                            deleteComment(commentId);
                         });
                     });
                 }
@@ -219,6 +358,30 @@
                 alert(`Lỗi: ${error.message}`);
             }
         }
+
+        async function deleteComment(commentId) {
+            try {
+                const response = await fetch(`/api/comments/${commentId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${AUTH_TOKEN}`
+                    }
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to delete comment');
+                }
+
+                const result = await response.json();
+                console.log("Xóa bình luận thành công:", result.message);
+                getComments(); // Reload data after deletion
+            } catch (error) {
+                console.error("Lỗi khi xóa bình luận:", error);
+                alert(`Lỗi: ${error.message}`);
+            }
+        }
+
         function formatDate(dateStr) {
             if (!dateStr) return "-";
             try {
@@ -242,7 +405,167 @@
             }
         }
 
+        function toggleCommentStatus(commentId) {
+            fetch(`/api/comments/${commentId}/toggle-status`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${AUTH_TOKEN}`
+                }
+            })
+                .then((res) => res.json())
+                .then((data) => {
+                    if (data.error) {
+                        alert(data.error);
+                    } else {
+                        getComments();
+                    }
+                })
+                .catch(() => alert("Lỗi khi cập nhật trạng thái bình luận"));
+        }
+
         getComments();
-        console.log(`ID: ${comment.comment_id} - Status: ${comment.comment_status}`);
     });
 </script>
+<style>
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+    }
+
+    .modal-overlay.hidden1 {
+        display: none !important;
+    }
+
+    .modal-content {
+        background: #fff;
+        padding: 24px 32px;
+        border-radius: 8px;
+        min-width: 320px;
+    }
+
+    .modal-buttons {
+        display: flex;
+        gap: 16px;
+        justify-content: flex-end;
+        margin-top: 16px;
+    }
+
+    .cancel-btn,
+    .confirm-btn {
+        padding: 6px 18px;
+        border-radius: 4px;
+        border: none;
+    }
+
+    .cancel-btn {
+        background: #eee;
+    }
+
+    .confirm-btn {
+        background: #007bff;
+        color: #fff;
+    }
+
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.3);
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999 !important;
+    }
+
+    .modal-overlay.hidden1 {
+        display: none !important;
+    }
+
+    .modal-content {
+        background: #fff;
+        padding: 24px 32px;
+        border-radius: 8px;
+        min-width: 320px;
+    }
+
+    .modal-buttons {
+        display: flex;
+        gap: 16px;
+        justify-content: flex-end;
+        margin-top: 16px;
+    }
+
+    .cancel-btn,
+    .confirm-btn {
+        padding: 6px 18px;
+        border-radius: 4px;
+        border: none;
+    }
+
+    .cancel-btn {
+        background: #eee;
+    }
+
+    .confirm-btn {
+        background: #007bff;
+        color: #fff;
+    }
+</style>
+<style>
+    .modal-overlay {
+        position: fixed !important;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.3);
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        z-index: 99999 !important;
+    }
+
+    .modal-overlay.hidden1 {
+        display: none !important;
+    }
+
+    .modal-content {
+        background: #fff;
+        padding: 24px 32px;
+        border-radius: 8px;
+        min-width: 320px;
+    }
+
+    .modal-buttons {
+        display: flex;
+        gap: 16px;
+        justify-content: flex-end;
+        margin-top: 16px;
+    }
+
+    .cancel-btn,
+    .confirm-btn {
+        padding: 6px 18px;
+        border-radius: 4px;
+        border: none;
+    }
+
+    .cancel-btn {
+        background: #eee;
+    }
+
+    .confirm-btn {
+        background: #007bff;
+        color: #fff;
+    }
+</style>

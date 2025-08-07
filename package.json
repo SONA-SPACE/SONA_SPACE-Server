@@ -30,6 +30,7 @@
     "ngrok": "^5.0.0-beta.2",
     "node-fetch": "^2.7.0",
     "nodemailer": "^7.0.4",
+    "openai": "^5.11.0",
     "pm2": "^5.3.1",
     "socket.io": "^4.8.1",
     "tinymce": "^7.9.1",

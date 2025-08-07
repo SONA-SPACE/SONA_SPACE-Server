@@ -152,7 +152,7 @@ router.get("/user", verifyToken, isAdmin, async (req, res) => {
     // 1. Xác định định dạng và số lượng
     if (type === "month") {
       dateFormat = "%Y-%m";
-      limitNum = Number(limit) || 12;
+      limitNum = Number(limit) || 6;
     } else if (type === "year") {
       dateFormat = "%Y";
       limitNum = Number(limit) || 5;

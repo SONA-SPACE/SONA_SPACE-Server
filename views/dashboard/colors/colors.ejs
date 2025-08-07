@@ -12,12 +12,9 @@
 <div class="filter-row">
     <div class="search-container">
         <i class="fas fa-search search-icon"></i>
-        <input type="text" class="search-input" placeholder="Tìm kiếm danh mục..." />
+        <input type="text" class="search-input" placeholder="Tìm kiếm màu sắc..." id="searchInput" />
     </div>
-    <div class="date-range">
-        <i class="far fa-calendar-alt"></i>
-        <span>01/04/2023 - 30/04/2023</span>
-    </div>
+
     <div class="results-info">Đang tải dữ liệu...</div>
 </div>
 
@@ -27,11 +24,61 @@
 
         <thead>
             <tr>
-                <th>Màu</th>
-                <th>Sản phẩm</th>
-                <th>Trạng thái</th>
-                <th>Vị trí</th>
-                <th>Ngày tạo</th>
+                <th class="filterable" data-column="color_name">
+                    Tên màu
+                    <div class="header-filter">
+                        <i class="fas fa-chevron-down filter-icon"></i>
+                        <div class="filter-dropdown">
+                            <a class="filter-item" href="#" data-sort-order="asc">Từ A-Z</a>
+                            <a class="filter-item" href="#" data-sort-order="desc">Từ Z-A</a>
+                            <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+                        </div>
+                    </div>
+                </th>
+                <th class="filterable" data-column="product_count">
+                    Sản phẩm
+                    <div class="header-filter">
+                        <i class="fas fa-chevron-down filter-icon"></i>
+                        <div class="filter-dropdown">
+                            <a class="filter-item" href="#" data-sort-order="desc">Nhiều nhất</a>
+                            <a class="filter-item" href="#" data-sort-order="asc">Ít nhất</a>
+                            <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+                        </div>
+                    </div>
+                </th>
+                <th class="filterable" data-column="status">
+                    Trạng thái
+                    <div class="header-filter">
+                        <i class="fas fa-chevron-down filter-icon"></i>
+                        <div class="filter-dropdown">
+                            <a class="filter-item" href="#" data-filter-value="visible">Hiển thị</a>
+                            <a class="filter-item" href="#" data-filter-value="hidden">Ẩn</a>
+                            <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+                        </div>
+                    </div>
+                </th>
+                <th class="filterable" data-column="color_priority">
+                    Vị trí
+                    <div class="header-filter">
+                        <i class="fas fa-chevron-down filter-icon"></i>
+                        <div class="filter-dropdown">
+                            <a class="filter-item" href="#" data-sort-order="asc">Tăng dần</a>
+                            <a class="filter-item" href="#" data-sort-order="desc">Giảm dần</a>
+                            <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+                        </div>
+                    </div>
+                </th>
+                <th class="filterable" data-column="created_at">
+                    Ngày tạo
+                    <div class="header-filter">
+                        <i class="fas fa-chevron-down filter-icon"></i>
+                        <div class="filter-dropdown">
+                            <a class="filter-item" href="#" data-sort-order="desc">Mới nhất</a>
+                            <a class="filter-item" href="#" data-sort-order="asc">Cũ nhất</a>
+                            <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+                        </div>
+                    </div>
+                </th>
                 <th>Ngày cập nhật</th>
                 <th>Slug</th>
                 <th>Thao tác</th>
@@ -45,8 +92,6 @@
 
 <script>
     // COLOR MANAGEMENT PAGE SCRIPT
-
-    // Ensure DOM loaded
     document.addEventListener("DOMContentLoaded", function () {
         const token = localStorage.getItem("token");
         if (!token) {
@@ -54,16 +99,27 @@
             return;
         }
 
+        let allColors = [];
+        let currentFilteredColors = [];
+        let currentSortColumn = null;
+        let currentSortDirection = 'asc';
+        let currentStatusFilter = 'all';
+        let currentNameFilter = '';
+
         getColors();
 
         function getColors() {
-            fetch("http://localhost:3501/api/color/admin", {
+            fetch("/api/color/admin", {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
             })
                 .then((res) => res.json())
-                .then((data) => renderColors(data))
+                .then((data) => {
+                    allColors = data;
+                    currentFilteredColors = [...allColors];
+                    renderColors(currentFilteredColors);
+                })
                 .catch((err) => {
                     console.error("Lỗi khi lấy dữ liệu màu sắc:", err);
                     document.querySelector(".results-info").textContent = "Không thể tải dữ liệu.";
@@ -77,46 +133,39 @@
             colors.forEach((color) => {
                 const status = color.status === 1 ? "visible" : "hidden";
                 const row = document.createElement("tr");
-
                 row.innerHTML = `
                 <td>
-            <div class="category-info">
-              <div class="category-image">
-             
-                    <div class="color-preview" style="background-color: ${color.color_hex}; width: 40px; height: 40px; border-radius: 4px;"></div>
-              </div>
-              <div class="color-name">${color.color_name}</div>
-            </div>
-          </td>
-
-        <td>${color.product_count}</td>
-        
-        <td>
-            <span class="status-indicator ${status === "visible" ? "visible" : "hidden"
-                    }">
-              <i class="fas ${status === "visible" ? "fa-eye" : "fa-eye-slash"
-                    }"></i>
-              ${status === "visible" ? "Hiển thị" : "Ẩn"}
-            </span>
-          </td>
-        <td>${color.color_priority}</td>
-        <td>${formatDate(color.created_at)}</td>
-        <td>${formatDate(color.updated_at)}</td>
-        <td>${color.color_slug}</td>
-        <td>
-          <div class="action-cell">
-            <button class="action-button edit" onclick="window.location.href='/dashboard/colors/edit/${color.color_slug}'" title="Chỉnh sửa">
-              <i class="fas fa-edit"></i>
-            </button>
-            <button class="action-button visibility" data-id="${color.color_id}" data-status="${status}" title="${status === "visible" ? "Ẩn màu" : "Hiển thị màu"}">
-              <i class="fas ${status === "visible" ? "fa-eye-slash" : "fa-eye"}"></i>
-            </button>
-            <button class="action-button delete" data-id="${color.color_id}" data-name="${color.color_name}" title="Xóa màu">
-              <i class="fas fa-trash"></i>
-            </button>
-          </div>
-        </td>`;
-
+                    <div class="category-info">
+                        <div class="category-image">
+                            <div class="color-preview" style="background-color: ${color.color_hex}; width: 40px; height: 40px; border-radius: 4px;"></div>
+                        </div>
+                        <div class="color-name">${color.color_name}</div>
+                    </div>
+                </td>
+                <td>${color.product_count}</td>
+                <td>
+                    <span class="status-indicator ${status === "visible" ? "visible" : "hidden"}">
+                        <i class="fas ${status === "visible" ? "fa-eye" : "fa-eye-slash"}"></i>
+                        ${status === "visible" ? "Hiển thị" : "Ẩn"}
+                    </span>
+                </td>
+                <td>${color.color_priority}</td>
+                <td>${formatDate(color.created_at)}</td>
+                <td>${formatDate(color.updated_at)}</td>
+                <td>${color.color_slug}</td>
+                <td>
+                    <div class="action-cell">
+                        <button class="action-button edit" onclick="window.location.href='/dashboard/colors/edit/${color.color_slug}'" title="Chỉnh sửa">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-button visibility" data-id="${color.color_id}" data-status="${status}" data-name="${color.color_name}" title="${status === "visible" ? "Ẩn màu" : "Hiển thị màu"}">
+                            <i class="fas ${status === "visible" ? "fa-eye-slash" : "fa-eye"}"></i>
+                        </button>
+                        <button class="action-button delete" data-id="${color.color_id}" data-name="${color.color_name}" title="Xóa màu">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>`;
                 tbody.appendChild(row);
             });
 
@@ -132,18 +181,120 @@
                 btn.addEventListener("click", () => {
                     const id = btn.getAttribute("data-id");
                     const currentStatus = btn.getAttribute("data-status");
-                    changeStatus(id, currentStatus);
+                    const name = btn.getAttribute("data-name");
+                    showConfirm({
+                        message: `Bạn có chắc chắn muốn ${currentStatus === "visible" ? "ẩn" : "hiện"} màu \"${name}\" không?`,
+                        onConfirm: () => {
+                            toggleColorStatus(id);
+                        }
+                    });
                 });
             });
 
             document.querySelector(".results-info").textContent = `Hiển thị ${colors.length} kết quả`;
         }
 
+        document.getElementById("searchInput").addEventListener("keyup", function () {
+            filterColors();
+        });
+        document.getElementById("statusFilter").addEventListener("change", function () {
+            filterColors();
+        });
+
+        function filterColors() {
+            const searchTerm = document.getElementById("searchInput").value.toLowerCase();
+            const statusValue = document.getElementById("statusFilter").value;
+            let filtered = allColors.filter(color => {
+                const nameMatch = color.color_name.toLowerCase().includes(searchTerm);
+                let statusMatch = true;
+                if (statusValue === "visible") statusMatch = color.status === 1;
+                else if (statusValue === "hidden") statusMatch = color.status !== 1;
+                return nameMatch && statusMatch;
+            });
+            currentFilteredColors = filtered;
+            renderColors(currentFilteredColors);
+        }
+
+        document.querySelectorAll('.header-filter').forEach(filter => {
+            filter.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.classList.toggle('active');
+                document.querySelectorAll('.header-filter').forEach(otherFilter => {
+                    if (otherFilter !== this) {
+                        otherFilter.classList.remove('active');
+                    }
+                });
+            });
+        });
+        document.querySelectorAll('.filter-dropdown .filter-item').forEach(item => {
+            item.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const th = this.closest('th');
+                const columnDataName = th.getAttribute('data-column');
+                const filterValue = this.getAttribute('data-filter-value');
+                const sortOrder = this.getAttribute('data-sort-order');
+                if (sortOrder) {
+                    sortColors(columnDataName, sortOrder);
+                } else if (filterValue) {
+                    filterColorsByColumn(columnDataName, filterValue);
+                }
+                this.closest('.header-filter').classList.remove('active');
+            });
+        });
+        document.addEventListener('click', function () {
+            document.querySelectorAll('.header-filter').forEach(filter => {
+                filter.classList.remove('active');
+            });
+        });
+
+        function sortColors(columnDataName, sortOrder) {
+            let colorsToSort = [...currentFilteredColors];
+            colorsToSort.sort((a, b) => {
+                let valA, valB;
+                switch (columnDataName) {
+                    case 'color_name':
+                        valA = (a.color_name || '').toLowerCase();
+                        valB = (b.color_name || '').toLowerCase();
+                        return sortOrder === 'asc' ? valA.localeCompare(valB, 'vi') : valB.localeCompare(valA, 'vi');
+                    case 'product_count':
+                        valA = parseInt(a.product_count || 0);
+                        valB = parseInt(b.product_count || 0);
+                        return sortOrder === 'asc' ? valA - valB : valB - valA;
+                    case 'color_priority':
+                        valA = parseInt(a.color_priority || 0);
+                        valB = parseInt(b.color_priority || 0);
+                        return sortOrder === 'asc' ? valA - valB : valB - valA;
+                    case 'created_at':
+                        valA = a.created_at ? new Date(a.created_at).getTime() : 0;
+                        valB = b.created_at ? new Date(b.created_at).getTime() : 0;
+                        return sortOrder === 'asc' ? valA - valB : valB - valA;
+                    default:
+                        return 0;
+                }
+            });
+            renderColors(colorsToSort);
+        }
+        function filterColorsByColumn(columnDataName, filterValue) {
+            let filtered = [...allColors];
+            if (columnDataName === 'status' && filterValue !== 'all') {
+                filtered = filtered.filter(color => {
+                    if (filterValue === 'visible') return color.status === 1;
+                    if (filterValue === 'hidden') return color.status !== 1;
+                    return true;
+                });
+            }
+            // Có thể mở rộng filter cho các cột khác nếu cần
+            currentFilteredColors = filtered;
+            renderColors(currentFilteredColors);
+        }
+
         function deleteColor(id, name) {
             showConfirm({
                 message: `Bạn có chắc muốn xóa màu \"${name}\"?`,
                 onConfirm: () => {
-                    fetch(`http://localhost:3501/api/color/${id}`, {
+                    fetch(`/api/color/admin/${id}`, {
                         method: "DELETE",
                         headers: {
                             Authorization: `Bearer ${token}`,
@@ -151,11 +302,21 @@
                     })
                         .then((res) => res.json())
                         .then((data) => {
-                            if (data.error) {
-                                showToast(data.error, "danger");
+                            if (data && typeof data === 'object') {
+                                if (data.error) {
+                                    showToast(typeof data.error === 'string' ? data.error : 'Lỗi không xác định', "danger");
+                                } else if (data.status === "hidden") {
+                                    showToast(typeof data.message === 'string' ? data.message : 'Đã có sản phẩm sử dụng màu này, trạng thái sẽ chuyển sang ẩn', "warning");
+                                    setTimeout(getColors, 1000);
+                                } else if (data.message) {
+                                    showToast(typeof data.message === 'string' ? data.message : 'Đã xóa màu thành công', "success");
+                                    setTimeout(getColors, 1000);
+                                } else {
+                                    showToast('Đã xóa màu thành công', "success");
+                                    setTimeout(getColors, 1000);
+                                }
                             } else {
-                                showToast("Đã xóa màu thành công", "success");
-                                setTimeout(getColors, 1000);
+                                showToast('Lỗi không xác định', "danger");
                             }
                         })
                         .catch(() => showToast("Lỗi khi xóa màu", "danger"));
@@ -163,15 +324,12 @@
             });
         }
 
-        function changeStatus(id, currentStatus) {
-            const newStatus = currentStatus === "visible" ? 0 : 1;
-            fetch(`http://localhost:3501/api/color/${id}`, {
+        function toggleColorStatus(id) {
+            fetch(`http://localhost:3501/api/color/admin/${id}/toggle-status`, {
                 method: "PUT",
                 headers: {
-                    "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({ status: newStatus }),
             })
                 .then((res) => res.json())
                 .then((data) => {
@@ -198,46 +356,39 @@
                 toastContainer.style.zIndex = "1050";
                 document.body.appendChild(toastContainer);
             }
-
             const toast = document.createElement("div");
             toast.className = `toast align-items-center text-white bg-${type} border-0`;
             toast.setAttribute("role", "alert");
             toast.setAttribute("aria-live", "assertive");
             toast.setAttribute("aria-atomic", "true");
-
             toast.innerHTML = `
-      <div class="d-flex">
-        <div class="toast-body">${message}</div>
-        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-      </div>
-    `;
-
+                <div class="d-flex">
+                    <div class="toast-body">${message}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            `;
             toastContainer.appendChild(toast);
             const bsToast = new bootstrap.Toast(toast, { delay: 3000 });
             bsToast.show();
-
             toast.addEventListener("hidden.bs.toast", () => toast.remove());
         }
 
         function showConfirm({ message, confirmText = "Xác nhận", cancelText = "Hủy", onConfirm = () => { }, onCancel = () => { } }) {
             let popup = document.getElementById("confirmPopup");
             if (popup) popup.remove();
-
             popup = document.createElement("div");
             popup.id = "confirmPopup";
             popup.innerHTML = `
-      <div class="confirm-dialog">
-        <div class="confirm-message">${message}</div>
-        <div class="confirm-actions">
-          <button class="btn btn-confirm">${confirmText}</button>
-          <button class="btn btn-cancel">${cancelText}</button>
-        </div>
-      </div>
-      <div class="confirm-overlay"></div>
-    `;
-
+                <div class="confirm-dialog">
+                    <div class="confirm-message">${message}</div>
+                    <div class="confirm-actions">
+                        <button class="btn btn-confirm">${confirmText}</button>
+                        <button class="btn btn-cancel">${cancelText}</button>
+                    </div>
+                </div>
+                <div class="confirm-overlay"></div>
+            `;
             document.body.appendChild(popup);
-
             popup.querySelector(".btn-confirm").onclick = () => {
                 popup.remove();
                 onConfirm();
@@ -252,5 +403,4 @@
             };
         }
     });
-
 </script>

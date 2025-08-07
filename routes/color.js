@@ -125,12 +125,12 @@ router.post("/admin", async (req, res) => {
       [color_hex, color_name, color_priority || 0, color_slug]
     );
     res.status(201).json({
-      message: "Color created successfully",
+      message: "Tạo màu thành công",
       color_id: result.insertId,
     });
   } catch (error) {
     console.error("Error creating new color:", error);
-    res.status(500).json({ error: "Failed to create new color" });
+    res.status(500).json({ error: "Lỗi khi tạo màu" });
   }
 });
 router.put("/admin/:id", async (req, res) => {
@@ -157,10 +157,40 @@ router.put("/admin/:id", async (req, res) => {
       return res.status(404).json({ message: "Color not found" });
     }
 
-    res.json({ message: "Color updated successfully" });
+    res.json({ message: "Xóa màu thành công" });
   } catch (error) {
     console.error("Error updating color:", error);
     res.status(500).json({ error: "Failed to update color" });
+  }
+});
+router.put("/admin/:id/toggle-status", async (req, res) => {
+  const colorId = req.params.id;
+  if (!colorId) {
+    return res.status(400).json({ message: "Color ID is required" });
+  }
+  try {
+    // Lấy trạng thái hiện tại
+    const [rows] = await db.query(
+      "SELECT status FROM color WHERE color_id = ?",
+      [colorId]
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "Color not found" });
+    }
+    const currentStatus = rows[0].status;
+    const newStatus = currentStatus === 1 ? 0 : 1;
+    await db.query(
+      "UPDATE color SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE color_id = ?",
+      [newStatus, colorId]
+    );
+    res.json({
+      message: "Color status updated",
+      color_id: colorId,
+      status: newStatus,
+    });
+  } catch (error) {
+    console.error("Error toggling color status:", error);
+    res.status(500).json({ error: "Failed to toggle color status" });
   }
 });
 router.delete("/admin/:id", async (req, res) => {
@@ -171,24 +201,35 @@ router.delete("/admin/:id", async (req, res) => {
   }
 
   try {
-    // Soft delete: Cập nhật cột deleted_at
-    const [result] = await db.query(
-      `
-      UPDATE color
-      SET deleted_at = CURRENT_TIMESTAMP
-      WHERE color_id = ?
-    `,
+    // Kiểm tra xem màu có sản phẩm sử dụng không
+    const [products] = await db.query(
+      `SELECT COUNT(*) as count FROM variant_product WHERE color_id = ?`,
       [colorId]
     );
+    if (products[0].count > 0) {
+      // Nếu có sản phẩm, chuyển trạng thái sang ẩn
+      await db.query(
+        `UPDATE color SET status = 0, updated_at = CURRENT_TIMESTAMP WHERE color_id = ?`,
+        [colorId]
+      );
+      return res.json({
+        message: "Đã có sản phẩm sử dụng màu này, trạng thái sẽ chuyển sang ẩn",
+        status: "hidden",
+      });
+    }
+    // Hard delete: Xóa khỏi database
+    const [result] = await db.query(`DELETE FROM color WHERE color_id = ?`, [
+      colorId,
+    ]);
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: "Color not found" });
     }
 
-    res.json({ message: "Color soft-deleted successfully" });
+    res.json({ message: "Xóa màu thành công" });
   } catch (error) {
-    console.error("Error soft-deleting color:", error);
-    res.status(500).json({ error: "Failed to soft-delete color" });
+    console.error("Error deleting color:", error);
+    res.status(500).json({ error: "Lỗi khi xóa màu" });
   }
 });
 module.exports = router;

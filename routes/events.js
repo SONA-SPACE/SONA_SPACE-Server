@@ -199,6 +199,36 @@ router.put("/admin/:id", verifyToken, isAdmin, async (req, res) => {
   }
 });
 
+// Toggle status: scheduled -> active -> expired -> scheduled
+router.put(
+  "/admin/:id/toggle-status",
+  verifyToken,
+  isAdmin,
+  async (req, res) => {
+    const { id } = req.params;
+    try {
+      const [rows] = await db.execute(
+        "SELECT status FROM events WHERE id = ?",
+        [id]
+      );
+      if (rows.length === 0)
+        return res.status(404).json({ message: "Event not found." });
+      const currentStatus = rows[0].status;
+      let newStatus;
+      if (currentStatus === "scheduled") newStatus = "active";
+      else if (currentStatus === "active") newStatus = "expired";
+      else newStatus = "scheduled";
+      await db.execute(
+        "UPDATE events SET status = ?, updated_at = NOW() WHERE id = ?",
+        [newStatus, id]
+      );
+      res.json({ message: "Event status updated", status: newStatus });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to toggle event status" });
+    }
+  }
+);
+
 router.delete("/:id", verifyToken, isAdmin, async (req, res) => {
   const { id } = req.params;
   try {

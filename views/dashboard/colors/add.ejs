@@ -63,7 +63,6 @@
     document.addEventListener("DOMContentLoaded", () => {
         const colorHexInput = document.getElementById("colorHexInput");
         const colorHexPicker = document.getElementById("colorHex");
-        const colorPreviewCircle = document.getElementById("colorPreviewCircle"); // Lấy element preview circle
         const colorNameInput = document.getElementById("colorName");
         const colorSlugInput = document.getElementById("colorSlug");
         const hexValidationMessage = document.getElementById("hexValidationMessage");
@@ -73,7 +72,6 @@
         function updateColorDisplay(hex) {
             colorHexInput.value = hex;
             colorHexPicker.value = hex;
-            colorPreviewCircle.style.backgroundColor = hex; // Cập nhật màu cho vòng tròn preview
         }
 
         // Function to convert text to slug
@@ -90,13 +88,15 @@
         }
 
         // Initialize color display with default black
-        updateColorDisplay("#000000");
+        colorHexInput.value = "#000000";
+        colorHexPicker.value = "#000000";
 
         // Listen for changes from the color picker
         colorHexPicker.addEventListener("input", (e) => {
             const hex = e.target.value;
-            updateColorDisplay(hex);
-            colorHexInput.classList.remove("is-invalid"); // Remove validation styling
+            // Cập nhật input hex khi chọn màu
+            colorHexInput.value = hex;
+            colorHexInput.classList.remove("is-invalid");
             hexValidationMessage.style.display = "none";
         });
 
@@ -106,13 +106,14 @@
             const isValid = /^#[0-9A-Fa-f]{6}$/i.test(hex);
 
             if (isValid) {
-                updateColorDisplay(hex); // Chỉ cập nhật màu nếu hex hợp lệ
+                // Cập nhật color picker khi nhập hex hợp lệ
+                colorHexPicker.value = hex;
                 colorHexInput.classList.remove("is-invalid");
                 hexValidationMessage.style.display = "none";
             } else {
+                // Chỉ thêm class invalid, không cập nhật color picker cho đến khi hợp lệ
                 colorHexInput.classList.add("is-invalid");
-                hexValidationMessage.style.display = "block"; // Show validation message
-                // KHÔNG cập nhật color picker hay circle nếu mã không hợp lệ để tránh lỗi hiển thị
+                hexValidationMessage.style.display = "block";
             }
         });
 
@@ -144,6 +145,7 @@
             return;
         }
 
+        // Final validation for hex code before sending to API
         if (!/^#[0-9A-Fa-f]{6}$/i.test(color_hex)) {
             showToast("Mã màu không hợp lệ. Vui lòng nhập mã HEX 6 ký tự bắt đầu bằng #.", "danger");
             document.getElementById("colorHexInput").classList.add("is-invalid");
@@ -156,7 +158,7 @@
         // If slug is empty or somehow invalid, generate from name
         if (!color_slug) {
             color_slug = convertToSlug(color_name);
-            document.getElementById("colorSlug").value = color_slug; // Update the slug input visually
+            document.getElementById("colorSlug").value = color_slug;
         }
 
 
@@ -169,15 +171,15 @@
 
             const data = await res.json();
 
-            if (res.ok) { // Check for successful HTTP status codes (2xx)
+            if (data.error) {
+                showToast(data.error, "danger");
+            } else {
                 showToast("Thêm màu mới thành công", "success");
                 setTimeout(() => window.location.href = "/dashboard/colors", 1500);
-            } else {
-                showToast(data.message || data.error || "Lỗi khi thêm màu mới.", "danger");
             }
         } catch (err) {
             console.error("Add color failed:", err);
-            showToast("Lỗi kết nối hoặc hệ thống khi thêm màu.", "danger");
+            showToast("Lỗi khi thêm màu", "danger");
         } finally {
             saveBtn.disabled = false;
             saveBtn.innerText = "Thêm mới";

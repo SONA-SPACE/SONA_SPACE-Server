@@ -180,16 +180,86 @@ router.put("/:slug", async (req, res) => {
   }
 });
 
-// DELETE vật liệu (xóa mềm)
+// PUT toggle status (ẩn/hiện) vật liệu
+router.put("/:slug/toggle-status", async (req, res) => {
+  const { slug } = req.params;
+  if (!slug) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Slug là bắt buộc." });
+  }
+  try {
+    // Lấy trạng thái hiện tại
+    const [rows] = await db.query(
+      "SELECT material_status FROM materials WHERE slug = ? AND deleted_at IS NULL",
+      [slug]
+    );
+    if (rows.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Vật liệu không tìm thấy." });
+    }
+    const currentStatus = rows[0].material_status;
+    const newStatus = currentStatus === 1 ? 0 : 1;
+    await db.query(
+      "UPDATE materials SET material_status = ?, updated_at = CURRENT_TIMESTAMP WHERE slug = ?",
+      [newStatus, slug]
+    );
+    res.json({
+      success: true,
+      message: "Cập nhật trạng thái thành công.",
+      status: newStatus,
+    });
+  } catch (err) {
+    console.error("Error toggling material status:", err);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi máy chủ khi cập nhật trạng thái.",
+    });
+  }
+});
+
+// DELETE vật liệu (xóa cứng)
 router.delete("/:slug", async (req, res) => {
   const { slug } = req.params;
-  const sql = `
-    UPDATE materials
-    SET deleted_at = CURRENT_TIMESTAMP
-    WHERE slug = ? AND deleted_at IS NULL
-  `;
   try {
-    const [result] = await db.query(sql, [slug]);
+    // Lấy material_id từ slug
+    const [materials] = await db.query(
+      "SELECT material_id FROM materials WHERE slug = ?",
+      [slug]
+    );
+    if (materials.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Vật liệu không tìm thấy để xóa.",
+      });
+    }
+    const materialId = materials[0].material_id;
+
+    // Kiểm tra xem có sản phẩm sử dụng material này không
+    const [used] = await db.query(
+      "SELECT COUNT(*) as count FROM product_attribute_value WHERE material_id = ?",
+      [materialId]
+    );
+    if (used[0].count > 0) {
+      // Nếu có sản phẩm sử dụng, cập nhật trạng thái sang ẩn
+      await db.query(
+        "UPDATE materials SET material_status = 0, updated_at = CURRENT_TIMESTAMP WHERE material_id = ?",
+        [materialId]
+      );
+      return res.status(200).json({
+        success: false,
+        message:
+          "Đã có sản phẩm sử dụng chất liệu này, trạng thái sẽ chuyển sang ẩn.",
+        status: "hidden",
+      });
+    }
+
+    // Nếu không có sản phẩm sử dụng, xóa cứng
+    const [result] = await db.query(
+      "DELETE FROM materials WHERE material_id = ?",
+      [materialId]
+    );
     if (result.affectedRows === 0) {
       return res.status(404).json({
         success: false,
@@ -198,7 +268,7 @@ router.delete("/:slug", async (req, res) => {
     }
     res.status(200).json({
       success: true,
-      message: "Vật liệu đã được xóa thành công (xóa mềm).",
+      message: "Vật liệu đã được xóa thành công.",
     });
   } catch (err) {
     console.error("Error deleting material:", err);

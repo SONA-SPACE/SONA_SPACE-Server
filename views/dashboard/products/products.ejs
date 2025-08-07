@@ -180,17 +180,118 @@
         <th class="checkbox-cell">
           <input type="checkbox" />
         </th>
-        <th data-sortable="true">Sản phẩm</th>
-        <th data-sortable="true">Danh mục</th>
-        <th data-sortable="true">Giá</th>
-        <th data-sortable="true">Số lượng</th>
-        <th data-sortable="true">Đã bán</th>
-        <th data-sortable="true">Đánh giá</th>
-        <th data-sortable="true">Lượt xem</th>
-        <th data-sortable="true">Trạng thái</th>
-        <th data-sortable="true">Thứ tự</th>
-        <th data-sortable="true">Ngày tạo</th>
-        <th data-sortable="true">Ngày cập nhật</th>
+        <th class="filterable" data-column="product_name">
+          Sản phẩm
+        </th>
+        <th class="filterable" data-column="category_name">
+          Danh mục
+          <div class="header-filter" id="categoryFilterHeader">
+            <i class="fas fa-chevron-down filter-icon"></i>
+            <div class="filter-dropdown" id="categoryFilterDropdown">
+              <!-- Danh mục sẽ được render bằng JS -->
+              <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+            </div>
+          </div>
+        </th>
+        <th class="filterable" data-column="price">
+          Giá
+          <div class="header-filter">
+            <i class="fas fa-chevron-down filter-icon"></i>
+            <div class="filter-dropdown">
+              <a class="filter-item" href="#" data-sort-order="desc">Từ cao đến thấp</a>
+              <a class="filter-item" href="#" data-sort-order="asc">Từ thấp đến cao</a>
+              <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+            </div>
+          </div>
+        </th>
+        <th class="filterable" data-column="total_quantity">
+          Số lượng
+          <div class="header-filter">
+            <i class="fas fa-chevron-down filter-icon"></i>
+            <div class="filter-dropdown">
+              <a class="filter-item" href="#" data-sort-order="desc">Từ cao đến thấp</a>
+              <a class="filter-item" href="#" data-sort-order="asc">Từ thấp đến cao</a>
+              <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+            </div>
+          </div>
+        </th>
+        <th class="filterable" data-column="product_sold">
+          Đã bán
+          <div class="header-filter">
+            <i class="fas fa-chevron-down filter-icon"></i>
+            <div class="filter-dropdown">
+              <a class="filter-item" href="#" data-sort-order="desc">Từ cao đến thấp</a>
+              <a class="filter-item" href="#" data-sort-order="asc">Từ thấp đến cao</a>
+              <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+            </div>
+          </div>
+        </th>
+        <th class="filterable" data-column="comment_count">
+          Đánh giá
+          <div class="header-filter">
+            <i class="fas fa-chevron-down filter-icon"></i>
+            <div class="filter-dropdown">
+              <a class="filter-item" href="#" data-sort-order="desc">Từ cao đến thấp</a>
+              <a class="filter-item" href="#" data-sort-order="asc">Từ thấp đến cao</a>
+              <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+            </div>
+          </div>
+        </th>
+        <th class="filterable" data-column="product_view">
+          Lượt xem
+          <div class="header-filter">
+            <i class="fas fa-chevron-down filter-icon"></i>
+            <div class="filter-dropdown">
+              <a class="filter-item" href="#" data-sort-order="desc">Từ cao đến thấp</a>
+              <a class="filter-item" href="#" data-sort-order="asc">Từ thấp đến cao</a>
+              <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+            </div>
+          </div>
+        </th>
+        <th class="filterable" data-column="product_status">
+          Trạng thái
+          <div class="header-filter">
+            <i class="fas fa-chevron-down filter-icon"></i>
+            <div class="filter-dropdown">
+              <a class="filter-item" href="#" data-filter-value="true">Hiển thị</a>
+              <a class="filter-item" href="#" data-filter-value="false">Ẩn</a>
+              <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+            </div>
+          </div>
+        </th>
+        <th class="filterable" data-column="product_priority">
+          Thứ tự
+          <div class="header-filter">
+            <i class="fas fa-chevron-down filter-icon"></i>
+            <div class="filter-dropdown">
+              <a class="filter-item" href="#" data-sort-order="desc">Từ cao đến thấp</a>
+              <a class="filter-item" href="#" data-sort-order="asc">Từ thấp đến cao</a>
+              <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+            </div>
+          </div>
+        </th>
+        <th class="filterable" data-column="created_at">
+          Ngày tạo
+          <div class="header-filter">
+            <i class="fas fa-chevron-down filter-icon"></i>
+            <div class="filter-dropdown">
+              <a class="filter-item" href="#" data-sort-order="desc">Mới nhất</a>
+              <a class="filter-item" href="#" data-sort-order="asc">Cũ nhất</a>
+              <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+            </div>
+          </div>
+        </th>
+        <th class="filterable" data-column="updated_at">
+          Ngày cập nhật
+          <div class="header-filter">
+            <i class="fas fa-chevron-down filter-icon"></i>
+            <div class="filter-dropdown">
+              <a class="filter-item" href="#" data-sort-order="desc">Mới nhất</a>
+              <a class="filter-item" href="#" data-sort-order="asc">Cũ nhất</a>
+              <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+            </div>
+          </div>
+        </th>
         <th></th>
       </tr>
     </thead>
@@ -296,6 +397,18 @@
   </table>
 </div>
 
+<!-- Confirmation Modal -->
+<div id="confirmationModal" class="modal-overlay" style="display: none;">
+  <div class="modal-content">
+    <h3>Xác nhận thao tác sản phẩm</h3>
+    <p id="modalMessage"></p>
+    <div class="modal-actions">
+      <button id="confirmActionBtn" class="btn btn-confirm">Có</button>
+      <button id="cancelActionBtn" class="btn btn-cancel">Không</button>
+    </div>
+  </div>
+</div>
+
 <style>
   .product-price {
     display: flex;
@@ -319,12 +432,255 @@
     color: #e53935;
     font-weight: 600;
   }
+
+  /* Filter dropdown styles */
+  .header-filter {
+    position: relative;
+    display: inline-block;
+    margin-left: 8px;
+  }
+
+  .filter-icon {
+    cursor: pointer;
+    color: #666;
+    font-size: 12px;
+    transition: color 0.2s;
+  }
+
+  .filter-icon:hover {
+    color: #333;
+  }
+
+  .header-filter.active .filter-icon {
+    color: #007bff;
+  }
+
+  .filter-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    min-width: 150px;
+    display: none;
+    padding: 4px 0;
+  }
+
+  .header-filter.active .filter-dropdown {
+    display: block;
+  }
+
+  .filter-item {
+    display: block;
+    padding: 8px 12px;
+    color: #333;
+    text-decoration: none;
+    font-size: 14px;
+    transition: background-color 0.2s;
+  }
+
+  .filter-item:hover {
+    background-color: #f8f9fa;
+    color: #007bff;
+  }
+
+  .filter-item:first-child {
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+  }
+
+  .filter-item:last-child {
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+  }
+
+  /* Modal styles */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+
+    transition: opacity 0.3s ease;
+  }
+
+  .modal-overlay.active {
+    opacity: 1;
+  }
+
+  .modal-content {
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    transform: scale(0.7);
+    transition: transform 0.3s ease;
+  }
+
+  .modal-overlay.active .modal-content {
+    transform: scale(1);
+  }
+
+  .modal-content h3 {
+    margin: 0 0 15px 0;
+    color: #333;
+    font-size: 18px;
+  }
+
+  .modal-content p {
+    margin: 0 0 25px 0;
+    color: #666;
+    line-height: 1.5;
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+
+  .modal-actions .btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s;
+  }
+
+  .btn-confirm {
+    background-color: #dc3545;
+    color: white;
+  }
+
+  .btn-confirm:hover {
+    background-color: #c82333;
+  }
+
+  .btn-cancel {
+    background-color: #6c757d;
+    color: white;
+  }
+
+  .btn-cancel:hover {
+    background-color: #5a6268;
+  }
 </style>
 
 <!-- Load Products JS -->
 <script>
+  let allProducts = []; // Stores the original fetched product data
+  let currentFilteredProducts = []; // Stores products after filtering (for search/dropdown filters)
+  let currentSortColumn = null;
+  let currentSortDirection = 'asc'; // 'asc' or 'desc'
+
   document.addEventListener("DOMContentLoaded", function () {
 
+    // --- Event Listeners for Filters and Sorts ---
+
+    // Header filter dropdown toggle
+    document.querySelectorAll('.header-filter').forEach(filter => {
+      filter.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        this.classList.toggle('active');
+
+        document.querySelectorAll('.header-filter').forEach(otherFilter => {
+          if (otherFilter !== this) {
+            otherFilter.classList.remove('active');
+          }
+        });
+      });
+    });
+
+    // Filter/Sort options within dropdowns
+    document.querySelectorAll('.filter-dropdown .filter-item').forEach(item => {
+      item.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const th = this.closest('th');
+        const columnDataName = th.getAttribute('data-column');
+        const filterValue = this.getAttribute('data-filter-value');
+        const sortOrder = this.getAttribute('data-sort-order');
+
+        if (sortOrder) {
+          sortProducts(columnDataName, sortOrder);
+        } else if (filterValue) {
+          filterProducts(columnDataName, filterValue);
+        }
+
+        // Close dropdown after selection
+        this.closest('.header-filter').classList.remove('active');
+      });
+    });
+
+    // Close all dropdowns when clicking outside
+    document.addEventListener('click', function () {
+      document.querySelectorAll('.header-filter').forEach(filter => {
+        filter.classList.remove('active');
+      });
+    });
+
+    // Search input filtering
+    const searchInput = document.querySelector(".search-input");
+    if (searchInput) {
+      searchInput.addEventListener("input", function () {
+        const searchTerm = this.value.toLowerCase();
+        filterProductsBySearch(searchTerm);
+      });
+    }
+
+    // Lấy danh sách danh mục từ API và render filter
+    async function loadCategoryFilter() {
+      try {
+        const response = await fetch('/api/categories/filter/');
+        const categories = await response.json();
+
+        const dropdown = document.getElementById('categoryFilterDropdown');
+        if (!dropdown) return;
+
+        // Xóa các filter-item cũ (trừ "Tất cả")
+        dropdown.querySelectorAll('.filter-item:not([data-filter-value="all"])').forEach(e => e.remove());
+
+        // Thêm các danh mục từ API
+        categories.forEach(cat => {
+          const a = document.createElement('a');
+          a.className = 'filter-item';
+          a.href = '#';
+          a.setAttribute('data-filter-value', cat.category_name);
+          a.textContent = cat.category_name;
+
+          // Thêm event listener trực tiếp
+          a.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const value = this.getAttribute('data-filter-value');
+            filterProducts('category_name', value);
+            document.getElementById('categoryFilterHeader').classList.remove('active');
+          });
+
+          dropdown.appendChild(a);
+        });
+      } catch (error) {
+        console.error('Lỗi khi tải danh mục:', error);
+      }
+    }
+
+    // Sau khi fetch xong sản phẩm:
     function getProducts() {
       fetch("/api/products/admin")
         .then((response) => response.json())
@@ -335,10 +691,10 @@
               "Lỗi định dạng dữ liệu.";
             return;
           }
+          allProducts = products;
+          currentFilteredProducts = [...allProducts];
           renderProducts(products);
-          console.log(products);
         })
-
         .catch((error) => {
           console.error("Lỗi khi tải sản phẩm:", error);
           document.querySelector(".results-info").textContent =
@@ -355,11 +711,16 @@
       return new Date(dateStr).toLocaleDateString("vi-VN");
     }
 
-    function renderProducts(products) {
+    function renderProducts(productsToRender) {
       const tableBody = document.querySelector("#productsTable tbody");
       tableBody.innerHTML = "";
 
-      products.forEach((product) => {
+      if (productsToRender.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="13" style="text-align: center; padding: 20px;">Không tìm thấy sản phẩm nào.</td></tr>';
+        return;
+      }
+
+      productsToRender.forEach((product) => {
         const row = document.createElement("tr");
         // Kiểm tra giá sale
         const price = parseFloat(product.price || 0);
@@ -415,6 +776,7 @@
                             </button>
                             <button class="action-button visibility" 
                                 data-id="${product.product_id}" 
+                                data-name="${product.product_name}"
                                 data-status="${product.product_status ? "visible" : "hidden"
           }" 
                                 title="${product.product_status
@@ -439,10 +801,81 @@
       // Update results info
       document.querySelector(
         ".results-info"
-      ).textContent = `Hiển thị ${products.length} sản phẩm`;
+      ).textContent = `Hiển thị ${productsToRender.length} sản phẩm`;
 
       // Add event listeners for action buttons
       setupActionButtons();
+    }
+
+    // Function to sort products
+    function sortProducts(columnDataName, sortOrder) {
+      let productsToSort = [...currentFilteredProducts];
+
+      productsToSort.sort((a, b) => {
+        let valA, valB;
+
+        switch (columnDataName) {
+          case 'product_name':
+          case 'category_name':
+            valA = (a[columnDataName] || '').toLowerCase();
+            valB = (b[columnDataName] || '').toLowerCase();
+            return sortOrder === 'asc' ? valA.localeCompare(valB, 'vi') : valB.localeCompare(valA, 'vi');
+          case 'price':
+          case 'total_quantity':
+          case 'product_sold':
+          case 'comment_count':
+          case 'product_view':
+          case 'product_priority':
+            valA = parseFloat(a[columnDataName] || 0);
+            valB = parseFloat(b[columnDataName] || 0);
+            return sortOrder === 'asc' ? valA - valB : valB - valA;
+          case 'created_at':
+          case 'updated_at':
+            valA = (a[columnDataName] && a[columnDataName] !== '0000-00-00 00:00:00') ? new Date(a[columnDataName]).getTime() : 0;
+            valB = (b[columnDataName] && b[columnDataName] !== '0000-00-00 00:00:00') ? new Date(b[columnDataName]).getTime() : 0;
+            return sortOrder === 'asc' ? valA - valB : valB - valA;
+          case 'product_status':
+            valA = a[columnDataName] ? 1 : 0;
+            valB = b[columnDataName] ? 1 : 0;
+            return sortOrder === 'asc' ? valA - valB : valB - valA;
+          default:
+            return 0;
+        }
+      });
+
+      renderProducts(productsToSort);
+    }
+
+    // Function to filter products
+    function filterProducts(columnDataName, filterValue) {
+      let filteredData = [...allProducts];
+
+      if (filterValue !== 'all') {
+        filteredData = filteredData.filter(product => {
+          if (columnDataName === 'product_status') {
+            return Boolean(product.product_status) === (filterValue === 'true');
+          }
+
+          const productValue = String(product[columnDataName] || "").toLowerCase();
+          const filterValueLower = String(filterValue).toLowerCase();
+          return productValue === filterValueLower;
+        });
+      }
+
+      currentFilteredProducts = filteredData;
+      renderProducts(currentFilteredProducts);
+    }
+
+    // Function to filter products based on search input
+    function filterProductsBySearch(searchTerm) {
+      const filteredBySearch = allProducts.filter(product => {
+        const name = (product.product_name || '').toLowerCase();
+        const category = (product.category_name || '').toLowerCase();
+
+        return name.includes(searchTerm) || category.includes(searchTerm);
+      });
+      currentFilteredProducts = filteredBySearch;
+      renderProducts(currentFilteredProducts);
     }
 
     function setupActionButtons() {
@@ -464,8 +897,11 @@
       document.querySelectorAll(".action-button.visibility").forEach((btn) => {
         btn.addEventListener("click", () => {
           const productId = btn.getAttribute("data-id");
+          const productName = btn.getAttribute("data-name");
           const currentStatus = btn.getAttribute("data-status");
-          toggleProductVisibility(productId, currentStatus === "visible");
+          const isVisible = currentStatus === "visible";
+
+          showConfirmationModal(productId, productName, isVisible);
         });
       });
 
@@ -502,7 +938,7 @@
 
 
     function toggleProductVisibility(productId, currentlyVisible) {
-      fetch(`/api/products/${productId}`, {
+      fetch(`/api/products/status/${productId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -515,49 +951,72 @@
         .then((response) => response.json())
         .then((data) => {
           if (data.error) {
-            alert(data.error);
+            showToast(data.error, "danger");
           } else {
+            showToast(`Cập nhật trạng thái sản phẩm thành công!`, "success");
             getProducts(); // Refresh the list
           }
         })
         .catch((error) => {
           console.error("Error:", error);
-          alert("Có lỗi xảy ra khi cập nhật trạng thái sản phẩm");
+          showToast("Có lỗi xảy ra khi cập nhật trạng thái sản phẩm", "danger");
         });
     }
 
-    // Initialize by loading products
+    // Initialize by loading products and categories
     getProducts();
+    loadCategoryFilter();
 
-    // Setup search functionality
-    const searchInput = document.querySelector(".search-input");
-    if (searchInput) {
-      searchInput.addEventListener(
-        "input",
-        debounce(function (e) {
-          const searchTerm = e.target.value.toLowerCase();
-          const rows = document.querySelectorAll("#productsTable tbody tr");
+    // --- Modal Logic ---
+    let currentProductIdToModify = null;
+    let currentProductNameToModify = null;
+    let currentIsVisibleStatus = null;
 
-          rows.forEach((row) => {
-            const productName = row
-              .querySelector(".product-name a")
-              .textContent.toLowerCase();
-            const categoryName = row
-              .querySelector("td:nth-child(3)")
-              .textContent.toLowerCase();
+    // Get modal elements
+    const confirmationModal = document.getElementById('confirmationModal');
+    const modalMessage = document.getElementById('modalMessage');
+    const confirmActionBtn = document.getElementById('confirmActionBtn');
+    const cancelActionBtn = document.getElementById('cancelActionBtn');
 
-            if (
-              productName.includes(searchTerm) ||
-              categoryName.includes(searchTerm)
-            ) {
-              row.style.display = "";
-            } else {
-              row.style.display = "none";
-            }
-          });
-        }, 300)
-      );
+    // Function to show the confirmation modal
+    function showConfirmationModal(productId, productName, isVisible) {
+      currentProductIdToModify = productId;
+      currentProductNameToModify = productName;
+      currentIsVisibleStatus = isVisible;
+
+      const actionText = isVisible ? "ẩn" : "hiển thị";
+      modalMessage.textContent = `Bạn có chắc chắn muốn ${actionText} sản phẩm "${productName}" không?`;
+      confirmActionBtn.textContent = `Có, ${actionText}`;
+      // Reset classes and add appropriate one for styling
+      confirmActionBtn.classList.remove('confirm', 'cancel');
+      confirmActionBtn.classList.add(isVisible ? 'confirm' : 'cancel');
+
+      confirmationModal.style.display = 'flex'; // Show modal
+      setTimeout(() => confirmationModal.classList.add('active'), 10);
     }
+
+    // Function to hide the confirmation modal
+    function hideConfirmationModal() {
+      confirmationModal.classList.remove('active');
+      // Use a timeout to hide display after transition
+      setTimeout(() => {
+        confirmationModal.style.display = 'none';
+        currentProductIdToModify = null;
+        currentProductNameToModify = null;
+        currentIsVisibleStatus = null;
+      }, 300);
+    }
+
+    // Event listeners for modal buttons
+    confirmActionBtn.addEventListener('click', async function () {
+      if (currentProductIdToModify) {
+        const shouldHide = currentIsVisibleStatus;
+        await toggleProductVisibility(currentProductIdToModify, shouldHide);
+      }
+      hideConfirmationModal();
+    });
+
+    cancelActionBtn.addEventListener('click', hideConfirmationModal);
 
     // Debounce helper function
     function debounce(func, wait) {
@@ -571,6 +1030,16 @@
         timeout = setTimeout(later, wait);
       };
     }
+
+    // Lắng nghe sự kiện click cho filter danh mục động
+    document.addEventListener('click', function (e) {
+      // Nếu không phải click vào filter-item, đóng tất cả dropdown
+      if (!e.target.closest('.header-filter')) {
+        document.querySelectorAll('.header-filter').forEach(filter => {
+          filter.classList.remove('active');
+        });
+      }
+    });
   });
 </script>
 <div id="toastContainer" class="position-fixed top-0 end-0 p-3" style="z-index:1050"></div>

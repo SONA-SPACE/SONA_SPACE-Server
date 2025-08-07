@@ -10,9 +10,8 @@
 <div class="filter-row">
     <div class="search-container">
         <i class="fas fa-search search-icon"></i>
-        <input type="text" class="search-input" placeholder="Tìm kiếm sự kiện..." />
+        <input type="text" class="search-input" placeholder="Tìm kiếm sự kiện..." id="searchInput" />
     </div>
-
     <div class="results-info">Đang tải dữ liệu...</div>
 </div>
 
@@ -20,14 +19,64 @@
     <table class="category-table" id="eventsTable">
         <thead>
             <tr>
-
-                <th>Sự kiện</th>
+                <th class="filterable" data-column="title">
+                    Sự kiện
+                    <div class="header-filter">
+                        <i class="fas fa-chevron-down filter-icon"></i>
+                        <div class="filter-dropdown">
+                            <a class="filter-item" href="#" data-sort-order="asc">A-Z</a>
+                            <a class="filter-item" href="#" data-sort-order="desc">Z-A</a>
+                            <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+                        </div>
+                    </div>
+                </th>
                 <th>Link Ảnh</th>
                 <th>Link Sự Kiện</th>
-                <th>Ngày Bắt Đầu</th>
-                <th>Ngày Kết Thúc</th>
-                <th>Trạng thái</th>
-                <th>Thứ tự</th>
+                <th class="filterable" data-column="start_date">
+                    Ngày Bắt Đầu
+                    <div class="header-filter">
+                        <i class="fas fa-chevron-down filter-icon"></i>
+                        <div class="filter-dropdown">
+                            <a class="filter-item" href="#" data-sort-order="desc">Mới nhất</a>
+                            <a class="filter-item" href="#" data-sort-order="asc">Cũ nhất</a>
+                            <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+                        </div>
+                    </div>
+                </th>
+                <th class="filterable" data-column="end_date">
+                    Ngày Kết Thúc
+                    <div class="header-filter">
+                        <i class="fas fa-chevron-down filter-icon"></i>
+                        <div class="filter-dropdown">
+                            <a class="filter-item" href="#" data-sort-order="desc">Mới nhất</a>
+                            <a class="filter-item" href="#" data-sort-order="asc">Cũ nhất</a>
+                            <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+                        </div>
+                    </div>
+                </th>
+                <th class="filterable" data-column="status">
+                    Trạng thái
+                    <div class="header-filter">
+                        <i class="fas fa-chevron-down filter-icon"></i>
+                        <div class="filter-dropdown">
+                            <a class="filter-item" href="#" data-filter-value="active">Đang hoạt động</a>
+                            <a class="filter-item" href="#" data-filter-value="scheduled">Sắp diễn ra</a>
+                            <a class="filter-item" href="#" data-filter-value="expired">Đã kết thúc</a>
+                            <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+                        </div>
+                    </div>
+                </th>
+                <th class="filterable" data-column="display_order">
+                    Thứ tự
+                    <div class="header-filter">
+                        <i class="fas fa-chevron-down filter-icon"></i>
+                        <div class="filter-dropdown">
+                            <a class="filter-item" href="#" data-sort-order="asc">Tăng dần</a>
+                            <a class="filter-item" href="#" data-sort-order="desc">Giảm dần</a>
+                            <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+                        </div>
+                    </div>
+                </th>
                 <th>Thao tác</th>
             </tr>
         </thead>
@@ -36,7 +85,57 @@
     </table>
 </div>
 
+<style>
+    .status-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 12px;
+        border-radius: 16px;
+        font-size: 14px;
+        font-weight: 500;
+        background: #f0f0f0;
+        color: #333;
+        transition: background 0.2s, color 0.2s;
+    }
+
+    .status-indicator-active {
+        background: #e6f7e6;
+        color: #1a7f37;
+        border: 1px solid #b7e4c7;
+    }
+
+    .status-indicator-scheduled {
+        background: #e6f0ff;
+        color: #1a4fa7;
+        border: 1px solid #b7c7e4;
+    }
+
+    .status-indicator-expired {
+        background: #fbeaea;
+        color: #c0392b;
+        border: 1px solid #f5b7b1;
+    }
+
+    .action-button.status-toggle {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0 4px;
+        color: inherit;
+        font-size: 16px;
+        transition: color 0.2s;
+    }
+
+    .action-button.status-toggle:hover {
+        color: #007bff;
+    }
+</style>
+
 <script>
+    let allEvents = [];
+    let currentFilteredEvents = [];
+
     document.addEventListener("DOMContentLoaded", function () {
         const token = localStorage.getItem("token");
         if (!token) {
@@ -64,7 +163,11 @@
                     }
                     return res.json();
                 })
-                .then((data) => renderEvents(data)) // **Updated function name**
+                .then((data) => {
+                    allEvents = data; // Store all fetched events
+                    currentFilteredEvents = data; // Initialize filtered events with all data
+                    renderEvents(currentFilteredEvents);
+                }) // **Updated function name**
                 .catch((err) => {
                     console.error("Lỗi khi lấy dữ liệu sự kiện:", err);
                     document.querySelector(".results-info").textContent = "Không thể tải dữ liệu sự kiện.";
@@ -96,6 +199,8 @@
                     'expired': 'status-indicator-expired'
                 }[event.status] || '';
 
+                const statusIcon = event.status === 'active' ? 'fa-eye' : 'fa-eye-slash';
+
                 const row = document.createElement("tr");
                 row.innerHTML = `
               <td>
@@ -113,7 +218,7 @@
                 
                     <td>
                         <span class="status-indicator ${statusClass}">
-                            ${statusText}
+                            <i class="fas ${statusIcon}"></i> ${statusText}
                         </span>
                     </td>
                     <td>${event.display_order || '-'}</td>
@@ -137,16 +242,6 @@
                     const id = btn.getAttribute("data-id");
                     const title = btn.getAttribute("data-title");
                     deleteEvent(id, title);
-                });
-            });
-
-            document.querySelectorAll(".action-button.status-toggle").forEach((btn) => {
-                btn.addEventListener("click", () => {
-                    const id = btn.getAttribute("data-id");
-                    const currentStatus = btn.getAttribute("data-current-status");
-                    // Implement logic for changing event status
-                    // You'll need a new API endpoint for this or reuse a PUT for updating status
-                    showToast(`Thay đổi trạng thái cho sự kiện ID: ${id}, Trạng thái hiện tại: ${currentStatus}`, "info");
                 });
             });
 
@@ -198,8 +293,7 @@
 
         // This `changeStatus` function is a placeholder; you'll need to implement an API for it
         // based on how your backend handles event status updates.
-        function changeStatus(id, currentStatus) {
-            // Example: Assuming your API expects a PUT request to update status
+        function toggleEventStatus(id) {
             const newStatus = currentStatus === 'active' ? 'paused' : 'active'; // Simple toggle for example
 
             fetch(`http://localhost:3501/api/events/${id}/status`, { // Example endpoint
@@ -292,6 +386,84 @@
                 popup.remove();
                 onCancel();
             };
+        }
+
+        // Tìm kiếm
+        document.getElementById("searchInput").addEventListener("input", function () {
+            const searchTerm = this.value.toLowerCase();
+            const filtered = allEvents.filter(event =>
+                (event.title || '').toLowerCase().includes(searchTerm) ||
+                (event.status || '').toLowerCase().includes(searchTerm) ||
+                (event.link_url || '').toLowerCase().includes(searchTerm)
+            );
+            currentFilteredEvents = filtered;
+            renderEvents(currentFilteredEvents);
+        });
+        // Filter/sort logic
+        document.querySelectorAll('.header-filter').forEach(filter => {
+            filter.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.classList.toggle('active');
+                document.querySelectorAll('.header-filter').forEach(otherFilter => {
+                    if (otherFilter !== this) {
+                        otherFilter.classList.remove('active');
+                    }
+                });
+            });
+        });
+        document.querySelectorAll('.filter-dropdown .filter-item').forEach(item => {
+            item.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const th = this.closest('th');
+                const columnDataName = th.getAttribute('data-column');
+                const filterValue = this.getAttribute('data-filter-value');
+                const sortOrder = this.getAttribute('data-sort-order');
+                if (sortOrder) {
+                    sortEvents(columnDataName, sortOrder);
+                } else if (filterValue) {
+                    filterEventsByColumn(columnDataName, filterValue);
+                }
+                this.closest('.header-filter').classList.remove('active');
+            });
+        });
+        document.addEventListener('click', function () {
+            document.querySelectorAll('.header-filter').forEach(filter => {
+                filter.classList.remove('active');
+            });
+        });
+        function sortEvents(columnDataName, sortOrder) {
+            let eventsToSort = [...currentFilteredEvents];
+            eventsToSort.sort((a, b) => {
+                let valA, valB;
+                switch (columnDataName) {
+                    case 'title':
+                        valA = (a.title || '').toLowerCase();
+                        valB = (b.title || '').toLowerCase();
+                        return sortOrder === 'asc' ? valA.localeCompare(valB, 'vi') : valB.localeCompare(valA, 'vi');
+                    case 'start_date':
+                    case 'end_date':
+                        valA = a[columnDataName] ? new Date(a[columnDataName]).getTime() : 0;
+                        valB = b[columnDataName] ? new Date(b[columnDataName]).getTime() : 0;
+                        return sortOrder === 'asc' ? valA - valB : valB - valA;
+                    case 'display_order':
+                        valA = parseInt(a.display_order || 0);
+                        valB = parseInt(b.display_order || 0);
+                        return sortOrder === 'asc' ? valA - valB : valB - valA;
+                    default:
+                        return 0;
+                }
+            });
+            renderEvents(eventsToSort);
+        }
+        function filterEventsByColumn(columnDataName, filterValue) {
+            let filtered = [...allEvents];
+            if (columnDataName === 'status' && filterValue !== 'all') {
+                filtered = filtered.filter(event => event.status === filterValue);
+            }
+            currentFilteredEvents = filtered;
+            renderEvents(currentFilteredEvents);
         }
     });
 </script>

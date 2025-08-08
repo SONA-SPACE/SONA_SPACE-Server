@@ -1007,10 +1007,6 @@ router.post("/payment/momo", async (req, res) => {
 
 
     // Kiểm tra đơn đã tồn tại chưa
-    const [existingOrder] = await db.query(
-      "SELECT * FROM orders WHERE order_hash = ?",
-      [orderId]
-    );
     const [existingOrder] = await db.query("SELECT * FROM orders WHERE order_hash = ?", [orderId]);
     if (existingOrder.length > 0) {
       const existingOrderId = existingOrder[0].order_id;

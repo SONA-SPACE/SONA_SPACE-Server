@@ -11,12 +11,9 @@
 <div class="filter-row">
     <div class="search-container">
         <i class="fas fa-search search-icon"></i>
-        <input type="text" class="search-input" placeholder="Tìm kiếm vật liệu..." />
+        <input type="text" class="search-input" placeholder="Tìm kiếm vật liệu..." id="searchInput" />
     </div>
-    <div class="date-range">
-        <i class="far fa-calendar-alt"></i>
-        <span>01/04/2023 - 30/04/2023</span>
-    </div>
+
     <div class="results-info">Đang tải dữ liệu...</div>
 </div>
 
@@ -24,11 +21,51 @@
     <table class="category-table" id="materialsTable">
         <thead>
             <tr>
-                <th>Vật liệu</th>
+                <th class="filterable" data-column="material_name">
+                    Vật liệu
+                    <div class="header-filter">
+                        <i class="fas fa-chevron-down filter-icon"></i>
+                        <div class="filter-dropdown">
+                            <a class="filter-item" href="#" data-sort-order="asc">Từ A-Z</a>
+                            <a class="filter-item" href="#" data-sort-order="desc">Từ Z-A</a>
+                            <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+                        </div>
+                    </div>
+                </th>
                 <th>Mô tả</th>
-                <th>Trạng thái</th>
-                <th>Vị trí</th>
-                <th>Ngày tạo</th>
+                <th class="filterable" data-column="material_status">
+                    Trạng thái
+                    <div class="header-filter">
+                        <i class="fas fa-chevron-down filter-icon"></i>
+                        <div class="filter-dropdown">
+                            <a class="filter-item" href="#" data-filter-value="visible">Hiển thị</a>
+                            <a class="filter-item" href="#" data-filter-value="hidden">Ẩn</a>
+                            <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+                        </div>
+                    </div>
+                </th>
+                <th class="filterable" data-column="material_priority">
+                    Vị trí
+                    <div class="header-filter">
+                        <i class="fas fa-chevron-down filter-icon"></i>
+                        <div class="filter-dropdown">
+                            <a class="filter-item" href="#" data-sort-order="asc">Tăng dần</a>
+                            <a class="filter-item" href="#" data-sort-order="desc">Giảm dần</a>
+                            <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+                        </div>
+                    </div>
+                </th>
+                <th class="filterable" data-column="created_at">
+                    Ngày tạo
+                    <div class="header-filter">
+                        <i class="fas fa-chevron-down filter-icon"></i>
+                        <div class="filter-dropdown">
+                            <a class="filter-item" href="#" data-sort-order="desc">Mới nhất</a>
+                            <a class="filter-item" href="#" data-sort-order="asc">Cũ nhất</a>
+                            <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+                        </div>
+                    </div>
+                </th>
                 <th>Ngày cập nhật</th>
                 <th>Slug</th>
                 <th>Thao tác</th>
@@ -42,12 +79,20 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
+        let allMaterials = [];
+        let currentFilteredMaterials = [];
+        let currentSortColumn = null;
+        let currentSortDirection = 'asc';
+
+        getMaterials();
 
         function getMaterials() {
             fetch("/api/materials")
                 .then((res) => res.json())
                 .then((materials) => {
-                    renderMaterials(materials);
+                    allMaterials = materials;
+                    currentFilteredMaterials = [...allMaterials];
+                    renderMaterials(currentFilteredMaterials);
                 })
                 .catch((err) => {
                     console.error("Lỗi khi tải vật liệu:", err);
@@ -56,22 +101,29 @@
                 });
         }
 
+        // Thêm sự kiện tìm kiếm theo tên
+        document.getElementById("searchInput").addEventListener("keyup", function () {
+            const searchTerm = this.value.toLowerCase();
+            const filtered = allMaterials.filter(material =>
+                (material.material_name || "").toLowerCase().includes(searchTerm)
+            );
+            currentFilteredMaterials = filtered;
+            renderMaterials(currentFilteredMaterials);
+        });
+
         function renderMaterials(materials) {
             const tableBody = document.querySelector("#materialsTable tbody");
             tableBody.innerHTML = "";
 
             materials.forEach((material) => {
                 const status = material.material_status === 1 ? "visible" : "hidden";
-
                 const row = document.createElement("tr");
                 row.innerHTML = `
           <td>${material.material_name}</td>
-          <td class="description-cell">${material.material_description || "-"
-                    }</td>
+          <td class="description-cell">${material.material_description || "-"}</td>
           <td>
             <span class="status-indicator ${status}">
-              <i class="fas ${status === "visible" ? "fa-eye" : "fa-eye-slash"
-                    }"></i>
+              <i class="fas ${status === "visible" ? "fa-eye" : "fa-eye-slash"}"></i>
               ${status === "visible" ? "Hiển thị" : "Ẩn"}
             </span>
           </td>
@@ -81,28 +133,150 @@
           <td>${material.slug || "-"}</td>
           <td>
             <div class="action-cell">
-            <button class="action-button edit" onclick="window.location.href='/dashboard/material/edit/${material.slug
-                    }'">
-                        <i class="fas fa-edit"></i>
-                    </button>
-              <button class="action-button visibility" data-id="${material.material_slug
-                    }" data-status="${status}">
-                <i class="fas ${status === "visible" ? "fa-eye-slash" : "fa-eye"
-                    }"></i>
-              </button>
-              <button class="action-button delete" data-id="${material.material_slug
-                    }" data-name="${material.material_name}">
+            <button class="action-button edit" onclick="window.location.href='/dashboard/material/edit/${material.slug}'">
+                <i class="fas fa-edit"></i>
+            </button>
+            <button class="action-button visibility" data-slug="${material.slug}" data-status="${status}" data-name="${material.material_name}">
+                <i class="fas ${status === "visible" ? "fa-eye-slash" : "fa-eye"}"></i>
+            </button>
+            <button class="action-button delete" data-slug="${material.slug}" data-name="${material.material_name}">
                 <i class="fas fa-trash"></i>
-              </button>
+            </button>
             </div>
           </td>
         `;
                 tableBody.appendChild(row);
             });
 
-            document.querySelector(
-                ".results-info"
-            ).textContent = `Hiển thị ${materials.length} kết quả`;
+            document.querySelectorAll(".action-button.visibility").forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    const slug = btn.getAttribute("data-slug");
+                    const currentStatus = btn.getAttribute("data-status");
+                    const name = btn.getAttribute("data-name");
+                    showConfirm({
+                        message: `Bạn có chắc chắn muốn ${currentStatus === "visible" ? "ẩn" : "hiện"} vật liệu \"${name}\" không?`,
+                        onConfirm: () => {
+                            toggleMaterialStatus(slug);
+                        }
+                    });
+                });
+            });
+
+            document.querySelectorAll(".action-button.delete").forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    const slug = btn.getAttribute("data-slug");
+                    const name = btn.getAttribute("data-name");
+                    showConfirm({
+                        message: `Bạn có chắc muốn xóa vật liệu \"${name}\"?`,
+                        onConfirm: () => {
+                            fetch(`/api/materials/${slug}`, {
+                                method: "DELETE"
+                            })
+                                .then((res) => res.json())
+                                .then((data) => {
+                                    if (!data.success && data.status === "hidden") {
+                                        showToast(data.message || 'Đã có sản phẩm sử dụng chất liệu này, trạng thái sẽ chuyển sang ẩn.', "warning");
+                                        setTimeout(getMaterials, 1000);
+                                    } else if (!data.success) {
+                                        showToast(data.message || 'Lỗi khi xóa vật liệu', "danger");
+                                    } else {
+                                        showToast("Đã xóa vật liệu thành công", "success");
+                                        setTimeout(getMaterials, 1000);
+                                    }
+                                })
+                                .catch(() => showToast("Lỗi khi xóa vật liệu", "danger"));
+                        }
+                    });
+                });
+            });
+
+            document.querySelector(".results-info").textContent = `Hiển thị ${materials.length} kết quả`;
+        }
+
+        function toggleMaterialStatus(slug) {
+            fetch(`/api/materials/${slug}/toggle-status`, {
+                method: "PUT",
+            })
+                .then((res) => res.json())
+                .then((data) => {
+                    if (!data.success) showToast(data.message, "danger");
+                    else {
+                        showToast("Đã cập nhật trạng thái vật liệu", "success");
+                        setTimeout(getMaterials, 1000);
+                    }
+                })
+                .catch(() => showToast("Lỗi cập nhật trạng thái", "danger"));
+        }
+
+        // Filter/sort logic giống users/colors
+        document.querySelectorAll('.header-filter').forEach(filter => {
+            filter.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.classList.toggle('active');
+                document.querySelectorAll('.header-filter').forEach(otherFilter => {
+                    if (otherFilter !== this) {
+                        otherFilter.classList.remove('active');
+                    }
+                });
+            });
+        });
+        document.querySelectorAll('.filter-dropdown .filter-item').forEach(item => {
+            item.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const th = this.closest('th');
+                const columnDataName = th.getAttribute('data-column');
+                const filterValue = this.getAttribute('data-filter-value');
+                const sortOrder = this.getAttribute('data-sort-order');
+                if (sortOrder) {
+                    sortMaterials(columnDataName, sortOrder);
+                } else if (filterValue) {
+                    filterMaterialsByColumn(columnDataName, filterValue);
+                }
+                this.closest('.header-filter').classList.remove('active');
+            });
+        });
+        document.addEventListener('click', function () {
+            document.querySelectorAll('.header-filter').forEach(filter => {
+                filter.classList.remove('active');
+            });
+        });
+
+        function sortMaterials(columnDataName, sortOrder) {
+            let materialsToSort = [...currentFilteredMaterials];
+            materialsToSort.sort((a, b) => {
+                let valA, valB;
+                switch (columnDataName) {
+                    case 'material_name':
+                        valA = (a.material_name || '').toLowerCase();
+                        valB = (b.material_name || '').toLowerCase();
+                        return sortOrder === 'asc' ? valA.localeCompare(valB, 'vi') : valB.localeCompare(valA, 'vi');
+                    case 'material_priority':
+                        valA = parseInt(a.material_priority || 0);
+                        valB = parseInt(b.material_priority || 0);
+                        return sortOrder === 'asc' ? valA - valB : valB - valA;
+                    case 'created_at':
+                        valA = a.created_at ? new Date(a.created_at).getTime() : 0;
+                        valB = b.created_at ? new Date(b.created_at).getTime() : 0;
+                        return sortOrder === 'asc' ? valA - valB : valB - valA;
+                    default:
+                        return 0;
+                }
+            });
+            renderMaterials(materialsToSort);
+        }
+        function filterMaterialsByColumn(columnDataName, filterValue) {
+            let filtered = [...allMaterials];
+            if (columnDataName === 'material_status' && filterValue !== 'all') {
+                filtered = filtered.filter(material => {
+                    if (filterValue === 'visible') return material.material_status === 1;
+                    if (filterValue === 'hidden') return material.material_status !== 1;
+                    return true;
+                });
+            }
+            currentFilteredMaterials = filtered;
+            renderMaterials(currentFilteredMaterials);
         }
 
         function formatDate(dateStr) {
@@ -110,7 +284,61 @@
             return new Date(dateStr).toLocaleDateString("vi-VN");
         }
 
-        getMaterials();
+        function showToast(message, type = "success") {
+            let toastContainer = document.getElementById("toastContainer");
+            if (!toastContainer) {
+                toastContainer = document.createElement("div");
+                toastContainer.id = "toastContainer";
+                toastContainer.className = "position-fixed top-0 end-0 p-3";
+                toastContainer.style.zIndex = "1050";
+                document.body.appendChild(toastContainer);
+            }
+            const toast = document.createElement("div");
+            toast.className = `toast align-items-center text-white bg-${type} border-0`;
+            toast.setAttribute("role", "alert");
+            toast.setAttribute("aria-live", "assertive");
+            toast.setAttribute("aria-atomic", "true");
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">${message}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            `;
+            toastContainer.appendChild(toast);
+            const bsToast = new bootstrap.Toast(toast, { delay: 3000 });
+            bsToast.show();
+            toast.addEventListener("hidden.bs.toast", () => toast.remove());
+        }
+
+        function showConfirm({ message, confirmText = "Xác nhận", cancelText = "Hủy", onConfirm = () => { }, onCancel = () => { } }) {
+            let popup = document.getElementById("confirmPopup");
+            if (popup) popup.remove();
+            popup = document.createElement("div");
+            popup.id = "confirmPopup";
+            popup.innerHTML = `
+                <div class="confirm-dialog">
+                    <div class="confirm-message">${message}</div>
+                    <div class="confirm-actions">
+                        <button class="btn btn-confirm">${confirmText}</button>
+                        <button class="btn btn-cancel">${cancelText}</button>
+                    </div>
+                </div>
+                <div class="confirm-overlay"></div>
+            `;
+            document.body.appendChild(popup);
+            popup.querySelector(".btn-confirm").onclick = () => {
+                popup.remove();
+                onConfirm();
+            };
+            popup.querySelector(".btn-cancel").onclick = () => {
+                popup.remove();
+                onCancel();
+            };
+            popup.querySelector(".confirm-overlay").onclick = () => {
+                popup.remove();
+                onCancel();
+            };
+        }
     });
 </script>
 <style>

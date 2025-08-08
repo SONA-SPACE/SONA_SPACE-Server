@@ -1,0 +1,628 @@
+<div class="dashboard-header-row">
+    <h2 class="dashboard-title">Chỉnh sửa sự kiện</h2>
+</div>
+
+<div class="add-category-container">
+    <div class="category-form-column">
+        <div class="form-section">
+            <h3 class="section-title">Thông tin sự kiện</h3>
+
+            <div class="form-group">
+                <label for="eventTitle">Tên sự kiện <span style="color: red;">*</span></label>
+                <input type="text" id="eventTitle" class="form-control" placeholder="Nhập tên sự kiện" />
+                <div class="invalid-feedback" id="titleValidationMessage" style="display: none;">
+                    Tiêu đề sự kiện không được để trống.
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="eventDescription">Mô tả</label>
+                <textarea id="eventDescription" class="form-control" placeholder="Nhập mô tả sự kiện"></textarea>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="startDate">Thời gian bắt đầu <span style="color: red;">*</span></label>
+                    <input type="datetime-local" id="startDate" class="form-control" />
+                    <div class="invalid-feedback" id="startDateValidationMessage" style="display: none;">
+                        Ngày bắt đầu không được để trống.
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="endDate">Thời gian kết thúc <span style="color: red;">*</span></label>
+                    <input type="datetime-local" id="endDate" class="form-control" />
+                    <div class="invalid-feedback" id="endDateValidationMessage" style="display: none;">
+                        Ngày kết thúc không được để trống hoặc không hợp lệ.
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="eventLink">Link sự kiện</label>
+                <input type="url" id="eventLink" class="form-control"
+                    placeholder="Ví dụ: https://yourwebsite.com/event-page" />
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="eventStatus">Trạng thái <span style="color: red;">*</span> <small
+                            style="color: #6c757d;">(Tự động cập nhật dựa trên thời gian bắt đầu
+                            và kết thúc)</small></label>
+                    <div class="select-wrapper">
+                        <select id="eventStatus" class="form-control">
+                            <option value="">-- Chọn trạng thái --</option>
+                            <option value="scheduled">Sắp diễn ra</option>
+                            <option value="active">Đang hoạt động</option>
+                            <option value="expired">Đã kết thúc</option>
+                        </select>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                    <div class="invalid-feedback" id="statusValidationMessage" style="display: none;">
+                        Vui lòng chọn trạng thái.
+                    </div>
+
+                </div>
+                <div class="form-group">
+                    <label for="displayOrder">Thứ tự hiển thị</label>
+                    <input type="number" id="displayOrder" class="form-control" placeholder="Ví dụ: 1, 2, 3..."
+                        value="0" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="image-upload-column">
+        <div class="image-upload-container">
+            <div class="upload-title">Ảnh đại diện</div>
+            <div class="main-upload-area" id="imageDropArea">
+                <div id="previewImageContainer">
+                </div>
+                <div class="upload-placeholder" id="initialUploadPlaceholder">
+                    <i class="far fa-image"></i>
+                    <p>Thả ảnh vào đây, hoặc nhấn để chọn</p>
+                    <p class="upload-hint">jpeg, png - kích thước 1000x500 được khuyến nghị</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="form-actions">
+    <button type="button" class="btn btn-cancel" onclick="window.history.back()">Hủy</button>
+    <button type="button" class="btn btn-save" id="updateEventBtn">Cập nhật</button>
+</div>
+<script>
+    let uploadedFile = null;
+    let currentEventId = null;
+    let currentImageUrl = null;
+
+    document.addEventListener("DOMContentLoaded", async () => {
+        const imageDropArea = document.getElementById("imageDropArea");
+        const previewImageContainer = document.getElementById("previewImageContainer");
+        const initialUploadPlaceholder = document.getElementById("initialUploadPlaceholder");
+        const updateEventBtn = document.getElementById("updateEventBtn");
+
+        // Get event ID from URL
+        const urlParts = window.location.pathname.split('/');
+        currentEventId = urlParts[urlParts.length - 1];
+
+        // Load existing event data
+        await loadEventData();
+
+        // Get all required input elements and their corresponding validation message IDs
+        const requiredInputs = [
+            { id: "eventTitle", msgId: "titleValidationMessage" },
+            { id: "startDate", msgId: "startDateValidationMessage" },
+            { id: "endDate", msgId: "endDateValidationMessage" },
+            { id: "eventStatus", msgId: "statusValidationMessage" }
+        ];
+
+        requiredInputs.forEach(field => {
+            const inputElement = document.getElementById(field.id);
+            const msgElement = document.getElementById(field.msgId);
+
+            // Use 'input' for text/datetime inputs, and 'change' for select dropdowns
+            const eventType = inputElement.tagName === 'SELECT' ? 'change' : 'input';
+
+            inputElement.addEventListener(eventType, () => {
+                inputElement.classList.remove("is-invalid");
+                msgElement.style.display = "none";
+            });
+
+            // Add focus listener for all types, as clicking into a select also triggers focus
+            inputElement.addEventListener("focus", () => {
+                inputElement.classList.remove("is-invalid");
+                msgElement.style.display = "none";
+            });
+        });
+
+        // Auto-update status based on start date
+        const startDateInput = document.getElementById("startDate");
+        const endDateInput = document.getElementById("endDate");
+        const statusSelect = document.getElementById("eventStatus");
+
+        // Disable status select permanently
+        statusSelect.disabled = true;
+
+        startDateInput.addEventListener("change", () => {
+            autoUpdateStatus();
+        });
+
+        endDateInput.addEventListener("change", () => {
+            autoUpdateStatus();
+        });
+
+
+
+        function autoUpdateStatus() {
+            const startDate = startDateInput.value;
+            const endDate = document.getElementById("endDate").value;
+
+            if (!startDate) {
+                statusSelect.value = "";
+                return;
+            }
+
+            const now = new Date();
+            const startDateTime = new Date(startDate);
+            const endDateTime = endDate ? new Date(endDate) : null;
+
+            // Logic: Check end date first, then start date
+            if (endDateTime && endDateTime < now) {
+                // Event has ended
+                statusSelect.value = "expired";
+            } else if (startDateTime > now) {
+                // Event hasn't started yet
+                statusSelect.value = "scheduled";
+            } else {
+                // Event is currently active
+                statusSelect.value = "active";
+            }
+        }
+
+        const handleFileSelection = (file) => {
+            if (!file) return;
+
+            if (!file.type.startsWith('image/')) {
+                showToast("Vui lòng chọn một file ảnh hợp lệ.", "danger");
+                return;
+            }
+            const maxSize = 5 * 1024 * 1024;
+            if (file.size > maxSize) {
+                showToast("Ảnh vượt quá dung lượng cho phép (max 5MB).", "danger");
+                return;
+            }
+
+            uploadedFile = file;
+            renderLocalPreviewImage(file);
+        };
+
+        imageDropArea.addEventListener("click", () => {
+            const fileInput = document.createElement("input");
+            fileInput.type = "file";
+            fileInput.accept = "image/jpeg, image/png, image/webp";
+            fileInput.style.display = 'none';
+
+            fileInput.onchange = (e) => {
+                handleFileSelection(e.target.files[0]);
+            };
+            fileInput.click();
+        });
+
+        imageDropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            imageDropArea.style.borderColor = '#007bff';
+        });
+
+        imageDropArea.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            imageDropArea.style.borderColor = '#ccc';
+        });
+
+        imageDropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            imageDropArea.style.borderColor = '#ccc';
+            handleFileSelection(e.dataTransfer.files[0]);
+        });
+
+        updateEventBtn.addEventListener("click", handleUpdateEvent);
+    });
+
+    async function loadEventData() {
+        try {
+            console.log("Loading event data for ID:", currentEventId);
+            const token = localStorage.getItem("token");
+            const response = await fetch(`/api/events/admin/${currentEventId}`, {
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error("Không thể tải dữ liệu sự kiện");
+            }
+
+            const eventData = await response.json();
+            console.log("Loaded event data:", eventData);
+
+            // Populate form fields
+            document.getElementById("eventTitle").value = eventData.title || "";
+            document.getElementById("eventDescription").value = eventData.description || "";
+            document.getElementById("eventLink").value = eventData.link_url || "";
+            document.getElementById("displayOrder").value = eventData.display_order || 0;
+            document.getElementById("eventStatus").value = eventData.status || "";
+            console.log("Set status value to:", eventData.status);
+
+            // Format dates for datetime-local input
+            if (eventData.start_date) {
+                const startDate = new Date(eventData.start_date);
+                document.getElementById("startDate").value = startDate.toISOString().slice(0, 16);
+                console.log("Set start date to:", startDate.toISOString().slice(0, 16));
+            }
+
+            if (eventData.end_date) {
+                const endDate = new Date(eventData.end_date);
+                document.getElementById("endDate").value = endDate.toISOString().slice(0, 16);
+                console.log("Set end date to:", endDate.toISOString().slice(0, 16));
+            }
+
+            // Display existing image if available
+            if (eventData.image_url) {
+                currentImageUrl = eventData.image_url;
+                // Show existing image with click functionality
+                const container = document.getElementById("previewImageContainer");
+                const placeholder = document.getElementById("initialUploadPlaceholder");
+                placeholder.style.display = 'none';
+
+                container.innerHTML = `
+                    <div style="position: relative; display: inline-block; cursor: pointer;" onclick="handleImageClick()">
+                        <img src="${eventData.image_url}" alt="Ảnh sự kiện" style="max-width: 100%; height: auto; display: block;" />
+                     
+                    </div>`;
+            }
+
+            // Auto-update status based on loaded start date
+            setTimeout(() => {
+                autoUpdateStatus();
+            }, 100);
+
+        } catch (error) {
+            console.error("Error loading event data:", error);
+            showToast("Lỗi khi tải dữ liệu sự kiện: " + error.message, "danger");
+        }
+    }
+
+
+
+    function handleImageClick() {
+        const fileInput = document.createElement("input");
+        fileInput.type = "file";
+        fileInput.accept = "image/jpeg, image/png, image/webp";
+        fileInput.style.display = 'none';
+
+        fileInput.onchange = (e) => {
+            handleFileSelection(e.target.files[0]);
+        };
+        fileInput.click();
+    }
+
+    function extractPublicIdFromUrl(url) {
+        if (!url) return null;
+        try {
+            // Extract public ID from Cloudinary URL
+            // Example: https://res.cloudinary.com/xxx/image/upload/v1234567890/SonaSpace/PopupAd/filename.jpg
+            const urlParts = url.split('/');
+            const uploadIndex = urlParts.indexOf('upload');
+            if (uploadIndex !== -1 && uploadIndex + 2 < urlParts.length) {
+                // Get everything after 'upload/v1234567890/'
+                const publicIdParts = urlParts.slice(uploadIndex + 2);
+                // Remove file extension
+                const publicId = publicIdParts.join('/').replace(/\.[^/.]+$/, '');
+                return publicId;
+            }
+        } catch (error) {
+            console.error("Error extracting public ID:", error);
+        }
+        return null;
+    }
+
+    async function deleteImageFromCloudinary(publicId) {
+        try {
+            const token = localStorage.getItem("token");
+            const response = await fetch(`/api/upload/${encodeURIComponent(publicId)}`, {
+                method: "DELETE",
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error("Failed to delete image from Cloudinary");
+            }
+
+            console.log("Successfully deleted old image:", publicId);
+        } catch (error) {
+            console.error("Error deleting image from Cloudinary:", error);
+            throw error;
+        }
+    }
+
+    function renderLocalPreviewImage(file) {
+        const container = document.getElementById("previewImageContainer");
+        const placeholder = document.getElementById("initialUploadPlaceholder");
+
+        placeholder.style.display = 'none';
+
+        const imageUrl = URL.createObjectURL(file);
+
+        container.innerHTML = `
+            <div style="position: relative; display: inline-block;">
+                <img src="${imageUrl}" alt="Ảnh sự kiện" style="max-width: 100%; height: auto; display: block;" />
+              
+            </div>`;
+    }
+
+    function removeUploadedImage() {
+        if (uploadedFile) {
+            URL.revokeObjectURL(document.querySelector("#previewImageContainer img").src);
+        }
+        uploadedFile = null;
+        currentImageUrl = null;
+        document.getElementById("previewImageContainer").innerHTML = "";
+        document.getElementById("initialUploadPlaceholder").style.display = 'flex';
+    }
+
+    async function handleUpdateEvent() {
+        const updateEventBtn = document.getElementById("updateEventBtn");
+        updateEventBtn.disabled = true;
+        updateEventBtn.innerText = "Đang cập nhật...";
+
+        const title = document.getElementById("eventTitle").value.trim();
+        const description = document.getElementById("eventDescription").value.trim();
+        const link_url = document.getElementById("eventLink").value.trim();
+        const start_date = document.getElementById("startDate").value;
+        const end_date = document.getElementById("endDate").value;
+        const display_order = parseInt(document.getElementById("displayOrder").value) || 0;
+        const status = document.getElementById("eventStatus").value;
+
+        console.log("Form data:", {
+            title,
+            description,
+            link_url,
+            start_date,
+            end_date,
+            display_order,
+            status
+        });
+
+        const requiredFields = [
+            { id: "eventTitle", msgId: "titleValidationMessage" },
+            { id: "startDate", msgId: "startDateValidationMessage" },
+            { id: "endDate", msgId: "endDateValidationMessage" },
+            { id: "eventStatus", msgId: "statusValidationMessage" }
+        ];
+
+        // Clear previous validation states for all fields
+        requiredFields.forEach(field => {
+            document.getElementById(field.msgId).style.display = "none";
+            document.getElementById(field.id).classList.remove("is-invalid");
+        });
+
+        let isValid = true;
+
+        if (!title) {
+            document.getElementById("titleValidationMessage").style.display = "block";
+            document.getElementById("eventTitle").classList.add("is-invalid");
+            isValid = false;
+        }
+        if (!start_date) {
+            document.getElementById("startDateValidationMessage").style.display = "block";
+            document.getElementById("startDate").classList.add("is-invalid");
+            isValid = false;
+        }
+        if (!end_date) {
+            document.getElementById("endDateValidationMessage").style.display = "block";
+            document.getElementById("endDate").classList.add("is-invalid");
+            isValid = false;
+        }
+        if (!status) {
+            document.getElementById("statusValidationMessage").style.display = "block";
+            document.getElementById("eventStatus").classList.add("is-invalid");
+            isValid = false;
+        }
+
+        if (!isValid) {
+            showToast("Vui lòng điền đầy đủ các trường bắt buộc.", "danger");
+            updateEventBtn.disabled = false;
+            updateEventBtn.innerText = "Cập nhật";
+            return;
+        }
+
+        // Date order validation
+        if (new Date(start_date) >= new Date(end_date)) {
+            showToast("Ngày kết thúc phải sau ngày bắt đầu.", "danger");
+            document.getElementById("startDate").classList.add("is-invalid");
+            document.getElementById("endDate").classList.add("is-invalid");
+            updateEventBtn.disabled = false;
+            updateEventBtn.innerText = "Cập nhật";
+            return;
+        }
+
+        let finalImageUrl = currentImageUrl; // Keep existing image if no new image uploaded
+
+        // Upload new image if provided
+        if (uploadedFile) {
+            try {
+                const formData = new FormData();
+                formData.append("image", uploadedFile);
+                formData.append("folder", "SonaSpace");
+                formData.append("subfolder", "PopupAd");
+
+                const uploadRes = await fetch("/api/upload/event", {
+                    method: "POST",
+                    body: formData,
+                });
+                const uploadData = await uploadRes.json();
+
+                if (uploadRes.ok && uploadData.url) {
+                    finalImageUrl = uploadData.url;
+
+                    // Delete old image from Cloudinary if exists
+                    if (currentImageUrl) {
+                        try {
+                            // Extract public ID from current image URL
+                            const urlParts = currentImageUrl.split('/');
+                            const uploadIndex = urlParts.indexOf('upload');
+                            if (uploadIndex !== -1 && uploadIndex + 2 < urlParts.length) {
+                                const publicIdParts = urlParts.slice(uploadIndex + 2);
+                                const publicId = publicIdParts.join('/').replace(/\.[^/.]+$/, '');
+                                await deleteImageFromCloudinary(publicId);
+                            }
+                        } catch (deleteErr) {
+                            console.error("Failed to delete old image:", deleteErr);
+                            // Don't stop the process if deletion fails
+                        }
+                    }
+                } else {
+                    throw new Error(uploadData.error?.message || "Lỗi khi tải ảnh lên Cloudinary.");
+                }
+            } catch (uploadErr) {
+                console.error("Upload image failed during submission:", uploadErr);
+                showToast(uploadErr.message || "Lỗi upload ảnh.", "danger");
+                updateEventBtn.disabled = false;
+                updateEventBtn.innerText = "Cập nhật";
+                return;
+            }
+        }
+
+        // Check if we have an image (either existing or new)
+        if (!finalImageUrl) {
+            showToast("Vui lòng tải lên ảnh đại diện cho sự kiện.", "danger");
+            updateEventBtn.disabled = false;
+            updateEventBtn.innerText = "Cập nhật";
+            return;
+        }
+
+        const eventData = {
+            title: title,
+            description: description || null,
+            image_url: finalImageUrl,
+            link_url: link_url || null,
+            start_date: start_date,
+            end_date: end_date,
+            display_order: display_order,
+            status: status,
+        };
+
+        const token = localStorage.getItem("token");
+
+        try {
+            const res = await fetch(`/api/events/admin/${currentEventId}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify(eventData),
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                showToast(data.message || "Cập nhật sự kiện thành công.", "success");
+                setTimeout(() => window.location.href = "/dashboard/events", 1500);
+            } else {
+                showToast(data.message || "Lỗi khi cập nhật sự kiện.", "danger");
+            }
+        } catch (apiError) {
+            console.error("Error updating event:", apiError);
+            showToast("Lỗi kết nối hoặc hệ thống khi cập nhật sự kiện.", "danger");
+        } finally {
+            updateEventBtn.disabled = false;
+            updateEventBtn.innerText = "Cập nhật";
+        }
+    }
+</script>
+<style>
+    input,
+    select {
+        font-family: inherit;
+        font-size: 14px;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+        padding: 8px;
+        outline: none;
+    }
+
+    input:focus,
+    select:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+    }
+
+    .form-control.is-invalid {
+        border-color: #dc3545 !important;
+        background-color: #fff5f5 !important;
+    }
+
+    .btn-outline-primary {
+        border-color: #007bff;
+        color: #007bff;
+        background-color: transparent;
+    }
+
+    .btn-outline-primary:hover {
+        background-color: #007bff;
+        color: white;
+    }
+
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+        border-radius: 0.2rem;
+    }
+
+    select:disabled {
+        background-color: #e9ecef;
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    select:disabled+i {
+        opacity: 0.6;
+    }
+
+    .image-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        border-radius: 4px;
+    }
+
+    .image-overlay:hover {
+        opacity: 1;
+    }
+
+    .image-overlay i {
+        font-size: 24px;
+        margin-bottom: 8px;
+    }
+
+    .image-overlay span {
+        font-size: 12px;
+        text-align: center;
+    }
+</style>

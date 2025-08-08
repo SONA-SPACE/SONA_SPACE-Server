@@ -14,11 +14,7 @@
     <div class="filter-row">
         <div class="search-container">
             <i class="fas fa-search search-icon"></i>
-            <input type="text" class="search-input" placeholder="Search">
-        </div>
-        <div class="date-range">
-            <i class="far fa-calendar-alt"></i>
-            <span>1/05/2025 - 31/5/2025</span>
+            <input type="text" class="search-input" placeholder="Tìm kiếm mã giảm giá">
         </div>
         <div class="results-info">
             Hiển thị 1-6 trong tổng số 500
@@ -31,11 +27,21 @@
                 <tr>
                     <th>Mã giảm giá</th>
                     <th>Tiêu đề</th>
-                    <th>Giá giảm</th>
+                    <th>Giá giảm
+                        <div class="header-filter">
+                            <i class="fas fa-chevron-down filter-icon"></i>
+                            <div class="filter-dropdown">
+                                <a class="filter-item" href="#" data-sort-order="desc">Giảm theo %</a>
+                                <a class="filter-item" href="#" data-sort-order="asc">Giảm theo vnđ</a>
+                                <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+                            </div>
+                        </div>
+                    </th>
                     <th>Lượt sử dụng</th>
                     <th>Trạng thái</th>
                     <th>Thời gian bắt đầu</th>
                     <th>Thời gian kết thúc</th>
+                    <th>Thao tác</th>
                 </tr>
             </thead>
             <tbody>
@@ -44,23 +50,83 @@
         </table>
     </div>
 </div>
+
+<div id="confirmationModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <h3>Xác nhận thao tác sản phẩm</h3>
+        <p id="modalMessage"></p>
+        <div class="modal-actions">
+            <button id="confirmActionBtn" class="btn btn-confirm">Có</button>
+            <button id="cancelActionBtn" class="btn btn-cancel">Không</button>
+        </div>
+    </div>
+</div>
+<style>
+    .header-filter {
+        position: relative;
+        cursor: pointer;
+        display: inline-block;
+        padding-left: 5px;
+    }
+
+    .filter-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        min-width: 150px;
+        display: none;
+        padding: 4px 0;
+    }
+
+    .filter-dropdown.show {
+        display: block;
+    }
+
+    .header-filter.active .filter-dropdown .header-filter.show {
+        display: block;
+    }
+
+    .filter-dropdown a {
+        display: block;
+        padding: 8px 12px;
+        text-decoration: none;
+        color: #333;
+        white-space: nowrap;
+    }
+
+    .filter-dropdown a:hover {
+        background-color: #f0f0f0;
+    }
+</style>
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         const formatPrice = (price) => {
-            const rounded = Math.round(price); // Đảm bảo là số nguyên
+            const rounded = Math.round(price);
             return rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
         };
+
+        let originalVoucherList = [];
+        let pendingToggle = {
+            id: null,
+            newStatus: null,
+        };
+
         function getNews() {
             fetch("/api/couponcodes/admin")
                 .then((response) => response.json())
                 .then((data) => {
+                    originalVoucherList = data;
                     renderVoucher(data);
                     console.log("Danh sách voucher:", data);
                 })
                 .catch((error) => {
                     console.error("Lỗi khi tải danh sách voucher:", error);
-                    document.querySelector(".results-info").textContent =
-                        "Không thể tải dữ liệu.";
+                    document.querySelector(".results-info").textContent = "Không thể tải dữ liệu.";
                 });
         }
 
@@ -70,45 +136,42 @@
 
             VoucherList.forEach((voucher) => {
                 const row = document.createElement("tr");
-
                 const status = voucher.status === 1 ? "visible" : "hidden";
+
                 row.innerHTML = `
-                    <td>${voucher.code}</td>
-                    <td>${voucher.title}</td>
-                    <td>${formatPrice(voucher.discount)}${voucher.discount_type === "percentage" ? "%" : "đ"}</td>
-                  <td>${voucher.used}</td>
-                    <td>
-                        <span class="status-indicator ${status === "visible" ? "visible" : "hidden"}">
+                <td>${voucher.code}</td>
+                <td>${voucher.title}</td>
+                <td>${formatPrice(voucher.discount)}${voucher.discount_type === "percentage" ? "%" : "đ"}</td>
+                <td>${voucher.used}</td>
+                <td>
+                    <span class="status-indicator ${status}">
                         <i class="fas ${status === "visible" ? "fa-eye" : "fa-eye-slash"}"></i>
                         ${status === "visible" ? "Hiển thị" : "Ẩn"}
-                        </span>
-                    </td>
-                    <td>${formatDate(voucher.start_time)}</td>
-                    <td>${formatDate(voucher.exp_time)}</td>
-                <td>
-                <div class="action-cell">
-                    <button class="action-button edit" data-id="${voucher.id}"
-                    onclick="window.location.href='/dashboard/voucher/editvoucher/${voucher.id}'"
-                    title="Chỉnh sửa">
-                    <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="action-button visibility" data-id="${voucher.id
-                    }" data-status="${status}" title="${status === "visible" ? "Ẩn voucher" : "Hiển thị voucher"
-                    }">
-                    <i class="fas ${status === "visible" ? "fa-eye-slash" : "fa-eye"
-                    }"></i>
-                    </button>
-                    <button class="action-button delete" data-id="${voucher.id}" data-title="${voucher.title}" title="Xóa tin tức">
-                    <i class="fas fa-trash"></i>
-                    </button>
-                </div>
+                    </span>
                 </td>
-    `;
-
+                <td>${formatDate(voucher.start_time)}</td>
+                <td>${formatDate(voucher.exp_time)}</td>
+                <td>
+                    <div class="action-cell">
+                        <button class="action-button edit" data-id="${voucher.id}"
+                            onclick="window.location.href='/dashboard/voucher/editvoucher/${voucher.id}'"
+                            title="Chỉnh sửa">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-button visibility" data-id="${voucher.id}"
+                            data-status="${status}" title="${status === "visible" ? "Ẩn voucher" : "Hiển thị voucher"}">
+                            <i class="fas ${status === "visible" ? "fa-eye-slash" : "fa-eye"}"></i>
+                        </button>
+                        <button class="action-button delete" data-id="${voucher.id}" data-title="${voucher.title}" title="Xóa tin tức">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
                 tableBody.appendChild(row);
             });
 
-            // Gán sự kiện xóa
+            // Gắn sự kiện xóa
             document.querySelectorAll(".action-button.delete").forEach((btn) => {
                 btn.addEventListener("click", () => {
                     const voucherId = btn.getAttribute("data-id");
@@ -118,6 +181,63 @@
             });
 
             document.querySelector(".results-info").textContent = `Hiển thị ${VoucherList.length} kết quả`;
+            // Gắn sự kiện ẩn/hiện
+            document.querySelectorAll(".action-button.visibility").forEach((btn) => {
+                btn.addEventListener("click", () => {
+                    const voucherId = btn.getAttribute("data-id");
+                    const currentStatus = btn.getAttribute("data-status"); // 'visible' hoặc 'hidden'
+                    const newStatus = currentStatus === "visible" ? 0 : 1;
+
+                    pendingToggle = {
+                        id: voucherId,
+                        newStatus: newStatus
+                    };
+
+                    const actionText = newStatus === 1 ? "hiển thị" : "ẩn";
+                    document.getElementById("modalMessage").textContent = `Bạn có chắc chắn muốn ${actionText} voucher này?`;
+
+                    document.getElementById("confirmationModal").style.display = "flex";
+                });
+            });
+            document.getElementById("confirmActionBtn").addEventListener("click", () => {
+                if (pendingToggle.id !== null) {
+                    toggleVoucherVisibility(pendingToggle.id, pendingToggle.newStatus);
+                    pendingToggle = { id: null, newStatus: null };
+                }
+                document.getElementById("confirmationModal").style.display = "none";
+            });
+
+            document.getElementById("cancelActionBtn").addEventListener("click", () => {
+                pendingToggle = { id: null, newStatus: null };
+                document.getElementById("confirmationModal").style.display = "none";
+            });
+
+
+        }
+        function toggleVoucherVisibility(voucherId, newStatus) {
+            const token = localStorage.getItem("token");
+
+            fetch(`/api/couponcodes/${voucherId}/status`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ status: newStatus }),
+            })
+                .then((res) => res.json())
+                .then((data) => {
+                    if (data.error) {
+                        showToast(data.error, "danger");
+                    } else {
+                        showToast(`Đã ${newStatus === 1 ? "hiển thị" : "ẩn"} voucher`, "success");
+                        setTimeout(() => getNews(), 500); // Tải lại danh sách
+                    }
+                })
+                .catch((err) => {
+                    console.error("Lỗi khi cập nhật trạng thái:", err);
+                    showToast("Lỗi khi thay đổi trạng thái voucher", "danger");
+                });
         }
 
         function deleteVoucher(voucherId, voucherTitle) {
@@ -146,13 +266,100 @@
                 });
         }
 
-
-
         function formatDate(dateStr) {
             if (!dateStr) return "-";
             return new Date(dateStr).toLocaleDateString("vi-VN");
         }
 
+        //  Tìm kiếm
+        const searchInput = document.querySelector(".search-input");
+        searchInput.addEventListener("input", function () {
+            const keyword = this.value.trim().toLowerCase();
+
+            const filtered = originalVoucherList.filter((voucher) =>
+                voucher.code.toLowerCase().includes(keyword) ||
+                voucher.title.toLowerCase().includes(keyword)
+            );
+
+            renderVoucher(filtered);
+        });
+
+        // 🟡 Lọc theo loại giảm giá
+        function filterByDiscountType(type) {
+            if (type === "all") {
+                renderVoucher(originalVoucherList);
+                return;
+            }
+
+            const filtered = originalVoucherList.filter((voucher) => {
+                return voucher.discount_type === (type === "percentage" ? "percentage" : "fixed");
+            });
+
+            renderVoucher(filtered);
+        }
+
+        //  Gắn sự kiện cho mục trong dropdown lọc
+        document.querySelectorAll(".header-filter .filter-item").forEach((item) => {
+            item.addEventListener("click", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const sortOrder = item.getAttribute("data-sort-order");
+                const filterValue = item.getAttribute("data-filter-value");
+
+                if (filterValue === "all") {
+                    filterByDiscountType("all");
+                } else if (sortOrder === "desc") {
+                    filterByDiscountType("percentage");
+                } else if (sortOrder === "asc") {
+                    filterByDiscountType("fixed");
+                }
+
+                // Ẩn dropdown sau khi chọn
+                document.querySelectorAll(".filter-dropdown").forEach((dropdown) => {
+                    dropdown.classList.remove("show");
+                });
+            });
+        });
+
+        document.querySelectorAll(".header-filter").forEach((filter) => {
+            const icon = filter.querySelector(".filter-icon"); // Đổi đúng class có thật
+            const dropdown = filter.querySelector(".filter-dropdown");
+
+            if (!icon) return;
+
+            icon.addEventListener("click", (e) => {
+                e.stopPropagation(); // Ngăn click lan ra ngoài
+                const isActive = filter.classList.contains("active");
+
+                // Đóng tất cả filter khác
+                document.querySelectorAll(".header-filter").forEach((f) => {
+                    f.classList.remove("active");
+                    const d = f.querySelector(".filter-dropdown");
+                    if (d) d.classList.remove("show");
+                });
+
+                // Toggle nếu chưa mở
+                if (!isActive) {
+                    filter.classList.add("active");
+                    dropdown.classList.add("show");
+                }
+            });
+        });
+
+
+        // Click ra ngoài thì đóng dropdown
+        document.addEventListener("click", () => {
+            document.querySelectorAll(".header-filter").forEach((filter) => {
+                filter.classList.remove("active");
+                filter.querySelector(".filter-dropdown").classList.remove("show");
+            });
+        });
+
+
+
+
+        //  Khởi động
         getNews();
     });
 </script>

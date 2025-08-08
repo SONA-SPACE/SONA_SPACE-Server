@@ -1455,7 +1455,26 @@ router.get("/by-category/:categoryId", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch products by category" });
   }
 });
-
+router.put("/status/:id", verifyToken, isAdmin, async (req, res) => {
+  const id = Number(req.params.id);
+  const { product_status } = req.body;
+  if (isNaN(id) || ![0, 1].includes(Number(product_status))) {
+    return res.status(400).json({ error: "Invalid product id or status" });
+  }
+  try {
+    const [result] = await db.query(
+      "UPDATE product SET product_status = ? WHERE product_id = ?",
+      [product_status, id]
+    );
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+    res.json({ message: "Product status updated successfully" });
+  } catch (err) {
+    console.error("Error updating product status:", err);
+    res.status(500).json({ error: "Failed to update product status" });
+  }
+});
 /**
  * @route   POST /api/products/add
  * @desc    Thêm sản phẩm mới (Admin)

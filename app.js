@@ -76,7 +76,13 @@ app.use(logger("dev"));
 app.use(express.json({ limit: "20mb" }));
 app.use(express.urlencoded({ extended: false, limit: "20mb" }));
 app.use(cookieParser());
+// Serve static files
 app.use(express.static(path.join(__dirname, "public")));
+
+// Test route for categories
+app.get("/test-categories", (req, res) => {
+  res.sendFile(path.join(__dirname, "test-categories.html"));
+});
 app.use(cors());
 
 // Add a health check endpoint

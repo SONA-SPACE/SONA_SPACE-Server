@@ -725,8 +725,8 @@ router.delete("/:id", verifyToken, async (req, res) => {
         .json({ error: "You can only delete your own comments" });
     }
 
-    // Xóa bình luận
-    await db.query("DELETE FROM comment WHERE id = ?", [id]);
+    // Xóa mềm bình luận
+    await db.query("UPDATE comment SET deleted_at = NOW() WHERE id = ?", [id]);
 
     // Cập nhật số sao đánh giá trung bình của sản phẩm
     await db.query(
@@ -744,6 +744,37 @@ router.delete("/:id", verifyToken, async (req, res) => {
   } catch (error) {
     console.error("Error deleting comment:", error);
     res.status(500).json({ error: "Failed to delete comment" });
+  }
+});
+
+// API toggle status (ẩn/hiện) bình luận
+router.put("/:id/toggle-status", async (req, res) => {
+  try {
+    const commentId = Number(req.params.id);
+    if (isNaN(commentId)) {
+      return res.status(400).json({ error: "Invalid comment ID" });
+    }
+    const [comments] = await db.query(
+      "SELECT comment_status FROM comment WHERE comment_id = ?",
+      [commentId]
+    );
+    if (comments.length === 0) {
+      return res.status(404).json({ error: "Comment not found" });
+    }
+    const currentStatus = comments[0].comment_status;
+    const newStatus = currentStatus === 1 ? 0 : 1;
+    await db.query(
+      "UPDATE comment SET comment_status = ?, updated_at = NOW() WHERE comment_id = ?",
+      [newStatus, commentId]
+    );
+    res.json({
+      message: "Comment status updated",
+      comment_id: commentId,
+      status: newStatus,
+    });
+  } catch (error) {
+    console.error("Error toggling comment status:", error);
+    res.status(500).json({ error: "Failed to toggle comment status" });
   }
 });
 

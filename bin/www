@@ -22,23 +22,9 @@ console.log(`Server will run on port: ${port}`);
 
 var server = http.createServer(app);
 
-// SOCKET.IO
-const { Server } = require("socket.io");
-const io = new Server(server, { cors: { origin: "*" } });
-
-io.on("connection", (socket) => {
-  console.log("Socket connected:", socket.id);
-
-  socket.on("user_message", (msg) => {
-    setTimeout(() => {
-      socket.emit("bot_reply", `🤖 Bot: Bạn vừa nói "${msg}"`);
-    }, 600);
-  });
-
-  socket.on("disconnect", () => {
-    console.log("Socket disconnected:", socket.id);
-  });
-});
+// SOCKET.IO dùng cho chat bot
+const chatbotSocket = require("../chatbotSocket");
+chatbotSocket(server);
 
 /**
  * Listen on provided port, on all network interfaces.

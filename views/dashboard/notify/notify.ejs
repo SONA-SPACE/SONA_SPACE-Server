@@ -11,7 +11,7 @@
   <div class="filter-row">
     <div class="search-container">
       <i class="fas fa-search search-icon"></i>
-      <input type="text" class="search-input" placeholder="Tìm tiêu đề...">
+      <input type="text" class="search-input" placeholder="Tìm kiếm thông báo">
     </div>
     <div class="results-info">
       Hiển thị 0 thông báo
@@ -23,7 +23,16 @@
       <thead>
         <tr>
           <th>Tiêu đề</th>
-          <th>Loại</th>
+          <th>Loại
+            <div class="header-filter">
+              <i class="fas fa-chevron-down filter-icon"></i>
+              <div class="filter-dropdown">
+     <a class="filter-item" href="#" data-filter-value="order">order</a>
+                <a class="filter-item" href="#" data-filter-value="coupon">coupon</a>
+                <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
+              </div>
+            </div>
+          </th>
           <th>Nội dung</th>
           <th>Người tạo</th>
           <th>Ngày tạo</th>
@@ -36,15 +45,57 @@
     </table>
   </div>
 </div>
+<style>
+    .header-filter {
+        position: relative;
+        cursor: pointer;
+        display: inline-block;
+        padding-left: 5px;
+    }
 
+    .filter-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        min-width: 150px;
+        display: none;
+        padding: 4px 0;
+    }
+
+    .filter-dropdown.show {
+        display: block;
+    }
+
+    .header-filter.active .filter-dropdown .header-filter.show {
+        display: block;
+    }
+
+    .filter-dropdown a {
+        display: block;
+        padding: 8px 12px;
+        text-decoration: none;
+        color: #333;
+        white-space: nowrap;
+    }
+
+    .filter-dropdown a:hover {
+        background-color: #f0f0f0;
+    }
+</style>
 <script>
   document.addEventListener("DOMContentLoaded", function () {
+    let originalNotifyList = [];
 
     function getNotifications() {
       fetch("/api/notify")
         .then((res) => res.json())
         .then((data) => {
-            console.log(data);
+          originalNotifyList = data;
           renderNotifications(data);
         })
         .catch((err) => {
@@ -57,6 +108,16 @@
       const tableBody = document.querySelector("#notifyTable tbody");
       tableBody.innerHTML = "";
 
+      if (list.length === 0) {
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+        cell.colSpan = 6;
+        cell.className = "text-center";
+        cell.textContent = "Không có thông báo.";
+        row.appendChild(cell);
+        tableBody.appendChild(row);
+      }
+
       list.forEach((item) => {
         const row = document.createElement("tr");
         row.innerHTML = `
@@ -67,8 +128,6 @@
           <td>${formatDate(item.created_at)}</td>
           <td>
             <div class="action-cell">
-            
-              
               <button class="action-button delete" data-id="${item.id}" data-title="${item.title}" title="Xóa">
                 <i class="fas fa-trash"></i>
               </button>
@@ -80,7 +139,6 @@
 
       document.querySelector(".results-info").textContent = `Hiển thị ${list.length} thông báo`;
 
-      // Gắn sự kiện xóa
       document.querySelectorAll(".action-button.delete").forEach((btn) => {
         btn.addEventListener("click", () => {
           const id = btn.getAttribute("data-id");
@@ -103,15 +161,15 @@
         .then((res) => res.json())
         .then((data) => {
           if (data.error) {
-            alert("Lỗi: " + data.error);
+            showToast(data.error, "danger");
           } else {
-            alert("Đã xóa thông báo.");
+            showToast("Xóa thông báo thành công", "success");
             getNotifications();
           }
         })
         .catch((err) => {
           console.error("Lỗi khi xóa thông báo:", err);
-          alert("Xảy ra lỗi khi xóa.");
+          showToast("Xảy ra lỗi khi xóa thông báo", "danger");
         });
     }
 
@@ -119,6 +177,78 @@
       if (!dateStr) return "-";
       return new Date(dateStr).toLocaleDateString("vi-VN");
     }
+
+    // Tìm kiếm
+    const searchInput = document.querySelector(".search-input");
+    searchInput.addEventListener("input", function () {
+      const keyword = this.value.trim().toLowerCase();
+
+      const filtered = originalNotifyList.filter((item) =>
+        (item.title && item.title.toLowerCase().includes(keyword)) ||
+        (item.type_code && item.type_code.toLowerCase().includes(keyword)) ||
+        (item.message && item.message.toLowerCase().includes(keyword))
+      );
+
+      renderNotifications(filtered);
+    });
+
+    // Lọc theo type_code
+    function filterByType(type) {
+      if (type === "all") {
+        renderNotifications(originalNotifyList);
+        return;
+      }
+      const filtered = originalNotifyList.filter((item) => item.type_code === type);
+      renderNotifications(filtered);
+    }
+
+    // Gắn sự kiện lọc
+    document.querySelectorAll(".header-filter .filter-item").forEach((item) => {
+      item.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const filterValue = item.getAttribute("data-filter-value");
+        filterByType(filterValue);
+
+        // Ẩn dropdown
+        document.querySelectorAll(".filter-dropdown").forEach((dropdown) => {
+          dropdown.classList.remove("show");
+        });
+      });
+    });
+
+    // Dropdown toggle
+    document.querySelectorAll(".header-filter").forEach((filter) => {
+      const icon = filter.querySelector(".filter-icon");
+      const dropdown = filter.querySelector(".filter-dropdown");
+
+      if (!icon) return;
+
+      icon.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const isActive = filter.classList.contains("active");
+
+        document.querySelectorAll(".header-filter").forEach((f) => {
+          f.classList.remove("active");
+          const d = f.querySelector(".filter-dropdown");
+          if (d) d.classList.remove("show");
+        });
+
+        if (!isActive) {
+          filter.classList.add("active");
+          dropdown.classList.add("show");
+        }
+      });
+    });
+
+    // Click ngoài -> đóng dropdown
+    document.addEventListener("click", () => {
+      document.querySelectorAll(".header-filter").forEach((filter) => {
+        filter.classList.remove("active");
+        const dropdown = filter.querySelector(".filter-dropdown");
+        if (dropdown) dropdown.classList.remove("show");
+      });
+    });
 
     getNotifications();
   });

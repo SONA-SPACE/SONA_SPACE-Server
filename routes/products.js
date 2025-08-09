@@ -10,6 +10,237 @@ const LIMIT_PER_PAGE = 8;
  * @desc    Lấy danh sách sản phẩm với phân trang, lọc và sắp xếp
  * @access  Public
  */
+router.get("/all", optionalAuth, async (req, res) => {
+  const userId = req.user?.id || 0;
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 8;
+    const offset = (page - 1) * limit;
+
+    const categorySlug = req.query.categorySlug;
+    const roomSlug = req.query.roomSlug;
+    const price = req.query.price;
+    const color = req.query.color;
+    const sort = req.query.sort;
+
+    let whereConditions = ["p.product_status = 1"];
+    let params = [];
+
+    // Lọc theo categorySlug
+    if (categorySlug) {
+      whereConditions.push("c.slug = ?");
+      params.push(categorySlug);
+    }
+
+    // Lọc theo roomSlug (bắt buộc nếu có)
+    if (roomSlug) {
+      whereConditions.push(`
+          p.product_id IN (
+            SELECT DISTINCT rp.product_id 
+            FROM room_product rp 
+            JOIN room r ON rp.room_id = r.room_id 
+            WHERE r.slug = ?
+          )
+        `);
+      params.push(roomSlug);
+    }
+
+    // Lọc theo giá
+    if (price) {
+      switch (price) {
+        case "Dưới 10 triệu":
+          whereConditions.push(`
+              (SELECT 
+                CASE 
+                  WHEN MIN(vp2.variant_product_price_sale) > 0 THEN MIN(vp2.variant_product_price_sale)
+                  ELSE MIN(vp2.variant_product_price)
+                END 
+              FROM variant_product vp2 
+              WHERE vp2.product_id = p.product_id) < 10000000
+            `);
+          break;
+        case "10 - 30 triệu":
+          whereConditions.push(`
+              (SELECT 
+                CASE 
+                  WHEN MIN(vp2.variant_product_price_sale) > 0 THEN MIN(vp2.variant_product_price_sale)
+                  ELSE MIN(vp2.variant_product_price)
+                END 
+              FROM variant_product vp2 
+              WHERE vp2.product_id = p.product_id) BETWEEN 10000000 AND 30000000
+            `);
+          break;
+        case "Trên 30 triệu":
+          whereConditions.push(`
+              (SELECT 
+                CASE 
+                  WHEN MIN(vp2.variant_product_price_sale) > 0 THEN MIN(vp2.variant_product_price_sale)
+                  ELSE MIN(vp2.variant_product_price)
+                END 
+              FROM variant_product vp2 
+              WHERE vp2.product_id = p.product_id) > 30000000
+            `);
+          break;
+      }
+    }
+
+    // Lọc theo màu
+    if (color) {
+      whereConditions.push("col.color_name = ?");
+      params.push(color);
+    }
+
+    // Sort
+    let orderBy = "p.created_at DESC";
+    if (sort) {
+      switch (sort) {
+        case "Giá tăng dần":
+          orderBy = `
+              (SELECT 
+                CASE 
+                  WHEN MIN(vp2.variant_product_price_sale) > 0 THEN MIN(vp2.variant_product_price_sale)
+                  ELSE MIN(vp2.variant_product_price)
+                END 
+              FROM variant_product vp2 
+              WHERE vp2.product_id = p.product_id) ASC
+            `;
+          break;
+        case "Giá giảm dần":
+          orderBy = `
+              (SELECT 
+                CASE 
+                  WHEN MIN(vp2.variant_product_price_sale) > 0 THEN MIN(vp2.variant_product_price_sale)
+                  ELSE MIN(vp2.variant_product_price)
+                END 
+              FROM variant_product vp2 
+              WHERE vp2.product_id = p.product_id) DESC
+            `;
+          break;
+        case "Mới nhất":
+          orderBy = "p.created_at DESC";
+          break;
+        case "Giảm giá":
+          orderBy = `
+              (SELECT 
+                MAX(
+                  CASE 
+                    WHEN vp2.variant_product_price_sale > 0 
+                    THEN ((vp2.variant_product_price - vp2.variant_product_price_sale) / vp2.variant_product_price * 100)
+                    ELSE 0 
+                  END
+                ) 
+              FROM variant_product vp2 
+              WHERE vp2.product_id = p.product_id) DESC
+            `;
+          break;
+      }
+    }
+
+    // Đếm tổng sản phẩm
+    const [[{ totalProducts }]] = await db.query(
+      `
+        SELECT COUNT(DISTINCT p.product_id) AS totalProducts
+        FROM product p
+        LEFT JOIN category c ON p.category_id = c.category_id
+        LEFT JOIN variant_product vp ON p.product_id = vp.product_id
+        LEFT JOIN color col ON vp.color_id = col.color_id
+        WHERE ${whereConditions.join(" AND ")}
+      `,
+      params
+    );
+
+    // Lấy danh sách sản phẩm
+    const query = `
+        SELECT 
+          p.product_id AS id,
+          p.product_name AS name,
+          p.product_slug AS slug,
+          p.product_image AS image,
+          p.category_id,
+          c.category_name,
+          p.created_at,
+          p.updated_at,
+          (
+            SELECT MIN(vp2.variant_product_price)
+            FROM variant_product vp2
+            WHERE vp2.product_id = p.product_id
+          ) AS price,
+          (
+            SELECT MIN(vp2.variant_product_price_sale)
+            FROM variant_product vp2
+            WHERE vp2.product_id = p.product_id AND vp2.variant_product_price_sale > 0
+          ) AS price_sale,
+          JSON_ARRAYAGG(DISTINCT col.color_hex) AS color_hex,
+          IFNULL(JSON_ARRAYAGG(DISTINCT r3.slug), JSON_ARRAY()) AS rooms,
+          (
+            SELECT vp2.variant_id
+            FROM variant_product vp2
+            JOIN color c2 ON vp2.color_id = c2.color_id
+            WHERE vp2.product_id = p.product_id
+            ORDER BY c2.color_priority = 1 DESC, c2.color_priority ASC, vp2.variant_id ASC
+            LIMIT 1
+          ) AS variant_id,
+          (
+            SELECT EXISTS (
+              SELECT 1
+              FROM wishlist w
+              WHERE w.variant_id = (
+                SELECT vp2.variant_id
+                FROM variant_product vp2
+                JOIN color c2 ON vp2.color_id = c2.color_id
+                WHERE vp2.product_id = p.product_id
+                ORDER BY c2.color_priority = 1 DESC, c2.color_priority ASC, vp2.variant_id ASC
+                LIMIT 1
+              )
+              AND w.user_id = ?
+              AND w.status = 1
+            )
+          ) AS isWishlist
+        FROM product p
+        LEFT JOIN category c ON p.category_id = c.category_id
+        LEFT JOIN variant_product vp ON p.product_id = vp.product_id
+        LEFT JOIN color col ON vp.color_id = col.color_id
+        LEFT JOIN room_product rp3 ON p.product_id = rp3.product_id
+        LEFT JOIN room r3 ON r3.room_id = rp3.room_id
+        WHERE ${whereConditions.join(" AND ")}
+        GROUP BY p.product_id
+        ORDER BY ${orderBy}
+        LIMIT ? OFFSET ?
+      `;
+
+    const finalParams = [userId, ...params, limit, offset];
+    const [products] = await db.query(query, finalParams);
+
+    res.json({
+      products: products.map((item) => ({
+        id: item.id,
+        name: item.name,
+        slug: item.slug,
+        image: item.image,
+        category_id: item.category_id,
+        category_name: item.category_name,
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        price: item.price ?? "0.00",
+        price_sale: item.price_sale ?? "0.00",
+        color_hex: JSON.parse(item.color_hex || "[]"),
+        rooms: JSON.parse(item.rooms || "[]"),
+        variant_id: item.variant_id,
+        isWishlist: item.isWishlist === 1,
+      })),
+      pagination: {
+        totalProducts,
+        currentPage: page,
+        productsPerPage: limit,
+        totalPages: Math.ceil(totalProducts / limit),
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    res.status(500).json({ error: "Failed to fetch products" });
+  }
+});
+
 router.get("/", optionalAuth, async (req, res) => {
   const userId = req.user?.id || 0;
   try {

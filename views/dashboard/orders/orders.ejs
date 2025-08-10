@@ -1510,16 +1510,19 @@
             const emailData = await emailResponse.json();
             
             if (emailData.success) {
-              // Hiển thị thông báo thành công với thông tin voucher
+              // Hiển thị thông báo thành công với thông tin voucher chi tiết
+              const voucherInfo = emailData.data;
+              const voucherMessage = `Đã cập nhật trạng thái và gửi email xin lỗi kèm voucher giảm giá ${voucherInfo.discountPercent}% cho khách hàng.\n\n🎫 Mã voucher: ${voucherInfo.voucherCode}\n📅 Hạn sử dụng: ${voucherInfo.expiryDate}\n📧 Gửi đến: ${voucherInfo.email}`;
+              
               if (window.antd && window.antd.notification) {
                 window.antd.notification.success({
                   message: 'Thành công',
-                  description: `Đã cập nhật trạng thái và gửi email xin lỗi kèm voucher giảm giá 20% cho khách hàng. Mã voucher: ${emailData.data.voucherCode}`,
+                  description: voucherMessage,
                   placement: 'topRight',
-                  duration: 5
+                  duration: 8
                 });
               } else {
-                alert(`Đã cập nhật trạng thái và gửi email xin lỗi kèm voucher giảm giá 20%. Mã voucher: ${emailData.data.voucherCode}`);
+                alert(voucherMessage);
               }
             } else {
               // Nếu gửi email thất bại, vẫn thông báo cập nhật thành công nhưng có lỗi email

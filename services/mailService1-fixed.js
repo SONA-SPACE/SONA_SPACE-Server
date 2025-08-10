@@ -2,11 +2,6 @@ const nodemailer = require("nodemailer");
 const path = require("path");
 const ejs = require("ejs");
 
-// Load environment variables if not already loaded
-if (!process.env.EMAIL_USER) {
-  require('dotenv').config();
-}
-
 exports.sendEmail1 = async (to, subject, data, templateType = 'order') => {
   let templatePath;
   
@@ -28,7 +23,7 @@ exports.sendEmail1 = async (to, subject, data, templateType = 'order') => {
   }
 
   const html = await ejs.renderFile(templatePath, data);
-  const transporter = nodemailer.createTransport({
+  const transporter = nodemailer.createTransporter({
     service: "gmail",
     auth: {
       user: process.env.EMAIL_USER || "sonaspace.furniture@gmail.com",
@@ -45,10 +40,10 @@ exports.sendEmail1 = async (to, subject, data, templateType = 'order') => {
     const info = await transporter.sendMail(mailOptions);
     console.log(" Email gửi thành công:", info.response);
 
-    return { success: true, info };
+    return true;
   } catch (error) {
     console.error(" Lỗi gửi mail:", error.message);
     console.error(" Stack:", error.stack);
-    return { success: false, error: error.message };
+    return false;
   }
 };

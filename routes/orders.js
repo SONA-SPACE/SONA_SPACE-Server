@@ -3,6 +3,8 @@ const router = express.Router();
 const db = require("../config/database");
 const { verifyToken, isAdmin, optionalAuth } = require("../middleware/auth");
 const crypto = require("crypto");
+const upload = require("../middleware/upload");
+const cloudinary = require("../config/cloudinary");
 
 const axios = require("axios");
 const { sendEmail1 } = require("../services/mailService1");
@@ -1694,6 +1696,137 @@ router.put("/:id/return-status", verifyToken, isAdmin, async (req, res) => {
       // Commit transaction
       await connection.commit();
 
+      // Send email notification if return is approved
+      if (return_status === "APPROVED") {
+        try {
+          // Get customer email information
+          const [[customerInfo]] = await db.query(
+            `SELECT o.order_hash, o.order_name_new, o.order_email_new, 
+                    u.user_name, u.user_gmail as user_email,
+                    or_data.reason, or_data.total_refund
+             FROM orders o
+             LEFT JOIN user u ON o.user_id = u.user_id
+             LEFT JOIN order_returns or_data ON o.order_id = or_data.order_id
+             WHERE o.order_id = ?
+             ORDER BY or_data.created_at DESC
+             LIMIT 1`,
+            [orderId]
+          );
+
+          if (customerInfo) {
+            const customerEmail = customerInfo.order_email_new || customerInfo.user_email;
+            const customerName = customerInfo.order_name_new || customerInfo.user_name;
+            
+            if (customerEmail) {
+              const emailData = {
+                customerName: customerName || 'Khách hàng',
+                orderHash: customerInfo.order_hash,
+                reason: customerInfo.reason || 'Yêu cầu trả hàng',
+                refundAmount: customerInfo.total_refund || 0,
+                approvalDate: new Date().toLocaleDateString('vi-VN'),
+                supportEmail: 'sonaspace.furniture@gmail.com',
+                supportPhone: '1900-xxxx'
+              };
+
+              const emailResult = await sendEmail1(
+                customerEmail,
+                `[Sona Space] Đã duyệt yêu cầu trả hàng - ${customerInfo.order_hash}`,
+                emailData,
+                'return-approved'
+              );
+
+              console.log(`📧 Email sent to ${customerEmail}:`, emailResult ? 'Success' : 'Failed');
+            }
+          }
+        } catch (emailError) {
+          console.error('❌ Failed to send return approval email:', emailError.message);
+          // Continue execution even if email fails
+        }
+
+        // Tạo mã giảm giá 20% cho user sau khi trả hàng thành công
+        try {
+          // Get user information for coupon creation
+          const [[userInfo]] = await db.query(
+            `SELECT o.user_id, u.user_name, u.user_gmail 
+             FROM orders o
+             LEFT JOIN user u ON o.user_id = u.user_id
+             WHERE o.order_id = ?`,
+            [orderId]
+          );
+
+          if (userInfo && userInfo.user_id) {
+            // Generate unique coupon code
+            const timestamp = Date.now().toString().slice(-6);
+            const userIdStr = userInfo.user_id.toString().padStart(3, '0');
+            const couponCode = `RETURN20_${userIdStr}_${timestamp}`;
+            
+            // Calculate expiration date (14 days from now)
+            const startDate = new Date();
+            const expDate = new Date();
+            expDate.setDate(expDate.getDate() + 14);
+            
+            // Create coupon in database
+            const [couponResult] = await db.query(`
+              INSERT INTO couponcode (
+                code, title, value_price, description, start_time, exp_time,
+                min_order, used, is_flash_sale, combinations, discount_type, status
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `, [
+              couponCode,
+              'Mã giảm giá trả hàng',
+              20, // 20% discount
+              'Mã giảm giá 20% dành cho khách hàng trả hàng thành công. Áp dụng cho đơn hàng tiếp theo.',
+              startDate,
+              expDate,
+              100000, // Minimum order 100,000 VND
+              1, // Can be used once
+              0, // Not flash sale
+              null,
+              'percentage',
+              1 // Active
+            ]);
+
+            const couponId = couponResult.insertId;
+
+            // Assign coupon to user
+            await db.query(`
+              INSERT INTO user_has_coupon (user_id, couponcode_id, status)
+              VALUES (?, ?, ?)
+            `, [userInfo.user_id, couponId, 0]); // status 0 = not used yet
+
+            // Create notification for user
+            const [typeRows] = await db.query(
+              `SELECT id FROM notification_types WHERE type_code = ? AND is_active = 1`,
+              ['coupon']
+            );
+
+            if (typeRows.length > 0) {
+              const notificationTypeId = typeRows[0].id;
+              const notificationTitle = "🎁 Bạn nhận được mã giảm giá trả hàng!";
+              const notificationMessage = `Cảm ơn bạn đã tin tưởng Sona Space! Mã ${couponCode} giảm 20% đã được thêm vào tài khoản. Áp dụng cho đơn hàng từ 100,000đ. Hạn sử dụng: ${expDate.toLocaleDateString('vi-VN')}`;
+
+              const [notiResult] = await db.query(`
+                INSERT INTO notifications (type_id, title, message, created_by)
+                VALUES (?, ?, ?, ?)
+              `, [notificationTypeId, notificationTitle, notificationMessage, 'system']);
+
+              const notificationId = notiResult.insertId;
+
+              // Create user notification
+              await db.query(`
+                INSERT INTO user_notifications (user_id, notification_id, is_read, read_at, is_deleted)
+                VALUES (?, ?, ?, ?, ?)
+              `, [userInfo.user_id, notificationId, 0, null, 0]);
+            }
+
+            console.log(`🎁 Created return coupon ${couponCode} for user ${userInfo.user_id} (${userInfo.user_name})`);
+          }
+        } catch (couponError) {
+          console.error('❌ Failed to create return coupon:', couponError.message);
+          // Continue execution even if coupon creation fails
+        }
+      }
+
       const statusText =
         return_status === ""
           ? "Không có hoàn trả"
@@ -1994,6 +2127,96 @@ router.post("/send-invoice", verifyToken, async (req, res) => {
 });
 
 /**
+ * @route   POST /api/orders/:id/send-apology-email
+ * @desc    Gửi email xin lỗi cho khách hàng
+ * @access  Private (Admin)
+ */
+router.post("/:id/send-apology-email", verifyToken, isAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason, message } = req.body;
+
+    // Lấy thông tin đơn hàng và khách hàng
+    const [orders] = await db.query(
+      `
+      SELECT o.*, u.user_name, u.user_gmail, u.user_number
+      FROM orders o
+      LEFT JOIN user u ON o.user_id = u.user_id
+      WHERE o.order_id = ?
+    `,
+      [id]
+    );
+
+    if (orders.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy đơn hàng",
+      });
+    }
+
+    const order = orders[0];
+    
+    if (!order.user_gmail) {
+      return res.status(400).json({
+        success: false,
+        message: "Đơn hàng không có email khách hàng",
+      });
+    }
+
+    // Chuẩn bị dữ liệu email
+    const voucherCode = `SORRY${order.order_id}${Date.now().toString().slice(-4)}`; // Tạo mã unique với order_id
+    const emailData = {
+      customerName: order.user_name || 'Quý khách',
+      orderId: order.order_id,
+      orderHash: order.order_hash,
+      orderTotal: new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(order.order_total_final),
+      reason: reason || 'Sự cố kỹ thuật',
+      message: message || 'Chúng tôi xin lỗi vì sự bất tiện này và sẽ khắc phục sớm nhất có thể.',
+      voucherCode: voucherCode,
+      discountPercent: 20,
+      expiryDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString('vi-VN'),
+      validDays: 14
+    };
+
+    // Gửi email xin lỗi
+    const emailResult = await sendEmail1(
+      order.user_gmail,
+      'Xin lỗi về sự cố đơn hàng - Sona Space',
+      emailData,
+      'apology'
+    );
+
+    if (emailResult.success) {
+      // Log hoạt động
+      console.log(`✅ Sent apology email for order ${order.order_id} to ${order.user_gmail}`);
+      
+      res.json({
+        success: true,
+        message: "Email xin lỗi đã được gửi thành công",
+        data: {
+          order_id: order.order_id,
+          email: order.user_gmail,
+          sent_at: new Date().toISOString(),
+          voucherCode: emailData.voucherCode,
+          discountPercent: emailData.discountPercent,
+          expiryDate: emailData.expiryDate
+        },
+      });
+    } else {
+      throw new Error(emailResult.error || 'Không thể gửi email');
+    }
+
+  } catch (error) {
+    console.error("❌ Error sending apology email:", error);
+    res.status(500).json({
+      success: false,
+      message: "Lỗi khi gửi email xin lỗi",
+      error: error.message,
+    });
+  }
+});
+
+/**
  * @route   PATCH /api/orders/:id
  * @desc    Update specific fields of an order
  * @access  Private (Admin)
@@ -2130,15 +2353,16 @@ router.patch("/:id", verifyToken, isAdmin, async (req, res) => {
 
 /**
  * @route   POST /api/orders/return/:orderHash
- * @desc    Process an order return request
+ * @desc    Process an order return request with images
  * @access  Private
  */
-router.post("/return/:orderHash", verifyToken, async (req, res) => {
+router.post("/return/:orderHash", verifyToken, upload.array('return_images', 5), async (req, res) => {
   try {
     const { orderHash } = req.params;
     const { reason, items, return_type } = req.body;
     const user_id = req.user.id;
     const isAdmin = req.user.role === "admin";
+    const uploadedFiles = req.files || [];
 
     if (!reason) {
       return res.status(400).json({
@@ -2178,6 +2402,42 @@ router.post("/return/:orderHash", verifyToken, async (req, res) => {
         success: false,
         message: "Chỉ có thể trả lại đơn hàng đã giao thành công",
       });
+    }
+
+    // Upload hình ảnh lên Cloudinary
+    let uploadedImageUrls = [];
+    if (uploadedFiles.length > 0) {
+      try {
+        const uploadPromises = uploadedFiles.map(file => {
+          return new Promise((resolve, reject) => {
+            cloudinary.uploader.upload_stream(
+              {
+                folder: 'order_returns',
+                public_id: `return_${orderHash}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                resource_type: 'image'
+              },
+              (error, result) => {
+                if (error) {
+                  console.error('Cloudinary upload error:', error);
+                  reject(error);
+                } else {
+                  resolve(result.secure_url);
+                }
+              }
+            ).end(file.buffer);
+          });
+        });
+
+        uploadedImageUrls = await Promise.all(uploadPromises);
+        console.log('Đã upload thành công:', uploadedImageUrls.length, 'hình ảnh');
+      } catch (uploadError) {
+        console.error('Lỗi upload hình ảnh:', uploadError);
+        return res.status(500).json({
+          success: false,
+          message: "Lỗi khi upload hình ảnh",
+          error: uploadError.message
+        });
+      }
     }
 
     // Bắt đầu transaction
@@ -2247,12 +2507,15 @@ router.post("/return/:orderHash", verifyToken, async (req, res) => {
         }
       }
 
+      // Chuyển đổi array URL thành JSON string để lưu vào database
+      const returnImagesJson = uploadedImageUrls.length > 0 ? JSON.stringify(uploadedImageUrls) : null;
+
       // Tạo bản ghi trả hàng với return_type = 'REFUND'
       const [result] = await connection.query(
         `INSERT INTO order_returns (
-          order_id, user_id, reason, return_type, total_refund, status, created_at
-        ) VALUES (?, ?, ?, 'REFUND', ?, 'PENDING', NOW())`,
-        [order.order_id, user_id, reason, totalRefundAmount]
+          order_id, user_id, reason, return_images, return_type, total_refund, status, created_at
+        ) VALUES (?, ?, ?, ?, 'REFUND', ?, 'PENDING', NOW())`,
+        [order.order_id, user_id, reason, returnImagesJson, totalRefundAmount]
       );
 
       const returnId = result.insertId;
@@ -2326,7 +2589,7 @@ router.post("/return/:orderHash", verifyToken, async (req, res) => {
                  VALUES (?, 'ORDER_RETURN', ?, ?, NOW(), 0)`,
                 [
                   admin.user_id,
-                  `Đơn hàng #${order.order_hash} có yêu cầu trả hàng mới`,
+                  `Đơn hàng #${order.order_hash} có yêu cầu trả hàng mới với ${uploadedImageUrls.length} hình ảnh`,
                   order.order_id,
                 ]
               );
@@ -2348,6 +2611,8 @@ router.post("/return/:orderHash", verifyToken, async (req, res) => {
           return_id: returnId,
           order_id: order.order_id,
           order_hash: order.order_hash,
+          reason,
+          return_images: uploadedImageUrls,
           total_refund: totalRefundAmount,
           items: itemsToReturn.map((item) => ({
             order_item_id: item.order_item_id,
@@ -2363,6 +2628,21 @@ router.post("/return/:orderHash", verifyToken, async (req, res) => {
     } catch (error) {
       // Rollback nếu có lỗi
       await connection.rollback();
+      
+      // Xóa hình ảnh đã upload nếu có lỗi
+      if (uploadedImageUrls.length > 0) {
+        try {
+          const deletePromises = uploadedImageUrls.map(url => {
+            const publicId = url.split('/').pop().split('.')[0];
+            return cloudinary.uploader.destroy(`order_returns/${publicId}`);
+          });
+          await Promise.all(deletePromises);
+          console.log('Đã xóa', uploadedImageUrls.length, 'hình ảnh do lỗi transaction');
+        } catch (deleteError) {
+          console.error('Lỗi khi xóa hình ảnh:', deleteError);
+        }
+      }
+      
       throw error;
     } finally {
       connection.release();

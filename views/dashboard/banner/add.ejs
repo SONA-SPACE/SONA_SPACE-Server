@@ -16,23 +16,33 @@
           <input type="text" id="title" class="form-control" placeholder="Nhập tiêu đề banner" />
         </div>
         <div class="form-group">
-          <label for="subtitle">Phụ đề</label>
-          <input type="text" id="subtitle" class="form-control" placeholder="Nhập phụ đề (nếu có)" />
+          <label for="category_id">Danh mục (Tùy chọn)</label>
+          <div class="select-wrapper">
+            <select id="category_id" class="form-control">
+              <option value="">-- Chọn danh mục --</option>
+              <!-- Danh mục sẽ được load từ API -->
+            </select>
+            <i class="fas fa-chevron-down"></i>
+          </div>
         </div>
       </div>
 
       <div class="form-row">
         <div class="form-group">
-          <label for="link_url">Liên kết</label>
-          <input type="text" id="link_url" class="form-control" placeholder="https://" />
+          <label for="start_date">Ngày bắt đầu</label>
+          <input type="date" id="start_date" class="form-control" />
         </div>
+        <div class="form-group">
+          <label for="end_date">Ngày kết thúc</label>
+          <input type="date" id="end_date" class="form-control" />
+        </div>
+      </div>
+
+      <div class="form-row">
         <div class="form-group">
           <label for="position">Vị trí</label>
           <input type="number" id="position" class="form-control" placeholder="Thứ tự hiển thị" value="0" />
         </div>
-      </div>
-
-      <div class="form-row">
         <div class="form-group">
           <label for="page_type">Trang hiển thị</label>
           <div class="select-wrapper">
@@ -59,26 +69,19 @@
             <i class="fas fa-chevron-down"></i>
           </div>
         </div>
-        <div class="form-group">
-          <label for="status">Trạng thái</label>
-          <div class="select-wrapper">
-            <select id="status" class="form-control">
-              <option value="active">Hiển thị</option>
-              <option value="inactive">Ẩn</option>
-            </select>
-            <i class="fas fa-chevron-down"></i>
-          </div>
+      </div>
+      <div class="form-group">
+        <label for="status">Trạng thái</label>
+        <div class="select-wrapper">
+          <select id="status" class="form-control">
+            <option value="active">Hiển thị</option>
+            <option value="inactive">Ẩn</option>
+          </select>
+          <i class="fas fa-chevron-down"></i>
         </div>
       </div>
     </div>
-
-    <!-- Nút -->
-    <div class="form-actions">
-      <button type="button" class="btn btn-cancel" onclick="window.location.href='/dashboard/banners'">Hủy</button>
-      <button type="button" class="btn btn-save" id="saveBannerBtn">Lưu</button>
-    </div>
   </div>
-
   <!-- Cột phải: Upload ảnh -->
   <div class="image-upload-column">
     <div class="image-upload-container">
@@ -91,7 +94,16 @@
         </div>
       </div>
     </div>
+    <!-- Nút -->
+    <div class="form-actions">
+      <button type="button" class="btn btn-cancel" onclick="window.location.href='/dashboard/banners'">Hủy</button>
+      <button type="button" class="btn btn-save" id="saveBannerBtn">Lưu</button>
+    </div>
   </div>
+
+</div>
+
+
 </div>
 
 <!-- JS xử lý -->
@@ -99,9 +111,59 @@
   let bannerImageFile = null;
 
   document.addEventListener("DOMContentLoaded", () => {
+    console.log("DOM loaded, initializing...");
+    
+    // Check if we have authentication
+    const token = localStorage.getItem("token");
+    console.log("Token available:", !!token);
+    
     bindUpload("#bannerImageDropArea", (file) => (bannerImageFile = file));
     document.getElementById("saveBannerBtn").addEventListener("click", handleSaveBanner);
+
+    // Load categories for the dropdown
+    console.log("Starting to load categories...");
+    loadCategories();
   });
+
+  async function loadCategories() {
+    try {
+      console.log("Loading categories...");
+      const response = await fetch("/api/categories");
+      console.log("Categories response status:", response.status);
+      
+      if (response.ok) {
+        const categories = await response.json();
+        console.log("Categories data:", categories);
+        
+        const categorySelect = document.getElementById("category_id");
+        
+        // Clear existing options except the first one
+        while (categorySelect.children.length > 1) {
+          categorySelect.removeChild(categorySelect.lastChild);
+        }
+        
+        // API trả về trực tiếp mảng categories, không phải object
+        if (Array.isArray(categories) && categories.length > 0) {
+          categories.forEach(category => {
+            const option = document.createElement("option");
+            option.value = category.category_id;
+            option.textContent = category.category_name;
+            categorySelect.appendChild(option);
+          });
+          console.log(`✅ Loaded ${categories.length} categories successfully`);
+        } else {
+          console.warn("No categories found or invalid format");
+          showToast("Không tìm thấy danh mục nào", "warning");
+        }
+      } else {
+        console.error("Failed to fetch categories:", response.status);
+        showToast("Không thể tải danh sách danh mục", "warning");
+      }
+    } catch (error) {
+      console.error("Error loading categories:", error);
+      showToast("Lỗi khi tải danh mục: " + error.message, "warning");
+    }
+  }
 
   function bindUpload(selector, setter) {
     const dropArea = document.querySelector(selector);
@@ -122,13 +184,14 @@
 
   async function handleSaveBanner() {
     const title = document.getElementById("title").value.trim();
-    const subtitle = document.getElementById("subtitle").value.trim();
-    const link_url = document.getElementById("link_url").value.trim();
+    const category_id = document.getElementById("category_id").value || null;
     const position = parseInt(document.getElementById("position").value) || 0;
     const page_type = document.getElementById("page_type").value;
     const status = document.getElementById("status").value;
+    const start_date = document.getElementById("start_date").value || null;
+    const end_date = document.getElementById("end_date").value || null;
     const saveBtn = document.getElementById("saveBannerBtn");
-    
+
     saveBtn.disabled = true;
     saveBtn.innerText = "Đang lưu...";
 
@@ -157,12 +220,20 @@
 
       const formData = new FormData();
       formData.append("title", title);
-      formData.append("subtitle", subtitle);
-      formData.append("link_url", link_url);
       formData.append("position", position);
       formData.append("page_type", page_type);
       formData.append("status", status);
       formData.append("image", bannerImageFile);
+
+      if (category_id) {
+        formData.append("category_id", category_id);
+      }
+      if (start_date) {
+        formData.append("start_date", start_date);
+      }
+      if (end_date) {
+        formData.append("end_date", end_date);
+      }
 
       const response = await fetch("/api/banners", {
         method: "POST",

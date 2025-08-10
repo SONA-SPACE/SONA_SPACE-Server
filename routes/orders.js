@@ -654,18 +654,6 @@ router.post("/", verifyToken, async (req, res) => {
       if (existingOrders.length > 0) {
         return res.status(400).json({ error: "Đơn hàng đã tồn tại" });
       }
-      // Trước khi insert đơn hàng COD
-      for (const item of cart_items) {
-        const [[variant]] = await db.query(
-          `SELECT variant_product_quantity FROM variant_product WHERE variant_id = ?`,
-          [item.variant_id]
-        );
-        if (!variant || variant.variant_product_quantity < item.quantity) {
-          return res.status(400).json({
-            error: `Sản phẩm ${item.name} không đủ số lượng`,
-          });
-        }
-      }
 
 
       await db.query(
@@ -863,8 +851,8 @@ router.post("/", verifyToken, async (req, res) => {
     }
 
 
+    // MoMo: không lưu đơn → trả về payUrl
     if (method === "MOMO") {
-
       for (const item of cart_items) {
         const [[variant]] = await db.query(
           `SELECT variant_product_quantity FROM variant_product WHERE variant_id = ?`,
@@ -876,13 +864,12 @@ router.post("/", verifyToken, async (req, res) => {
           });
         }
       }
+
       const partnerCode = "MOMO";
       const accessKey = "F8BBA842ECF85";
       const secretKey = "K951B6PE1waDMi640xX08PD3vg6EkVlz";
       const requestType = "captureWallet";
-
       const orderId = req.body.order_id || `SNA-${Date.now()}`;
-
       const requestId = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
       const redirectUrl = `https://f3740882e27d.ngrok-free.app/api/orders/redirect/momo`;
       const ipnUrl = `https://f3740882e27d.ngrok-free.app/api/orders/payment/momo`;
@@ -937,6 +924,7 @@ router.post("/", verifyToken, async (req, res) => {
       return res.json({ payUrl: momoRes.data.payUrl });
     }
 
+    // VNPay: không lưu đơn → trả về payUrl
     if (method === "VNPAY") {
       const transactionCode = `VNP${Date.now()}${Math.floor(
         Math.random() * 1000
@@ -983,14 +971,27 @@ router.post("/", verifyToken, async (req, res) => {
 
 router.post("/payment/momo", async (req, res) => {
   const {
-    orderId, amount, resultCode, requestId, orderInfo, orderType, transId,
-    payType, extraData, signature, message, partnerCode, responseTime
+    orderId,
+    amount,
+    resultCode,
+    requestId,
+    orderInfo,
+    orderType,
+    transId,
+    payType,
+    extraData,
+    signature,
+    message,
+    partnerCode,
+    responseTime,
   } = req.body;
 
   const accessKey = "F8BBA842ECF85";
   const secretKey = "K951B6PE1waDMi640xX08PD3vg6EkVlz";
 
   try {
+
+    // Kiểm tra chữ ký hợp lệ
     const rawSignature = `accessKey=${accessKey}&amount=${amount}&extraData=${extraData}&message=${message}&orderId=${orderId}&orderInfo=${orderInfo}&orderType=${orderType}&partnerCode=${partnerCode}&payType=${payType}&requestId=${requestId}&responseTime=${responseTime}&resultCode=${resultCode}&transId=${transId}`;
     console.log("Raw Signature:", rawSignature);
 
@@ -998,15 +999,14 @@ router.post("/payment/momo", async (req, res) => {
     if (!signature || !rawSignature) {
       return res.status(400).json({ message: "Thiếu thông tin chữ ký" });
     }
-
-
+    
     const expectedSignature = crypto
       .createHmac("sha256", secretKey)
       .update(rawSignature)
       .digest("hex");
 
 
-
+    // Kiểm tra đơn đã tồn tại chưa
     const [existingOrder] = await db.query("SELECT * FROM orders WHERE order_hash = ?", [orderId]);
     if (existingOrder.length > 0) {
       const existingOrderId = existingOrder[0].order_id;
@@ -1020,15 +1020,29 @@ router.post("/payment/momo", async (req, res) => {
       return res.status(200).json({ message: "Đơn hàng đã tồn tại và đã xử lý thanh toán." });
     }
 
+    // Giải mã extraData
     const extra = JSON.parse(Buffer.from(extraData, "base64").toString("utf8"));
     const {
-      user_id, order_total, order_total_final, cart_items = [],
-      order_name_new, order_email_new, order_address_new,
-      order_number2, couponcode_id, coupon_code, shipping_fee, order_discount
+      user_id,
+      order_total,
+      order_total_final,
+      cart_items = [],
+      order_name_new,
+      order_email_new,
+      order_address_new,
+      order_number2,
+      couponcode_id,
+      coupon_code,
+      shipping_fee,
+      order_discount,
     } = extra;
 
     const order_hash = orderId;
-    const [[userInfo]] = await db.query("SELECT user_address, user_number, user_name, user_gmail FROM user WHERE user_id = ?", [user_id]);
+    // Lấy thông tin user mặc định
+    const [[userInfo]] = await db.query(
+      `SELECT user_address, user_number, user_name, user_gmail FROM user WHERE user_id = ?`,
+      [user_id]
+    );
     const defaultName = userInfo.user_name?.trim() || "";
     const defaultEmail = userInfo.user_gmail?.trim() || "";
     const defaultAddress = userInfo.user_address?.trim() || "";
@@ -1045,11 +1059,42 @@ router.post("/payment/momo", async (req, res) => {
       if (coupon) couponcodeId = coupon.couponcode_id;
     }
 
-    await db.query("INSERT INTO orders (order_hash, user_id, order_address_old, order_address_new, order_number1, order_number2, order_total, order_total_final, shipping_fee, order_discount, current_status, created_at, order_name_old, order_name_new, order_email_old, order_email_new, couponcode_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?)", [order_hash, user_id, defaultAddress, finalAddress, defaultPhone, finalPhone, order_total, order_total_final, shipping_fee, order_discount, "PENDING", defaultName, finalName, defaultEmail, finalEmail, couponcodeId]);
+    await db.query(
+      `
+      INSERT INTO orders (
+        order_hash, user_id, order_address_old, order_address_new,
+        order_number1, order_number2, order_total, order_total_final,
+        shipping_fee, order_discount,
+        current_status, created_at,
+        order_name_old, order_name_new,
+        order_email_old, order_email_new,
+        couponcode_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?)
+    `,
+      [
+        order_hash,
+        user_id,
+        defaultAddress,
+        finalAddress,
+        defaultPhone,
+        finalPhone,
+        order_total,
+        order_total_final,
+        shipping_fee,
+        order_discount,
+        "PENDING",
+        defaultName,
+        finalName,
+        defaultEmail,
+        finalEmail,
+        couponcodeId,
+      ]
+    );
 
     const [[orderRow]] = await db.query("SELECT order_id, order_hash FROM orders WHERE order_hash = ?", [order_hash]);
     const order_id = orderRow.order_id;
     const orderHash = orderRow.order_hash;
+
 
 
     for (const item of cart_items) {
@@ -1141,20 +1186,23 @@ router.post("/payment/momo", async (req, res) => {
 
       await db.query("INSERT INTO order_items (order_id, variant_id, quantity, product_name, product_price, current_status, created_at) VALUES (?, ?, ?, ?, ?, 'NORMAL', NOW())", [order_id, variant_id, quantity, product_name, product_price]);
       await db.query("UPDATE product JOIN variant_product ON variant_product.product_id = product.product_id SET product.product_sold = product.product_sold + ? WHERE variant_product.variant_id = ?", [quantity, variant_id]);
+
     }
 
     const wishlistIdsToDelete = [];
+
     for (const item of cart_items) {
       const [wishlistRows] = await db.query("SELECT wishlist_id FROM wishlist WHERE user_id = ? AND variant_id = ?", [user_id, item.variant_id]);
       wishlistRows.forEach((row) => wishlistIdsToDelete.push(row.wishlist_id));
     }
+
     if (wishlistIdsToDelete.length > 0) {
+
       await db.query("DELETE FROM wishlist WHERE wishlist_id IN (?)", [wishlistIdsToDelete]);
     }
 
     await db.query("INSERT INTO payments (order_id, method, amount, status, transaction_code, created_at) VALUES (?, 'MOMO', ?, 'SUCCESS', ?, NOW())", [order_id, amount, transId]);
     await db.query("INSERT INTO order_status_log (order_id, from_status, to_status, trigger_by, step, created_at) VALUES (?, NULL, 'PAID', 'system', 'Khởi tạo đơn', NOW())", [order_id]);
-
 
     const [typeRows] = await db.query(
       `SELECT id FROM notification_types WHERE type_code = 'order' AND is_active = 1`
@@ -1177,17 +1225,20 @@ router.post("/payment/momo", async (req, res) => {
       console.warn("Loại thông báo 'order' không tồn tại hoặc đã bị vô hiệu hóa.");
     }
 
-
     if ((couponcode_id || coupon_code) && user_id) {
       let coupon = null;
       if (!couponcodeId && coupon_code) {
+
         const [[result]] = await db.query("SELECT * FROM couponcode WHERE code = ?", [coupon_code]);
+
         if (result) {
           couponcodeId = result.couponcode_id;
           coupon = result;
         }
       }
       if (couponcodeId && !coupon) {
+        
+    // Gửi email xác nhận
         const [[result2]] = await db.query("SELECT * FROM couponcode WHERE couponcode_id = ?", [couponcodeId]);
         coupon = result2;
       }
@@ -1196,7 +1247,7 @@ router.post("/payment/momo", async (req, res) => {
         await db.query("INSERT INTO user_has_coupon (user_id, couponcode_id, status) VALUES (?, ?, 1) ON DUPLICATE KEY UPDATE status = 1", [user_id, coupon.couponcode_id]);
       }
     }
-
+    
     const emailData = {
       name: finalName || defaultName,
       email: finalEmail || defaultEmail,
@@ -1235,9 +1286,6 @@ router.post("/payment/momo", async (req, res) => {
     return res.status(500).json({ error: "Lỗi server khi xử lý IPN MoMo" });
   }
 });
-
-
-
 
 router.get("/redirect/momo", (req, res) => {
   const { resultCode, orderId } = req.query;
@@ -1386,12 +1434,10 @@ router.get("/:id", verifyToken, async (req, res) => {
 
       res.json(order);
     } catch (error) {
-      res
-        .status(500)
-        .json({
-          error: "Failed to fetch order details",
-          details: error.message,
-        });
+      res.status(500).json({
+        error: "Failed to fetch order details",
+        details: error.message,
+      });
     }
   } catch (error) {
     console.error("Error fetching order:", error);

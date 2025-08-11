@@ -17,12 +17,11 @@ router.get("/", async (req, res) => {
 router.put("/context", async (req, res) => {
   try {
     const { context } = req.body;
-    if (!context)
-      return res.status(400).json({ error: "Vui lòng nhập nội dung" });
-    if (context.length > 2000) {
+    if (!context) return res.status(400).json({ error: "Vui lòng nhập nội dung" });
+    if (context.length < 0) {
       return res
         .status(400)
-        .json({ error: "Nội dung quá dài, vui lòng nhập ít hơn 2000 ký tự" });
+        .json({ error: "Nội dung không hợp lệ" });
     }
     const sql = `UPDATE chatbot_context SET context_text = ? WHERE id = 1`;
     const [result] = await db.query(sql, [context]);

@@ -285,19 +285,19 @@ router.put('/cancel/:orderId', verifyToken, async (req, res) => {
       if (order.current_status !== 'PENDING' && order.current_status !== 'CONFIRMED') {
         return res.status(400).json({ 
           success: false, 
-          message: 'Không thể hủy đơn hàng ở trạng thái hiện tại' 
+          message: `Không thể hủy đơn hàng ở trạng thái hiện tại: ${order.current_status}. Chỉ có thể hủy đơn hàng ở trạng thái PENDING hoặc CONFIRMED.` 
         });
       }
 
-      // Kiểm tra thời gian tạo đơn, chỉ cho phép hủy trong vòng 24 giờ
+      // Kiểm tra thời gian tạo đơn, chỉ cho phép hủy trong vòng 72 giờ (tăng từ 24h)
       const orderDate = new Date(order.created_at);
       const currentDate = new Date();
       const hoursDiff = (currentDate - orderDate) / (1000 * 60 * 60);
 
-      if (hoursDiff > 24) {
+      if (hoursDiff > 72) {
         return res.status(400).json({ 
           success: false, 
-          message: 'Không thể hủy đơn hàng sau 24 giờ kể từ khi đặt' 
+          message: `Không thể hủy đơn hàng sau 72 giờ kể từ khi đặt. Đơn hàng này đã được tạo ${hoursDiff.toFixed(1)} giờ trước.` 
         });
       }
     }

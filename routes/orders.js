@@ -873,8 +873,8 @@ router.post("/", verifyToken, async (req, res) => {
       const requestType = "captureWallet";
       const orderId = req.body.order_id || `SNA-${Date.now()}`;
       const requestId = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-      const redirectUrl = `https://f3740882e27d.ngrok-free.app/api/orders/redirect/momo`;
-      const ipnUrl = `https://f3740882e27d.ngrok-free.app/api/orders/payment/momo`;
+      const redirectUrl = `https://8e14f7ff868c.ngrok-free.app/api/orders/redirect/momo`;
+      const ipnUrl = `https://8e14f7ff868c.ngrok-free.app/api/orders/payment/momo`;
       const orderInfo = "Thanh toán đơn hàng";
 
       const extraData = Buffer.from(

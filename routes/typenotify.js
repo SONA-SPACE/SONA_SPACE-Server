@@ -39,6 +39,33 @@ router.post("/", async (req, res) => {
     res.status(500).json({ error: "Lỗi khi thêm loại thông báo" });
   }
 });
+
+router.put("/:id/status", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { is_active } = req.body;
+
+    // Validate
+    if (typeof is_active !== "number" || ![0, 1].includes(is_active)) {
+      return res.status(400).json({ error: "Trạng thái không hợp lệ" });
+    }
+
+    const [result] = await db.execute(
+      "UPDATE notification_types SET is_active = ? WHERE id = ?",
+      [is_active, id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "Không tìm thấy loại thông báo" });
+    }
+
+    res.json({ message: "Cập nhật trạng thái thành công" });
+  } catch (err) {
+    console.error("Lỗi khi cập nhật trạng thái:", err);
+    res.status(500).json({ error: "Lỗi khi cập nhật trạng thái" });
+  }
+});
+
 router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -54,12 +81,28 @@ router.put("/:id", async (req, res) => {
     res.status(500).json({ error: "Lỗi khi cập nhật loại thông báo" });
   }
 });
+
 router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Kiểm tra xem có notification nào dùng loại này không
+    const [rows] = await db.execute(
+      "SELECT COUNT(*) AS count FROM notifications WHERE notification_type_id = ?",
+      [id]
+    );
+
+    if (rows[0].count > 0) {
+      return res
+        .status(400)
+        .json({ error: "Không thể xóa vì vẫn còn thông báo thuộc loại này" });
+    }
+
+    // Nếu không có thì mới xóa
     await db.execute("DELETE FROM notification_types WHERE id = ?", [id]);
     res.json({ message: "Xóa thành công" });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Lỗi khi xóa loại thông báo" });
   }
 });

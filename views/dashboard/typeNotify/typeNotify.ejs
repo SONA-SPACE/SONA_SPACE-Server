@@ -35,104 +35,170 @@
     </div>
 </div>
 
+<!-- Modal xác nhận ẩn/hiện kiểu thông báo -->
+<div id="confirmNotifyStatusModal" class="modal-overlay" style="display: none;">
+  <div class="modal-content">
+    <h3>Xác nhận thay đổi trạng thái</h3>
+    <p id="confirmNotifyMessage"></p>
+    <div class="modal-actions">
+      <button id="confirmNotifyBtn" class="btn btn-confirm">Có</button>
+      <button id="cancelNotifyBtn" class="btn btn-cancel">Không</button>
+    </div>
+  </div>
+</div>
+
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", function () {
+    let pendingNotifyToggle = {
+        id: null,
+        newStatus: null
+    };
 
-        function getNotificationTypes() {
-            fetch("/api/typeNotify")
-                .then((res) => res.json())
-                .then((data) => {
-                    console.log(data);
-                    renderNotificationTypes(data);
-                })
-                .catch((err) => {
-                    console.error("Lỗi khi tải loại thông báo:", err);
-                    document.querySelector(".results-info").textContent = "Không thể tải dữ liệu.";
-                });
-        }
-
-        function renderNotificationTypes(list) {
-            const tableBody = document.querySelector("#notifyTable tbody");
-            tableBody.innerHTML = "";
-
-            list.forEach((item) => {
-                const isActive = item.is_active === 1 || item.is_active === true;
-                const statusText = isActive ? "Hiển thị" : "Ẩn";
-                const statusIcon = isActive ? "fa-eye" : "fa-eye-slash";
-                const statusClass = isActive ? "visible" : "hidden";
-
-                const row = document.createElement("tr");
-                row.innerHTML = `
-      <td>${item.type_code || "-"}</td>
-      <td>${item.description || "-"}</td>
-      <td>
-        <span class="status-indicator ${statusClass}">
-          <i class="fas ${statusIcon}"></i> ${statusText}
-        </span>
-      </td>
-      <td>
-        <div class="action-cell">
-          <button class="action-button edit" title="Chỉnh sửa"
-            onclick="window.location.href='/dashboard/typeNotify/edittypenotify/${item.id}'">
-            <i class="fas fa-edit"></i>
-          </button>
-          <button class="action-button visibility" data-id="${item.id
-                    }" data-status="${statusClass}" title="${statusClass === "visible" ? "Ẩn voucher" : "Hiển thị voucher"
-                    }">
-                    <i class="fas ${statusClass === "visible" ? "fa-eye-slash" : "fa-eye"
-                    }"></i>
-                    </button>
-         <button class="action-button delete" data-id="${item.id}" data-typecode="${item.type_code}" title="Xóa">
-  <i class="fas fa-trash"></i>
-</button>
-
-        </div>
-      </td>
-    `;
-                tableBody.appendChild(row);
-            });
-
-            document.querySelector(".results-info").textContent = `Hiển thị ${list.length} loại thông báo`;
-
-            // Gắn sự kiện xóa
-            document.querySelectorAll(".action-button.delete").forEach((btn) => {
-                btn.addEventListener("click", () => {
-                    const id = btn.getAttribute("data-id");
-                    const type_code = btn.getAttribute("data-typecode");
-                    deleteNotificationType(id, type_code);
-                });
-            });
-
-        }
-
-
-        function deleteNotificationType(id, type_code) {
-            if (!confirm(`Bạn có chắc chắn muốn xóa loại thông báo "${type_code}"?`)) return;
-            const token = localStorage.getItem("token");
-
-            fetch(`/api/typeNotify/${id}`, {
-                method: "DELETE",
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
+    function getNotificationTypes() {
+        fetch("/api/typeNotify")
+            .then((res) => res.json())
+            .then((data) => {
+                renderNotificationTypes(data);
             })
-                .then((res) => res.json())
-                .then((data) => {
-                    if (data.error) {
-                        alert("Lỗi: " + data.error);
-                    } else {
-                        alert("Đã xóa loại thông báo.");
-                        getNotificationTypes();
-                    }
-                })
-                .catch((err) => {
-                    console.error("Lỗi khi xóa loại thông báo:", err);
-                    alert("Xảy ra lỗi khi xóa.");
-                });
+            .catch((err) => {
+                console.error("Lỗi khi tải loại thông báo:", err);
+                document.querySelector(".results-info").textContent = "Không thể tải dữ liệu.";
+            });
+    }
+
+    function renderNotificationTypes(list) {
+        const tableBody = document.querySelector("#notifyTable tbody");
+        tableBody.innerHTML = "";
+
+        list.forEach((item) => {
+            const isActive = item.is_active === 1 || item.is_active === true;
+            const statusText = isActive ? "Hiển thị" : "Ẩn";
+            const statusIcon = isActive ? "fa-eye" : "fa-eye-slash";
+            const statusClass = isActive ? "visible" : "hidden";
+
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${item.type_code || "-"}</td>
+                <td>${item.description || "-"}</td>
+                <td>
+                    <span class="status-indicator ${statusClass}">
+                        <i class="fas ${statusIcon}"></i> ${statusText}
+                    </span>
+                </td>
+                <td>
+                    <div class="action-cell">
+                        <button class="action-button edit" title="Chỉnh sửa"
+                            onclick="window.location.href='/dashboard/typeNotify/edittypenotify/${item.id}'">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-button visibility" data-id="${item.id}" data-status="${statusClass}" 
+                            title="${statusClass === "visible" ? "Ẩn thông báo" : "Hiển thị thông báo"}">
+                            <i class="fas ${statusClass === "visible" ? "fa-eye-slash" : "fa-eye"}"></i>
+                        </button>
+                        <button class="action-button delete" data-id="${item.id}" data-typecode="${item.type_code}" title="Xóa">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+            tableBody.appendChild(row);
+        });
+
+        document.querySelector(".results-info").textContent = `Hiển thị ${list.length} loại thông báo`;
+
+        // Gắn sự kiện xóa
+        document.querySelectorAll(".action-button.delete").forEach((btn) => {
+            btn.addEventListener("click", () => {
+                const id = btn.getAttribute("data-id");
+                const type_code = btn.getAttribute("data-typecode");
+                deleteNotificationType(id, type_code);
+            });
+        });
+
+        // Gắn sự kiện ẩn/hiện
+        document.querySelectorAll(".action-button.visibility").forEach((btn) => {
+            btn.addEventListener("click", () => {
+                const id = btn.getAttribute("data-id");
+                const currentStatus = btn.getAttribute("data-status"); // visible | hidden
+                const newStatus = currentStatus === "visible" ? 0 : 1;
+
+                pendingNotifyToggle = { id: id, newStatus: newStatus };
+
+                const actionText = newStatus === 1 ? "hiển thị" : "ẩn";
+                document.getElementById("confirmNotifyMessage").textContent =
+                    `Bạn có chắc chắn muốn ${actionText} kiểu thông báo này?`;
+
+                document.getElementById("confirmNotifyStatusModal").style.display = "flex";
+            });
+        });
+    }
+
+    // Xác nhận thay đổi trạng thái
+    document.getElementById("confirmNotifyBtn").addEventListener("click", () => {
+        if (pendingNotifyToggle.id !== null) {
+            toggleNotifyVisibility(pendingNotifyToggle.id, pendingNotifyToggle.newStatus);
+            pendingNotifyToggle = { id: null, newStatus: null };
         }
-
-
-        getNotificationTypes();
+        document.getElementById("confirmNotifyStatusModal").style.display = "none";
     });
 
+    // Hủy thay đổi
+    document.getElementById("cancelNotifyBtn").addEventListener("click", () => {
+        pendingNotifyToggle = { id: null, newStatus: null };
+        document.getElementById("confirmNotifyStatusModal").style.display = "none";
+    });
+
+    function deleteNotificationType(id, type_code) {
+        if (!confirm(`Bạn có chắc chắn muốn xóa loại thông báo "${type_code}"?`)) return;
+        const token = localStorage.getItem("token");
+
+        fetch(`/api/typeNotify/${id}`, {
+            method: "DELETE",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        })
+            .then((res) => res.json())
+            .then((data) => {
+                if (data.error) {
+                    alert("Lỗi: " + data.error);
+                } else {
+                    alert("Đã xóa loại thông báo.");
+                    getNotificationTypes();
+                }
+            })
+            .catch((err) => {
+                console.error("Lỗi khi xóa loại thông báo:", err);
+                alert("Xảy ra lỗi khi xóa.");
+            });
+    }
+
+    function toggleNotifyVisibility(id, newStatus) {
+        const token = localStorage.getItem("token");
+
+        fetch(`/api/typeNotify/${id}/status`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ is_active: newStatus })
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    alert("Lỗi: " + data.error);
+                } else {
+                    alert(`Đã ${newStatus === 1 ? "hiển thị" : "ẩn"} kiểu thông báo`);
+                    setTimeout(() => getNotificationTypes(), 500);
+                }
+            })
+            .catch(err => {
+                console.error("Lỗi khi thay đổi trạng thái:", err);
+                alert("Lỗi khi thay đổi trạng thái");
+            });
+    }
+
+    getNotificationTypes();
+});
 </script>

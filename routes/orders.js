@@ -208,7 +208,7 @@ router.get("/hash/:orderHash", optionalAuth, async (req, res) => {
       RETURN: 4, // Đã trả hàng hoàn tất
 
       // Quy trình từ chối/thất bại
-      REJECTED: 1, // Đơn hàng bị từ chối
+      REJECTED: 4, // Đơn hàng bị từ chối - trạng thái cuối
       FAILED: 1, // Đơn hàng thất bại
     };
 
@@ -1824,6 +1824,56 @@ router.put("/:id/return-status", verifyToken, isAdmin, async (req, res) => {
         } catch (couponError) {
           console.error('❌ Failed to create return coupon:', couponError.message);
           // Continue execution even if coupon creation fails
+        }
+      }
+
+      // Send email notification if return is rejected
+      if (return_status === "REJECTED") {
+        try {
+          // Get customer and order information for rejection email
+          const [[customerInfo]] = await db.query(
+            `SELECT o.order_hash, o.order_name_new, o.order_email_new, o.order_total_final,
+                    u.user_name, u.user_gmail as user_email,
+                    or_data.reason, or_data.created_at as return_date
+             FROM orders o
+             LEFT JOIN user u ON o.user_id = u.user_id
+             LEFT JOIN order_returns or_data ON o.order_id = or_data.order_id
+             WHERE o.order_id = ?
+             ORDER BY or_data.created_at DESC
+             LIMIT 1`,
+            [orderId]
+          );
+
+          if (customerInfo) {
+            const customerEmail = customerInfo.order_email_new || customerInfo.user_email;
+            const customerName = customerInfo.order_name_new || customerInfo.user_name;
+            
+            if (customerEmail) {
+              const emailData = {
+                customerName: customerName || 'Khách hàng',
+                orderId: orderId,
+                orderHash: customerInfo.order_hash,
+                orderTotal: new Intl.NumberFormat('vi-VN', { 
+                  style: 'currency', 
+                  currency: 'VND' 
+                }).format(customerInfo.order_total_final || 0),
+                returnDate: new Date(customerInfo.return_date).toLocaleDateString('vi-VN'),
+                rejectReason: customerInfo.reason || 'Sản phẩm không đáp ứng điều kiện trả hàng theo chính sách của công ty.'
+              };
+
+              const emailResult = await sendEmail1(
+                customerEmail,
+                `[Sona Space] Thông báo từ chối yêu cầu trả hàng - ${customerInfo.order_hash}`,
+                emailData,
+                'return-rejected'
+              );
+
+              console.log(`📧 Rejection email sent to ${customerEmail}:`, emailResult ? 'Success' : 'Failed');
+            }
+          }
+        } catch (emailError) {
+          console.error('❌ Failed to send return rejection email:', emailError.message);
+          // Continue execution even if email fails
         }
       }
 

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thông báo từ chối trả hàng - Sona Space</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #e74c3c;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .reject-icon {
+            font-size: 48px;
+            color: #e74c3c;
+            margin-bottom: 20px;
+        }
+        .title {
+            color: #e74c3c;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .greeting {
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+        .reject-message {
+            background-color: #ffe6e6;
+            border-left: 4px solid #e74c3c;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .order-info {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid #dee2e6;
+        }
+        .order-info h3 {
+            color: #495057;
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+            font-weight: bold;
+            color: #28a745;
+        }
+        .reason-box {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .reason-title {
+            font-weight: bold;
+            color: #856404;
+            margin-bottom: 10px;
+        }
+        .contact-info {
+            background-color: #e3f2fd;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 30px 0;
+            text-align: center;
+        }
+        .contact-info h3 {
+            color: #1976d2;
+            margin-bottom: 15px;
+        }
+        .contact-item {
+            margin: 10px 0;
+            font-size: 16px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #ecf0f1;
+            color: #7f8c8d;
+        }
+        .signature {
+            margin-top: 30px;
+            font-style: italic;
+            color: #2c3e50;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 25px;
+            background-color: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 5px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        .btn-secondary {
+            background-color: #95a5a6;
+        }
+        .btn-secondary:hover {
+            background-color: #7f8c8d;
+        }
+        .highlight {
+            background-color: #fffacd;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="reject-icon">❌</div>
+            <div class="logo">SONA SPACE</div>
+            <div>Nội thất cao cấp</div>
+        </div>
+
+        <div class="title">Thông báo từ chối yêu cầu trả hàng</div>
+
+        <div class="content">
+            <div class="greeting">
+                Kính gửi <%= customerName %>,
+            </div>
+
+            <div class="reject-message">
+                <strong>Yêu cầu trả hàng không được chấp nhận</strong><br>
+                Sau khi xem xét kỹ lưỡng, chúng tôi rất tiếc phải thông báo rằng yêu cầu trả hàng của quý khách không thể được chấp nhận.
+            </div>
+
+            <div class="order-info">
+                <h3>📋 Thông tin đơn hàng</h3>
+                <div class="info-row">
+                    <span><strong>Mã đơn hàng:</strong></span>
+                    <span>#<%= orderId %></span>
+                </div>
+                <div class="info-row">
+                    <span><strong>Mã tra cứu:</strong></span>
+                    <span><%= orderHash %></span>
+                </div>
+                <div class="info-row">
+                    <span><strong>Tổng giá trị:</strong></span>
+                    <span><%= orderTotal %></span>
+                </div>
+                <div class="info-row">
+                    <span><strong>Ngày yêu cầu trả hàng:</strong></span>
+                    <span><%= returnDate %></span>
+                </div>
+            </div>
+
+            <div class="reason-box">
+                <div class="reason-title">📝 Lý do từ chối:</div>
+                <p><%= rejectReason %></p>
+            </div>
+
+            <p>Chúng tôi hiểu rằng quyết định này có thể khiến quý khách không hài lòng. Tuy nhiên, quyết định này được đưa ra dựa trên các chính sách trả hàng và điều kiện sản phẩm hiện tại.</p>
+
+            <p><strong>Nếu quý khách cần thêm thông tin chi tiết về lý do từ chối hoặc muốn thảo luận thêm về đơn hàng này, vui lòng liên hệ trực tiếp với nhà cung cấp:</strong></p>
+
+            <div class="contact-info">
+                <h3>📞 Liên hệ nhà cung cấp</h3>
+                <div class="contact-item">
+                    <strong>📱 Hotline:</strong> <span class="highlight">0705768791</span>
+                </div>
+                <div class="contact-item">
+                    <strong>📧 Email:</strong> <span class="highlight">nguyenhongthai0802@gmail.com</span>
+                </div>
+                <div class="contact-item">
+                    <em>Thời gian hỗ trợ: 8:00 - 17:00 (Thứ 2 - Thứ 6)</em>
+                </div>
+            </div>
+
+            <p>Chúng tôi cam kết:</p>
+            <ul>
+                <li>✅ Luôn đảm bảo chất lượng sản phẩm và dịch vụ tốt nhất</li>
+                <li>✅ Hỗ trợ khách hàng một cách tận tình và chuyên nghiệp</li>
+                <li>✅ Xem xét lại các chính sách để phục vụ khách hàng tốt hơn</li>
+                <li>✅ Sẵn sàng tư vấn và hỗ trợ cho các giao dịch trong tương lai</li>
+            </ul>
+
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="tel:0705768791" class="btn">📞 Gọi nhà cung cấp</a>
+                <a href="mailto:nguyenhongthai0802@gmail.com" class="btn btn-secondary">✉️ Email nhà cung cấp</a>
+            </div>
+        </div>
+
+        <div class="signature">
+            <p>Chúng tôi xin chân thành cảm ơn sự hiểu biết và tiếp tục ủng hộ của quý khách.</p>
+            <p><strong>Trân trọng,</strong></p>
+            <p><strong>Đội ngũ chăm sóc khách hàng Sona Space</strong></p>
+        </div>
+
+        <div class="footer">
+            <p>© 2025 Sona Space. Tất cả quyền được bảo lưu.</p>
+            <p>Email này được gửi tự động, vui lòng không trả lời trực tiếp.</p>
+            <p>Để được hỗ trợ, vui lòng liên hệ nhà cung cấp theo thông tin trên.</p>
+        </div>
+    </div>
+</body>
+</html>

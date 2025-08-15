@@ -859,6 +859,11 @@ router.get("/test/:slug", async (req, res) => {
   if (!slug) return res.status(400).json({ message: "Slug không hợp lệ" });
 
   try {
+    // Tăng view trước khi lấy dữ liệu
+    db.query(
+      `UPDATE product SET product_view = product_view + 1 WHERE product_slug = ?`,
+      [slug]
+    );
     // 1. Lấy thông tin sản phẩm chính
     const [productRows] = await db.query(
       `
@@ -870,6 +875,7 @@ router.get("/test/:slug", async (req, res) => {
       `,
       [slug]
     );
+
 
     if (!productRows.length) {
       return res.status(404).json({ error: "Product not found" });

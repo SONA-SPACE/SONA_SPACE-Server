@@ -21,6 +21,9 @@ exports.sendEmail1 = async (to, subject, data, templateType = 'order') => {
     case 'return-approved':
       templatePath = path.join(__dirname, "../template/return-approved.ejs");
       break;
+    case 'return-rejected':
+      templatePath = path.join(__dirname, "../template/return-rejected.ejs");
+      break;
     case 'order':
     default:
       templatePath = path.join(__dirname, "../template/order.ejs");

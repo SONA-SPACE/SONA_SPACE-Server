@@ -2661,6 +2661,7 @@ body {
 
 /* Revenue Chart */
 .dashboard-charts-row {
+  margin-top: 48px;
   display: flex;
   gap: 20px;
 }
@@ -2749,7 +2750,7 @@ body {
   margin-bottom: 20px;
 }
 .stats-container .stat-card {
-  padding: 15px;
+  padding: 30px 15px;
   background-color: #fff;
   border-radius: 8px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
@@ -7083,7 +7084,7 @@ textarea.form-control {
   margin-top: 20px;
 }
 .print-button:hover {
-  background-color: rgb(213.4615384615, 88.4615384615, 11.5384615385);
+  background-color: #d5580c;
 }
 
 @media print {
@@ -8024,7 +8025,7 @@ th.filterable {
   position: absolute;
 }
 .edit-context-container .context-form-column .form-section .form-group textarea.form-control {
-  min-height: 120px;
+  min-height: 420px;
   resize: vertical;
 }
 .edit-context-container .context-form-column .form-section .form-group .form-actions {

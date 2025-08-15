@@ -16,16 +16,12 @@
   <div class="search-container">
     <i class="fas fa-search search-icon"></i>
     <input
+      onkeyup="filterCategoriesBySearch(this.value)"
       type="text"
       class="search-input"
       placeholder="Tìm kiếm danh mục..."
     />
   </div>
-  <div class="date-range">
-    <i class="far fa-calendar-alt"></i>
-    <span>01/04/2023 - 30/04/2023</span>
-  </div>
-  <div class="results-info">Đang tải dữ liệu...</div>
 </div>
 
 <!-- Bảng Danh mục -->
@@ -50,44 +46,95 @@
 </div>
 
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    // Initialize table sorting
+  let allCategories = [];
+  let currentFilteredCategories = [];
 
+  // --- Utility: bỏ dấu tiếng Việt + chuẩn hóa ---
+  function normalizeText(str = "") {
+    return String(str)
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "") // bỏ dấu
+      .replace(/đ/g, "d")
+      .replace(/Đ/g, "D")
+      .toLowerCase()
+      .trim();
+  }
+
+  // --- Utility: debounce để tránh lọc liên tục khi gõ ---
+  function debounce(fn, delay = 250) {
+    let t;
+    return (...args) => {
+      clearTimeout(t);
+      t = setTimeout(() => fn.apply(this, args), delay);
+    };
+  }
+
+  // Safe setter cho .results-info (nếu chưa có trong DOM thì tạo)
+  function setResultsInfo(text) {
+    let info = document.querySelector(".results-info");
+    if (!info) {
+      // chèn thêm dưới .filter-row nếu thiếu
+      const holder = document.createElement("div");
+      holder.className = "results-info";
+      const filterRow = document.querySelector(".filter-row");
+      if (filterRow) {
+        filterRow.insertAdjacentElement("afterend", holder);
+        info = holder;
+      }
+    }
+    if (info) info.textContent = text;
+  }
+
+  // format ngày
+  function formatDate(dateStr) {
+    if (!dateStr) return "-";
+    const d = new Date(dateStr);
+    if (Number.isNaN(d.getTime())) return "-";
+    return d.toLocaleDateString("vi-VN");
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
     function getCategories() {
       fetch("/api/categories/admin/all")
         .then((response) => response.json())
         .then((data) => {
-          renderCategories(data);
+          allCategories = Array.isArray(data) ? data : [];
+          currentFilteredCategories = [...allCategories];
+          renderCategories(currentFilteredCategories);
+
+          // Nếu muốn dùng addEventListener thay vì onkeyup inline:
+          // const input = document.querySelector('.search-input');
+          // if (input) input.addEventListener('input', (e) => filterCategoriesBySearch(e.target.value));
         })
         .catch((error) => {
           console.error("Lỗi khi tải danh mục:", error);
-          document.querySelector(".results-info").textContent =
-            "Không thể tải dữ liệu.";
+          setResultsInfo("Không thể tải dữ liệu.");
         });
     }
 
     function renderCategories(categories) {
       const tableBody = document.querySelector("#categoriesTable tbody");
+      if (!tableBody) return;
       tableBody.innerHTML = "";
 
       categories.forEach((category) => {
         const row = document.createElement("tr");
 
-        // Gán mặc định nếu không có status
+        // status chuẩn hóa
         const status = category.category_status === 1 ? "visible" : "hidden";
 
         row.innerHTML = `
           <td>
             <div class="category-info">
               <div class="category-image">
-                <img src="${
-                  category.category_image || ""
-                }" alt="${category.category_name}">
+                <img src="${category.category_image || ""}" alt="${
+          category.category_name || ""
+        }">
               </div>
-              <div class="category-name">${category.category_name}</div>
+              <div class="category-name">${category.category_name || "-"}</div>
             </div>
           </td>
-          <td>${category.product_count || 0}</td>
+          <td>${category.product_count ?? 0}</td>
           <td>
             <span class="status-indicator ${
               status === "visible" ? "visible" : "hidden"
@@ -98,35 +145,32 @@
               ${status === "visible" ? "Hiển thị" : "Ẩn"}
             </span>
           </td>
-          <td>${category.category_priority || "-"}</td>
+          <td>${category.category_priority ?? "-"}</td>
           <td>${formatDate(category.created_at)}</td>
           <td>${formatDate(category.updated_at)}</td>
           <td>${category.slug || "-"}</td>
           <td>
             <div class="action-cell">
-              <button class="action-button edit" data-id="${
-                category.slug
-              }" onclick="window.location.href='/dashboard/editcategories/${
-          category.slug
-        }'" title="Chỉnh sửa">
+              <button class="action-button edit" data-id="${category.slug}"
+                onclick="window.location.href='/dashboard/editcategories/${
+                  category.slug
+                }'" title="Chỉnh sửa">
                 <i class="fas fa-edit"></i>
               </button>
               <button class="action-button visibility" data-id="${
                 category.slug
-              }" data-status="${status}" title="${
-          status === "visible" ? "Ẩn danh mục" : "Hiển thị danh mục"
-        }">
+              }" data-status="${status}"
+                title="${
+                  status === "visible" ? "Ẩn danh mục" : "Hiển thị danh mục"
+                }">
                 <i class="fas ${
                   status === "visible" ? "fa-eye-slash" : "fa-eye"
                 }"></i>
               </button>
               <button class="action-button delete" data-id="${
                 category.slug
-              }" data-name="${
-          category.category_name
-        }" title="Xóa danh mục" data-id="${
-          category.category_id
-        }" data-status="${status}">
+              }" data-name="${category.category_name || ""}"
+                title="Xóa danh mục" data-status="${status}">
                 <i class="fas fa-trash"></i>
               </button>
             </div>
@@ -136,6 +180,7 @@
         tableBody.appendChild(row);
       });
 
+      // Gán sự kiện
       document.querySelectorAll(".action-button.delete").forEach((btn) => {
         btn.addEventListener("click", () => {
           const categoryId = btn.getAttribute("data-id");
@@ -152,15 +197,43 @@
         });
       });
 
-      document.querySelector(
-        ".results-info"
-      ).textContent = `Hiển thị ${categories.length} kết quả`;
+      setResultsInfo(`Hiển thị ${categories.length} kết quả`);
     }
+    // --- SEARCH chính: gắn lên window để phù hợp onkeyup="..." trong HTML ---
+    window.filterCategoriesBySearch = debounce(function (rawTerm) {
+      const term = normalizeText(rawTerm);
+      if (!term) {
+        currentFilteredCategories = [...allCategories];
+        renderCategories(currentFilteredCategories);
+        return;
+      }
 
-    function formatDate(dateStr) {
-      if (!dateStr) return "-";
-      return new Date(dateStr).toLocaleDateString("vi-VN");
-    }
+      // Lọc theo nhiều field: tên, slug, trạng thái (hiển thị/ẩn), id, ngày
+      const filtered = allCategories.filter((c) => {
+        const nameN = normalizeText(c.category_name);
+        const slugN = normalizeText(c.slug);
+        const status = c.category_status === 1 ? "hien thi" : "an";
+        const statusN = normalizeText(status);
+
+        // gộp vài trường ngày cho phép tìm nhanh theo chuỗi (dd/mm/yyyy)
+        const createdN = normalizeText(formatDate(c.created_at));
+        const updatedN = normalizeText(formatDate(c.updated_at));
+        const idN = normalizeText(c.category_id);
+
+        // chỉ cần match 1 trong các trường
+        return (
+          nameN.includes(term) ||
+          slugN.includes(term) ||
+          statusN.includes(term) ||
+          createdN.includes(term) ||
+          updatedN.includes(term) ||
+          idN.includes(term)
+        );
+      });
+
+      currentFilteredCategories = filtered;
+      renderCategories(currentFilteredCategories);
+    }, 250);
 
     function deleteCategory(categoryId, categoryName) {
       showConfirm({
@@ -176,11 +249,18 @@
           })
             .then((res) => res.json())
             .then((data) => {
-              if (data.error) {
+              if (data?.error) {
                 showToast(data.error, "danger");
               } else {
                 showToast("Xóa danh mục thành công", "success");
-                setTimeout(() => location.reload(), 1000);
+                // Cập nhật ngay list thay vì reload trang
+                allCategories = allCategories.filter(
+                  (c) => String(c.slug) !== String(categoryId)
+                );
+                currentFilteredCategories = currentFilteredCategories.filter(
+                  (c) => String(c.slug) !== String(categoryId)
+                );
+                renderCategories(currentFilteredCategories);
               }
             })
             .catch((err) => {
@@ -203,12 +283,33 @@
       })
         .then((res) => res.json())
         .then((data) => {
-          if (data.error) {
+          if (data?.error) {
             showToast(data.error, "danger");
           } else {
             showToast("Cập nhật trạng thái thành công", "success");
-            setTimeout(() => location.reload(), 1500);
+            // đồng bộ lại mảng tại chỗ thay vì reload
+            allCategories = allCategories.map((c) =>
+              String(c.slug) === String(categoryId)
+                ? {
+                    ...c,
+                    category_status: categoryStatus === "visible" ? 0 : 1,
+                  }
+                : c
+            );
+            currentFilteredCategories = currentFilteredCategories.map((c) =>
+              String(c.slug) === String(categoryId)
+                ? {
+                    ...c,
+                    category_status: categoryStatus === "visible" ? 0 : 1,
+                  }
+                : c
+            );
+            renderCategories(currentFilteredCategories);
           }
+        })
+        .catch((err) => {
+          console.error("Lỗi khi cập nhật trạng thái:", err);
+          showToast("Xảy ra lỗi khi cập nhật trạng thái", "danger");
         });
     }
 
@@ -229,61 +330,56 @@
       toast.setAttribute("aria-atomic", "true");
 
       toast.innerHTML = `
-    <div class="d-flex">
-      <div class="toast-body">${message}</div>
-      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-    </div>
-  `;
+        <div class="d-flex">
+          <div class="toast-body">${message}</div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+      `;
 
       toastContainer.appendChild(toast);
       const bsToast = new bootstrap.Toast(toast, { delay: 3000 });
       bsToast.show();
-
       toast.addEventListener("hidden.bs.toast", () => toast.remove());
     }
 
+    // Confirm popup giữ nguyên y như bạn
+    function showConfirm({
+      message = "Are you sure?",
+      confirmText = "Xác nhận",
+      cancelText = "Hủy",
+      onConfirm = () => {},
+      onCancel = () => {},
+    } = {}) {
+      let confirmPopup = document.getElementById("confirmPopup");
+      if (confirmPopup) confirmPopup.remove();
+      confirmPopup = document.createElement("div");
+      confirmPopup.id = "confirmPopup";
+      confirmPopup.innerHTML = `
+        <div class="confirm-dialog">
+          <div class="confirm-message">${message}</div>
+          <div class="confirm-actions">
+            <button class="btn btn-confirm">${confirmText}</button>
+            <button class="btn btn-cancel">${cancelText}</button>
+          </div>
+        </div>
+        <div class="confirm-overlay"></div>
+      `;
+      document.body.appendChild(confirmPopup);
+      confirmPopup.querySelector(".btn-confirm").onclick = () => {
+        confirmPopup.remove();
+        onConfirm();
+      };
+      confirmPopup.querySelector(".btn-cancel").onclick = () => {
+        confirmPopup.remove();
+        onCancel();
+      };
+      confirmPopup.querySelector(".confirm-overlay").onclick = () => {
+        confirmPopup.remove();
+        onCancel();
+      };
+    }
+
+    // Gọi lần đầu
     getCategories();
   });
-
-  function showConfirm({
-    message = "Are you sure?",
-    confirmText = "Xác nhận",
-    cancelText = "Hủy",
-    onConfirm = () => {},
-    onCancel = () => {},
-  } = {}) {
-    let confirmPopup = document.getElementById("confirmPopup");
-    if (confirmPopup) confirmPopup.remove(); // Remove old popup if exists
-
-    // Create popup container
-    confirmPopup = document.createElement("div");
-    confirmPopup.id = "confirmPopup";
-    confirmPopup.innerHTML = `
-    <div class="confirm-dialog">
-      <div class="confirm-message">${message}</div>
-      <div class="confirm-actions">
-        <button class="btn btn-confirm">${confirmText}</button>
-        <button class="btn btn-cancel">${cancelText}</button>
-      </div>
-    </div>
-    <div class="confirm-overlay"></div>
-  `;
-
-    document.body.appendChild(confirmPopup);
-
-    // Add event listeners
-    confirmPopup.querySelector(".btn-confirm").onclick = () => {
-      confirmPopup.remove();
-      onConfirm();
-    };
-    confirmPopup.querySelector(".btn-cancel").onclick = () => {
-      confirmPopup.remove();
-      onCancel();
-    };
-    // Click overlay to cancel
-    confirmPopup.querySelector(".confirm-overlay").onclick = () => {
-      confirmPopup.remove();
-      onCancel();
-    };
-  }
 </script>

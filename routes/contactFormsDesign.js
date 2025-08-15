@@ -3,6 +3,8 @@ const router = express.Router();
 const db = require("../config/database");
 const { verifyToken, isAdmin } = require("../middleware/auth");
 const { sendEmail } = require("../services/mailService");
+const isAdminRole = (req) => req.user?.role?.toLowerCase?.() === "admin";
+const isStaffRole = (req) => req.user?.role?.toLowerCase?.() === "staff";
 
 /**
  * @route   POST /api/contact-forms
@@ -126,45 +128,57 @@ router.get("/", verifyToken, isAdmin, async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
 
-    // Lọc theo trạng thái nếu có
-    const statusFilter = req.query.status
-      ? `WHERE status = '${req.query.status}'`
+    const whereParts = [];
+    const params = [];
+
+    // Lọc theo status (nếu có)
+    if (req.query.status) {
+      whereParts.push(`cfd.status = ?`);
+      params.push(req.query.status);
+    }
+
+    // Staff chỉ thấy form của chính mình
+    if (isStaffRole(req)) {
+      whereParts.push(`cfd.user_id = ?`);
+      params.push(req.user.id);
+    }
+
+    const whereClause = whereParts.length
+      ? `WHERE ${whereParts.join(" AND ")}`
       : "";
 
-    // Đếm tổng số form liên hệ
-    const [countResult] = await db.query(`
-      SELECT COUNT(*) as total 
-      FROM contact_form_design
-      ${statusFilter}
-    `);
-
+    // COUNT: alias cùng là cfd để tránh lẫn
+    const [countResult] = await db.query(
+      `SELECT COUNT(*) AS total FROM contact_form_design cfd ${whereClause}`,
+      params
+    );
     const totalForms = countResult[0].total;
     const totalPages = Math.ceil(totalForms / limit);
 
-    // Lấy danh sách form liên hệ
+    // LIST
     const [forms] = await db.query(
       `
-      SELECT 
-        contact_form_design.contact_form_design_id,
-        contact_form_design.name,
-        contact_form_design.email,
-        contact_form_design.phone,
-        contact_form_design.room_name,
-        contact_form_design.require_design,
-        contact_form_design.style_design,
-        contact_form_design.budget,
-        contact_form_design.design_fee,
-        contact_form_design.status,
-        contact_form_design.created_at,
-        contact_form_design.updated_at,
-        u.user_name as servicer_name
-      FROM contact_form_design
-      ${statusFilter}
-      LEFT JOIN user u ON u.user_id = contact_form_design.user_id
-      ORDER BY created_at DESC
+      SELECT
+        cfd.contact_form_design_id,
+        cfd.name,
+        cfd.email,
+        cfd.phone,
+        cfd.room_name,
+        cfd.require_design,
+        cfd.style_design,
+        cfd.budget,
+        cfd.design_fee,
+        cfd.status,
+        cfd.created_at,
+        cfd.updated_at,
+        u.user_name AS servicer_name
+      FROM contact_form_design cfd
+      LEFT JOIN \`user\` u ON u.user_id = cfd.user_id
+      ${whereClause}
+      ORDER BY cfd.created_at DESC
       LIMIT ?, ?
-    `,
-      [offset, limit]
+      `,
+      [...params, offset, limit]
     );
 
     res.json({
@@ -514,7 +528,8 @@ router.post("/:id/details", verifyToken, isAdmin, async (req, res) => {
  * @desc    Cập nhật sản phẩm trong chi tiết thiết kế
  * @access  Private (Admin only)
  */
-router.put("/:id/details/:variant_id",
+router.put(
+  "/:id/details/:variant_id",
   verifyToken,
   isAdmin,
   async (req, res) => {
@@ -594,7 +609,8 @@ router.put("/:id/details/:variant_id",
  * @desc    Xóa sản phẩm khỏi chi tiết thiết kế
  * @access  Private (Admin only)
  */
-router.delete("/:id/details/:variant_id",
+router.delete(
+  "/:id/details/:variant_id",
   verifyToken,
   isAdmin,
   async (req, res) => {

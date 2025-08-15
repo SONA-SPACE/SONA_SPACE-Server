@@ -873,8 +873,8 @@ router.post("/", verifyToken, async (req, res) => {
       const requestType = "captureWallet";
       const orderId = req.body.order_id || `SNA-${Date.now()}`;
       const requestId = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-      const redirectUrl = `https://8e14f7ff868c.ngrok-free.app/api/orders/redirect/momo`;
-      const ipnUrl = `https://8e14f7ff868c.ngrok-free.app/api/orders/payment/momo`;
+      const redirectUrl = `${process.env.VITE_API_BASE_URL}/orders/redirect/momo`;
+      const ipnUrl = `${process.env.VITE_API_BASE_URL}/orders/payment/momo`;
       const orderInfo = "Thanh toán đơn hàng";
 
       const extraData = Buffer.from(
@@ -949,7 +949,7 @@ router.post("/", verifyToken, async (req, res) => {
         vnp_TxnRef: transactionCode,
         vnp_OrderInfo: `Thanh toán đơn hàng #${order_id}`,
         vnp_OrderType: "other",
-        vnp_ReturnUrl: "http://localhost:3501/api/orders/payment/vnpay",
+        vnp_ReturnUrl: `${process.env.VITE_API_BASE_URL}/orders/payment/vnpay`,
         vnp_Locale: "vn",
         vnp_CreateDate: formatDateVNPay(new Date()),
         vnp_ExpireDate: formatDateVNPay(tomorrow),
@@ -1293,10 +1293,10 @@ router.get("/redirect/momo", (req, res) => {
   const { resultCode, orderId } = req.query;
 
   if (parseInt(resultCode) === 0) {
-    return res.redirect(`http://localhost:5173/dat-hang-thanh-cong/${orderId}`);
+    return res.redirect(`${process.env.SITE_URL}/dat-hang-thanh-cong/${orderId}`);
   }
 
-  return res.redirect("http://localhost:5173/");
+  return res.redirect(`${process.env.SITE_URL}/`);
 });
 
 /**

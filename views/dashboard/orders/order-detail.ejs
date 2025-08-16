@@ -94,7 +94,7 @@
         </div>
       </div>
 
-      <div class="row">
+      <div class="row --product">
         <h3 class="section-title">Sản phẩm</h3>
 
         <div class="col-md-8">
@@ -210,13 +210,7 @@
               </select>
             </div>
 
-            <div class="info-row">
-              <div class="info-label">Ghi chú <i class="fas fa-pencil-alt edit-btn" data-field="note"></i></div>
-              <div class="info-value" id="note">
-                <%= order.note || '' %>
-              </div>
-              <textarea class="info-input" id="input_note" style="display: none;"><%= order.note || '' %></textarea>
-            </div>
+            
           </div>
 
           <div class="order-summary">
@@ -262,12 +256,107 @@
 
           <div class="action-buttons">
             <a href="/dashboard/orders" class="btn btn-cancel">Quay lại</a>
-            <button class="btn btn-save" id="update-status-btn">Cập nhật</button>
+            <!-- Button using for hard reset data for testing - Remove this button when starting UAT -->
+            <!-- <button class="btn btn-save" id="update-status-btn">Cập nhật</button> -->
             <a href="/dashboard/orders/invoice/<%= orderId %>" target="_blank" class="btn btn-save"
               style="background-color: #4CAF50; margin-left: 10px;">Xem hóa đơn</a>
           </div>
         </div>
       </div>
+      
+      <% if (order.returnInfo || (order.current_status === 'RETURN' || order.current_status === 'CANCELLED')) { %>
+      <div class="row --return-product">
+        <h3 class="section-title">Sản phẩm hoàn trả</h3>
+
+        <div class="col-md-8">
+          <% if (order.returnInfo) { %>
+          <div class="return-info-section mb-3">
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">Thông tin hoàn trả</h5>
+                <div class="row">
+                  <div class="col-md-6">
+                    <p><strong>Mã hoàn trả:</strong> <%= order.returnInfo.return_id %></p>
+                    <p><strong>Lý do:</strong> <%= order.returnInfo.reason || 'Không có thông tin' %></p>
+                    <p><strong>Loại hoàn trả:</strong> <%= order.returnInfo.return_type || 'Không có thông tin' %></p>
+                  </div>
+                  <div class="col-md-6">
+                    <p><strong>Số tiền hoàn:</strong> <%= formatPrice(order.returnInfo.total_refund || 0) %>đ</p>
+                    <p><strong>Trạng thái:</strong> <span class="badge badge-warning"><%= order.returnInfo.return_status %></span></p>
+                    <p><strong>Ngày tạo:</strong> <%= formatDateTime(order.returnInfo.return_created_at) %></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <% } %>
+          
+          <div class="product-section">
+            <% if (order.items && order.items.length> 0) { %>
+              <% order.items.forEach(item=> { %>
+                <div class="product-item">
+                  <div class="product-image">
+                    <img src="<%= item.product_image || item.image || '/images/products/default.png' %>"
+                      alt="<%= item.product_name %>">
+                  </div>
+                  <div class="product-details">
+                    <div class="product-name">
+                      <%= item.product_name %>
+                    </div>
+                    <div class="product-type">
+                      <%= item.variant_name || 'Sản phẩm' %>
+                    </div>
+                    <div class="price-row">
+                      <div class="price-label">Thành tiền:</div>
+                      <div class="price-value">
+                        <%= formatPrice((item.price_sale || item.price || item.product_price) * item.quantity) %>đ
+                      </div>
+                    </div>
+                    <div class="wrapper">
+                      <div class="price-row">
+                        <div class="price-label">Màu</div>
+                        <div class="price-value">
+                          <% if (item.color && item.color.hex) { %>
+                            <span class="color-dot" data-color="<%= item.color.hex %>"></span>
+                            <% } else if (item.color_hex) { %>
+                              <span class="color-dot" data-color="<%= item.color_hex %>"></span>
+                              <% } else { %>
+                                -
+                                <% } %>
+                        </div>
+                      </div>
+                      <div class="price-row">
+                        <div class="price-label">Số lượng:</div>
+                        <div class="price-value">
+                          <%= item.quantity %>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="price-row">
+                      <a href="#" class="price-label">Xem chi tiết</a>
+                    </div>
+                  </div>
+                  
+                </div>
+                <% }); %>
+                  <% } else { %>
+                    <div class="no-products">Không có sản phẩm nào</div>
+                    <% } %>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="product-resons">
+            <div class="info-row" style="word-break: break-word;">
+              <div class="info-label">Ghi chú <i class="fas fa-pencil-alt edit-btn" data-field="note"></i></div>
+              <div class="info-value" id="note" style="word-wrap: break-word; overflow-wrap: break-word;">
+                <%= order.note || '' %>
+              </div>
+              <textarea class="info-input" id="input_note" style="display: none;"><%= order.note || '' %></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+      <% } %>
     </div>
   </div>
 </div>
@@ -589,4 +678,45 @@
   
   .confirmed { color: #17a2b8; }
   .shipping { color: #007bff; }
+  
+  /* Return info section styles */
+  .return-info-section .card {
+    border: 1px solid #e3f2fd;
+    border-left: 4px solid #2196f3;
+  }
+  
+  .return-info-section .card-title {
+    color: #1976d2;
+    font-weight: 600;
+    margin-bottom: 15px;
+  }
+  
+  .return-info-section p {
+    margin-bottom: 8px;
+    font-size: 14px;
+  }
+  
+  .return-info-section strong {
+    color: #424242;
+    font-weight: 600;
+  }
+  
+  .badge-warning {
+    background-color: #ff9800;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+  }
+  
+  .row.--return-product {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 2px solid #f5f5f5;
+  }
+  
+  .row.--return-product .section-title {
+    color: #d32f2f;
+    font-weight: 600;
+  }
 </style>

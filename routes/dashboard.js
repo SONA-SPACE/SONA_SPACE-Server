@@ -332,6 +332,11 @@ router.get("/orders/detail/:id", isAdmin, async (req, res) => {
     // Extract the order object from the response
     const order = orderData.data || orderData;
 
+    // If there's returnInfo in the API response, add it to the order
+    if (orderData.returnInfo) {
+      order.returnInfo = orderData.returnInfo;
+    }
+
     // If items are missing, fetch them directly from the database
     if (!order.items || order.items.length === 0) {
       console.log("No items found in API response, fetching from database");

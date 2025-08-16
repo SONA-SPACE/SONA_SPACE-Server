@@ -278,9 +278,8 @@
         btn.addEventListener("click", () => {
           const bannerId = btn.getAttribute("data-id");
           const currentStatus = btn.getAttribute("data-status");
-          const newStatus = currentStatus === "visible" ? "inactive" : "active";
 
-          updateBannerStatus(bannerId, newStatus);
+          updateBannerStatus(bannerId);
         });
       });
 
@@ -347,7 +346,7 @@
     });
 
     // Hàm cập nhật trạng thái banner
-    async function updateBannerStatus(bannerId, newStatus) {
+    async function updateBannerStatus(bannerId) {
       try {
         const token = localStorage.getItem("token");
         if (!token) {
@@ -355,24 +354,25 @@
           return;
         }
 
-        const response = await fetch(`/api/banners/${bannerId}`, {
+        const response = await fetch(`/api/banners/${bannerId}/toggle-status`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${token}`
-          },
-          body: JSON.stringify({ status: newStatus })
+          }
         });
 
         if (!response.ok) {
           throw new Error("Không thể cập nhật trạng thái banner");
         }
 
+        const result = await response.json();
+
         // Tải lại danh sách banner
         getBanners();
 
         // Hiển thị thông báo thành công
-        showToast("Cập nhật trạng thái thành công", "success");
+        showToast(result.message || "Cập nhật trạng thái thành công", "success");
       } catch (error) {
         console.error("Error updating banner status:", error);
         showToast("Đã xảy ra lỗi khi cập nhật trạng thái", "danger");

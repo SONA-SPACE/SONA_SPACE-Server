@@ -44,3 +44,5 @@ next-env.d.ts
 start-direct.sh
 start-pm2.sh
 check-dotenv.js
+*.zip
+*.ps1

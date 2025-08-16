@@ -59,17 +59,21 @@ router.get("/", async (req, res) => {
     const [banners] = await db.query(`
       SELECT 
         b.*,
+        b.banner_id as id,
         c.category_name
       FROM banners b
       LEFT JOIN category c ON b.category_id = c.category_id
       ORDER BY b.position ASC, b.created_at DESC
     `);
     
-    // Chuyển đổi đường dẫn hình ảnh thành URL đầy đủ
+    // Chuyển đổi đường dẫn hình ảnh thành URL đầy đủ và thêm status
     banners.forEach(banner => {
       if (banner.image_url && !banner.image_url.startsWith('http')) {
         banner.image_url = `/uploads/banners/${path.basename(banner.image_url)}`;
       }
+      
+      // Thêm trường status theo định dạng frontend mong đợi
+      banner.status = banner.is_active === 1 ? 'active' : 'inactive';
     });
     
     res.json(banners);
@@ -87,6 +91,7 @@ router.get("/page/:pageType", async (req, res) => {
     const [banners] = await db.query(`
       SELECT 
         b.*,
+        b.banner_id as id,
         c.category_name
       FROM banners b
       LEFT JOIN category c ON b.category_id = c.category_id
@@ -94,11 +99,14 @@ router.get("/page/:pageType", async (req, res) => {
       ORDER BY b.position ASC, b.created_at DESC
     `, [pageType]);
     
-    // Chuyển đổi đường dẫn hình ảnh thành URL đầy đủ
+    // Chuyển đổi đường dẫn hình ảnh thành URL đầy đủ và thêm status
     banners.forEach(banner => {
       if (banner.image_url && !banner.image_url.startsWith('http')) {
         banner.image_url = `/uploads/banners/${path.basename(banner.image_url)}`;
       }
+      
+      // Thêm trường status theo định dạng frontend mong đợi  
+      banner.status = banner.is_active === 1 ? 'active' : 'inactive';
     });
     
     res.json(banners);
@@ -208,7 +216,7 @@ router.get("/page-types", async (req, res) => {
 // GET: Lấy banner theo ID
 router.get("/:id", async (req, res) => {
   try {
-    const [banners] = await db.query("SELECT * FROM banners WHERE id = ?", [
+    const [banners] = await db.query("SELECT *, banner_id as id FROM banners WHERE banner_id = ?", [
       req.params.id,
     ]);
 
@@ -222,6 +230,9 @@ router.get("/:id", async (req, res) => {
     if (banner.image_url && !banner.image_url.startsWith('http')) {
       banner.image_url = `/uploads/banners/${path.basename(banner.image_url)}`;
     }
+    
+    // Thêm trường status theo định dạng frontend mong đợi
+    banner.status = banner.is_active === 1 ? 'active' : 'inactive';
     
     res.json(banner);
   } catch (error) {
@@ -261,10 +272,12 @@ router.post("/", authMiddleware.verifyToken, isAdmin, upload.single("image"), as
     
     res.status(201).json({
       id: result.insertId,
+      banner_id: result.insertId,
       title,
       image_url: `/uploads/banners/${image_url}`,
       position,
       is_active,
+      status: is_active === 1 ? 'active' : 'inactive',
       page_type: page_type || "home",
       category_id: category_id || null,
       start_date: start_date || null,
@@ -326,13 +339,16 @@ router.put("/:id", authMiddleware.verifyToken, isAdmin, upload.single("image"), 
     );
     
     // Lấy dữ liệu banner sau khi cập nhật
-    const [updatedBanners] = await db.query("SELECT * FROM banners WHERE banner_id = ?", [bannerId]);
+    const [updatedBanners] = await db.query("SELECT *, banner_id as id FROM banners WHERE banner_id = ?", [bannerId]);
     const updatedBanner = updatedBanners[0];
     
     // Chuyển đổi đường dẫn hình ảnh thành URL đầy đủ
     if (updatedBanner.image_url && !updatedBanner.image_url.startsWith('http')) {
       updatedBanner.image_url = `/uploads/banners/${path.basename(updatedBanner.image_url)}`;
     }
+    
+    // Thêm status field
+    updatedBanner.status = updatedBanner.is_active === 1 ? 'active' : 'inactive';
     
     res.json(updatedBanner);
   } catch (error) {
@@ -369,6 +385,53 @@ router.delete("/:id", authMiddleware.verifyToken, isAdmin, async (req, res) => {
     res.json({ message: "Banner deleted successfully" });
   } catch (error) {
     console.error("Error deleting banner:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// PUT: Toggle trạng thái hiển thị banner (is_active)
+router.put("/:id/toggle-status", authMiddleware.verifyToken, isAdmin, async (req, res) => {
+  try {
+    const bannerId = req.params.id;
+    
+    // Kiểm tra banner có tồn tại không
+    const [existingBanners] = await db.query("SELECT * FROM banners WHERE banner_id = ?", [bannerId]);
+    
+    if (existingBanners.length === 0) {
+      return res.status(404).json({ error: "Banner not found" });
+    }
+    
+    const existingBanner = existingBanners[0];
+    
+    // Toggle trạng thái is_active (1 -> 0, 0 -> 1)
+    const newStatus = existingBanner.is_active === 1 ? 0 : 1;
+    
+    // Cập nhật trạng thái trong database
+    await db.query(
+      "UPDATE banners SET is_active = ?, updated_at = NOW() WHERE banner_id = ?",
+      [newStatus, bannerId]
+    );
+    
+    // Lấy dữ liệu banner sau khi cập nhật
+    const [updatedBanners] = await db.query("SELECT * FROM banners WHERE banner_id = ?", [bannerId]);
+    const updatedBanner = updatedBanners[0];
+    
+    // Chuyển đổi đường dẫn hình ảnh thành URL đầy đủ
+    if (updatedBanner.image_url && !updatedBanner.image_url.startsWith('http')) {
+      updatedBanner.image_url = `/uploads/banners/${path.basename(updatedBanner.image_url)}`;
+    }
+    
+    // Trả về status theo định dạng frontend mong đợi
+    updatedBanner.status = updatedBanner.is_active === 1 ? 'active' : 'inactive';
+    
+    res.json({
+      message: `Banner ${newStatus === 1 ? 'đã được hiển thị' : 'đã được ẩn'}`,
+      banner: updatedBanner,
+      is_active: newStatus
+    });
+    
+  } catch (error) {
+    console.error("Error toggling banner status:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });

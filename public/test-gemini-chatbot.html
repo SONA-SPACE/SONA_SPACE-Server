@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Gemini Chatbot với Hình Ảnh</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .header {
+            text-align: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .chat-container {
+            border: 1px solid #ddd;
+            height: 450px;
+            overflow-y: auto;
+            padding: 15px;
+            margin: 20px 0;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .message {
+            margin: 15px 0;
+            padding: 12px;
+            border-radius: 15px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+        .user-message {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin-left: auto;
+            text-align: right;
+        }
+        .bot-message {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+        .system-message {
+            background-color: #e9ecef;
+            color: #495057;
+            text-align: center;
+            font-style: italic;
+            margin: 10px auto;
+            max-width: 60%;
+        }
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .control-group {
+            margin: 15px 0;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            min-width: 250px;
+        }
+        input[type="text"]:focus {
+            border-color: #667eea;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        .btn-secondary {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(240, 147, 251, 0.4);
+        }
+        .btn-success {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+        .btn-warning {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            color: #333;
+        }
+        input[type="file"] {
+            padding: 8px;
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+        }
+        #imagePreview {
+            max-width: 300px;
+            max-height: 300px;
+            margin: 15px 0;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .status {
+            font-weight: bold;
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .connected { 
+            background-color: #d4edda; 
+            color: #155724; 
+            border: 1px solid #c3e6cb;
+        }
+        .disconnected { 
+            background-color: #f8d7da; 
+            color: #721c24; 
+            border: 1px solid #f5c6cb;
+        }
+        .image-info {
+            font-size: 12px;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🤖 Test Gemini Chatbot với Hình Ảnh</h1>
+        <p>Powered by Google Gemini 1.5 Flash - Vision AI</p>
+    </div>
+    
+    <div class="status" id="status">🔄 Đang kết nối...</div>
+    
+    <div class="chat-container" id="chatContainer">
+        <div class="system-message">Chào mừng bạn đến với Gemini Vision Chatbot! 🎉</div>
+    </div>
+    
+    <div class="controls">
+        <div class="control-group">
+            <input type="text" id="messageInput" placeholder="Nhập tin nhắn cho Gemini..." maxlength="500">
+            <button class="btn-primary" onclick="sendTextMessage()">📝 Gửi Text</button>
+        </div>
+        
+        <div class="control-group">
+            <input type="file" id="imageInput" accept="image/*" onchange="previewImage()">
+            <button class="btn-secondary" onclick="sendImageMessage()">🖼️ Gửi Ảnh</button>
+        </div>
+        
+        <div class="control-group">
+            <input type="text" id="imagePrompt" placeholder="Mô tả những gì bạn muốn biết về ảnh..." maxlength="200">
+        </div>
+        
+        <div>
+            <img id="imagePreview" style="display: none;" alt="Preview">
+            <div id="imageInfo" class="image-info"></div>
+        </div>
+        
+        <div class="control-group" style="justify-content: center; margin-top: 20px;">
+            <button class="btn-success" onclick="testConnection()">🔗 Test Kết Nối</button>
+            <button class="btn-warning" onclick="clearChat()">🗑️ Xóa Chat</button>
+            <button class="btn-primary" onclick="sendSampleQuestions()">💡 Câu Hỏi Mẫu</button>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        // Kết nối đến Gemini namespace
+        const socket = io('/gemini');
+        const chatContainer = document.getElementById('chatContainer');
+        const statusDiv = document.getElementById('status');
+        let isLoading = false;
+        
+        // Connection events
+        socket.on('connect', () => {
+            console.log('🟢 Connected to Gemini server');
+            statusDiv.textContent = '✅ Đã kết nối đến Gemini';
+            statusDiv.className = 'status connected';
+            addMessage('System', 'Kết nối thành công! Gemini sẵn sàng trò chuyện 🚀', 'system-message');
+        });
+        
+        socket.on('disconnect', () => {
+            console.log('🔴 Disconnected from server');
+            statusDiv.textContent = '❌ Mất kết nối';
+            statusDiv.className = 'status disconnected';
+            addMessage('System', 'Mất kết nối với server', 'system-message');
+        });
+        
+        socket.on('connect_error', (error) => {
+            console.error('❌ Connection error:', error);
+            statusDiv.textContent = '❌ Lỗi kết nối: ' + error.message;
+            statusDiv.className = 'status disconnected';
+        });
+        
+        // Chat events
+        socket.on('bot_reply', (reply) => {
+            console.log('🤖 Gemini reply:', reply);
+            isLoading = false;
+            addMessage('Gemini', reply, 'bot-message');
+        });
+        
+        // Functions
+        function addMessage(sender, message, className) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message ' + className;
+            
+            if (sender === 'System') {
+                messageDiv.innerHTML = message;
+            } else {
+                messageDiv.innerHTML = `<strong>${sender}:</strong><br>${message.replace(/\n/g, '<br>')}`;
+            }
+            
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        function addLoadingMessage() {
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'message bot-message';
+            loadingDiv.id = 'loading-message';
+            loadingDiv.innerHTML = '<strong>Gemini:</strong> Đang suy nghĩ<span class="loading"></span>';
+            chatContainer.appendChild(loadingDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        function removeLoadingMessage() {
+            const loadingMsg = document.getElementById('loading-message');
+            if (loadingMsg) {
+                loadingMsg.remove();
+            }
+        }
+        
+        function sendTextMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            if (message && !isLoading) {
+                isLoading = true;
+                addMessage('Bạn', message, 'user-message');
+                addLoadingMessage();
+                socket.emit('user_message', message);
+                input.value = '';
+            }
+        }
+        
+        function previewImage() {
+            const input = document.getElementById('imageInput');
+            const preview = document.getElementById('imagePreview');
+            const info = document.getElementById('imageInfo');
+            
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const fileSize = (file.size / 1024 / 1024).toFixed(2);
+                
+                // Show file info
+                info.textContent = `📁 ${file.name} (${fileSize} MB)`;
+                
+                if (fileSize > 5) {
+                    alert('⚠️ Ảnh quá lớn! Vui lòng chọn ảnh nhỏ hơn 5MB');
+                    input.value = '';
+                    preview.style.display = 'none';
+                    info.textContent = '';
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+        
+        function sendImageMessage() {
+            const input = document.getElementById('imageInput');
+            const promptInput = document.getElementById('imagePrompt');
+            const prompt = promptInput.value.trim() || 'Mô tả ảnh này chi tiết cho tôi, bao gồm các đối tượng, màu sắc, bối cảnh và những chi tiết đáng chú ý.';
+            
+            if (input.files && input.files[0] && !isLoading) {
+                isLoading = true;
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const imageData = e.target.result;
+                    addMessage('Bạn', `🖼️ [Đã gửi ảnh]<br>📝 ${prompt}`, 'user-message');
+                    addLoadingMessage();
+                    
+                    socket.emit('user_image', {
+                        data: imageData,
+                        prompt: prompt
+                    });
+                };
+                reader.readAsDataURL(input.files[0]);
+            } else if (!input.files || !input.files[0]) {
+                alert('🖼️ Vui lòng chọn hình ảnh trước khi gửi!');
+            }
+        }
+        
+        function testConnection() {
+            if (!isLoading) {
+                sendTestMessage('Xin chào Gemini! Bạn có thể trò chuyện không?');
+            }
+        }
+        
+        function sendTestMessage(message) {
+            isLoading = true;
+            addMessage('Bạn', message, 'user-message');
+            addLoadingMessage();
+            socket.emit('user_message', message);
+        }
+        
+        function sendSampleQuestions() {
+            const questions = [
+                'Hãy giới thiệu về bản thân và khả năng của bạn',
+                'Bạn có thể phân tích hình ảnh không?',
+                'Tôi có thể hỏi bạn về thiết kế nội thất không?'
+            ];
+            
+            const randomQuestion = questions[Math.floor(Math.random() * questions.length)];
+            document.getElementById('messageInput').value = randomQuestion;
+        }
+        
+        function clearChat() {
+            chatContainer.innerHTML = '<div class="system-message">Chat đã được xóa 🧹</div>';
+        }
+        
+        // Socket event handlers specifically for Gemini
+        socket.on('bot_reply', (reply) => {
+            removeLoadingMessage();
+            isLoading = false;
+        });
+        
+        // Enter key support
+        document.getElementById('messageInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendTextMessage();
+            }
+        });
+        
+        document.getElementById('imagePrompt').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                sendImageMessage();
+            }
+        });
+        
+        // Auto-focus on message input
+        document.getElementById('messageInput').focus();
+    </script>
+</body>
+</html>

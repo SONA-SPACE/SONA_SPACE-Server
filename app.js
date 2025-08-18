@@ -83,6 +83,12 @@ app.use(express.static(path.join(__dirname, "public")));
 app.get("/test-categories", (req, res) => {
   res.sendFile(path.join(__dirname, "test-categories.html"));
 });
+
+// Test route for Gemini chatbot
+app.get("/test-gemini-chatbot", (req, res) => {
+  res.sendFile(path.join(__dirname, "test-gemini-chatbot.html"));
+});
+
 app.use(cors());
 
 // Add a health check endpoint

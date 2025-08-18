@@ -22,9 +22,20 @@ console.log(`Server will run on port: ${port}`);
 
 var server = http.createServer(app);
 
-// SOCKET.IO dùng cho chat bot
+// SOCKET.IO setup
+const { Server } = require("socket.io");
+const io = new Server(server, { 
+  cors: { origin: "*" },
+  maxHttpBufferSize: 20 * 1024 * 1024 // 20MB
+});
+
+// SOCKET.IO dùng cho chat bot OpenAI (namespace mặc định)
 const chatbotSocket = require("../chatbotSocket");
-chatbotSocket(server);
+chatbotSocket(io);
+
+// SOCKET.IO dùng cho Gemini chat bot với namespace riêng
+const chatbotSocketGemini = require("../chatbotSocket-gemini");
+chatbotSocketGemini(io);
 
 /**
  * Listen on provided port, on all network interfaces.

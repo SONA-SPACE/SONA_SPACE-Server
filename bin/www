@@ -33,9 +33,9 @@ const io = new Server(server, {
 const chatbotSocket = require("../chatbotSocket");
 chatbotSocket(io);
 
-// SOCKET.IO dùng cho Gemini chat bot với namespace riêng
-const chatbotSocketGemini = require("../chatbotSocket-gemini");
-chatbotSocketGemini(io);
+// SOCKET.IO dùng cho Gemini 2.5 Pro chat bot với namespace riêng
+const chatbotSocketGemini25 = require("../chatbotSocket-gemini-25-pro");
+chatbotSocketGemini25(io);
 
 /**
  * Listen on provided port, on all network interfaces.

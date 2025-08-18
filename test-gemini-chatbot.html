@@ -309,19 +309,20 @@
     <div class="chat-container">
         <div class="chat-header">
             <div class="status-indicator" id="statusIndicator"></div>
-            <h1>🤖 Gemini Vision AI</h1>
-            <p>Chat với AI và upload hình ảnh để phân tích thiết kế</p>
+            <h1>🤖 Gemini 2.5 Pro AI</h1>
+            <p>Chat với AI Pro và upload hình ảnh - Có Google Search & Thinking Mode</p>
         </div>
 
         <div class="chat-messages" id="chatMessages">
             <div class="message bot">
                 <div class="message-avatar">G</div>
                 <div class="message-content">
-                    Xin chào! Tôi là Gemini AI với khả năng nhìn và hiểu hình ảnh. Bạn có thể:
-                    <br>• Upload ảnh thiết kế nội thất để tôi phân tích
-                    <br>• Hỏi về màu sắc, phong cách, vật liệu
-                    <br>• Chat bằng tiếng Việt hoặc tiếng Anh
-                    <br><br>Hãy thử upload một ảnh và hỏi tôi nhé! 📸✨
+                    Xin chào! Tôi là Gemini 2.5 Pro với khả năng:
+                    <br>• 🔍 Tìm kiếm Google real-time
+                    <br>• 🧠 Thinking mode để suy nghĩ sâu
+                    <br>• 📸 Nhìn và phân tích hình ảnh
+                    <br>• 🌊 Streaming response theo thời gian thực
+                    <br><br>Hãy thử hỏi về xu hướng thiết kế 2025 hoặc upload ảnh! ✨
                 </div>
             </div>
         </div>
@@ -398,22 +399,44 @@
 
         // Nhận phản hồi từ Gemini
         socket.on('bot_response', (data) => {
-            console.log('📨 Nhận phản hồi từ Gemini:', data);
+            console.log('📨 Nhận phản hồi hoàn chỉnh từ Gemini:', data);
             hideTyping();
-            addMessage('bot', data.response || data.message || 'Phản hồi trống từ Gemini');
+            currentStreamingMessage = null; // Reset streaming
+            
+            if (!data.response && !data.message) {
+                // Nếu không có streaming message, tạo message mới
+                addMessage('bot', 'Phản hồi trống từ Gemini');
+            }
+            // Nếu có streaming, message đã được tạo rồi
+        });
+
+        // Nhận streaming chunks từ Gemini 2.5 Pro
+        let currentStreamingMessage = null;
+        socket.on('bot_response_chunk', (data) => {
+            console.log('🌊 Streaming chunk:', data.chunk);
+            
+            if (!currentStreamingMessage) {
+                // Tạo message mới cho streaming
+                currentStreamingMessage = createStreamingMessage();
+            }
+            
+            // Thêm chunk vào message hiện tại
+            appendToStreamingMessage(currentStreamingMessage, data.chunk);
         });
 
         // Nhận lỗi từ server
         socket.on('error_response', (data) => {
             console.error('❌ Lỗi từ Gemini:', data);
             hideTyping();
+            currentStreamingMessage = null; // Reset streaming
             addMessage('bot', '❌ Lỗi: ' + (data.error || data.message || 'Lỗi không xác định'), true);
         });
 
         // Test kết nối Gemini
         socket.on('test_response', (data) => {
             console.log('🧪 Test response:', data);
-            addMessage('bot', '✅ Test Gemini: ' + data.message);
+            const features = data.features ? '\n🎯 Features: ' + data.features.join(', ') : '';
+            addMessage('bot', '✅ ' + data.message + features);
         });
 
         // Test kết nối ngay khi load
@@ -485,6 +508,42 @@
 
         function hideTyping() {
             typingIndicator.style.display = 'none';
+        }
+
+        function createStreamingMessage() {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message bot';
+            
+            const avatar = document.createElement('div');
+            avatar.className = 'message-avatar';
+            avatar.textContent = 'G';
+            
+            const messageContent = document.createElement('div');
+            messageContent.className = 'message-content';
+            messageContent.innerHTML = '<span class="streaming-indicator">🌊 Đang nhận phản hồi...</span>';
+            
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(messageContent);
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            return messageContent;
+        }
+
+        function appendToStreamingMessage(messageElement, chunk) {
+            if (!messageElement) return;
+            
+            // Xóa streaming indicator nếu có
+            const indicator = messageElement.querySelector('.streaming-indicator');
+            if (indicator) {
+                indicator.remove();
+            }
+            
+            // Thêm chunk vào content
+            const currentContent = messageElement.textContent || '';
+            messageElement.innerHTML = (currentContent + chunk).replace(/\n/g, '<br>');
+            chatMessages.scrollTop = chatMessages.scrollHeight;
         }
 
         function handleImageSelect(event) {

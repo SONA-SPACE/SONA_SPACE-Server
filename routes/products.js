@@ -849,6 +849,549 @@ router.get("/variants", async (req, res) => {
   }
 });
 
+const splitImages = (list) =>
+  (list || "")
+    .split(",")
+    .map((s) => s.trim().replace(/^['"]+|['"]+$/g, ""))
+    .filter(Boolean);
+
+router.get("/full-list-all", async (req, res) => {
+  const userId = 0;
+  try {
+    // 1) Lấy toàn bộ product đang active
+    const [products] = await db.query(
+      `
+      SELECT
+        p.product_id,
+        p.product_name,
+        p.product_slug,
+        p.product_description,
+        p.product_image,
+        p.product_sold,
+        p.product_view,
+        p.product_status,
+        p.category_id,
+        c.category_name,
+        p.created_at,
+        p.updated_at
+      FROM product p
+      LEFT JOIN category c ON p.category_id = c.category_id
+      WHERE p.product_status = 1
+      ORDER BY p.created_at DESC
+      `
+    );
+
+    if (!products.length) {
+      return res.json({ products: [] });
+    }
+
+    const productIds = products.map((p) => p.product_id);
+    const idParams = productIds.length ? productIds : [-1];
+
+    // 2) Batch: variants + color (đã sắp theo priority mặc định)
+    const [variantRows] = await db.query(
+      `
+      SELECT
+        vp.product_id,
+        vp.variant_id,
+        vp.color_id,
+        vp.variant_product_price        AS price,
+        vp.variant_product_price_sale   AS price_sale,
+        vp.variant_product_quantity     AS quantity,
+        vp.variant_product_slug         AS variant_slug,
+        vp.variant_product_list_image   AS list_image,
+        col.color_name,
+        col.color_hex,
+        col.color_priority
+      FROM variant_product vp
+      JOIN color col ON vp.color_id = col.color_id
+      WHERE vp.product_id IN (${idParams.map(() => "?").join(",")})
+      ORDER BY col.color_priority = 1 DESC, col.color_priority ASC, vp.variant_id ASC
+      `,
+      idParams
+    );
+
+    // 3) Batch: rooms
+    const [roomRows] = await db.query(
+      `
+      SELECT rp.product_id, r.room_id, r.room_name, r.slug
+      FROM room_product rp
+      JOIN room r ON rp.room_id = r.room_id
+      WHERE rp.product_id IN (${idParams.map(() => "?").join(",")})
+      `,
+      idParams
+    );
+
+    // 4) Batch: attributes (chỉ các attr có value cho sản phẩm)
+    const [attrRows] = await db.query(
+      `
+      SELECT
+        pav.product_id,
+        a.attribute_id,
+        a.attribute_name,
+        a.unit,
+        a.is_required,
+        a.value_type,
+        CASE
+          WHEN pav.value IS NOT NULL AND pav.value <> '' THEN pav.value
+          WHEN m.material_name IS NOT NULL THEN m.material_name
+          ELSE NULL
+        END AS value_display,
+        pav.value AS raw_value,
+        pav.material_id
+      FROM product_attribute_value pav
+      JOIN attributes a ON pav.attribute_id = a.attribute_id
+      LEFT JOIN materials m ON pav.material_id = m.material_id
+      WHERE pav.product_id IN (${idParams.map(() => "?").join(",")})
+      ORDER BY a.attribute_name ASC
+      `,
+      idParams
+    );
+
+    // 5) Batch: comment_count
+    const [commentAgg] = await db.query(
+      `
+      SELECT product_id, COUNT(*) AS comment_count
+      FROM comment
+      WHERE product_id IN (${idParams
+        .map(() => "?")
+        .join(",")}) AND deleted_at IS NULL
+      GROUP BY product_id
+      `,
+      idParams
+    );
+
+    // 6) Batch: total_stock
+    const [stockAgg] = await db.query(
+      `
+      SELECT product_id, COALESCE(SUM(variant_product_quantity),0) AS total_stock
+      FROM variant_product
+      WHERE product_id IN (${idParams.map(() => "?").join(",")})
+      GROUP BY product_id
+      `,
+      idParams
+    );
+
+    // 7) Gom variants theo product và xác định default_variant_id
+    const variantsByPid = new Map();
+    for (const v of variantRows) {
+      if (!variantsByPid.has(v.product_id)) variantsByPid.set(v.product_id, []);
+      variantsByPid.get(v.product_id).push(v);
+    }
+
+    const defaultVariantByPid = new Map();
+    for (const pid of productIds) {
+      const list = variantsByPid.get(pid) || [];
+      defaultVariantByPid.set(pid, list[0]?.variant_id || null);
+    }
+
+    // 8) Batch wishlist theo default_variant_id (nếu có user)
+    let wishlistSet = new Set();
+    if (userId) {
+      const defaultVariantIds = Array.from(defaultVariantByPid.values()).filter(
+        Boolean
+      );
+      if (defaultVariantIds.length) {
+        const [wlRows] = await db.query(
+          `
+          SELECT variant_id
+          FROM wishlist
+          WHERE user_id = ? AND status = 1
+            AND variant_id IN (${defaultVariantIds.map(() => "?").join(",")})
+          `,
+          [userId, ...defaultVariantIds]
+        );
+        wishlistSet = new Set(wlRows.map((r) => r.variant_id));
+      }
+    }
+
+    // 9) Build các map phụ
+    const roomsByPid = new Map();
+    for (const r of roomRows) {
+      if (!roomsByPid.has(r.product_id)) roomsByPid.set(r.product_id, []);
+      roomsByPid.get(r.product_id).push({
+        room_id: r.room_id,
+        room_name: r.room_name,
+        slug: r.slug,
+      });
+    }
+
+    const attrsByPid = new Map();
+    for (const a of attrRows) {
+      if (!attrsByPid.has(a.product_id)) attrsByPid.set(a.product_id, []);
+      attrsByPid.get(a.product_id).push({
+        attribute_id: a.attribute_id,
+        name: a.attribute_name,
+        unit: a.unit,
+        is_required: !!a.is_required,
+        value_type: a.value_type,
+        value_display: a.value_display,
+        raw_value: a.raw_value,
+        material_id: a.material_id,
+      });
+    }
+
+    const commentByPid = new Map(
+      commentAgg.map((r) => [r.product_id, r.comment_count])
+    );
+    const stockByPid = new Map(
+      stockAgg.map((r) => [r.product_id, r.total_stock])
+    );
+
+    // 10) Kết xuất toàn bộ list
+    const result = products.map((p) => {
+      const vListRaw = variantsByPid.get(p.product_id) || [];
+      const vList = vListRaw.map((v) => ({
+        variant_id: v.variant_id,
+        product_id: v.product_id,
+        color_id: v.color_id,
+        color_name: v.color_name,
+        color_hex: v.color_hex,
+        color_priority: v.color_priority,
+        price: v.price,
+        price_sale: v.price_sale,
+        quantity: v.quantity,
+        slug: v.variant_slug,
+        images: splitImages(v.list_image),
+      }));
+
+      // default variant = phần tử đầu tiên (đã sắp theo priority)
+      const dv = vList[0] || null;
+
+      // Tính min_price / min_price_sale / min_actual_price từ vList
+      let min_price = null,
+        min_price_sale = null,
+        min_actual_price = null;
+      for (const it of vList) {
+        if (min_price === null || (it.price ?? Infinity) < min_price)
+          min_price = it.price ?? null;
+        if (it.price_sale > 0) {
+          if (min_price_sale === null || it.price_sale < min_price_sale)
+            min_price_sale = it.price_sale;
+          if (min_actual_price === null || it.price_sale < min_actual_price)
+            min_actual_price = it.price_sale;
+        }
+      }
+      if (min_actual_price === null) min_actual_price = min_price;
+
+      const colors = vList.map((v) => ({
+        colorId: v.color_id,
+        colorName: v.color_name,
+        colorHex: v.color_hex,
+        slug: v.slug,
+      }));
+
+      return {
+        id: p.product_id,
+        name: p.product_name,
+        slug: p.product_slug,
+        description: p.product_description,
+        main_image: (p.product_image || "")
+          .trim()
+          .replace(/^['"]+|['"]+$/g, ""),
+        sold: p.product_sold,
+        view: p.product_view,
+        status: p.product_status,
+        category_id: p.category_id,
+        category_name: p.category_name,
+        created_at: p.created_at,
+        updated_at: p.updated_at,
+
+        min_price,
+        min_price_sale,
+        min_actual_price,
+
+        default_variant: dv
+          ? {
+              variant_id: dv.variant_id,
+              color_name: dv.color_name,
+              color_hex: dv.color_hex,
+              price: dv.price,
+              price_sale: dv.price_sale,
+              quantity: dv.quantity,
+              slug: dv.slug,
+              images: dv.images,
+            }
+          : null,
+
+        variants: vList,
+        colors,
+        rooms: roomsByPid.get(p.product_id) || [],
+        attributes: attrsByPid.get(p.product_id) || [],
+        total_stock: stockByPid.get(p.product_id) ?? 0,
+        comment_count: commentByPid.get(p.product_id) ?? 0,
+        isWishlist: dv ? wishlistSet.has(dv.variant_id) : false,
+      };
+    });
+
+    return res.json({ products: result });
+  } catch (err) {
+    console.error("[FULL LIST ALL] Error:", err);
+    return res.status(500).json({ error: "Failed to fetch full product list" });
+  }
+});
+
+// GỢI Ý: tạo endpoint mới để phục vụ AI, không ảnh hưởng client hiện có
+router.get("/ai-catalog", async (req, res) => {
+  const userId = 0; // hoặc lấy từ auth nếu cần
+  try {
+    // 1) Lấy toàn bộ product đang active (chỉ field cần thiết)
+    const [products] = await db.query(`
+      SELECT
+        p.product_id,
+        p.product_name,
+        p.product_slug,
+        p.product_description,
+        p.product_status,
+        p.category_id,
+        c.category_name,
+        p.created_at,
+        p.updated_at
+      FROM product p
+      LEFT JOIN category c ON p.category_id = c.category_id
+      WHERE p.product_status = 1
+      ORDER BY p.created_at DESC
+      LIMIT 6
+    `);
+
+    if (!products.length) {
+      return res.json({ items: [] });
+    }
+
+    const productIds = products.map((p) => p.product_id);
+    const idParams = productIds.length ? productIds : [-1];
+    const inClause = productIds.map(() => "?").join(",");
+
+    // 2) Variants + màu (đã sắp theo priority)
+    const [variantRows] = await db.query(
+      `
+      SELECT
+        vp.product_id,
+        vp.variant_id,
+        vp.color_id,
+        vp.variant_product_price        AS price,
+        vp.variant_product_price_sale   AS price_sale,
+        vp.variant_product_quantity     AS quantity,
+        vp.variant_product_slug         AS variant_slug,
+        col.color_name,
+        col.color_hex,
+        col.color_priority
+      FROM variant_product vp
+      JOIN color col ON vp.color_id = col.color_id
+      WHERE vp.product_id IN (${inClause})
+      ORDER BY col.color_priority = 1 DESC, col.color_priority ASC, vp.variant_id ASC
+      `,
+      idParams
+    );
+
+    // 3) Rooms
+    const [roomRows] = await db.query(
+      `
+      SELECT rp.product_id, r.room_id, r.room_name, r.slug
+      FROM room_product rp
+      JOIN room r ON rp.room_id = r.room_id
+      WHERE rp.product_id IN (${inClause})
+      `,
+      idParams
+    );
+
+    // 4) Attributes (chỉ attr có value)
+    const [attrRows] = await db.query(
+      `
+      SELECT
+        pav.product_id,
+        a.attribute_id,
+        a.attribute_name,
+        a.unit,
+        a.is_required,
+        a.value_type,
+        CASE
+          WHEN pav.value IS NOT NULL AND pav.value <> '' THEN pav.value
+          WHEN m.material_name IS NOT NULL THEN m.material_name
+          ELSE NULL
+        END AS value_display,
+        pav.value AS raw_value,
+        pav.material_id
+      FROM product_attribute_value pav
+      JOIN attributes a ON pav.attribute_id = a.attribute_id
+      LEFT JOIN materials m ON pav.material_id = m.material_id
+      WHERE pav.product_id IN (${inClause})
+      ORDER BY a.attribute_name ASC
+      `,
+      idParams
+    );
+
+    // 5) comment_count
+    const [commentAgg] = await db.query(
+      `
+      SELECT product_id, COUNT(*) AS comment_count
+      FROM comment
+      WHERE product_id IN (${inClause}) AND deleted_at IS NULL
+      GROUP BY product_id
+      `,
+      idParams
+    );
+
+    // 6) total_stock
+    const [stockAgg] = await db.query(
+      `
+      SELECT product_id, COALESCE(SUM(variant_product_quantity),0) AS total_stock
+      FROM variant_product
+      WHERE product_id IN (${inClause})
+      GROUP BY product_id
+      `,
+      idParams
+    );
+
+    // --- Build map phụ ---
+    const variantsByPid = new Map();
+    for (const v of variantRows) {
+      if (!variantsByPid.has(v.product_id)) variantsByPid.set(v.product_id, []);
+      variantsByPid.get(v.product_id).push(v);
+    }
+
+    const roomsByPid = new Map();
+    for (const r of roomRows) {
+      if (!roomsByPid.has(r.product_id)) roomsByPid.set(r.product_id, []);
+      roomsByPid.get(r.product_id).push({
+        room_id: r.room_id,
+        room_name: r.room_name,
+        slug: r.slug,
+      });
+    }
+
+    const attrsByPid = new Map();
+    for (const a of attrRows) {
+      if (!attrsByPid.has(a.product_id)) attrsByPid.set(a.product_id, []);
+      // Bỏ trường rác (không có value)
+      if (a.value_display == null || a.value_display === "") continue;
+      attrsByPid.get(a.product_id).push({
+        attribute_id: a.attribute_id,
+        name: a.attribute_name,
+        unit: a.unit || "",
+        is_required: !!a.is_required,
+        value_type: a.value_type,
+        value_display: a.value_display,
+        raw_value: a.raw_value,
+        material_id: a.material_id,
+      });
+    }
+
+    const commentByPid = new Map(
+      commentAgg.map((r) => [r.product_id, Number(r.comment_count || 0)])
+    );
+    const stockByPid = new Map(
+      stockAgg.map((r) => [r.product_id, Number(r.total_stock || 0)])
+    );
+
+    // --- Helper để chuẩn hoá giá & text ---
+    const sanitizePrice = (price) => {
+      const n = Number(price);
+      return Number.isFinite(n) && n >= 0 ? n : null;
+    };
+    const computeActualPrice = (price, price_sale) => {
+      const p = sanitizePrice(price);
+      const ps = sanitizePrice(price_sale);
+      if (ps != null && p != null && ps > 0 && ps < p) return ps;
+      return p ?? ps ?? null;
+    };
+    const buildAttributesText = (attrs = []) => {
+      return attrs
+        .map((x) => {
+          const unit = x.unit ? ` ${x.unit}` : "";
+          return `${x.name}: ${x.value_display}${unit}`;
+        })
+        .join("; ");
+    };
+    const compactText = (s) => (s || "").replace(/\s+/g, " ").trim();
+
+    // --- Kết xuất: MỖI BIẾN THỂ = 1 DOCUMENT gọn cho AI ---
+    const items = [];
+    for (const p of products) {
+      const pid = p.product_id;
+      const vListRaw = variantsByPid.get(pid) || [];
+
+      // Rooms & attributes dùng chung theo sản phẩm
+      const rooms = roomsByPid.get(pid) || [];
+      const attributes = attrsByPid.get(pid) || [];
+      const attributes_text = buildAttributesText(attributes);
+
+      // Text mô tả ngắn gọn
+      const description_plain = compactText(p.product_description);
+
+      // Search blob (để embedding)
+      const baseBlob = [
+        p.product_name,
+        p.category_name,
+        description_plain,
+        attributes_text,
+        rooms.map((r) => r.room_name).join(", "),
+      ]
+        .filter(Boolean)
+        .join(" — ");
+
+      // total_stock & comment_count cấp sản phẩm (để hiển thị/ưu tiên)
+      const total_stock = Number(stockByPid.get(pid) ?? 0);
+      const comment_count = Number(commentByPid.get(pid) ?? 0);
+
+      // Với mỗi biến thể → 1 record gọn
+      for (const v of vListRaw) {
+        const price = sanitizePrice(v.price);
+        const price_sale = sanitizePrice(v.price_sale);
+        const actual_price = computeActualPrice(price, price_sale);
+        const quantity = Number(v.quantity ?? 0);
+        const is_in_stock = quantity > 0;
+
+        items.push({
+          // ID & nhận diện
+          doc_id: `product:${pid}:variant:${v.variant_id}`,
+          product_id: pid,
+          variant_id: v.variant_id,
+
+          // Thông tin hiển thị chính
+          name: p.product_name,
+          category: p.category_name,
+          slug: p.product_slug,
+          variant_slug: v.variant_slug,
+          color_name: v.color_name,
+          color_hex: v.color_hex,
+
+          // Giá & tồn
+          price,
+          price_sale,
+          actual_price,
+          is_in_stock,
+          quantity,
+          total_stock,
+          comment_count,
+
+          // Ngữ nghĩa & bối cảnh
+          rooms: rooms.map((r) => ({
+            room_id: r.room_id,
+            room_name: r.room_name,
+            slug: r.slug,
+          })),
+          attributes, // vẫn giữ mảng chi tiết (không ảnh, gọn)
+          attributes_text, // chuỗi rút gọn, tiện embed/search
+          description_plain, // mô tả ngắn gọn (đã compact)
+          search_blob: compactText(
+            `${baseBlob} — Màu: ${v.color_name} ${v.color_hex || ""}`
+          ),
+
+          // Dấu thời gian
+          created_at: p.created_at,
+          updated_at: p.updated_at,
+        });
+      }
+    }
+
+    return res.json({ items });
+  } catch (err) {
+    console.error("[AI-CATALOG] Error:", err);
+    return res.status(500).json({ error: "Failed to build AI catalog" });
+  }
+});
+
 /**
  * @route   GET /api/products/:id
  * @desc    Lấy thông tin chi tiết một sản phẩm
@@ -875,7 +1418,6 @@ router.get("/test/:slug", async (req, res) => {
       `,
       [slug]
     );
-
 
     if (!productRows.length) {
       return res.status(404).json({ error: "Product not found" });

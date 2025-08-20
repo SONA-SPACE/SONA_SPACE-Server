@@ -1481,13 +1481,6 @@ router.get("/:id", verifyToken, async (req, res) => {
     delete order.payment_transaction_code;
     delete order.payment_paid_at;
 
-    // Kiểm tra quyền truy cập
-    if (req.user.role !== "admin" && req.user.id !== order.user_id) {
-      return res
-        .status(403)
-        .json({ error: "You do not have permission to view this order" });
-    }
-
     try {
       // Lấy chi tiết sản phẩm
       const orderItemsQuery = `

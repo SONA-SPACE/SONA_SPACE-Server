@@ -65,7 +65,7 @@ module.exports = function attachChatbotSocketGemini25(io) {
         const contents = buildContents(socket.data.history, userText);
 
         const stream = await genAI.models.generateContentStream({
-          model: "gemini-1.5-flash",
+          model: "gemini-2.5-pro",
           contents,
           // Context cấp hệ thống + tools (Grounding)
           config: {

@@ -241,15 +241,13 @@ router.put('/cancel', verifyToken, (req, res) => {
 router.put('/cancel/:orderId', verifyToken, async (req, res) => {
   try {
     const orderId = req.params.orderId;
-    // Use the user ID from the JWT token instead of requiring it in the body
     const user_id = req.user.id;
     const isAdmin = req.user.role === 'admin';
     const { reason } = req.body;
 
-    // Truy vấn khác nhau cho admin và user thường
+    // Lấy đơn hàng theo quyền: admin hoặc user thường
     let order;
     if (isAdmin) {
-      // Admin có thể hủy bất kỳ đơn hàng nào
       const [[adminOrder]] = await db.query(
         `SELECT o.order_id, o.user_id, o.current_status, o.created_at, o.order_hash, 
          u.user_name, u.user_gmail as user_email
@@ -260,7 +258,6 @@ router.put('/cancel/:orderId', verifyToken, async (req, res) => {
       );
       order = adminOrder;
     } else {
-      // User thường chỉ có thể hủy đơn hàng của chính mình
       const [[userOrder]] = await db.query(
         `SELECT o.order_id, o.user_id, o.current_status, o.created_at, o.order_hash, 
          u.user_name, u.user_gmail as user_email
@@ -279,9 +276,8 @@ router.put('/cancel/:orderId', verifyToken, async (req, res) => {
       });
     }
 
-    // Kiểm tra điều kiện hủy đơn hàng (bỏ qua nếu là admin)
+    // Kiểm tra điều kiện hủy nếu không phải admin
     if (!isAdmin) {
-      // Chỉ cho phép hủy đơn hàng ở trạng thái PENDING hoặc CONFIRMED
       if (order.current_status !== 'PENDING' && order.current_status !== 'CONFIRMED') {
         return res.status(400).json({ 
           success: false, 
@@ -289,11 +285,9 @@ router.put('/cancel/:orderId', verifyToken, async (req, res) => {
         });
       }
 
-      // Kiểm tra thời gian tạo đơn, chỉ cho phép hủy trong vòng 72 giờ (tăng từ 24h)
       const orderDate = new Date(order.created_at);
       const currentDate = new Date();
       const hoursDiff = (currentDate - orderDate) / (1000 * 60 * 60);
-
       if (hoursDiff > 72) {
         return res.status(400).json({ 
           success: false, 
@@ -316,26 +310,44 @@ router.put('/cancel/:orderId', verifyToken, async (req, res) => {
         [orderId]
       );
 
-      // Khôi phục số lượng tồn kho cho mỗi sản phẩm
+      // Cập nhật kho và số lượng bán khi hủy đơn (trạng thái CANCELLED)
       for (const item of orderItems) {
-        if (item.product_id) {
+        if (item.variant_id) {
+          // Cộng lại kho biến thể sản phẩm
           await connection.query(
-            'UPDATE product SET product_stock = product_stock + ? WHERE product_id = ?',
+            `UPDATE variant_product
+             SET variant_product_quantity = variant_product_quantity + ?
+             WHERE variant_id = ?`,
+            [item.quantity, item.variant_id]
+          );
+          console.log("Updated variant_product_quantity for variant_id:", item.variant_id);
+        }
+        if (item.product_id) {
+          // Giảm số lượng đã bán của sản phẩm, không để âm
+          await connection.query(
+            `UPDATE product
+             SET product_sold = GREATEST(product_sold - ?, 0)
+             WHERE product_id = ?`,
             [item.quantity, item.product_id]
           );
         }
       }
 
-      // Cập nhật trạng thái đơn hàng
+      // Cập nhật trạng thái đơn hàng sang CANCELLED
       await connection.query(
-        'UPDATE orders SET current_status = "CANCELLED", status_updated_by = ?, status_updated_at = NOW(), note = CONCAT(IFNULL(note, ""), ?) WHERE order_id = ?',
+        `UPDATE orders 
+         SET current_status = "CANCELLED", 
+             status_updated_by = ?, 
+             status_updated_at = NOW(), 
+             note = CONCAT(IFNULL(note, ""), ?) 
+         WHERE order_id = ?`,
         [isAdmin ? 'admin' : 'user', reason ? `\nLý do hủy: ${reason}` : `\nĐã hủy bởi ${isAdmin ? 'admin' : 'khách hàng'}`, orderId]
       );
 
-      // Tạo bản ghi hủy đơn hàng trong bảng order_returns
+      // Tạo bản ghi hủy đơn hàng trong order_returns
       const returnReason = reason || (isAdmin ? 'Đơn hàng đã bị hủy bởi admin' : 'Đơn hàng đã được hủy bởi khách hàng');
-      const returnStatus = 'CANCELLED'; // Trạng thái hủy hoàn tất
-      
+      const returnStatus = 'CANCELLED';
+
       await connection.query(
         `INSERT INTO order_returns (
           order_id, user_id, reason, return_type, total_refund, status, created_at, updated_at
@@ -343,63 +355,50 @@ router.put('/cancel/:orderId', verifyToken, async (req, res) => {
         [orderId, order.user_id, returnReason, returnStatus]
       );
 
-      // Ghi log trạng thái
+      // Ghi log trạng thái hủy đơn
       await connection.query(
         `INSERT INTO order_status_log (order_id, from_status, to_status, trigger_by, step, created_at) 
          VALUES (?, ?, 'CANCELLED', ?, ?, NOW())`,
         [orderId, order.current_status, isAdmin ? 'admin' : 'user', `Đơn hàng đã bị hủy bởi ${isAdmin ? 'admin' : 'khách hàng'}`]
       );
 
-      // Tạo thông báo cho người dùng nếu admin hủy đơn hàng
+      // Tạo thông báo nếu admin hủy đơn hàng
       if (isAdmin && order.user_id) {
         try {
           const notificationMessage = reason 
             ? `Đơn hàng #${order.order_hash} đã bị hủy bởi admin. Lý do: ${reason}`
             : `Đơn hàng #${order.order_hash} đã bị hủy bởi admin.`;
-          
-          // Kiểm tra xem bảng notifications có tồn tại không
+
+          // Kiểm tra cấu trúc bảng notifications và chèn thông báo
           try {
-            // Kiểm tra cấu trúc bảng notifications trước khi chèn
-            const [notificationColumns] = await connection.query(
-              `SHOW COLUMNS FROM notifications`
-            );
-            
-            // Lấy tên các cột trong bảng notifications
+            const [notificationColumns] = await connection.query(`SHOW COLUMNS FROM notifications`);
             const columnNames = notificationColumns.map(col => col.Field);
-            
-            // Nếu bảng có cột user_id, thêm thông báo
+
             if (columnNames.includes('user_id')) {
               await connection.query(
                 `INSERT INTO notifications (user_id, type, message, related_id, created_at, is_read)
                  VALUES (?, 'ORDER_CANCELLED', ?, ?, NOW(), 0)`,
                 [order.user_id, notificationMessage, orderId]
               );
-              console.log(`Đã tạo thông báo hủy đơn hàng cho user ${order.user_id}`);
-            } 
-            // Nếu bảng có cột customer_id thay vì user_id
-            else if (columnNames.includes('customer_id')) {
+            } else if (columnNames.includes('customer_id')) {
               await connection.query(
                 `INSERT INTO notifications (customer_id, type, message, related_id, created_at, is_read)
                  VALUES (?, 'ORDER_CANCELLED', ?, ?, NOW(), 0)`,
                 [order.user_id, notificationMessage, orderId]
               );
-              console.log(`Đã tạo thông báo hủy đơn hàng cho customer ${order.user_id}`);
-            }
-            else {
+            } else {
               console.log('Không thể tạo thông báo: Cấu trúc bảng notifications không phù hợp');
             }
           } catch (tableError) {
-            // Bảng notifications có thể không tồn tại
             if (tableError.code === 'ER_NO_SUCH_TABLE') {
               console.log('Bảng notifications không tồn tại trong cơ sở dữ liệu');
             } else {
               console.error('Lỗi khi kiểm tra bảng notifications:', tableError);
             }
           }
-          
-          // Có thể thêm code gửi email thông báo ở đây
+
+          // Gửi email thông báo (nếu cần)
           try {
-            // Giả sử có một hàm sendEmail được import
             // await sendEmail(order.user_email, 'Thông báo hủy đơn hàng', {
             //   name: order.user_name,
             //   order_hash: order.order_hash,
@@ -409,12 +408,10 @@ router.put('/cancel/:orderId', verifyToken, async (req, res) => {
             console.log(`Đã gửi email thông báo hủy đơn hàng đến ${order.user_email}`);
           } catch (emailError) {
             console.error('Lỗi khi gửi email thông báo:', emailError);
-            // Không throw lỗi ở đây để transaction vẫn tiếp tục
           }
+
         } catch (notificationError) {
-          // Ghi log lỗi nhưng không làm ảnh hưởng đến transaction
           console.error('Lỗi khi tạo thông báo:', notificationError);
-          // Không throw lỗi để transaction vẫn tiếp tục
         }
       }
 
@@ -428,12 +425,12 @@ router.put('/cancel/:orderId', verifyToken, async (req, res) => {
         order_hash: order.order_hash
       });
     } catch (error) {
-      // Rollback nếu có lỗi
       await connection.rollback();
       throw error;
     } finally {
       connection.release();
     }
+
   } catch (error) {
     console.error('Lỗi khi hủy đơn hàng:', error);
     return res.status(500).json({
@@ -443,5 +440,6 @@ router.put('/cancel/:orderId', verifyToken, async (req, res) => {
     });
   }
 });
+
 
 module.exports = router;

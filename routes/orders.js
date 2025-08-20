@@ -657,7 +657,6 @@ router.post("/", verifyToken, async (req, res) => {
         return res.status(400).json({ error: "Đơn hàng đã tồn tại" });
       }
 
-
       await db.query(
         `
           INSERT INTO orders (
@@ -758,15 +757,17 @@ router.post("/", verifyToken, async (req, res) => {
           [
             notificationTypeId,
             "Đơn hàng mới từ khách hàng",
-            `Khách hàng ${orderNameNew || defaultName} vừa đặt đơn hàng COD mới (${orderHash})`,
-            `/admin/orders/${orderHash}`
+            `Khách hàng ${
+              orderNameNew || defaultName
+            } vừa đặt đơn hàng COD mới (${orderHash})`,
+            `/admin/orders/${orderHash}`,
           ]
         );
       } else {
-        console.warn("Loại thông báo 'order' không tồn tại hoặc đã bị vô hiệu hóa.");
+        console.warn(
+          "Loại thông báo 'order' không tồn tại hoặc đã bị vô hiệu hóa."
+        );
       }
-
-
 
       if ((couponcode_id || coupon_code) && user_id) {
         let couponcodeId = couponcode_id || null;
@@ -852,7 +853,6 @@ router.post("/", verifyToken, async (req, res) => {
       });
     }
 
-
     // MoMo: không lưu đơn → trả về payUrl
     if (method === "MOMO") {
       for (const item of cart_items) {
@@ -873,8 +873,8 @@ router.post("/", verifyToken, async (req, res) => {
       const requestType = "captureWallet";
       const orderId = req.body.order_id || `SNA-${Date.now()}`;
       const requestId = `${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-      const redirectUrl = `${process.env.VITE_API_BASE_URL}/orders/redirect/momo`;
-      const ipnUrl = `${process.env.VITE_API_BASE_URL}/orders/payment/momo`;
+      const redirectUrl = `https://0f11c73646e6.ngrok-free.app/api/orders/redirect/momo`;
+      const ipnUrl = `https://0f11c73646e6.ngrok-free.app/api/orders/payment/momo`;
       const orderInfo = "Thanh toán đơn hàng";
 
       const extraData = Buffer.from(
@@ -937,7 +937,7 @@ router.post("/", verifyToken, async (req, res) => {
         vnpayHost: "https://sandbox.vnpayment.vn",
         testMode: true,
         hashAlgorithm: "SHA512",
-        loggerFn: () => { },
+        loggerFn: () => {},
       });
 
       const tomorrow = new Date();
@@ -992,7 +992,6 @@ router.post("/payment/momo", async (req, res) => {
   const secretKey = "K951B6PE1waDMi640xX08PD3vg6EkVlz";
 
   try {
-
     // Kiểm tra chữ ký hợp lệ
     const rawSignature = `accessKey=${accessKey}&amount=${amount}&extraData=${extraData}&message=${message}&orderId=${orderId}&orderInfo=${orderInfo}&orderType=${orderType}&partnerCode=${partnerCode}&payType=${payType}&requestId=${requestId}&responseTime=${responseTime}&resultCode=${resultCode}&transId=${transId}`;
     console.log("Raw Signature:", rawSignature);
@@ -1001,25 +1000,52 @@ router.post("/payment/momo", async (req, res) => {
     if (!signature || !rawSignature) {
       return res.status(400).json({ message: "Thiếu thông tin chữ ký" });
     }
-    
+
     const expectedSignature = crypto
       .createHmac("sha256", secretKey)
       .update(rawSignature)
       .digest("hex");
 
+    if (!signature || expectedSignature !== signature) {
+      console.error("MoMo signature mismatch", {
+        rawSignature,
+        expectedSignature,
+        signature,
+      });
+      return res.status(403).json({ error: "Sai chữ ký MoMo" });
+    }
+    if (parseInt(resultCode) !== 0) {
+      return res
+        .status(400)
+        .json({ error: "Thanh toán MoMo không thành công" });
+    }
 
     // Kiểm tra đơn đã tồn tại chưa
-    const [existingOrder] = await db.query("SELECT * FROM orders WHERE order_hash = ?", [orderId]);
+    const [existingOrder] = await db.query(
+      "SELECT * FROM orders WHERE order_hash = ?",
+      [orderId]
+    );
     if (existingOrder.length > 0) {
       const existingOrderId = existingOrder[0].order_id;
-      const [existingPayment] = await db.query("SELECT * FROM payments WHERE order_id = ? AND method = 'MOMO'", [existingOrderId]);
+      const [existingPayment] = await db.query(
+        "SELECT * FROM payments WHERE order_id = ? AND method = 'MOMO'",
+        [existingOrderId]
+      );
 
       if (existingPayment.length === 0) {
-        await db.query("INSERT INTO payments (order_id, method, amount, status, transaction_code, created_at) VALUES (?, 'MOMO', ?, 'PAID', ?, NOW())", [existingOrderId, amount, transId]);
-        await db.query("INSERT INTO order_status_log (order_id, from_status, to_status, trigger_by, step, created_at) VALUES (?, NULL, 'PAID', 'system', 'Xác nhận lại MoMo', NOW())", [existingOrderId]);
+        await db.query(
+          "INSERT INTO payments (order_id, method, amount, status, transaction_code, created_at) VALUES (?, 'MOMO', ?, 'PAID', ?, NOW())",
+          [existingOrderId, amount, transId]
+        );
+        await db.query(
+          "INSERT INTO order_status_log (order_id, from_status, to_status, trigger_by, step, created_at) VALUES (?, NULL, 'PAID', 'system', 'Xác nhận lại MoMo', NOW())",
+          [existingOrderId]
+        );
       }
 
-      return res.status(200).json({ message: "Đơn hàng đã tồn tại và đã xử lý thanh toán." });
+      return res
+        .status(200)
+        .json({ message: "Đơn hàng đã tồn tại và đã xử lý thanh toán." });
     }
 
     // Giải mã extraData
@@ -1050,14 +1076,29 @@ router.post("/payment/momo", async (req, res) => {
     const defaultAddress = userInfo.user_address?.trim() || "";
     const defaultPhone = userInfo.user_number?.trim() || "";
 
-    const finalName = order_name_new?.trim() && order_name_new.trim() !== defaultName ? order_name_new.trim() : null;
-    const finalEmail = order_email_new?.trim() && order_email_new.trim() !== defaultEmail ? order_email_new.trim() : null;
-    const finalAddress = order_address_new?.trim() && order_address_new.trim() !== defaultAddress ? order_address_new.trim() : null;
-    const finalPhone = order_number2?.trim() && order_number2.trim() !== defaultPhone ? order_number2.trim() : null;
+    const finalName =
+      order_name_new?.trim() && order_name_new.trim() !== defaultName
+        ? order_name_new.trim()
+        : null;
+    const finalEmail =
+      order_email_new?.trim() && order_email_new.trim() !== defaultEmail
+        ? order_email_new.trim()
+        : null;
+    const finalAddress =
+      order_address_new?.trim() && order_address_new.trim() !== defaultAddress
+        ? order_address_new.trim()
+        : null;
+    const finalPhone =
+      order_number2?.trim() && order_number2.trim() !== defaultPhone
+        ? order_number2.trim()
+        : null;
 
     let couponcodeId = couponcode_id || null;
     if (!couponcodeId && coupon_code) {
-      const [[coupon]] = await db.query("SELECT couponcode_id FROM couponcode WHERE code = ?", [coupon_code]);
+      const [[coupon]] = await db.query(
+        "SELECT couponcode_id FROM couponcode WHERE code = ?",
+        [coupon_code]
+      );
       if (coupon) couponcodeId = coupon.couponcode_id;
     }
 
@@ -1093,20 +1134,34 @@ router.post("/payment/momo", async (req, res) => {
       ]
     );
 
-    const [[orderRow]] = await db.query("SELECT order_id, order_hash FROM orders WHERE order_hash = ?", [order_hash]);
+    const [[orderRow]] = await db.query(
+      "SELECT order_id, order_hash FROM orders WHERE order_hash = ?",
+      [order_hash]
+    );
     const order_id = orderRow.order_id;
     const orderHash = orderRow.order_hash;
 
-
-
     for (const item of cart_items) {
-      const { variant_id, quantity, name: product_name, price: product_price } = item;
+      const {
+        variant_id,
+        quantity,
+        name: product_name,
+        price: product_price,
+      } = item;
       if (!variant_id || !quantity || !product_name || !product_price) continue;
 
-      const [updateResult] = await db.query("UPDATE variant_product SET variant_product_quantity = variant_product_quantity - ? WHERE variant_id = ? AND variant_product_quantity >= ?", [quantity, variant_id, quantity]);
+      const [updateResult] = await db.query(
+        "UPDATE variant_product SET variant_product_quantity = variant_product_quantity - ? WHERE variant_id = ? AND variant_product_quantity >= ?",
+        [quantity, variant_id, quantity]
+      );
 
       if (updateResult.affectedRows === 0) {
-        const failedItem = { name: product_name, quantity, price: product_price, image: item.image || null };
+        const failedItem = {
+          name: product_name,
+          quantity,
+          price: product_price,
+          image: item.image || null,
+        };
         await db.query(
           "INSERT INTO order_items (order_id, variant_id, quantity, product_name, product_price, current_status, created_at) VALUES (?, ?, ?, ?, ?, 'FAILED', NOW())",
           [order_id, variant_id, quantity, product_name, product_price]
@@ -1116,35 +1171,47 @@ router.post("/payment/momo", async (req, res) => {
           "INSERT INTO payments (order_id, method, amount, status, transaction_code, created_at) VALUES (?, 'MOMO', ?, 'SUCCESS', ?, NOW())",
           [order_id, amount, transId]
         );
-        await db.query("UPDATE orders SET current_status = 'FAILED' WHERE order_id = ?", [order_id]);
-        await db.query("INSERT INTO order_status_log (order_id, from_status, to_status, trigger_by, step, created_at) VALUES (?, 'PENDING', 'FAILED', 'system', 'Thiếu hàng khi thanh toán MoMo', NOW())", [order_id]);
+        await db.query(
+          "UPDATE orders SET current_status = 'FAILED' WHERE order_id = ?",
+          [order_id]
+        );
+        await db.query(
+          "INSERT INTO order_status_log (order_id, from_status, to_status, trigger_by, step, created_at) VALUES (?, 'PENDING', 'FAILED', 'system', 'Thiếu hàng khi thanh toán MoMo', NOW())",
+          [order_id]
+        );
 
-        await sendEmail1(finalEmail || defaultEmail, "Thanh toán thất bại do sản phẩm hết hàng", {
-          name: finalName || defaultName,
-          email: finalEmail || defaultEmail,
-          phone: finalPhone || defaultPhone,
-          address: finalAddress || defaultAddress,
-          amount,
-          method: "MOMO",
-          order_id,
-          order_hash,
-          created_at: new Date().toLocaleString("vi-VN", {
-            timeZone: "Asia/Ho_Chi_Minh",
-          }),
-          current_status: "THẤT BẠI",
-          order_total_final: amount.toLocaleString("vi-VN") + "đ",
-          order_discount: order_discount > 0
-            ? Number(order_discount).toLocaleString("vi-VN") + "đ"
-            : null,
-          products: cart_items.map((item) => ({
-            name: item.name,
-            quantity: item.quantity,
-            price: (item.price * 1).toLocaleString("vi-VN") + "đ",
-            total: (item.price * item.quantity).toLocaleString("vi-VN") + "đ",
-            image: item.image,
-          })),
-          message: `Sản phẩm "${failedItem.name}" đã hết hàng khi thanh toán. Hệ thống sẽ hoàn tiền tự động.`,
-        }, 'order-failed');
+        await sendEmail1(
+          finalEmail || defaultEmail,
+          "Thanh toán thất bại do sản phẩm hết hàng",
+          {
+            name: finalName || defaultName,
+            email: finalEmail || defaultEmail,
+            phone: finalPhone || defaultPhone,
+            address: finalAddress || defaultAddress,
+            amount,
+            method: "MOMO",
+            order_id,
+            order_hash,
+            created_at: new Date().toLocaleString("vi-VN", {
+              timeZone: "Asia/Ho_Chi_Minh",
+            }),
+            current_status: "THẤT BẠI",
+            order_total_final: amount.toLocaleString("vi-VN") + "đ",
+            order_discount:
+              order_discount > 0
+                ? Number(order_discount).toLocaleString("vi-VN") + "đ"
+                : null,
+            products: cart_items.map((item) => ({
+              name: item.name,
+              quantity: item.quantity,
+              price: (item.price * 1).toLocaleString("vi-VN") + "đ",
+              total: (item.price * item.quantity).toLocaleString("vi-VN") + "đ",
+              image: item.image,
+            })),
+            message: `Sản phẩm "${failedItem.name}" đã hết hàng khi thanh toán. Hệ thống sẽ hoàn tiền tự động.`,
+          },
+          "order-failed"
+        );
 
         try {
           const refundData = {
@@ -1160,51 +1227,85 @@ router.post("/payment/momo", async (req, res) => {
 
           const rawRefundSignature = `accessKey=${refundData.accessKey}&amount=${refundData.amount}&description=${refundData.description}&orderId=${refundData.orderId}&partnerCode=${refundData.partnerCode}&requestId=${refundData.requestId}&transId=${refundData.transId}`;
 
-          refundData.signature = crypto.createHmac("sha256", secretKey).update(rawRefundSignature).digest("hex");
+          refundData.signature = crypto
+            .createHmac("sha256", secretKey)
+            .update(rawRefundSignature)
+            .digest("hex");
 
           try {
-            const refundRes = await axios.post("https://test-payment.momo.vn/v2/gateway/api/refund", refundData, {
-              headers: { "Content-Type": "application/json" },
-            });
+            const refundRes = await axios.post(
+              "https://test-payment.momo.vn/v2/gateway/api/refund",
+              refundData,
+              {
+                headers: { "Content-Type": "application/json" },
+              }
+            );
 
             console.log("Kết quả hoàn tiền:", refundRes.data);
 
             if (refundRes.data.resultCode === 0) {
-              await db.query("UPDATE payments SET status = 'REFUNDED' WHERE order_id = ?", [order_id]);
-              await db.query("INSERT INTO order_status_log (order_id, from_status, to_status, trigger_by, step, created_at) VALUES (?, 'FAILED', 'REFUNDED', 'system', 'Đã hoàn tiền qua MoMo', NOW())", [order_id]);
+              await db.query(
+                "UPDATE payments SET status = 'REFUNDED' WHERE order_id = ?",
+                [order_id]
+              );
+              await db.query(
+                "INSERT INTO order_status_log (order_id, from_status, to_status, trigger_by, step, created_at) VALUES (?, 'FAILED', 'REFUNDED', 'system', 'Đã hoàn tiền qua MoMo', NOW())",
+                [order_id]
+              );
             } else {
               console.error("Refund thất bại:", refundRes.data.message);
             }
           } catch (error) {
-            console.error("Lỗi gọi API hoàn tiền MoMo:", error.response?.data || error.message);
+            console.error(
+              "Lỗi gọi API hoàn tiền MoMo:",
+              error.response?.data || error.message
+            );
           }
-
         } catch (refundErr) {
           console.error("Lỗi gọi API hoàn tiền MoMo:", refundErr.message);
         }
 
-        return res.status(200).json({ success: false, resultCode: 1, message: `Sản phẩm '${failedItem.name}' không còn đủ hàng. Đã ghi nhận hoàn tiền.` });
+        return res.status(200).json({
+          success: false,
+          resultCode: 1,
+          message: `Sản phẩm '${failedItem.name}' không còn đủ hàng. Đã ghi nhận hoàn tiền.`,
+        });
       }
 
-      await db.query("INSERT INTO order_items (order_id, variant_id, quantity, product_name, product_price, current_status, created_at) VALUES (?, ?, ?, ?, ?, 'NORMAL', NOW())", [order_id, variant_id, quantity, product_name, product_price]);
-      await db.query("UPDATE product JOIN variant_product ON variant_product.product_id = product.product_id SET product.product_sold = product.product_sold + ? WHERE variant_product.variant_id = ?", [quantity, variant_id]);
-
+      await db.query(
+        "INSERT INTO order_items (order_id, variant_id, quantity, product_name, product_price, current_status, created_at) VALUES (?, ?, ?, ?, ?, 'NORMAL', NOW())",
+        [order_id, variant_id, quantity, product_name, product_price]
+      );
+      await db.query(
+        "UPDATE product JOIN variant_product ON variant_product.product_id = product.product_id SET product.product_sold = product.product_sold + ? WHERE variant_product.variant_id = ?",
+        [quantity, variant_id]
+      );
     }
 
     const wishlistIdsToDelete = [];
 
     for (const item of cart_items) {
-      const [wishlistRows] = await db.query("SELECT wishlist_id FROM wishlist WHERE user_id = ? AND variant_id = ?", [user_id, item.variant_id]);
+      const [wishlistRows] = await db.query(
+        "SELECT wishlist_id FROM wishlist WHERE user_id = ? AND variant_id = ?",
+        [user_id, item.variant_id]
+      );
       wishlistRows.forEach((row) => wishlistIdsToDelete.push(row.wishlist_id));
     }
 
     if (wishlistIdsToDelete.length > 0) {
-
-      await db.query("DELETE FROM wishlist WHERE wishlist_id IN (?)", [wishlistIdsToDelete]);
+      await db.query("DELETE FROM wishlist WHERE wishlist_id IN (?)", [
+        wishlistIdsToDelete,
+      ]);
     }
 
-    await db.query("INSERT INTO payments (order_id, method, amount, status, transaction_code, created_at) VALUES (?, 'MOMO', ?, 'SUCCESS', ?, NOW())", [order_id, amount, transId]);
-    await db.query("INSERT INTO order_status_log (order_id, from_status, to_status, trigger_by, step, created_at) VALUES (?, NULL, 'PAID', 'system', 'Khởi tạo đơn', NOW())", [order_id]);
+    await db.query(
+      "INSERT INTO payments (order_id, method, amount, status, transaction_code, created_at) VALUES (?, 'MOMO', ?, 'SUCCESS', ?, NOW())",
+      [order_id, amount, transId]
+    );
+    await db.query(
+      "INSERT INTO order_status_log (order_id, from_status, to_status, trigger_by, step, created_at) VALUES (?, NULL, 'PAID', 'system', 'Khởi tạo đơn', NOW())",
+      [order_id]
+    );
 
     const [typeRows] = await db.query(
       `SELECT id FROM notification_types WHERE type_code = 'order' AND is_active = 1`
@@ -1219,19 +1320,25 @@ router.post("/payment/momo", async (req, res) => {
         [
           notificationTypeId,
           "Đơn hàng mới từ khách hàng",
-          `Khách hàng ${finalName || defaultName} vừa đặt đơn hàng MOMO mới (${orderHash})`,
-          `/admin/orders/${orderHash}`
+          `Khách hàng ${
+            finalName || defaultName
+          } vừa đặt đơn hàng MOMO mới (${orderHash})`,
+          `/admin/orders/${orderHash}`,
         ]
       );
     } else {
-      console.warn("Loại thông báo 'order' không tồn tại hoặc đã bị vô hiệu hóa.");
+      console.warn(
+        "Loại thông báo 'order' không tồn tại hoặc đã bị vô hiệu hóa."
+      );
     }
 
     if ((couponcode_id || coupon_code) && user_id) {
       let coupon = null;
       if (!couponcodeId && coupon_code) {
-
-        const [[result]] = await db.query("SELECT * FROM couponcode WHERE code = ?", [coupon_code]);
+        const [[result]] = await db.query(
+          "SELECT * FROM couponcode WHERE code = ?",
+          [coupon_code]
+        );
 
         if (result) {
           couponcodeId = result.couponcode_id;
@@ -1239,17 +1346,25 @@ router.post("/payment/momo", async (req, res) => {
         }
       }
       if (couponcodeId && !coupon) {
-        
-    // Gửi email xác nhận
-        const [[result2]] = await db.query("SELECT * FROM couponcode WHERE couponcode_id = ?", [couponcodeId]);
+        // Gửi email xác nhận
+        const [[result2]] = await db.query(
+          "SELECT * FROM couponcode WHERE couponcode_id = ?",
+          [couponcodeId]
+        );
         coupon = result2;
       }
       if (coupon && coupon.used > 0) {
-        await db.query("UPDATE couponcode SET used = used - 1 WHERE couponcode_id = ? AND used > 0", [coupon.couponcode_id]);
-        await db.query("INSERT INTO user_has_coupon (user_id, couponcode_id, status) VALUES (?, ?, 1) ON DUPLICATE KEY UPDATE status = 1", [user_id, coupon.couponcode_id]);
+        await db.query(
+          "UPDATE couponcode SET used = used - 1 WHERE couponcode_id = ? AND used > 0",
+          [coupon.couponcode_id]
+        );
+        await db.query(
+          "INSERT INTO user_has_coupon (user_id, couponcode_id, status) VALUES (?, ?, 1) ON DUPLICATE KEY UPDATE status = 1",
+          [user_id, coupon.couponcode_id]
+        );
       }
     }
-    
+
     const emailData = {
       name: finalName || defaultName,
       email: finalEmail || defaultEmail,
@@ -1259,10 +1374,14 @@ router.post("/payment/momo", async (req, res) => {
       method: "MOMO",
       order_id,
       order_hash,
-      created_at: new Date().toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" }),
+      created_at: new Date().toLocaleString("vi-VN", {
+        timeZone: "Asia/Ho_Chi_Minh",
+      }),
       current_status: "PENDING",
       order_total_final: amount.toLocaleString("vi-VN") + "đ",
-      order_discount: order_discount ? Number(order_discount).toLocaleString("vi-VN") + "đ" : null,
+      order_discount: order_discount
+        ? Number(order_discount).toLocaleString("vi-VN") + "đ"
+        : null,
       products: cart_items.map((item) => ({
         name: item.name,
         quantity: item.quantity,
@@ -1293,7 +1412,9 @@ router.get("/redirect/momo", (req, res) => {
   const { resultCode, orderId } = req.query;
 
   if (parseInt(resultCode) === 0) {
-    return res.redirect(`${process.env.SITE_URL}/dat-hang-thanh-cong/${orderId}`);
+    return res.redirect(
+      `${process.env.SITE_URL}/dat-hang-thanh-cong/${orderId}`
+    );
   }
 
   return res.redirect(`${process.env.SITE_URL}/`);
@@ -1497,10 +1618,10 @@ router.put("/:id/status", verifyToken, isAdmin, async (req, res) => {
     }
 
     // Cập nhật trạng thái đơn hàng
-    await db.query(
-      "UPDATE orders SET current_status = ? WHERE order_id = ?",
-      [toStatus, orderId]
-    );
+    await db.query("UPDATE orders SET current_status = ? WHERE order_id = ?", [
+      toStatus,
+      orderId,
+    ]);
 
     // Ghi log chuyển trạng thái
     await db.query(
@@ -1551,10 +1672,9 @@ router.put("/:id/status", verifyToken, isAdmin, async (req, res) => {
             notificationTitle,
             notificationMessage,
             orderLink,
-            "admin"
+            "admin",
           ]
         );
-
 
         const notificationId = notiResult.insertId;
 
@@ -1565,7 +1685,9 @@ router.put("/:id/status", verifyToken, isAdmin, async (req, res) => {
           [userId, notificationId]
         );
       } else {
-        console.warn("Loại thông báo 'order' không tồn tại hoặc đã bị vô hiệu hóa.");
+        console.warn(
+          "Loại thông báo 'order' không tồn tại hoặc đã bị vô hiệu hóa."
+        );
       }
     }
 
@@ -1582,7 +1704,6 @@ router.put("/:id/status", verifyToken, isAdmin, async (req, res) => {
     });
   }
 });
-
 
 /**
  * @route   PUT /api/orders/:id/return-status
@@ -1714,32 +1835,40 @@ router.put("/:id/return-status", verifyToken, isAdmin, async (req, res) => {
           );
 
           if (customerInfo) {
-            const customerEmail = customerInfo.order_email_new || customerInfo.user_email;
-            const customerName = customerInfo.order_name_new || customerInfo.user_name;
-            
+            const customerEmail =
+              customerInfo.order_email_new || customerInfo.user_email;
+            const customerName =
+              customerInfo.order_name_new || customerInfo.user_name;
+
             if (customerEmail) {
               const emailData = {
-                customerName: customerName || 'Khách hàng',
+                customerName: customerName || "Khách hàng",
                 orderHash: customerInfo.order_hash,
-                reason: customerInfo.reason || 'Yêu cầu trả hàng',
+                reason: customerInfo.reason || "Yêu cầu trả hàng",
                 refundAmount: customerInfo.total_refund || 0,
-                approvalDate: new Date().toLocaleDateString('vi-VN'),
-                supportEmail: 'sonaspace.furniture@gmail.com',
-                supportPhone: '1900-xxxx'
+                approvalDate: new Date().toLocaleDateString("vi-VN"),
+                supportEmail: "sonaspace.furniture@gmail.com",
+                supportPhone: "1900-xxxx",
               };
 
               const emailResult = await sendEmail1(
                 customerEmail,
                 `[Sona Space] Đã duyệt yêu cầu trả hàng - ${customerInfo.order_hash}`,
                 emailData,
-                'return-approved'
+                "return-approved"
               );
 
-              console.log(`📧 Email sent to ${customerEmail}:`, emailResult ? 'Success' : 'Failed');
+              console.log(
+                `📧 Email sent to ${customerEmail}:`,
+                emailResult ? "Success" : "Failed"
+              );
             }
           }
         } catch (emailError) {
-          console.error('❌ Failed to send return approval email:', emailError.message);
+          console.error(
+            "❌ Failed to send return approval email:",
+            emailError.message
+          );
           // Continue execution even if email fails
         }
 
@@ -1757,72 +1886,97 @@ router.put("/:id/return-status", verifyToken, isAdmin, async (req, res) => {
           if (userInfo && userInfo.user_id) {
             // Generate unique coupon code
             const timestamp = Date.now().toString().slice(-6);
-            const userIdStr = userInfo.user_id.toString().padStart(3, '0');
+            const userIdStr = userInfo.user_id.toString().padStart(3, "0");
             const couponCode = `RETURN20_${userIdStr}_${timestamp}`;
-            
+
             // Calculate expiration date (14 days from now)
             const startDate = new Date();
             const expDate = new Date();
             expDate.setDate(expDate.getDate() + 14);
-            
+
             // Create coupon in database
-            const [couponResult] = await db.query(`
+            const [couponResult] = await db.query(
+              `
               INSERT INTO couponcode (
                 code, title, value_price, description, start_time, exp_time,
                 min_order, used, is_flash_sale, combinations, discount_type, status
               ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `, [
-              couponCode,
-              'Mã giảm giá trả hàng',
-              20, // 20% discount
-              'Mã giảm giá 20% dành cho khách hàng trả hàng thành công. Áp dụng cho đơn hàng tiếp theo.',
-              startDate,
-              expDate,
-              100000, // Minimum order 100,000 VND
-              1, // Can be used once
-              0, // Not flash sale
-              null,
-              'percentage',
-              1 // Active
-            ]);
+            `,
+              [
+                couponCode,
+                "Mã giảm giá trả hàng",
+                20, // 20% discount
+                "Mã giảm giá 20% dành cho khách hàng trả hàng thành công. Áp dụng cho đơn hàng tiếp theo.",
+                startDate,
+                expDate,
+                100000, // Minimum order 100,000 VND
+                1, // Can be used once
+                0, // Not flash sale
+                null,
+                "percentage",
+                1, // Active
+              ]
+            );
 
             const couponId = couponResult.insertId;
 
             // Assign coupon to user
-            await db.query(`
+            await db.query(
+              `
               INSERT INTO user_has_coupon (user_id, couponcode_id, status)
               VALUES (?, ?, ?)
-            `, [userInfo.user_id, couponId, 0]); // status 0 = not used yet
+            `,
+              [userInfo.user_id, couponId, 0]
+            ); // status 0 = not used yet
 
             // Create notification for user
             const [typeRows] = await db.query(
               `SELECT id FROM notification_types WHERE type_code = ? AND is_active = 1`,
-              ['coupon']
+              ["coupon"]
             );
 
             if (typeRows.length > 0) {
               const notificationTypeId = typeRows[0].id;
-              const notificationTitle = "🎁 Bạn nhận được mã giảm giá trả hàng!";
-              const notificationMessage = `Cảm ơn bạn đã tin tưởng Sona Space! Mã ${couponCode} giảm 20% đã được thêm vào tài khoản. Áp dụng cho đơn hàng từ 100,000đ. Hạn sử dụng: ${expDate.toLocaleDateString('vi-VN')}`;
+              const notificationTitle =
+                "🎁 Bạn nhận được mã giảm giá trả hàng!";
+              const notificationMessage = `Cảm ơn bạn đã tin tưởng Sona Space! Mã ${couponCode} giảm 20% đã được thêm vào tài khoản. Áp dụng cho đơn hàng từ 100,000đ. Hạn sử dụng: ${expDate.toLocaleDateString(
+                "vi-VN"
+              )}`;
 
-              const [notiResult] = await db.query(`
+              const [notiResult] = await db.query(
+                `
                 INSERT INTO notifications (type_id, title, message, created_by)
                 VALUES (?, ?, ?, ?)
-              `, [notificationTypeId, notificationTitle, notificationMessage, 'system']);
+              `,
+                [
+                  notificationTypeId,
+                  notificationTitle,
+                  notificationMessage,
+                  "system",
+                ]
+              );
 
               const notificationId = notiResult.insertId;
 
               // Create user notification
-              await db.query(`
+              await db.query(
+                `
                 INSERT INTO user_notifications (user_id, notification_id, is_read, read_at, is_deleted)
                 VALUES (?, ?, ?, ?, ?)
-              `, [userInfo.user_id, notificationId, 0, null, 0]);
+              `,
+                [userInfo.user_id, notificationId, 0, null, 0]
+              );
             }
 
-            console.log(`🎁 Created return coupon ${couponCode} for user ${userInfo.user_id} (${userInfo.user_name})`);
+            console.log(
+              `🎁 Created return coupon ${couponCode} for user ${userInfo.user_id} (${userInfo.user_name})`
+            );
           }
         } catch (couponError) {
-          console.error('❌ Failed to create return coupon:', couponError.message);
+          console.error(
+            "❌ Failed to create return coupon:",
+            couponError.message
+          );
           // Continue execution even if coupon creation fails
         }
       }
@@ -1845,34 +1999,46 @@ router.put("/:id/return-status", verifyToken, isAdmin, async (req, res) => {
           );
 
           if (customerInfo) {
-            const customerEmail = customerInfo.order_email_new || customerInfo.user_email;
-            const customerName = customerInfo.order_name_new || customerInfo.user_name;
-            
+            const customerEmail =
+              customerInfo.order_email_new || customerInfo.user_email;
+            const customerName =
+              customerInfo.order_name_new || customerInfo.user_name;
+
             if (customerEmail) {
               const emailData = {
-                customerName: customerName || 'Khách hàng',
+                customerName: customerName || "Khách hàng",
                 orderId: orderId,
                 orderHash: customerInfo.order_hash,
-                orderTotal: new Intl.NumberFormat('vi-VN', { 
-                  style: 'currency', 
-                  currency: 'VND' 
+                orderTotal: new Intl.NumberFormat("vi-VN", {
+                  style: "currency",
+                  currency: "VND",
                 }).format(customerInfo.order_total_final || 0),
-                returnDate: new Date(customerInfo.return_date).toLocaleDateString('vi-VN'),
-                rejectReason: customerInfo.reason || 'Sản phẩm không đáp ứng điều kiện trả hàng theo chính sách của công ty.'
+                returnDate: new Date(
+                  customerInfo.return_date
+                ).toLocaleDateString("vi-VN"),
+                rejectReason:
+                  customerInfo.reason ||
+                  "Sản phẩm không đáp ứng điều kiện trả hàng theo chính sách của công ty.",
               };
 
               const emailResult = await sendEmail1(
                 customerEmail,
                 `[Sona Space] Thông báo từ chối yêu cầu trả hàng - ${customerInfo.order_hash}`,
                 emailData,
-                'return-rejected'
+                "return-rejected"
               );
 
-              console.log(`📧 Rejection email sent to ${customerEmail}:`, emailResult ? 'Success' : 'Failed');
+              console.log(
+                `📧 Rejection email sent to ${customerEmail}:`,
+                emailResult ? "Success" : "Failed"
+              );
             }
           }
         } catch (emailError) {
-          console.error('❌ Failed to send return rejection email:', emailError.message);
+          console.error(
+            "❌ Failed to send return rejection email:",
+            emailError.message
+          );
           // Continue execution even if email fails
         }
       }
@@ -1881,16 +2047,16 @@ router.put("/:id/return-status", verifyToken, isAdmin, async (req, res) => {
         return_status === ""
           ? "Không có hoàn trả"
           : return_status === "PENDING"
-            ? "Đang chờ xử lý"
-            : return_status === "APPROVED"
-              ? "Đã duyệt trả hàng"
-              : return_status === "CANCEL_CONFIRMED"
-                ? "Xác nhận hủy đơn hàng"
-                : return_status === "CANCELLED"
-                  ? "Đã hủy hoàn tất"
-                  : return_status === "REJECTED"
-                    ? "Từ chối trả hàng"
-                    : return_status;
+          ? "Đang chờ xử lý"
+          : return_status === "APPROVED"
+          ? "Đã duyệt trả hàng"
+          : return_status === "CANCEL_CONFIRMED"
+          ? "Xác nhận hủy đơn hàng"
+          : return_status === "CANCELLED"
+          ? "Đã hủy hoàn tất"
+          : return_status === "REJECTED"
+          ? "Từ chối trả hàng"
+          : return_status;
 
       return res.status(200).json({
         success: true,
@@ -2122,8 +2288,9 @@ router.post("/send-invoice", verifyToken, async (req, res) => {
     );
 
     // Tạo nội dung email
-    const invoiceUrl = `${process.env.SITE_URL || "http://localhost:3501"
-      }/dashboard/orders/invoice/${order_id}`;
+    const invoiceUrl = `${
+      process.env.SITE_URL || "http://localhost:3501"
+    }/dashboard/orders/invoice/${order_id}`;
 
     // Trong thực tế, bạn sẽ sử dụng một thư viện gửi email như nodemailer
     // Ví dụ mẫu này chỉ giả lập việc gửi email
@@ -2181,90 +2348,105 @@ router.post("/send-invoice", verifyToken, async (req, res) => {
  * @desc    Gửi email xin lỗi cho khách hàng
  * @access  Private (Admin)
  */
-router.post("/:id/send-apology-email", verifyToken, isAdmin, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { reason, message } = req.body;
+router.post(
+  "/:id/send-apology-email",
+  verifyToken,
+  isAdmin,
+  async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { reason, message } = req.body;
 
-    // Lấy thông tin đơn hàng và khách hàng
-    const [orders] = await db.query(
-      `
+      // Lấy thông tin đơn hàng và khách hàng
+      const [orders] = await db.query(
+        `
       SELECT o.*, u.user_name, u.user_gmail, u.user_number
       FROM orders o
       LEFT JOIN user u ON o.user_id = u.user_id
       WHERE o.order_id = ?
     `,
-      [id]
-    );
+        [id]
+      );
 
-    if (orders.length === 0) {
-      return res.status(404).json({
+      if (orders.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Không tìm thấy đơn hàng",
+        });
+      }
+
+      const order = orders[0];
+
+      if (!order.user_gmail) {
+        return res.status(400).json({
+          success: false,
+          message: "Đơn hàng không có email khách hàng",
+        });
+      }
+
+      // Chuẩn bị dữ liệu email
+      const voucherCode = `SORRY${order.order_id}${Date.now()
+        .toString()
+        .slice(-4)}`; // Tạo mã unique với order_id
+      const emailData = {
+        customerName: order.user_name || "Quý khách",
+        orderId: order.order_id,
+        orderHash: order.order_hash,
+        orderTotal: new Intl.NumberFormat("vi-VN", {
+          style: "currency",
+          currency: "VND",
+        }).format(order.order_total_final),
+        reason: reason || "Sự cố kỹ thuật",
+        message:
+          message ||
+          "Chúng tôi xin lỗi vì sự bất tiện này và sẽ khắc phục sớm nhất có thể.",
+        voucherCode: voucherCode,
+        discountPercent: 20,
+        expiryDate: new Date(
+          Date.now() + 14 * 24 * 60 * 60 * 1000
+        ).toLocaleDateString("vi-VN"),
+        validDays: 14,
+      };
+
+      // Gửi email xin lỗi
+      const emailResult = await sendEmail1(
+        order.user_gmail,
+        "Xin lỗi về sự cố đơn hàng - Sona Space",
+        emailData,
+        "apology"
+      );
+
+      if (emailResult.success) {
+        // Log hoạt động
+        console.log(
+          `✅ Sent apology email for order ${order.order_id} to ${order.user_gmail}`
+        );
+
+        res.json({
+          success: true,
+          message: "Email xin lỗi đã được gửi thành công",
+          data: {
+            order_id: order.order_id,
+            email: order.user_gmail,
+            sent_at: new Date().toISOString(),
+            voucherCode: emailData.voucherCode,
+            discountPercent: emailData.discountPercent,
+            expiryDate: emailData.expiryDate,
+          },
+        });
+      } else {
+        throw new Error(emailResult.error || "Không thể gửi email");
+      }
+    } catch (error) {
+      console.error("❌ Error sending apology email:", error);
+      res.status(500).json({
         success: false,
-        message: "Không tìm thấy đơn hàng",
+        message: "Lỗi khi gửi email xin lỗi",
+        error: error.message,
       });
     }
-
-    const order = orders[0];
-    
-    if (!order.user_gmail) {
-      return res.status(400).json({
-        success: false,
-        message: "Đơn hàng không có email khách hàng",
-      });
-    }
-
-    // Chuẩn bị dữ liệu email
-    const voucherCode = `SORRY${order.order_id}${Date.now().toString().slice(-4)}`; // Tạo mã unique với order_id
-    const emailData = {
-      customerName: order.user_name || 'Quý khách',
-      orderId: order.order_id,
-      orderHash: order.order_hash,
-      orderTotal: new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(order.order_total_final),
-      reason: reason || 'Sự cố kỹ thuật',
-      message: message || 'Chúng tôi xin lỗi vì sự bất tiện này và sẽ khắc phục sớm nhất có thể.',
-      voucherCode: voucherCode,
-      discountPercent: 20,
-      expiryDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString('vi-VN'),
-      validDays: 14
-    };
-
-    // Gửi email xin lỗi
-    const emailResult = await sendEmail1(
-      order.user_gmail,
-      'Xin lỗi về sự cố đơn hàng - Sona Space',
-      emailData,
-      'apology'
-    );
-
-    if (emailResult.success) {
-      // Log hoạt động
-      console.log(`✅ Sent apology email for order ${order.order_id} to ${order.user_gmail}`);
-      
-      res.json({
-        success: true,
-        message: "Email xin lỗi đã được gửi thành công",
-        data: {
-          order_id: order.order_id,
-          email: order.user_gmail,
-          sent_at: new Date().toISOString(),
-          voucherCode: emailData.voucherCode,
-          discountPercent: emailData.discountPercent,
-          expiryDate: emailData.expiryDate
-        },
-      });
-    } else {
-      throw new Error(emailResult.error || 'Không thể gửi email');
-    }
-
-  } catch (error) {
-    console.error("❌ Error sending apology email:", error);
-    res.status(500).json({
-      success: false,
-      message: "Lỗi khi gửi email xin lỗi",
-      error: error.message,
-    });
   }
-});
+);
 
 /**
  * @route   PATCH /api/orders/:id
@@ -2406,306 +2588,328 @@ router.patch("/:id", verifyToken, isAdmin, async (req, res) => {
  * @desc    Process an order return request with images
  * @access  Private
  */
-router.post("/return/:orderHash", verifyToken, upload.array('return_images', 5), async (req, res) => {
-  try {
-    const { orderHash } = req.params;
-    const { reason, items, return_type } = req.body;
-    const user_id = req.user.id;
-    const isAdmin = req.user.role === "admin";
-    const uploadedFiles = req.files || [];
+router.post(
+  "/return/:orderHash",
+  verifyToken,
+  upload.array("return_images", 5),
+  async (req, res) => {
+    try {
+      const { orderHash } = req.params;
+      const { reason, items, return_type } = req.body;
+      const user_id = req.user.id;
+      const isAdmin = req.user.role === "admin";
+      const uploadedFiles = req.files || [];
 
-    if (!reason) {
-      return res.status(400).json({
-        success: false,
-        message: "Vui lòng cung cấp lý do trả hàng",
-      });
-    }
+      if (!reason) {
+        return res.status(400).json({
+          success: false,
+          message: "Vui lòng cung cấp lý do trả hàng",
+        });
+      }
 
-    // Tìm đơn hàng dựa trên order_hash
-    const [[order]] = await db.query(
-      `SELECT o.order_id, o.user_id, o.current_status, o.created_at, o.order_hash,
+      // Tìm đơn hàng dựa trên order_hash
+      const [[order]] = await db.query(
+        `SELECT o.order_id, o.user_id, o.current_status, o.created_at, o.order_hash,
        u.user_name, u.user_gmail as user_email
        FROM orders o
        LEFT JOIN user u ON o.user_id = u.user_id
        WHERE o.order_hash = ?`,
-      [orderHash]
-    );
+        [orderHash]
+      );
 
-    if (!order) {
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy đơn hàng",
-      });
-    }
-
-    // Kiểm tra quyền truy cập (chỉ admin hoặc chủ đơn hàng)
-    if (!isAdmin && user_id !== order.user_id) {
-      return res.status(403).json({
-        success: false,
-        message: "Bạn không có quyền trả lại đơn hàng này",
-      });
-    }
-
-    // Kiểm tra trạng thái đơn hàng (chỉ cho phép trả hàng khi đơn hàng đã hoàn thành)
-    if (order.current_status !== "SUCCESS") {
-      return res.status(400).json({
-        success: false,
-        message: "Chỉ có thể trả lại đơn hàng đã giao thành công",
-      });
-    }
-
-    // Upload hình ảnh lên Cloudinary
-    let uploadedImageUrls = [];
-    if (uploadedFiles.length > 0) {
-      try {
-        const uploadPromises = uploadedFiles.map(file => {
-          return new Promise((resolve, reject) => {
-            cloudinary.uploader.upload_stream(
-              {
-                folder: 'order_returns',
-                public_id: `return_${orderHash}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                resource_type: 'image'
-              },
-              (error, result) => {
-                if (error) {
-                  console.error('Cloudinary upload error:', error);
-                  reject(error);
-                } else {
-                  resolve(result.secure_url);
-                }
-              }
-            ).end(file.buffer);
-          });
-        });
-
-        uploadedImageUrls = await Promise.all(uploadPromises);
-        console.log('Đã upload thành công:', uploadedImageUrls.length, 'hình ảnh');
-      } catch (uploadError) {
-        console.error('Lỗi upload hình ảnh:', uploadError);
-        return res.status(500).json({
+      if (!order) {
+        return res.status(404).json({
           success: false,
-          message: "Lỗi khi upload hình ảnh",
-          error: uploadError.message
+          message: "Không tìm thấy đơn hàng",
         });
       }
-    }
 
-    // Bắt đầu transaction
-    const connection = await db.getConnection();
-    await connection.beginTransaction();
+      // Kiểm tra quyền truy cập (chỉ admin hoặc chủ đơn hàng)
+      if (!isAdmin && user_id !== order.user_id) {
+        return res.status(403).json({
+          success: false,
+          message: "Bạn không có quyền trả lại đơn hàng này",
+        });
+      }
 
-    try {
-      // Lấy danh sách sản phẩm trong đơn hàng
-      const [orderItems] = await connection.query(
-        `SELECT oi.order_item_id, oi.variant_id, oi.quantity, oi.product_price, 
+      // Kiểm tra trạng thái đơn hàng (chỉ cho phép trả hàng khi đơn hàng đã hoàn thành)
+      if (order.current_status !== "SUCCESS") {
+        return res.status(400).json({
+          success: false,
+          message: "Chỉ có thể trả lại đơn hàng đã giao thành công",
+        });
+      }
+
+      // Upload hình ảnh lên Cloudinary
+      let uploadedImageUrls = [];
+      if (uploadedFiles.length > 0) {
+        try {
+          const uploadPromises = uploadedFiles.map((file) => {
+            return new Promise((resolve, reject) => {
+              cloudinary.uploader
+                .upload_stream(
+                  {
+                    folder: "order_returns",
+                    public_id: `return_${orderHash}_${Date.now()}_${Math.random()
+                      .toString(36)
+                      .substr(2, 9)}`,
+                    resource_type: "image",
+                  },
+                  (error, result) => {
+                    if (error) {
+                      console.error("Cloudinary upload error:", error);
+                      reject(error);
+                    } else {
+                      resolve(result.secure_url);
+                    }
+                  }
+                )
+                .end(file.buffer);
+            });
+          });
+
+          uploadedImageUrls = await Promise.all(uploadPromises);
+          console.log(
+            "Đã upload thành công:",
+            uploadedImageUrls.length,
+            "hình ảnh"
+          );
+        } catch (uploadError) {
+          console.error("Lỗi upload hình ảnh:", uploadError);
+          return res.status(500).json({
+            success: false,
+            message: "Lỗi khi upload hình ảnh",
+            error: uploadError.message,
+          });
+        }
+      }
+
+      // Bắt đầu transaction
+      const connection = await db.getConnection();
+      await connection.beginTransaction();
+
+      try {
+        // Lấy danh sách sản phẩm trong đơn hàng
+        const [orderItems] = await connection.query(
+          `SELECT oi.order_item_id, oi.variant_id, oi.quantity, oi.product_price, 
          vp.product_id, p.product_name, p.product_image
          FROM order_items oi
          LEFT JOIN variant_product vp ON oi.variant_id = vp.variant_id
          LEFT JOIN product p ON vp.product_id = p.product_id
          WHERE oi.order_id = ?`,
-        [order.order_id]
-      );
-
-      // Nếu có danh sách sản phẩm cụ thể được yêu cầu trả lại
-      let itemsToReturn = orderItems;
-      let totalRefundAmount = 0;
-
-      if (items && Array.isArray(items) && items.length > 0) {
-        // Lọc ra các sản phẩm được yêu cầu trả lại
-        itemsToReturn = orderItems.filter((item) =>
-          items.some(
-            (returnItem) =>
-              returnItem.order_item_id === item.order_item_id &&
-              returnItem.quantity > 0 &&
-              returnItem.quantity <= item.quantity
-          )
+          [order.order_id]
         );
 
-        if (itemsToReturn.length === 0) {
-          throw new Error("Không tìm thấy sản phẩm hợp lệ để trả lại");
-        }
+        // Nếu có danh sách sản phẩm cụ thể được yêu cầu trả lại
+        let itemsToReturn = orderItems;
+        let totalRefundAmount = 0;
 
-        // Tính tổng số tiền hoàn lại
-        for (const item of itemsToReturn) {
-          const returnItem = items.find(
-            (i) => i.order_item_id === item.order_item_id
+        if (items && Array.isArray(items) && items.length > 0) {
+          // Lọc ra các sản phẩm được yêu cầu trả lại
+          itemsToReturn = orderItems.filter((item) =>
+            items.some(
+              (returnItem) =>
+                returnItem.order_item_id === item.order_item_id &&
+                returnItem.quantity > 0 &&
+                returnItem.quantity <= item.quantity
+            )
           );
-          const returnQuantity = Math.min(returnItem.quantity, item.quantity);
-          totalRefundAmount += returnQuantity * item.product_price;
 
-          // Khôi phục số lượng tồn kho
-          if (item.product_id) {
-            await connection.query(
-              "UPDATE product SET product_stock = product_stock + ? WHERE product_id = ?",
-              [returnQuantity, item.product_id]
-            );
+          if (itemsToReturn.length === 0) {
+            throw new Error("Không tìm thấy sản phẩm hợp lệ để trả lại");
           }
-        }
-      } else {
-        // Trả lại toàn bộ đơn hàng
-        // Tính tổng số tiền hoàn lại
-        for (const item of itemsToReturn) {
-          totalRefundAmount += item.quantity * item.product_price;
 
-          // Khôi phục số lượng tồn kho
-          if (item.product_id) {
-            await connection.query(
-              "UPDATE product SET product_stock = product_stock + ? WHERE product_id = ?",
-              [item.quantity, item.product_id]
+          // Tính tổng số tiền hoàn lại
+          for (const item of itemsToReturn) {
+            const returnItem = items.find(
+              (i) => i.order_item_id === item.order_item_id
             );
-          }
-        }
-      }
+            const returnQuantity = Math.min(returnItem.quantity, item.quantity);
+            totalRefundAmount += returnQuantity * item.product_price;
 
-      // Chuyển đổi array URL thành JSON string để lưu vào database
-      const returnImagesJson = uploadedImageUrls.length > 0 ? JSON.stringify(uploadedImageUrls) : null;
-
-      // Tạo bản ghi trả hàng với return_type = 'REFUND'
-      const [result] = await connection.query(
-        `INSERT INTO order_returns (
-          order_id, user_id, reason, return_images, return_type, total_refund, status, created_at
-        ) VALUES (?, ?, ?, ?, 'REFUND', ?, 'PENDING', NOW())`,
-        [order.order_id, user_id, reason, returnImagesJson, totalRefundAmount]
-      );
-
-      const returnId = result.insertId;
-
-      // Lưu chi tiết sản phẩm trả lại
-      for (const item of itemsToReturn) {
-        const returnItem = items
-          ? items.find((i) => i.order_item_id === item.order_item_id)
-          : item;
-        const returnQuantity = returnItem ? returnItem.quantity : item.quantity;
-
-        if (returnQuantity > 0) {
-          await connection.query(
-            `INSERT INTO return_items (
-              return_id, order_item_id, quantity, price, created_at
-            ) VALUES (?, ?, ?, ?, NOW())`,
-            [returnId, item.order_item_id, returnQuantity, item.product_price]
-          );
-        }
-      }
-
-      // Cập nhật trạng thái đơn hàng thành 'RETURN' nếu trả lại toàn bộ
-      if (!items || items.length === 0) {
-        await connection.query(
-          `UPDATE orders SET current_status = 'RETURN', status_updated_by = ?, status_updated_at = NOW(), 
-           note = CONCAT(IFNULL(note, ''), ?) WHERE order_id = ?`,
-          [
-            isAdmin ? "admin" : "user",
-            `\nĐơn hàng đã được trả lại. Lý do: ${reason}`,
-            order.order_id,
-          ]
-        );
-
-        // Ghi log trạng thái
-        await connection.query(
-          `INSERT INTO order_status_log (order_id, from_status, to_status, trigger_by, step, created_at) 
-           VALUES (?, ?, 'RETURN', ?, ?, NOW())`,
-          [
-            order.order_id,
-            order.current_status,
-            isAdmin ? "admin" : "user",
-            `Đơn hàng đã được trả lại`,
-          ]
-        );
-      }
-
-      // Tạo thông báo cho admin nếu người dùng yêu cầu trả hàng
-      if (!isAdmin) {
-        try {
-          // Kiểm tra xem bảng notifications có tồn tại không
-          const [tables] = await connection.query(
-            "SHOW TABLES LIKE 'notifications'"
-          );
-
-          if (tables.length > 0) {
-            // Lấy tên các cột trong bảng notifications
-            const [columns] = await connection.query(
-              "SHOW COLUMNS FROM notifications"
-            );
-
-            const columnNames = columns.map((col) => col.Field);
-
-            // Tìm admin để gửi thông báo
-            const [[admin]] = await connection.query(
-              "SELECT user_id FROM user WHERE role = 'admin' LIMIT 1"
-            );
-
-            if (admin && columnNames.includes("user_id")) {
+            // Khôi phục số lượng tồn kho
+            if (item.product_id) {
               await connection.query(
-                `INSERT INTO notifications (user_id, type, message, related_id, created_at, is_read)
-                 VALUES (?, 'ORDER_RETURN', ?, ?, NOW(), 0)`,
-                [
-                  admin.user_id,
-                  `Đơn hàng #${order.order_hash} có yêu cầu trả hàng mới với ${uploadedImageUrls.length} hình ảnh`,
-                  order.order_id,
-                ]
+                "UPDATE product SET product_stock = product_stock + ? WHERE product_id = ?",
+                [returnQuantity, item.product_id]
               );
             }
           }
-        } catch (notificationError) {
-          console.error("Lỗi khi tạo thông báo:", notificationError);
-          // Không throw lỗi để transaction vẫn tiếp tục
+        } else {
+          // Trả lại toàn bộ đơn hàng
+          // Tính tổng số tiền hoàn lại
+          for (const item of itemsToReturn) {
+            totalRefundAmount += item.quantity * item.product_price;
+
+            // Khôi phục số lượng tồn kho
+            if (item.product_id) {
+              await connection.query(
+                "UPDATE product SET product_stock = product_stock + ? WHERE product_id = ?",
+                [item.quantity, item.product_id]
+              );
+            }
+          }
         }
+
+        // Chuyển đổi array URL thành JSON string để lưu vào database
+        const returnImagesJson =
+          uploadedImageUrls.length > 0
+            ? JSON.stringify(uploadedImageUrls)
+            : null;
+
+        // Tạo bản ghi trả hàng với return_type = 'REFUND'
+        const [result] = await connection.query(
+          `INSERT INTO order_returns (
+          order_id, user_id, reason, return_images, return_type, total_refund, status, created_at
+        ) VALUES (?, ?, ?, ?, 'REFUND', ?, 'PENDING', NOW())`,
+          [order.order_id, user_id, reason, returnImagesJson, totalRefundAmount]
+        );
+
+        const returnId = result.insertId;
+
+        // Lưu chi tiết sản phẩm trả lại
+        for (const item of itemsToReturn) {
+          const returnItem = items
+            ? items.find((i) => i.order_item_id === item.order_item_id)
+            : item;
+          const returnQuantity = returnItem
+            ? returnItem.quantity
+            : item.quantity;
+
+          if (returnQuantity > 0) {
+            await connection.query(
+              `INSERT INTO return_items (
+              return_id, order_item_id, quantity, price, created_at
+            ) VALUES (?, ?, ?, ?, NOW())`,
+              [returnId, item.order_item_id, returnQuantity, item.product_price]
+            );
+          }
+        }
+
+        // Cập nhật trạng thái đơn hàng thành 'RETURN' nếu trả lại toàn bộ
+        if (!items || items.length === 0) {
+          await connection.query(
+            `UPDATE orders SET current_status = 'RETURN', status_updated_by = ?, status_updated_at = NOW(), 
+           note = CONCAT(IFNULL(note, ''), ?) WHERE order_id = ?`,
+            [
+              isAdmin ? "admin" : "user",
+              `\nĐơn hàng đã được trả lại. Lý do: ${reason}`,
+              order.order_id,
+            ]
+          );
+
+          // Ghi log trạng thái
+          await connection.query(
+            `INSERT INTO order_status_log (order_id, from_status, to_status, trigger_by, step, created_at) 
+           VALUES (?, ?, 'RETURN', ?, ?, NOW())`,
+            [
+              order.order_id,
+              order.current_status,
+              isAdmin ? "admin" : "user",
+              `Đơn hàng đã được trả lại`,
+            ]
+          );
+        }
+
+        // Tạo thông báo cho admin nếu người dùng yêu cầu trả hàng
+        if (!isAdmin) {
+          try {
+            // Kiểm tra xem bảng notifications có tồn tại không
+            const [tables] = await connection.query(
+              "SHOW TABLES LIKE 'notifications'"
+            );
+
+            if (tables.length > 0) {
+              // Lấy tên các cột trong bảng notifications
+              const [columns] = await connection.query(
+                "SHOW COLUMNS FROM notifications"
+              );
+
+              const columnNames = columns.map((col) => col.Field);
+
+              // Tìm admin để gửi thông báo
+              const [[admin]] = await connection.query(
+                "SELECT user_id FROM user WHERE role = 'admin' LIMIT 1"
+              );
+
+              if (admin && columnNames.includes("user_id")) {
+                await connection.query(
+                  `INSERT INTO notifications (user_id, type, message, related_id, created_at, is_read)
+                 VALUES (?, 'ORDER_RETURN', ?, ?, NOW(), 0)`,
+                  [
+                    admin.user_id,
+                    `Đơn hàng #${order.order_hash} có yêu cầu trả hàng mới với ${uploadedImageUrls.length} hình ảnh`,
+                    order.order_id,
+                  ]
+                );
+              }
+            }
+          } catch (notificationError) {
+            console.error("Lỗi khi tạo thông báo:", notificationError);
+            // Không throw lỗi để transaction vẫn tiếp tục
+          }
+        }
+
+        // Commit transaction
+        await connection.commit();
+
+        return res.status(200).json({
+          success: true,
+          message: "Yêu cầu trả hàng đã được ghi nhận",
+          data: {
+            return_id: returnId,
+            order_id: order.order_id,
+            order_hash: order.order_hash,
+            reason,
+            return_images: uploadedImageUrls,
+            total_refund: totalRefundAmount,
+            items: itemsToReturn.map((item) => ({
+              order_item_id: item.order_item_id,
+              product_name: item.product_name,
+              quantity: items
+                ? items.find((i) => i.order_item_id === item.order_item_id)
+                    ?.quantity || 0
+                : item.quantity,
+              price: item.product_price,
+            })),
+          },
+        });
+      } catch (error) {
+        // Rollback nếu có lỗi
+        await connection.rollback();
+
+        // Xóa hình ảnh đã upload nếu có lỗi
+        if (uploadedImageUrls.length > 0) {
+          try {
+            const deletePromises = uploadedImageUrls.map((url) => {
+              const publicId = url.split("/").pop().split(".")[0];
+              return cloudinary.uploader.destroy(`order_returns/${publicId}`);
+            });
+            await Promise.all(deletePromises);
+            console.log(
+              "Đã xóa",
+              uploadedImageUrls.length,
+              "hình ảnh do lỗi transaction"
+            );
+          } catch (deleteError) {
+            console.error("Lỗi khi xóa hình ảnh:", deleteError);
+          }
+        }
+
+        throw error;
+      } finally {
+        connection.release();
       }
-
-      // Commit transaction
-      await connection.commit();
-
-      return res.status(200).json({
-        success: true,
-        message: "Yêu cầu trả hàng đã được ghi nhận",
-        data: {
-          return_id: returnId,
-          order_id: order.order_id,
-          order_hash: order.order_hash,
-          reason,
-          return_images: uploadedImageUrls,
-          total_refund: totalRefundAmount,
-          items: itemsToReturn.map((item) => ({
-            order_item_id: item.order_item_id,
-            product_name: item.product_name,
-            quantity: items
-              ? items.find((i) => i.order_item_id === item.order_item_id)
-                ?.quantity || 0
-              : item.quantity,
-            price: item.product_price,
-          })),
-        },
-      });
     } catch (error) {
-      // Rollback nếu có lỗi
-      await connection.rollback();
-      
-      // Xóa hình ảnh đã upload nếu có lỗi
-      if (uploadedImageUrls.length > 0) {
-        try {
-          const deletePromises = uploadedImageUrls.map(url => {
-            const publicId = url.split('/').pop().split('.')[0];
-            return cloudinary.uploader.destroy(`order_returns/${publicId}`);
-          });
-          await Promise.all(deletePromises);
-          console.log('Đã xóa', uploadedImageUrls.length, 'hình ảnh do lỗi transaction');
-        } catch (deleteError) {
-          console.error('Lỗi khi xóa hình ảnh:', deleteError);
-        }
-      }
-      
-      throw error;
-    } finally {
-      connection.release();
+      console.error("Lỗi khi xử lý yêu cầu trả hàng:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Đã xảy ra lỗi khi xử lý yêu cầu trả hàng",
+        error: error.message,
+      });
     }
-  } catch (error) {
-    console.error("Lỗi khi xử lý yêu cầu trả hàng:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Đã xảy ra lỗi khi xử lý yêu cầu trả hàng",
-      error: error.message,
-    });
   }
-});
+);
 
 /**
  * @route   GET /api/orders/return/count

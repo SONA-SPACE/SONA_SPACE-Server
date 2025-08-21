@@ -113,6 +113,7 @@ router.get("/hash/:orderHash", optionalAuth, async (req, res) => {
         cc.code AS coupon_code,
         cc.value_price AS coupon_value,
         p.status AS payment_status
+        
       FROM orders o
       LEFT JOIN user u ON o.user_id = u.user_id
       LEFT JOIN couponcode cc ON o.couponcode_id = cc.couponcode_id
@@ -729,8 +730,7 @@ router.post("/", verifyToken, async (req, res) => {
           [
             notificationTypeId,
             "Đơn hàng mới từ khách hàng",
-            `Khách hàng ${
-              orderNameNew || defaultName
+            `Khách hàng ${orderNameNew || defaultName
             } vừa đặt đơn hàng COD mới (${orderHash})`,
             `/admin/orders/${orderHash}`,
           ]
@@ -905,7 +905,7 @@ router.post("/", verifyToken, async (req, res) => {
         vnpayHost: "https://sandbox.vnpayment.vn",
         testMode: true,
         hashAlgorithm: "SHA512",
-        loggerFn: () => {},
+        loggerFn: () => { },
       });
 
       const tomorrow = new Date();
@@ -1271,8 +1271,7 @@ router.post("/payment/momo", async (req, res) => {
         [
           notificationTypeId,
           "Đơn hàng mới từ khách hàng",
-          `Khách hàng ${
-            finalName || defaultName
+          `Khách hàng ${finalName || defaultName
           } vừa đặt đơn hàng MOMO mới (${orderHash})`,
           `/admin/orders/${orderHash}`,
         ]
@@ -1425,6 +1424,13 @@ router.get("/:id", verifyToken, async (req, res) => {
     delete order.payment_transaction_code;
     delete order.payment_paid_at;
 
+    // Kiểm tra quyền truy cập
+    if (req.user.role !== "admin" && req.user.id !== order.user_id) {
+      return res
+        .status(403)
+        .json({ error: "You do not have permission to view this order" });
+    }
+
     try {
       // Lấy chi tiết sản phẩm
       const orderItemsQuery = `
@@ -1557,6 +1563,11 @@ router.put("/:id/status", verifyToken, isAdmin, async (req, res) => {
       orderId,
     ]);
 
+
+
+
+
+
     // Ghi log chuyển trạng thái
     await db.query(
       `INSERT INTO order_status_log (
@@ -1646,11 +1657,11 @@ router.put("/:id/return-status", verifyToken, isAdmin, async (req, res) => {
 
   const validReturnStatuses = [
     "",
-    "PENDING", // Trạng thái mặc định khi tạo yêu cầu hoàn trả
-    "APPROVED", // Đã duyệt yêu cầu hoàn trả
-    "CANCEL_CONFIRMED", // Xác nhận hủy đơn hàng
-    "CANCELLED", // Đã hủy hoàn tất
-    "REJECTED", // Từ chối yêu cầu hoàn trả
+    "PENDING",
+    "APPROVED",
+    "CANCEL_CONFIRMED",
+    "CANCELLED",
+    "REJECTED",
   ];
 
   if (!validReturnStatuses.includes(return_status)) {
@@ -1660,9 +1671,11 @@ router.put("/:id/return-status", verifyToken, isAdmin, async (req, res) => {
     });
   }
 
+  const connection = await db.getConnection();
+  await connection.beginTransaction();
+
   try {
-    // Kiểm tra đơn hàng tồn tại và lấy thông tin current_status
-    const [[order]] = await db.query(
+    const [[order]] = await connection.query(
       "SELECT order_id, order_hash, current_status FROM orders WHERE order_id = ?",
       [orderId]
     );
@@ -1674,7 +1687,6 @@ router.put("/:id/return-status", verifyToken, isAdmin, async (req, res) => {
       });
     }
 
-    // Kiểm tra xem đơn hàng có đang ở trạng thái RETURN không
     if (order.current_status !== "RETURN" && return_status !== "") {
       return res.status(400).json({
         success: false,
@@ -1683,233 +1695,168 @@ router.put("/:id/return-status", verifyToken, isAdmin, async (req, res) => {
       });
     }
 
-    // Bắt đầu transaction
-    const connection = await db.getConnection();
-    await connection.beginTransaction();
+    if (return_status === "") {
+      await connection.query("DELETE FROM order_returns WHERE order_id = ?", [
+        orderId,
+      ]);
+      await connection.query(
+        "UPDATE orders SET current_status = 'SUCCESS' WHERE order_id = ?",
+        [orderId]
+      );
+      await connection.query(
+        `INSERT INTO order_status_log (
+          order_id, from_status, to_status, trigger_by, step, created_at
+        ) VALUES (?, 'RETURN', 'SUCCESS', 'admin', ?, NOW())`,
+        [orderId, "Hủy yêu cầu hoàn trả"]
+      );
+    } else {
+      const [[existingReturn]] = await connection.query(
+        "SELECT return_id, status FROM order_returns WHERE order_id = ? ORDER BY created_at DESC LIMIT 1",
+        [orderId]
+      );
 
-    try {
-      if (return_status === "") {
-        // Xóa tất cả bản ghi hoàn trả cho đơn hàng này
-        await connection.query("DELETE FROM order_returns WHERE order_id = ?", [
-          orderId,
-        ]);
-
-        // Cập nhật trạng thái đơn hàng về SUCCESS khi hủy yêu cầu hoàn trả
+      if (existingReturn) {
         await connection.query(
-          "UPDATE orders SET current_status = 'SUCCESS' WHERE order_id = ?",
-          [orderId]
-        );
-
-        // Ghi log chuyển trạng thái
-        await connection.query(
-          `INSERT INTO order_status_log (
-            order_id, from_status, to_status, trigger_by, step, created_at
-          ) VALUES (?, 'RETURN', 'SUCCESS', 'admin', ?, NOW())`,
-          [orderId, "Hủy yêu cầu hoàn trả"]
+          "UPDATE order_returns SET status = ?, updated_at = NOW() WHERE return_id = ?",
+          [return_status, existingReturn.return_id]
         );
       } else {
-        // Kiểm tra xem đã có bản ghi return chưa
-        const [[existingReturn]] = await connection.query(
-          "SELECT return_id, status FROM order_returns WHERE order_id = ? ORDER BY created_at DESC LIMIT 1",
-          [orderId]
-        );
-
-        if (existingReturn) {
-          // Cập nhật trạng thái return hiện có trong bảng order_returns
-          await connection.query(
-            "UPDATE order_returns SET status = ?, updated_at = NOW() WHERE return_id = ?",
-            [return_status, existingReturn.return_id]
-          );
-        } else {
-          // Tạo bản ghi return mới nếu chưa có
-          await connection.query(
-            `INSERT INTO order_returns (
-              order_id, user_id, reason, return_type, total_refund, status, created_at
-            ) VALUES (?, ?, ?, 'REFUND', 0, ?, NOW())`,
-            [orderId, req.user.id, "Được tạo bởi admin", return_status]
-          );
-        }
-
-        // Ghi log thay đổi trạng thái return
         await connection.query(
-          `INSERT INTO order_status_log (
-            order_id, from_status, to_status, trigger_by, step, created_at
-          ) VALUES (?, ?, ?, 'admin', ?, NOW())`,
-          [
-            orderId,
-            existingReturn ? existingReturn.status : "NEW",
-            return_status,
-            `Cập nhật trạng thái hoàn trả: ${return_status}`,
-          ]
+          `INSERT INTO order_returns (
+            order_id, user_id, reason, return_type, total_refund, status, created_at
+          ) VALUES (?, ?, ?, 'REFUND', 0, ?, NOW())`,
+          [orderId, req.user.id, "Được tạo bởi admin", return_status]
         );
       }
 
-      // Commit transaction
-      await connection.commit();
+      await connection.query(
+        `INSERT INTO order_status_log (
+          order_id, from_status, to_status, trigger_by, step, created_at
+        ) VALUES (?, ?, ?, 'admin', ?, NOW())`,
+        [
+          orderId,
+          existingReturn ? existingReturn.status : "NEW",
+          return_status,
+          `Cập nhật trạng thái hoàn trả: ${return_status}`,
+        ]
+      );
+    }
 
-      // Send email notification if return is approved
-      if (return_status === "APPROVED") {
-        try {
-          // Get customer email information
-          const [[customerInfo]] = await db.query(
-            `SELECT o.order_hash, o.order_name_new, o.order_email_new, 
-                    u.user_name, u.user_gmail as user_email,
-                    or_data.reason, or_data.total_refund
-             FROM orders o
-             LEFT JOIN user u ON o.user_id = u.user_id
-             LEFT JOIN order_returns or_data ON o.order_id = or_data.order_id
-             WHERE o.order_id = ?
-             ORDER BY or_data.created_at DESC
-             LIMIT 1`,
-            [orderId]
-          );
+    // ✅ Nếu đơn hàng được duyệt hoàn trả (APPROVED)
+    if (return_status === "APPROVED") {
+      // Lấy thông tin khách hàng & hoàn trả
+      const [[customerInfo]] = await connection.query(
+        `SELECT o.order_hash, o.order_name_new, o.order_email_new, 
+                u.user_id, u.user_name, u.user_gmail as user_email,
+                or_data.reason, or_data.total_refund
+         FROM orders o
+         LEFT JOIN user u ON o.user_id = u.user_id
+         LEFT JOIN order_returns or_data ON o.order_id = or_data.order_id
+         WHERE o.order_id = ?
+         ORDER BY or_data.created_at DESC
+         LIMIT 1`,
+        [orderId]
+      );
 
-          if (customerInfo) {
-            const customerEmail =
-              customerInfo.order_email_new || customerInfo.user_email;
-            const customerName =
-              customerInfo.order_name_new || customerInfo.user_name;
+      const customerEmail =
+        customerInfo.order_email_new || customerInfo.user_email;
+      const customerName =
+        customerInfo.order_name_new || customerInfo.user_name;
+      const userId = customerInfo.user_id;
 
-            if (customerEmail) {
-              const emailData = {
-                customerName: customerName || "Khách hàng",
-                orderHash: customerInfo.order_hash,
-                reason: customerInfo.reason || "Yêu cầu trả hàng",
-                refundAmount: customerInfo.total_refund || 0,
-                approvalDate: new Date().toLocaleDateString("vi-VN"),
-                supportEmail: "sonaspace.furniture@gmail.com",
-                supportPhone: "1900-xxxx",
-              };
-
-              const emailResult = await sendEmail1(
-                customerEmail,
-                `[Sona Space] Đã duyệt yêu cầu trả hàng - ${customerInfo.order_hash}`,
-                emailData,
-                "return-approved"
-              );
-            }
-          }
-        } catch (emailError) {
-          // Continue execution even if email fails
-        }
-
-        // Tạo mã giảm giá 20% cho user sau khi trả hàng thành công
-        try {
-          // Get user information for coupon creation
-          const [[userInfo]] = await db.query(
-            `SELECT o.user_id, u.user_name, u.user_gmail 
-             FROM orders o
-             LEFT JOIN user u ON o.user_id = u.user_id
-             WHERE o.order_id = ?`,
-            [orderId]
-          );
-
-          if (userInfo && userInfo.user_id) {
-            // Generate unique coupon code
-            const timestamp = Date.now().toString().slice(-6);
-            const userIdStr = userInfo.user_id.toString().padStart(3, "0");
-            const couponCode = `RETURN20_${userIdStr}_${timestamp}`;
-
-            // Calculate expiration date (14 days from now)
-            const startDate = new Date();
-            const expDate = new Date();
-            expDate.setDate(expDate.getDate() + 14);
-
-            // Create coupon in database
-            const [couponResult] = await db.query(
-              `
-              INSERT INTO couponcode (
-                code, title, value_price, description, start_time, exp_time,
-                min_order, used, is_flash_sale, combinations, discount_type, status
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `,
-              [
-                couponCode,
-                "Mã giảm giá trả hàng",
-                20, // 20% discount
-                "Mã giảm giá 20% dành cho khách hàng trả hàng thành công. Áp dụng cho đơn hàng tiếp theo.",
-                startDate,
-                expDate,
-                100000, // Minimum order 100,000 VND
-                1, // Can be used once
-                0, // Not flash sale
-                null,
-                "percentage",
-                1, // Active
-              ]
-            );
-
-            const couponId = couponResult.insertId;
-
-            // Assign coupon to user
-            await db.query(
-              `
-              INSERT INTO user_has_coupon (user_id, couponcode_id, status)
-              VALUES (?, ?, ?)
-            `,
-              [userInfo.user_id, couponId, 0]
-            ); // status 0 = not used yet
-
-            // Create notification for user
-            const [typeRows] = await db.query(
-              `SELECT id FROM notification_types WHERE type_code = ? AND is_active = 1`,
-              ["coupon"]
-            );
-
-            if (typeRows.length > 0) {
-              const notificationTypeId = typeRows[0].id;
-              const notificationTitle =
-                "🎁 Bạn nhận được mã giảm giá trả hàng!";
-              const notificationMessage = `Cảm ơn bạn đã tin tưởng Sona Space! Mã ${couponCode} giảm 20% đã được thêm vào tài khoản. Áp dụng cho đơn hàng từ 100,000đ. Hạn sử dụng: ${expDate.toLocaleDateString(
-                "vi-VN"
-              )}`;
-
-              const [notiResult] = await db.query(
-                `
-                INSERT INTO notifications (type_id, title, message, created_by)
-                VALUES (?, ?, ?, ?)
-              `,
-                [
-                  notificationTypeId,
-                  notificationTitle,
-                  notificationMessage,
-                  "system",
-                ]
-              );
-
-              const notificationId = notiResult.insertId;
-
-              // Create user notification
-              await db.query(
-                `
-                INSERT INTO user_notifications (user_id, notification_id, is_read, read_at, is_deleted)
-                VALUES (?, ?, ?, ?, ?)
-              `,
-                [userInfo.user_id, notificationId, 0, null, 0]
-              );
-            }
-          }
-        } catch (couponError) {
-          // Continue execution even if coupon creation fails
-        }
+      if (!userId || !customerEmail) {
+        throw new Error("Không có đủ thông tin khách hàng để xử lý tiếp");
       }
 
-      // Send email notification if return is rejected
-      if (return_status === "REJECTED") {
-        try {
-          // Get customer and order information for rejection email
-          const [[customerInfo]] = await db.query(
-            `SELECT o.order_hash, o.order_name_new, o.order_email_new, o.order_total_final,
-                    u.user_name, u.user_gmail as user_email,
-                    or_data.reason, or_data.created_at as return_date
-             FROM orders o
-             LEFT JOIN user u ON o.user_id = u.user_id
-             LEFT JOIN order_returns or_data ON o.order_id = or_data.order_id
-             WHERE o.order_id = ?
-             ORDER BY or_data.created_at DESC
-             LIMIT 1`,
-            [orderId]
-          );
+      // Gửi email thông báo duyệt trả hàng
+      const emailData = {
+        customerName: customerName || "Khách hàng",
+        orderHash: customerInfo.order_hash,
+        reason: customerInfo.reason || "Yêu cầu trả hàng",
+        refundAmount: customerInfo.total_refund || 0,
+        approvalDate: new Date().toLocaleDateString("vi-VN"),
+        supportEmail: "sonaspace.furniture@gmail.com",
+        supportPhone: "1900-xxxx",
+      };
+
+      await sendEmail1(
+        customerEmail,
+        `[Sona Space] Đã duyệt yêu cầu trả hàng - ${customerInfo.order_hash}`,
+        emailData,
+        "return-approved"
+      );
+
+      // Tạo mã giảm giá 20%
+      const timestamp = Date.now().toString().slice(-6);
+      const userIdStr = userId.toString().padStart(3, "0");
+      const couponCode = `RETURN20_${userIdStr}_${timestamp}`;
+
+      const startDate = new Date();
+      const expDate = new Date();
+      expDate.setDate(expDate.getDate() + 14);
+
+      const [couponResult] = await connection.query(
+        `
+        INSERT INTO couponcode (
+          code, title, value_price, description, start_time, exp_time,
+          min_order, used, is_flash_sale, combinations, discount_type, status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          couponCode,
+          "Mã giảm giá trả hàng",
+          20,
+          "Mã giảm giá 20% dành cho khách hàng trả hàng thành công. Áp dụng cho đơn hàng tiếp theo.",
+          startDate,
+          expDate,
+          100000,
+          1,
+          0,
+          null,
+          "percentage",
+          1,
+        ]
+      );
+
+      const couponId = couponResult.insertId;
+
+      await connection.query(
+        `INSERT INTO user_has_coupon (user_id, couponcode_id, status) VALUES (?, ?, 0)`,
+        [userId, couponId]
+      );
+
+      // Gửi thông báo
+      const [typeRows] = await connection.query(
+        `SELECT id FROM notification_types WHERE type_code = ? AND is_active = 1`,
+        ["coupon"]
+      );
+
+      if (typeRows.length > 0) {
+        const notificationTypeId = typeRows[0].id;
+        const notificationTitle = "🎁 Bạn nhận được mã giảm giá trả hàng!";
+        const notificationMessage = `Cảm ơn bạn đã tin tưởng Sona Space! Mã ${couponCode} giảm 20% đã được thêm vào tài khoản. Áp dụng cho đơn hàng từ 100,000đ. Hạn sử dụng: ${expDate.toLocaleDateString("vi-VN")}`;
+
+        const [notiResult] = await connection.query(
+          `INSERT INTO notifications (type_id, title, message, created_by) VALUES (?, ?, ?, ?)`,
+          [notificationTypeId, notificationTitle, notificationMessage, "system"]
+        );
+
+        const notificationId = notiResult.insertId;
+
+        await connection.query(
+          `INSERT INTO user_notifications (user_id, notification_id, is_read, read_at, is_deleted)
+           VALUES (?, ?, 0, NULL, 0)`,
+          [userId, notificationId]
+        );
+      }
+
+      // Cập nhật lại product_sold
+        const [orderItems] = await connection.query(
+        `SELECT oi.variant_id, oi.quantity, vp.product_id 
+         FROM order_items oi
+         LEFT JOIN variant_product vp ON oi.variant_id = vp.variant_id
+         WHERE oi.order_id = ?`,
+        [orderId]
+      );
 
           if (customerInfo) {
             const customerEmail =
@@ -1940,47 +1887,54 @@ router.put("/:id/return-status", verifyToken, isAdmin, async (req, res) => {
                 emailData,
                 "return-rejected"
               );
+
+              console.log(
+                `📧 Rejection email sent to ${customerEmail}:`,
+                emailResult ? "Success" : "Failed"
+              );
             }
           }
         } catch (emailError) {
+          console.error(
+            "❌ Failed to send return rejection email:",
+            emailError.message
+          );
           // Continue execution even if email fails
         }
       }
 
-      const statusText =
-        return_status === ""
-          ? "Không có hoàn trả"
-          : return_status === "PENDING"
+    const statusText =
+      return_status === ""
+        ? "Không có hoàn trả"
+        : return_status === "PENDING"
           ? "Đang chờ xử lý"
           : return_status === "APPROVED"
-          ? "Đã duyệt trả hàng"
-          : return_status === "CANCEL_CONFIRMED"
-          ? "Xác nhận hủy đơn hàng"
-          : return_status === "CANCELLED"
-          ? "Đã hủy hoàn tất"
-          : return_status === "REJECTED"
-          ? "Từ chối trả hàng"
-          : return_status;
+            ? "Đã duyệt trả hàng"
+            : return_status === "CANCEL_CONFIRMED"
+              ? "Xác nhận hủy đơn hàng"
+              : return_status === "CANCELLED"
+                ? "Đã hủy hoàn tất"
+                : return_status === "REJECTED"
+                  ? "Từ chối trả hàng"
+                  : return_status;
 
-      return res.status(200).json({
-        success: true,
-        message: `Đã cập nhật trạng thái hoàn trả thành: ${statusText}`,
-        return_status: return_status,
-      });
-    } catch (error) {
-      // Rollback nếu có lỗi
-      await connection.rollback();
-      throw error;
-    } finally {
-      connection.release();
-    }
-  } catch (err) {
-    res.status(500).json({
+    return res.status(200).json({
+      success: true,
+      message: `Đã cập nhật trạng thái hoàn trả thành: ${statusText}`,
+      return_status,
+    });
+  } catch (error) {
+    await connection.rollback();
+    console.error("❌ Lỗi cập nhật trạng thái hoàn trả:", error);
+    return res.status(500).json({
       success: false,
       message: "Lỗi máy chủ khi cập nhật trạng thái hoàn trả",
     });
+  } finally {
+    connection.release();
   }
 });
+
 
 /**
  * @route   DELETE /api/orders/:id
@@ -2189,9 +2143,8 @@ router.post("/send-invoice", verifyToken, async (req, res) => {
     );
 
     // Tạo nội dung email
-    const invoiceUrl = `${
-      process.env.SITE_URL || "http://localhost:3501"
-    }/dashboard/orders/invoice/${order_id}`;
+    const invoiceUrl = `${process.env.SITE_URL || "http://localhost:3501"
+      }/dashboard/orders/invoice/${order_id}`;
 
     // Trong thực tế, bạn sẽ sử dụng một thư viện gửi email như nodemailer
     // Ví dụ mẫu này chỉ giả lập việc gửi email
@@ -2751,7 +2704,7 @@ router.post(
               product_name: item.product_name,
               quantity: items
                 ? items.find((i) => i.order_item_id === item.order_item_id)
-                    ?.quantity || 0
+                  ?.quantity || 0
                 : item.quantity,
               price: item.product_price,
             })),

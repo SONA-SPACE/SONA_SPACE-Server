@@ -1865,45 +1865,46 @@ router.put("/:id/return-status", verifyToken, isAdmin, async (req, res) => {
               customerInfo.order_name_new || customerInfo.user_name;
 
             if (customerEmail) {
-              const emailData = {
-                customerName: customerName || "Khách hàng",
-                orderId: orderId,
-                orderHash: customerInfo.order_hash,
-                orderTotal: new Intl.NumberFormat("vi-VN", {
-                  style: "currency",
-                  currency: "VND",
-                }).format(customerInfo.order_total_final || 0),
-                returnDate: new Date(
-                  customerInfo.return_date
-                ).toLocaleDateString("vi-VN"),
-                rejectReason:
-                  customerInfo.reason ||
-                  "Sản phẩm không đáp ứng điều kiện trả hàng theo chính sách của công ty.",
-              };
+              try {
+                const emailData = {
+                  customerName: customerName || "Khách hàng",
+                  orderId: orderId,
+                  orderHash: customerInfo.order_hash,
+                  orderTotal: new Intl.NumberFormat("vi-VN", {
+                    style: "currency",
+                    currency: "VND",
+                  }).format(customerInfo.order_total_final || 0),
+                  returnDate: new Date(
+                    customerInfo.return_date
+                  ).toLocaleDateString("vi-VN"),
+                  rejectReason:
+                    customerInfo.reason ||
+                    "Sản phẩm không đáp ứng điều kiện trả hàng theo chính sách của công ty.",
+                };
 
-              const emailResult = await sendEmail1(
-                customerEmail,
-                `[Sona Space] Thông báo từ chối yêu cầu trả hàng - ${customerInfo.order_hash}`,
-                emailData,
-                "return-rejected"
-              );
+                const emailResult = await sendEmail1(
+                  customerEmail,
+                  `[Sona Space] Thông báo từ chối yêu cầu trả hàng - ${customerInfo.order_hash}`,
+                  emailData,
+                  "return-rejected"
+                );
 
-              console.log(
-                `📧 Rejection email sent to ${customerEmail}:`,
-                emailResult ? "Success" : "Failed"
-              );
+                console.log(
+                  `📧 Rejection email sent to ${customerEmail}:`,
+                  emailResult ? "Success" : "Failed"
+                );
+              } catch (emailError) {
+                console.error(
+                  "❌ Failed to send return rejection email:",
+                  emailError.message
+                );
+                // Continue execution even if email fails
+              }
             }
           }
-        } catch (emailError) {
-          console.error(
-            "❌ Failed to send return rejection email:",
-            emailError.message
-          );
-          // Continue execution even if email fails
         }
-      }
 
-    const statusText =
+      const statusText =
       return_status === ""
         ? "Không có hoàn trả"
         : return_status === "PENDING"

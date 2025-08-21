@@ -71,19 +71,34 @@ module.exports = function attachChatbotSocketGemini25(io) {
           },
         });
 
-        const stream = await model.generateContentStream({
+        const result = await model.generateContentStream({
           contents,
         });
 
         let fullText = "";
         let lastGrounding = null;
 
-        for await (const chunk of stream) {
-          const chunkText = chunk.text();
-          if (chunkText) {
-            fullText += chunkText;
-            socket.emit("bot_response_chunk", { chunk: chunkText });
+        // Kiểm tra xem result có stream không và xử lý đúng cách
+        if (result && result.stream) {
+          try {
+            for await (const chunk of result.stream) {
+              const chunkText = chunk.text();
+              if (chunkText) {
+                fullText += chunkText;
+                socket.emit("bot_response_chunk", { chunk: chunkText });
+              }
+            }
+          } catch (streamError) {
+            // Nếu stream fail, thử dùng response thường
+            const response = await result.response;
+            fullText = response.text();
           }
+        } else {
+          // Fallback: sử dụng generateContent thường nếu stream không khả dụng
+          const response = await model.generateContent({
+            contents,
+          });
+          fullText = response.response.text();
         }
 
         const finalText = fullText.trim();

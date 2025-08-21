@@ -161,7 +161,6 @@
             document.getElementById("colorSlug").value = color_slug;
         }
 
-
         try {
             const res = await fetch(`/api/color/admin`, {
                 method: "POST",
@@ -178,7 +177,6 @@
                 setTimeout(() => window.location.href = "/dashboard/colors", 1500);
             }
         } catch (err) {
-            console.error("Add color failed:", err);
             showToast("Lỗi khi thêm màu", "danger");
         } finally {
             saveBtn.disabled = false;

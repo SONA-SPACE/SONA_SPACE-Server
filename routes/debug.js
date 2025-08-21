@@ -8,7 +8,6 @@ router.get('/public', async (req, res) => {
   try {
     res.json({ message: 'Endpoint công khai hoạt động' });
   } catch (error) {
-    console.error('Error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -21,7 +20,6 @@ router.get('/protected', verifyToken, async (req, res) => {
       user: req.user 
     });
   } catch (error) {
-    console.error('Error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -34,7 +32,6 @@ router.get('/admin', verifyToken, isAdmin, async (req, res) => {
       user: req.user 
     });
   } catch (error) {
-    console.error('Error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -48,7 +45,6 @@ router.get('/query-test', verifyToken, async (req, res) => {
       result: result[0]
     });
   } catch (error) {
-    console.error('Database query error:', error);
     res.status(500).json({ error: 'Database query error', details: error.message });
   }
 });
@@ -72,7 +68,6 @@ router.get('/join-test', verifyToken, async (req, res) => {
       result: result[0]
     });
   } catch (error) {
-    console.error('Database join error:', error);
     res.status(500).json({ error: 'Database join error', details: error.message });
   }
 });

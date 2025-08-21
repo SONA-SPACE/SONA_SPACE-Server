@@ -121,7 +121,6 @@
                     renderColors(currentFilteredColors);
                 })
                 .catch((err) => {
-                    console.error("Lỗi khi lấy dữ liệu màu sắc:", err);
                     document.querySelector(".results-info").textContent = "Không thể tải dữ liệu.";
                 });
         }

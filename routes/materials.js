@@ -15,7 +15,6 @@ router.get("/", async (req, res) => {
     const [results] = await db.query(sql);
     res.status(200).json(results);
   } catch (err) {
-    console.error("Error fetching materials:", err);
     res.status(500).json({
       success: false,
       message: "Lỗi máy chủ khi lấy danh sách vật liệu.",
@@ -42,7 +41,6 @@ router.get("/:slug", async (req, res) => {
     }
     res.status(200).json({ success: true, material: results[0] });
   } catch (err) {
-    console.error("Error fetching material by slug:", err);
     res.status(500).json({
       success: false,
       message: "Lỗi máy chủ khi lấy vật liệu.",
@@ -101,7 +99,6 @@ router.post("/", async (req, res) => {
         message: "Loại vật liệu này đã tồn tại.",
       });
     }
-    console.error("Error adding new material:", err);
     res.status(500).json({
       success: false,
       message: "Lỗi máy chủ khi thêm vật liệu mới.",
@@ -172,7 +169,6 @@ router.put("/:slug", async (req, res) => {
         message: "Slug mới đã tồn tại cho một vật liệu khác.",
       });
     }
-    console.error("Error updating material:", err);
     res.status(500).json({
       success: false,
       message: "Lỗi máy chủ khi cập nhật vật liệu.",
@@ -211,7 +207,6 @@ router.put("/:slug/toggle-status", async (req, res) => {
       status: newStatus,
     });
   } catch (err) {
-    console.error("Error toggling material status:", err);
     res.status(500).json({
       success: false,
       message: "Lỗi máy chủ khi cập nhật trạng thái.",
@@ -271,7 +266,6 @@ router.delete("/:slug", async (req, res) => {
       message: "Vật liệu đã được xóa thành công.",
     });
   } catch (err) {
-    console.error("Error deleting material:", err);
     res.status(500).json({
       success: false,
       message: "Lỗi máy chủ khi xóa vật liệu.",

@@ -629,8 +629,6 @@
         e.stopPropagation();
 
         const sortType = this.getAttribute('data-sort');
-        console.log('Sorting by:', sortType);
-
         // Hiển thị thông báo đang sắp xếp
         if (window.antd && window.antd.message) {
           window.antd.message.loading('Đang sắp xếp dữ liệu...');
@@ -679,8 +677,6 @@
 
     // Khởi tạo Ant Design nếu cần
     if (window.antd) {
-      console.log('Ant Design loaded successfully');
-
       // Có thể thêm các cấu hình khác cho Ant Design ở đây
       if (window.antd.message) {
         window.antd.message.config({
@@ -1022,8 +1018,6 @@
         headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
       });
       const data = await res.json();
-      console.log("Orders data:", data);
-
       if (!data.success) throw new Error(data.message);
 
       const orders = data.orders;
@@ -1049,7 +1043,6 @@
           }
         }
       } catch (paginationErr) {
-        console.error("Lỗi khi lấy thông tin phân trang:", paginationErr);
       }
 
       // Fetch order status counts
@@ -1072,7 +1065,6 @@
           document.getElementById('return-orders').textContent = returnOrders;
         }
       } catch (statusErr) {
-        console.error("Lỗi khi lấy thông tin trạng thái đơn hàng:", statusErr);
       }
 
       orders.forEach(order => {
@@ -1116,7 +1108,6 @@
         tbody.appendChild(tr);
       });
     } catch (err) {
-      console.error("Lỗi khi load orders:", err);
     }
   }
 
@@ -1130,7 +1121,6 @@
     const integerPart = Math.floor(numeric);
     return integerPart.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   }
-
 
   function mapStatus(status) {
     switch (status) {
@@ -1463,8 +1453,6 @@
         loadOrders();
       }
     } catch (error) {
-      console.error('Lỗi khi cập nhật trạng thái:', error);
-
       if (window.antd && window.antd.notification) {
         window.antd.notification.error({
           message: 'Lỗi',
@@ -1538,7 +1526,6 @@
               }
             }
           } catch (emailError) {
-            console.error('Lỗi khi gửi email xin lỗi:', emailError);
             // Vẫn thông báo cập nhật thành công nhưng có lỗi email
             if (window.antd && window.antd.notification) {
               window.antd.notification.warning({
@@ -1581,8 +1568,6 @@
         loadOrders();
       }
     } catch (error) {
-      console.error('Lỗi khi cập nhật trạng thái hoàn trả:', error);
-
       if (window.antd && window.antd.notification) {
         window.antd.notification.error({
           message: 'Lỗi',

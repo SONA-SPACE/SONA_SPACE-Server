@@ -9,11 +9,6 @@ exports.sendEmail = async (to, subject, data, templateName) => {
     try {
         htmlContent = await ejs.renderFile(templatePath, data);
     } catch (ejsError) {
-        console.error(
-            `Lỗi khi render template EJS '${templateName}.ejs':`,
-            ejsError
-        );
-
         throw new Error(`Không thể render template email: ${ejsError.message}`);
     }
 
@@ -34,12 +29,8 @@ exports.sendEmail = async (to, subject, data, templateName) => {
 
     try {
         await transporter.sendMail(mailOptions);
-        console.log(
-            `Email '${subject}' đã được gửi thành công đến ${to} bằng template ${templateName}.ejs`
-        );
         return true;
     } catch (error) {
-        console.error("Lỗi khi gửi email:", error);
         return false;
     }
 };

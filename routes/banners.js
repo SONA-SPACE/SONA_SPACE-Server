@@ -78,7 +78,6 @@ router.get("/", async (req, res) => {
     
     res.json(banners);
   } catch (error) {
-    console.error("Error fetching banners:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -111,7 +110,6 @@ router.get("/page/:pageType", async (req, res) => {
     
     res.json(banners);
   } catch (error) {
-    console.error("Error fetching banners by page type:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -148,7 +146,6 @@ router.post("/pages", async (req, res) => {
     
     res.json(result);
   } catch (error) {
-    console.error("Error fetching banners by multiple page types:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -192,7 +189,6 @@ router.get("/pages", async (req, res) => {
     
     res.json(result);
   } catch (error) {
-    console.error("Error fetching banners by multiple page types:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -208,7 +204,6 @@ router.get("/page-types", async (req, res) => {
     
     res.json(pageTypes);
   } catch (error) {
-    console.error("Error fetching page types:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -236,7 +231,6 @@ router.get("/:id", async (req, res) => {
     
     res.json(banner);
   } catch (error) {
-    console.error("Error fetching banner:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -284,7 +278,6 @@ router.post("/", authMiddleware.verifyToken, isAdmin, upload.single("image"), as
       end_date: end_date || null
     });
   } catch (error) {
-    console.error("Error creating banner:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -352,7 +345,6 @@ router.put("/:id", authMiddleware.verifyToken, isAdmin, upload.single("image"), 
     
     res.json(updatedBanner);
   } catch (error) {
-    console.error("Error updating banner:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -384,7 +376,6 @@ router.delete("/:id", authMiddleware.verifyToken, isAdmin, async (req, res) => {
     
     res.json({ message: "Banner deleted successfully" });
   } catch (error) {
-    console.error("Error deleting banner:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -431,7 +422,6 @@ router.put("/:id/toggle-status", authMiddleware.verifyToken, isAdmin, async (req
     });
     
   } catch (error) {
-    console.error("Error toggling banner status:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });

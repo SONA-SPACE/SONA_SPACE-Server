@@ -107,7 +107,6 @@
           // if (input) input.addEventListener('input', (e) => filterCategoriesBySearch(e.target.value));
         })
         .catch((error) => {
-          console.error("Lỗi khi tải danh mục:", error);
           setResultsInfo("Không thể tải dữ liệu.");
         });
     }
@@ -264,7 +263,6 @@
               }
             })
             .catch((err) => {
-              console.error("Lỗi khi xóa:", err);
               showToast("Xảy ra lỗi khi xóa danh mục", "danger");
             });
         },
@@ -308,7 +306,6 @@
           }
         })
         .catch((err) => {
-          console.error("Lỗi khi cập nhật trạng thái:", err);
           showToast("Xảy ra lỗi khi cập nhật trạng thái", "danger");
         });
     }

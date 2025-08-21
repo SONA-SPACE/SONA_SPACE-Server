@@ -96,7 +96,6 @@
         document.getElementById("context").value = data.context || "";
       }
     } catch (err) {
-      console.error("Lỗi khi tải nội dung chat bot:", err);
       showToast("Không thể tải nội dung chat bot", "danger");
     }
   }
@@ -133,7 +132,6 @@
         setTimeout(() => (window.location.href = "/dashboard/chatbot"), 1000);
       }
     } catch (err) {
-      console.error("Lỗi khi cập nhật:", err);
       showToast("Có lỗi khi cập nhật nội dung chat bot", "danger");
     }
 

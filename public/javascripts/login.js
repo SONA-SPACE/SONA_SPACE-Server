@@ -124,7 +124,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const isPasswordValid = validatePassword();
 
     if (isEmailValid && isPasswordValid) {
-      console.log("Form hợp lệ, tiến hành gửi dữ liệu...");
     }
   });
 });

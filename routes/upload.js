@@ -24,7 +24,6 @@ router.post("/category", upload.single("image"), async (req, res) => {
       url: result.secure_url,
     });
   } catch (error) {
-    console.error("Upload failed:", error);
     res.status(500).json({ error: "Lỗi upload ảnh", detail: error.message });
   }
 });
@@ -49,7 +48,6 @@ router.post("/room", upload.single("image"), async (req, res) => {
       url: result.secure_url,
     });
   } catch (error) {
-    console.error("Upload failed:", error);
     res.status(500).json({ error: "Lỗi upload ảnh", detail: error.message });
   }
 });
@@ -97,7 +95,6 @@ router.post("/product", upload.single("image"), async (req, res) => {
         folder: targetFolder,
       });
     } catch (cloudErr) {
-      console.error("[UPLOAD] Lỗi upload Cloudinary:", cloudErr);
       return res.status(500).json({
         error: "Lỗi khi upload ảnh lên Cloudinary",
         detail: cloudErr.message,
@@ -109,7 +106,6 @@ router.post("/product", upload.single("image"), async (req, res) => {
       url: result.secure_url,
     });
   } catch (error) {
-    console.error("[UPLOAD] Lỗi hệ thống:", error);
     return res.status(500).json({
       error: "Lỗi không xác định khi upload ảnh",
       detail: error.message,
@@ -137,7 +133,6 @@ router.delete("/:publicId(*)", async (req, res) => {
 
     res.status(200).json({ message: "Xóa ảnh thành công" });
   } catch (error) {
-    console.error("Xóa ảnh thất bại:", error);
     res.status(500).json({ error: "Lỗi xóa ảnh", detail: error.message });
   }
 });
@@ -199,7 +194,6 @@ router.post("/news", upload.single("image"), async (req, res) => {
       .status(200)
       .json({ message: "Upload thành công", url: result.secure_url });
   } catch (error) {
-    console.error("Upload failed:", error);
     res.status(500).json({ error: "Lỗi upload ảnh", detail: error.message });
   }
 });
@@ -226,7 +220,6 @@ router.post("/newscategorynews", upload.single("image"), async (req, res) => {
       url: result.secure_url,
     });
   } catch (error) {
-    console.error("Upload failed:", error);
     res.status(500).json({ error: "Lỗi upload ảnh", detail: error.message });
   }
 });
@@ -253,7 +246,6 @@ router.post("/event", upload.single("image"), async (req, res) => {
       public_id: result.public_id,
     });
   } catch (error) {
-    console.error("Upload failed:", error);
     res.status(500).json({ error: "Lỗi upload ảnh", detail: error.message });
   }
 });

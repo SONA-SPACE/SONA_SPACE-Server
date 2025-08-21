@@ -128,8 +128,6 @@
           </ul>
         </div>
 
-
-
         <div class="menu-section">
           <div class="menu-section-title">Thông báo</div>
           <ul class="nav-menu">
@@ -290,7 +288,6 @@
             return;
           }
 
-
           // Cập nhật thông tin người dùng trên header
           const userNameElement = document.querySelector(".user-name");
           const userRoleElement = document.querySelector(".user-role");
@@ -303,7 +300,6 @@
             staff: 'Nhân viên',
           };
           userRoleElement.textContent = roleMap[user.role] || user.role;
-
 
           // Thêm nút đăng xuất
           const userProfile = document.querySelector(".user-profile");
@@ -347,17 +343,12 @@
                       });
 
                       if (response.ok) {
-                        console.log(
-                          "Đăng xuất thành công, token đã được xóa khỏi database"
-                        );
+                        console.log("Logout successful");
                       } else {
-                        console.error(
-                          "Lỗi khi đăng xuất:",
-                          await response.json()
-                        );
+                        console.log("Logout failed");
                       }
                     } catch (error) {
-                      console.error("Lỗi khi gọi API đăng xuất:", error);
+                      console.error("Logout error:", error);
                     } finally {
                       // Xóa token và thông tin người dùng khỏi localStorage
                       localStorage.removeItem("token");
@@ -404,15 +395,14 @@
                 const notiDate = new Date(noti.created_at).toLocaleDateString('vi-VN');
                 const isToday = notiDate === today;
                 const isOrderType = Number(noti.type_id) === 15;
-                // console.log(`[DEBUG] noti ${noti.id} | type_id: ${noti.type_id} | created_at: ${notiDate} | isToday: ${isToday} | isOrderType: ${isOrderType}`);
+                // 
                 return isOrderType && isToday;
               });
-              // console.log("Số thông báo hôm nay:", todayNotifications.length);
+              // 
               const countElement = document.getElementById("notification-count");
               countElement.textContent = todayNotifications.length;
               countElement.style.display = todayNotifications.length > 0 ? "inline-block" : "none";
             } catch (err) {
-              console.error("Lỗi khi load số thông báo:", err);
             }
           })();
 
@@ -429,12 +419,12 @@
                   },
                 });
 
-                // console.log("Đang lấy thông báo từ API...", response);
+                // 
 
                 if (response.ok) {
                   const allNotifications = await response.json(); 
 
-                  // console.log("Dữ liệu thông báo:", allNotifications);
+                  // 
                   listContainer.innerHTML = "";
 
                   const today = new Date().toLocaleDateString('vi-VN');
@@ -446,7 +436,6 @@
                     const isOrderType = Number(noti.type_id) === 15;
                     return isOrderType && isToday;
                   });
-
 
                   // Cập nhật số lượng hiển thị
                   const countElement = document.getElementById("notification-count");
@@ -470,15 +459,12 @@
                     listContainer.innerHTML = '<div class="p-3 text-center text-muted">Không có thông báo nào.</div>';
                   }
                 } else {
-                  console.error("Lỗi khi lấy thông báo:", response.status, response.statusText);
                 }
               } catch (err) {
-                console.error("Lỗi khi lấy thông báo:", err);
               }
             }
 
           });
-
 
           // Ẩn dropdown khi click ra ngoài
           document.addEventListener("click", function (e) {

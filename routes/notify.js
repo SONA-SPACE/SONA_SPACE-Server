@@ -3,7 +3,6 @@ const router = express.Router();
 const db = require('../config/database');
 const { verifyToken, isAdmin } = require('../middleware/auth');
 
-
 router.get('/', verifyToken, isAdmin, async (req, res) => {
   try {
     const [rows] = await db.query(`
@@ -23,7 +22,6 @@ router.get('/', verifyToken, isAdmin, async (req, res) => {
 
     res.status(200).json(rows);
   } catch (error) {
-    console.error("Lỗi khi lấy tất cả thông báo:", error);
     res.status(500).json({ error: "Lỗi server khi lấy danh sách thông báo" });
   }
 });
@@ -37,7 +35,6 @@ router.get("/admin", async (req, res) => {
     );
     res.json(rows);
   } catch (err) {
-    console.error("lỗi khi lấy thông báo:", err);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
@@ -72,7 +69,6 @@ router.post("/", verifyToken, async (req, res) => {
 
     res.status(201).json({ message: "Tạo thông báo thành công" });
   } catch (error) {
-    console.error("Lỗi tạo thông báo:", error);
     res.status(500).json({ error: "Lỗi máy chủ khi tạo thông báo" });
   }
 });
@@ -93,7 +89,6 @@ router.delete('/:id', verifyToken, isAdmin, async (req, res) => {
 
     res.json({ message: 'Xóa thông báo thành công' });
   } catch (error) {
-    console.error('Lỗi khi xóa thông báo:', error);
     res.status(500).json({ error: 'Lỗi server khi xóa thông báo' });
   }
 });

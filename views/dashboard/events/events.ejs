@@ -169,7 +169,6 @@
                     renderEvents(currentFilteredEvents);
                 }) // **Updated function name**
                 .catch((err) => {
-                    console.error("Lỗi khi lấy dữ liệu sự kiện:", err);
                     document.querySelector(".results-info").textContent = "Không thể tải dữ liệu sự kiện.";
                     showToast("Lỗi khi tải dữ liệu sự kiện. Vui lòng thử lại sau.", "danger");
                 });
@@ -251,12 +250,10 @@
                     navigator.clipboard.writeText(link).then(() => {
                         showToast("Đã sao chép liên kết!", "success");
                     }).catch(err => {
-                        console.error('Không thể sao chép liên kết:', err);
                         showToast("Không thể sao chép liên kết.", "danger");
                     });
                 });
             });
-
 
             document.querySelector(".results-info").textContent = `Hiển thị ${events.length} kết quả`;
         }
@@ -314,7 +311,6 @@
                 })
                 .catch(() => showToast("Lỗi cập nhật trạng thái", "danger"));
         }
-
 
         function formatDate(dateStr) {
             if (!dateStr) return "-";

@@ -25,7 +25,6 @@ router.get("/active", async (req, res) => {
 
     res.json(rows);
   } catch (error) {
-    console.error("Error fetching active events:", error);
     res.status(500).json({ message: "Internal server error." });
   }
 });
@@ -37,7 +36,6 @@ router.get("/admin", verifyToken, isAdmin, async (req, res) => {
     );
     res.json(rows);
   } catch (error) {
-    console.error("Error fetching all events:", error);
     res.status(500).json({ message: "Internal server error." });
   }
 });
@@ -53,7 +51,6 @@ router.get("/admin/:id", verifyToken, isAdmin, async (req, res) => {
     }
     res.json(rows[0]);
   } catch (error) {
-    console.error("Error fetching event by ID:", error);
     res.status(500).json({ message: "Internal server error." });
   }
 });
@@ -110,7 +107,6 @@ router.post("/admin", verifyToken, isAdmin, async (req, res) => {
       event_id: result.insertId,
     });
   } catch (err) {
-    console.error("Error creating event:", err);
     res
       .status(500)
       .json({ success: false, message: "Lỗi máy chủ khi tạo sự kiện." });
@@ -191,7 +187,6 @@ router.put("/admin/:id", verifyToken, isAdmin, async (req, res) => {
       message: "Cập nhật sự kiện thành công!",
     });
   } catch (error) {
-    console.error("Error updating event:", error);
     res.status(500).json({
       success: false,
       message: "Lỗi máy chủ khi cập nhật sự kiện.",
@@ -259,17 +254,14 @@ router.delete("/:id", verifyToken, isAdmin, async (req, res) => {
           await cloudinary.uploader.destroy(publicId, {
             resource_type: "image",
           });
-          console.log("Successfully deleted image from Cloudinary:", publicId);
         }
       } catch (deleteErr) {
-        console.error("Failed to delete image from Cloudinary:", deleteErr);
         // Don't fail the request if image deletion fails
       }
     }
 
     res.json({ message: "Event deleted successfully!" });
   } catch (error) {
-    console.error("Error deleting event:", error);
     res.status(500).json({ message: "Internal server error." });
   }
 });
@@ -289,7 +281,6 @@ function extractPublicIdFromUrl(url) {
       return publicId;
     }
   } catch (error) {
-    console.error("Error extracting public ID:", error);
   }
   return null;
 }

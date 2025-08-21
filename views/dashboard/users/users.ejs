@@ -74,14 +74,12 @@
                         <i class="fas fa-chevron-down filter-icon"></i>
                         <div class="filter-dropdown">
 
-
                             <a class="filter-item" href="#" data-sort-order="desc">Từ cao đến thấp</a>
                             <a class="filter-item" href="#" data-sort-order="asc">Từ thấp đến cao</a>
                             <a class="filter-item" href="#" data-filter-value="all">Tất cả</a>
                         </div>
                     </div>
                 </th>
-
 
                 <th class="filterable" data-column="email_active">
                     Kich hoạt Email
@@ -108,7 +106,6 @@
                         </div>
                     </div>
                 </th>
-
 
                 <th class="filterable" data-column="verified_at">
                     Ngày kích hoạt
@@ -186,7 +183,7 @@
         //             window.antd.message.info(message);
         //         }
         //     } else {
-        //         console.log(`Toast (${type}): ${message}`);
+        //         : ${message}`);
         //     }
         // }
 
@@ -199,7 +196,6 @@
                 e.stopPropagation();
 
                 this.classList.toggle('active');
-
 
                 document.querySelectorAll('.header-filter').forEach(otherFilter => {
                     if (otherFilter !== this) {
@@ -320,16 +316,13 @@
             usersToRender.forEach((user) => {
                 const tr = document.createElement("tr");
 
-
                 const isDisabled = user.disabled_at !== null && user.disabled_at !== '0000-00-00 00:00:00';
                 const disabledStatusText = isDisabled ? "Đã vô hiệu hóa" : "Không vô hiệu hóa";
                 const disabledStatusClass = isDisabled ? "hidden" : "visible";
 
-
                 const isVerified = user.verified_at !== null && user.verified_at !== '0000-00-00 00:00:00';
                 const verifiedStatusText = isVerified ? "Đã kích hoạt" : "Chưa kích hoạt";
                 const verifiedStatusClass = isVerified ? "visible" : "hidden";
-
 
                 tr.innerHTML = `
                      
@@ -451,7 +444,6 @@
             renderUsersTable(usersToSort);
         }
 
-
         function filterUsers(columnDataName, filterValue) {
             let filteredData = [...allUsers];
 
@@ -520,13 +512,11 @@
             renderUsersTable(currentFilteredUsers);
         }
 
-
         // --- API Calls ---
 
         const token = localStorage.getItem("token");
 
         if (!token) {
-            console.error("Không tìm thấy token. Vui lòng đăng nhập lại.");
             showToast("Bạn chưa đăng nhập hoặc phiên làm việc đã hết hạn.", "danger");
             // window.location.href = '/'; 
             return;
@@ -542,7 +532,6 @@
             .then((res) => {
                 if (!res.ok) {
                     if (res.status === 401 || res.status === 403) {
-                        console.error("Không có quyền truy cập hoặc phiên làm việc đã hết hạn.");
                         showToast("Không có quyền truy cập hoặc phiên làm việc đã hết hạn.", "danger");
                     }
                     throw new Error(`HTTP error! status: ${res.status}`);
@@ -565,7 +554,6 @@
                 renderUsersTable(allUsers);
             })
             .catch((err) => {
-                console.error("Lỗi khi tải dữ liệu người dùng:", err);
                 document.getElementById("usersTableBody").innerHTML =
                     '<tr><td colspan="11" style="text-align: center; padding: 20px;">Không thể tải dữ liệu người dùng. Vui lòng thử lại sau.</td></tr>';
                 showToast("Lỗi khi tải dữ liệu người dùng.", "danger");
@@ -609,11 +597,9 @@
                     }
                     renderUsersTable(currentFilteredUsers);
                 } else {
-                    console.error("Lỗi khi cập nhật trạng thái tài khoản:", result);
                     showToast(result.error || "Cập nhật trạng thái tài khoản thất bại", "danger");
                 }
             } catch (error) {
-                console.error("Lỗi mạng khi cập nhật trạng thái tài khoản:", error);
                 showToast("Có lỗi xảy ra khi gửi yêu cầu cập nhật trạng thái tài khoản.", "danger");
             }
         }

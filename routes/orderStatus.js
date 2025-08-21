@@ -10,11 +10,9 @@ const { verifyToken, isAdmin } = require('../middleware/auth');
  */
 router.get('/', async (req, res) => {
   try {
-    console.log('Fetching order statuses...');
     const [statuses] = await db.query('SELECT * FROM order_status ORDER BY order_status_id ASC');
     res.json(statuses);
   } catch (error) {
-    console.error('Error fetching order statuses:', error);
     res.status(500).json({ error: 'Failed to fetch order statuses' });
   }
 });
@@ -39,7 +37,6 @@ router.get('/:id', async (req, res) => {
     
     res.json(statuses[0]);
   } catch (error) {
-    console.error('Error fetching order status:', error);
     res.status(500).json({ error: 'Failed to fetch order status' });
   }
 });
@@ -76,7 +73,6 @@ router.post('/', verifyToken, isAdmin, async (req, res) => {
       status: newStatus[0]
     });
   } catch (error) {
-    console.error('Error creating order status:', error);
     res.status(500).json({ error: 'Failed to create order status' });
   }
 });
@@ -145,7 +141,6 @@ router.put('/:id', verifyToken, isAdmin, async (req, res) => {
       status: updatedStatus[0]
     });
   } catch (error) {
-    console.error('Error updating order status:', error);
     res.status(500).json({ error: 'Failed to update order status' });
   }
 });
@@ -184,7 +179,6 @@ router.delete('/:id', verifyToken, isAdmin, async (req, res) => {
     
     res.json({ message: 'Order status deleted successfully' });
   } catch (error) {
-    console.error('Error deleting order status:', error);
     res.status(500).json({ error: 'Failed to delete order status' });
   }
 });

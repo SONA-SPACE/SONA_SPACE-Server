@@ -103,7 +103,6 @@
 
 </div>
 
-
 </div>
 
 <!-- JS xử lý -->
@@ -111,30 +110,20 @@
   let bannerImageFile = null;
 
   document.addEventListener("DOMContentLoaded", () => {
-    console.log("DOM loaded, initializing...");
-    
     // Check if we have authentication
     const token = localStorage.getItem("token");
-    console.log("Token available:", !!token);
-    
     bindUpload("#bannerImageDropArea", (file) => (bannerImageFile = file));
     document.getElementById("saveBannerBtn").addEventListener("click", handleSaveBanner);
 
     // Load categories for the dropdown
-    console.log("Starting to load categories...");
     loadCategories();
   });
 
   async function loadCategories() {
     try {
-      console.log("Loading categories...");
       const response = await fetch("/api/categories");
-      console.log("Categories response status:", response.status);
-      
       if (response.ok) {
         const categories = await response.json();
-        console.log("Categories data:", categories);
-        
         const categorySelect = document.getElementById("category_id");
         
         // Clear existing options except the first one
@@ -150,17 +139,13 @@
             option.textContent = category.category_name;
             categorySelect.appendChild(option);
           });
-          console.log(`✅ Loaded ${categories.length} categories successfully`);
         } else {
-          console.warn("No categories found or invalid format");
           showToast("Không tìm thấy danh mục nào", "warning");
         }
       } else {
-        console.error("Failed to fetch categories:", response.status);
         showToast("Không thể tải danh sách danh mục", "warning");
       }
     } catch (error) {
-      console.error("Error loading categories:", error);
       showToast("Lỗi khi tải danh mục: " + error.message, "warning");
     }
   }
@@ -253,7 +238,6 @@
         window.location.href = "/dashboard/banners";
       }, 1500);
     } catch (error) {
-      console.error("Error creating banner:", error);
       showToast(error.message, "danger");
       saveBtn.disabled = false;
       saveBtn.innerText = "Lưu";

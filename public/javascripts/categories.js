@@ -136,8 +136,6 @@ function toggleCategoryVisibility(categoryId, currentStatus) {
 
   // Here you would normally make an AJAX call to your API
   // For demonstration, we'll just show a success message
-  console.log(`Category ${categoryId} visibility changed to ${newStatus}`);
-
   // Show a toast notification
   showToast(
     `Danh mục đã được ${
@@ -160,8 +158,6 @@ function confirmDeleteCategory(categoryId, categoryName) {
   ) {
     // Here you would normally make an AJAX call to your API
     // For demonstration, we'll just show a success message
-    console.log(`Category ${categoryId} deleted`);
-
     // Show a toast notification
     showToast(`Danh mục "${categoryName}" đã được xóa thành công.`, "danger");
 

@@ -206,6 +206,127 @@
     </div>
 </div>
 
+<div class="detail-form-generateAI">
+  <div class="ai-design-assistant">
+    <div class="ai-assistant-header">
+      <h3 class="ai-title">
+        <i class="fas fa-robot"></i>
+        AI Hỗ trợ thiết kế
+      </h3>
+      <span class="ai-status-indicator" id="aiStatusIndicator">
+        <i class="fas fa-circle"></i>
+        <span id="aiStatusText">Đang kết nối...</span>
+      </span>
+    </div>
+    
+    <!-- Cột Chat AI bên trái -->
+    <div class="ai-chat-container">
+      <!-- Chat messages area -->
+      <div class="ai-chat-messages" id="aiChatMessages">
+        <div class="ai-message ai-bot">
+          <div class="ai-message-avatar">
+            <i class="fas fa-robot"></i>
+          </div>
+          <div class="ai-message-content">
+            <p>Xin chào! Tôi là AI Assistant của SONA SPACE. Tôi có thể giúp bạn:</p>
+            <ul>
+              <li>🎨 Phân tích và đề xuất phong cách thiết kế</li>
+              <li>🛋️ Gợi ý sản phẩm phù hợp với không gian</li>
+              <li>💡 Tư vấn bố cục và màu sắc</li>
+              <li>📊 Ước tính ngân sách thiết kế</li>
+            </ul>
+            <p>Hãy chia sẻ thông tin về dự án thiết kế hoặc upload hình ảnh tham khảo!</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Typing indicator -->
+      <div class="ai-typing-indicator" id="aiTypingIndicator">
+        <div class="ai-message ai-bot">
+          <div class="ai-message-avatar">
+            <i class="fas fa-robot"></i>
+          </div>
+          <div class="ai-message-content">
+            <div class="typing-dots">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+            <span class="typing-text">AI đang suy nghĩ...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Input area -->
+      <div class="ai-chat-input">
+        <div class="ai-input-container">
+          <!-- Image upload -->
+          <div class="ai-file-upload">
+            <input type="file" id="aiImageInput" accept="image/*" style="display: none;">
+            <button type="button" class="ai-upload-btn" onclick="document.getElementById('aiImageInput').click()">
+              <i class="fas fa-camera"></i>
+            </button>
+          </div>
+          
+          <!-- Text input -->
+          <div class="ai-text-input-wrapper">
+            <textarea 
+              id="aiMessageInput" 
+              placeholder="Hỏi AI về thiết kế, upload ảnh tham khảo, hoặc mô tả yêu cầu..."
+              rows="1"
+            ></textarea>
+          </div>
+          
+          <!-- Send button -->
+          <button type="button" class="ai-send-btn" id="aiSendBtn">
+            <i class="fas fa-paper-plane"></i>
+          </button>
+        </div>
+        
+        <!-- Selected image preview -->
+        <div class="ai-selected-image" id="aiSelectedImage" style="display: none;">
+          <img id="aiSelectedImagePreview" src="" alt="Selected image">
+          <button type="button" class="ai-remove-image" onclick="removeAISelectedImage()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        <!-- Quick actions -->
+        <div class="ai-quick-actions">
+          <button type="button" class="ai-quick-btn" onclick="sendQuickMessage('Phân tích yêu cầu thiết kế hiện tại')">
+            📋 Phân tích yêu cầu
+          </button>
+          <button type="button" class="ai-quick-btn" onclick="sendQuickMessage('Đề xuất sản phẩm cho ' + document.getElementById('room_name').value)">
+            🛋️ Gợi ý sản phẩm  
+          </button>
+          <button type="button" class="ai-quick-btn" onclick="sendQuickMessage('Ước tính ngân sách cho dự án với số tiền ' + document.getElementById('budget').value)">
+            💰 Ước tính ngân sách
+          </button>
+          <button type="button" class="ai-quick-btn" onclick="testProductSuggestion()">
+            🧪 Test AI gợi ý
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cột Sản phẩm bên phải -->
+    <div class="ai-products-column">
+      <div class="products-header">
+        <h4><i class="fas fa-cubes"></i> Sản phẩm đề xuất</h4>
+        <a href="/dashboard/products" class="view-all-btn">Xem tất cả</a>
+      </div>
+      
+      <div id="aiSuggestedProducts">
+        <!-- Sản phẩm sẽ được load bằng JavaScript -->
+        <div class="loading-products" style="text-align: center; padding: 20px; color: #666;">
+          <i class="fas fa-spinner fa-spin"></i>
+          <p>Đang tải sản phẩm...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <link href="/tom-select/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet" />
 <script src="/tom-select/dist/js/tom-select.complete.min.js"></script>
 <script>
@@ -334,9 +455,28 @@
       const tbody = document.getElementById("design-products-tbody");
       tbody.innerHTML = "";
       total_product_price = 0;
-      data.forEach((item) => {
+      
+      data.forEach((item, index) => {
         const row = document.createElement("tr");
-        row.dataset.id = item.contact_form_design_detail_id;
+        
+        // Try different possible ID field names
+        const possibleIds = [
+          'contact_form_design_detail_id',
+          'id', 
+          'detail_id',
+          'design_detail_id'
+        ];
+        
+        let detailId = null;
+        for (const idField of possibleIds) {
+          if (item[idField]) {
+            detailId = item[idField];
+            break;
+          }
+        }
+        
+        row.dataset.id = detailId;
+        row.dataset.variantId = item.variant_id; // Add variant_id for easier removal
         row.innerHTML = `
           <td style="white-space: nowrap; min-width: 100px;">
             <div class="product-image-container">
@@ -352,14 +492,14 @@
           <td style="white-space: nowrap;">${formatCurrency(
             Number(item.total_price)
           )}</td>
-          <td><button class="btn-remove-product" onclick="handleRemoveProduct(${item.variant_id
-          })"><i class="fas fa-trash-alt"></i></button></td>
+          <td><button class="btn-remove-product" onclick="handleRemoveProduct('${item.variant_id
+          }')"><i class="fas fa-trash-alt"></i></button></td>
         `;
         tbody.appendChild(row);
         total_product_price += Number(item.total_price) || 0;
       });
-      document.getElementById("total-product-price").textContent =
-        total_product_price > 0 ? formatCurrency(total_product_price) : "0 VNĐ";
+      
+      updateProductPriceDisplay();
       updateTotalPrice();
     } else {
       showToast(data.error || "Có lỗi xảy ra", "danger");
@@ -369,15 +509,27 @@
   async function handleAddProduct() {
     const variantSelect = document.getElementById("variant-select");
     const variant_id = variantSelect.value;
-    const quantity = document.getElementById("quantity-input").value;
-    const unit_price = document.getElementById("unit-price-input").value;
+    const quantity = Number(document.getElementById("quantity-input").value) || 1;
+    const unit_price = document.getElementById("unit-price-input").value.replace(/\./g, "").replace(/[^0-9]/g, "");
 
     if (!variant_id) {
       showToast("Vui lòng chọn một sản phẩm.", "danger");
       return;
     }
 
+    if (!unit_price || Number(unit_price) <= 0) {
+      showToast("Vui lòng nhập đơn giá hợp lệ.", "danger");
+      return;
+    }
+
     const selectedOption = variantSelect.options[variantSelect.selectedIndex];
+    const productName = selectedOption.textContent;
+    const productImage = selectedOption.dataset.image || '/images/no-image.png';
+
+    // Disable button to prevent double submission
+    const addBtn = document.getElementById("add-product-btn");
+    addBtn.disabled = true;
+    addBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang thêm...';
 
     try {
       const res = await fetch(`/api/contact-form-design/${id}/details`, {
@@ -386,27 +538,171 @@
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        body: JSON.stringify({ variant_id, quantity, unit_price }),
+        body: JSON.stringify({ 
+          variant_id, 
+          quantity, 
+          unit_price: Number(unit_price)
+        }),
       });
 
       const data = await res.json();
       if (res.ok) {
         showToast("Thêm sản phẩm thành công", "success");
-        loadDesignDetails(); // Tải lại danh sách
+        
+        // Add product directly to the table without reloading
+        addProductToTable({
+          contact_form_design_detail_id: data.detailId, // Use correct field from API response
+          detail_id: data.detailId, // Alternative field name
+          id: data.detailId, // Alternative field name
+          variant_id: variant_id,
+          product_name: productName,
+          first_image: productImage,
+          quantity: quantity,
+          unit_price: Number(unit_price),
+          total_price: quantity * Number(unit_price)
+        });
+        
+        // Update totals
+        total_product_price += quantity * Number(unit_price);
+        updateTotalPrice();
+        updateProductPriceDisplay();
+        
+        // Reset form
+        resetAddProductForm();
+        
+        // Show success feedback
+        if (window.aiAssistant) {
+          window.aiAssistant.addSystemMessage(`✅ Đã thêm "${productName}" (x${quantity}) vào thiết kế thành công!`);
+        }
+        
       } else {
         showToast(data.error || "Có lỗi xảy ra", "danger");
       }
     } catch (error) {
       showToast("Không thể thêm sản phẩm", "danger");
+    } finally {
+      // Re-enable button
+      addBtn.disabled = false;
+      addBtn.innerHTML = 'Thêm';
     }
   }
 
-  async function handleRemoveProduct(detailId) {
+  // Function to add product directly to table
+  function addProductToTable(product) {
+    const tbody = document.getElementById("design-products-tbody");
+    const row = document.createElement("tr");
+    
+    // Use consistent ID field names
+    const detailId = product.contact_form_design_detail_id || product.detail_id || product.id || Date.now();
+    
+    row.dataset.id = detailId;
+    row.dataset.variantId = product.variant_id;
+    
+    row.innerHTML = `
+      <td style="white-space: nowrap; min-width: 100px;">
+        <div class="product-image-container">
+          <img src="${product.first_image}" alt="${product.product_name}" style="width: 80px; height: 35px;">
+        </div>
+      </td>
+      <td style="white-space: nowrap;">${product.product_name}</td>
+      <td style="white-space: nowrap;">${product.quantity}</td>
+      <td style="white-space: nowrap;">${formatCurrency(Number(product.unit_price))}</td>
+      <td style="white-space: nowrap;">${formatCurrency(Number(product.total_price))}</td>
+      <td>
+        <button class="btn-remove-product" onclick="handleRemoveProduct('${product.variant_id}')">
+          <i class="fas fa-trash-alt"></i>
+        </button>
+      </td>
+    `;
+    
+    // Add animation effect
+    row.style.opacity = '0';
+    row.style.transform = 'translateX(-20px)';
+    tbody.appendChild(row);
+    
+    // Animate in
+    setTimeout(() => {
+      row.style.transition = 'all 0.3s ease';
+      row.style.opacity = '1';
+      row.style.transform = 'translateX(0)';
+    }, 10);
+    
+    // Scroll to the new row
+    setTimeout(() => {
+      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+  }
+
+  // Function to reset add product form
+  function resetAddProductForm() {
+    const variantSelect = document.getElementById("variant-select");
+    const quantityInput = document.getElementById("quantity-input");
+    const priceInput = document.getElementById("unit-price-input");
+    const imageArea = document.getElementById("first_image_drop_area");
+    
+    // Reset select
+    if (variantSelect.tomselect) {
+      variantSelect.tomselect.setValue('');
+    } else {
+      variantSelect.value = '';
+    }
+    
+    // Reset other inputs
+    quantityInput.value = 1;
+    priceInput.value = '0';
+    
+    // Reset image placeholder
+    imageArea.innerHTML = `
+      <i class="far fa-image"></i>
+      <p>Drop image here, or browse</p>
+      <p class="upload-hint">jpeg, png - kích thước ngang</p>
+    `;
+  }
+
+  // Function to update product price display
+  function updateProductPriceDisplay() {
+    document.getElementById("total-product-price").textContent = 
+      total_product_price > 0 ? formatCurrency(total_product_price) : "0 VNĐ";
+  }
+
+  async function handleRemoveProduct(variantId) {
     if (!confirm("Bạn có chắc muốn xóa sản phẩm này?")) return;
+
+    // Find the row by variant_id
+    const rows = document.querySelectorAll('#design-products-tbody tr');
+    let targetRow = null;
+    let detailId = null;
+    
+    for (const row of rows) {
+      if (row.dataset.variantId === variantId) {
+        targetRow = row;
+        detailId = row.dataset.id;
+        break;
+      }
+    }
+    
+    if (!targetRow) {
+      showToast("Không tìm thấy sản phẩm để xóa", "danger");
+      return;
+    }
+    
+    // Check if detailId exists
+    if (!detailId) {
+      showToast("Lỗi: Không tìm thấy ID chi tiết thiết kế", "danger");
+      return;
+    }
+
+    // Get product info for calculation
+    const productName = targetRow.children[1].textContent;
+    const quantityText = targetRow.children[2].textContent;
+    const priceText = targetRow.children[4].textContent;
+    
+    // Parse total price
+    const totalPrice = parseFloat(priceText.replace(/[^\d]/g, '')) || 0;
 
     try {
       const res = await fetch(
-        `/api/contact-form-design/${id}/details/${detailId}`,
+        `/api/contact-form-design/${id}/details/${variantId}`,
         {
           method: "DELETE",
           headers: {
@@ -418,7 +714,26 @@
       const data = await res.json();
       if (res.ok) {
         showToast("Xóa sản phẩm thành công", "success");
-        loadDesignDetails(); // Tải lại danh sách
+        
+        // Remove from table with animation
+        targetRow.style.transition = 'all 0.3s ease';
+        targetRow.style.opacity = '0';
+        targetRow.style.transform = 'translateX(20px)';
+        
+        setTimeout(() => {
+          targetRow.remove();
+        }, 300);
+        
+        // Update totals
+        total_product_price -= totalPrice;
+        updateTotalPrice();
+        updateProductPriceDisplay();
+        
+        // Show feedback in AI assistant
+        if (window.aiAssistant) {
+          window.aiAssistant.addSystemMessage(`🗑️ Đã xóa "${productName}" khỏi thiết kế.`);
+        }
+        
       } else {
         showToast(data.error || "Có lỗi xảy ra", "danger");
       }
@@ -431,7 +746,6 @@
     const res = await fetch(`/api/contact-form-design/${id}`);
     const data = await res.json();
     if (res.ok) {
-      console.log(data);
       design_fee = data.design_fee || 0;
       document.getElementById("design_fee_text").innerHTML = data.design_fee
         ? formatCurrency(Number(data.design_fee))
@@ -616,5 +930,783 @@
     const bsToast = new bootstrap.Toast(toast, { delay: 4000 });
     bsToast.show();
     toast.addEventListener("hidden.bs.toast", () => toast.remove());
+  }
+</script>
+
+<!-- AI Design Assistant Integration -->
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  // AI Design Assistant
+  class AIDesignAssistant {
+    constructor() {
+      this.socket = null;
+      this.selectedImage = null;
+      this.isConnected = false;
+      this.currentStreamingMessage = null;
+      
+      this.initSocket();
+      this.initEventListeners();
+    }
+    
+    initSocket() {
+      // Kết nối tới Gemini 2.5 Pro namespace
+      this.socket = io('/gemini');
+      
+      this.socket.on('connect', () => {
+        this.isConnected = true;
+        this.updateStatus('Đã kết nối', true);
+        this.addSystemMessage('🤖 AI Assistant đã sẵn sàng hỗ trợ thiết kế!');
+      });
+      
+      this.socket.on('disconnect', () => {
+        this.isConnected = false;
+        this.updateStatus('Mất kết nối', false);
+      });
+      
+      this.socket.on('bot_response', (data) => {
+        this.hideTyping();
+        this.currentStreamingMessage = null;
+        
+        // Check if response contains product suggestions
+        if (data.response || data.message) {
+          const responseText = data.response || data.message;
+          this.parseAndShowProductSuggestions(responseText);
+        }
+        
+        if (!data.response && !data.message) {
+          this.addBotMessage('Xin lỗi, tôi không thể xử lý yêu cầu này.');
+        }
+      });
+      
+      this.socket.on('bot_response_chunk', (data) => {
+        if (!this.currentStreamingMessage) {
+          this.currentStreamingMessage = this.createStreamingMessage();
+        }
+        
+        this.appendToStreamingMessage(this.currentStreamingMessage, data.chunk);
+        
+        // Check for product suggestions in streaming chunks
+        if (this.currentStreamingMessage && this.currentStreamingMessage.textContent) {
+          this.parseAndShowProductSuggestions(this.currentStreamingMessage.textContent);
+        }
+      });
+      
+      this.socket.on('error_response', (data) => {
+        this.hideTyping();
+        this.currentStreamingMessage = null;
+        this.addBotMessage('❌ Lỗi: ' + (data.error || 'Có lỗi xảy ra khi xử lý yêu cầu.'));
+      });
+      
+      this.socket.on('test_response', (data) => {
+        const features = data.features ? ' (' + data.features.join(', ') + ')' : '';
+        this.addBotMessage('✅ ' + data.message + features);
+      });
+    }
+    
+    initEventListeners() {
+      // Send button
+      document.getElementById('aiSendBtn').addEventListener('click', () => {
+        this.sendMessage();
+      });
+      
+      // Enter key in textarea
+      document.getElementById('aiMessageInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          this.sendMessage();
+        }
+      });
+      
+      // Auto-resize textarea
+      document.getElementById('aiMessageInput').addEventListener('input', this.autoResizeTextarea);
+      
+      // Image upload
+      document.getElementById('aiImageInput').addEventListener('change', (e) => {
+        this.handleImageSelect(e);
+      });
+    }
+    
+    updateStatus(text, connected) {
+      const statusText = document.getElementById('aiStatusText');
+      const statusIcon = document.querySelector('.ai-status-indicator i');
+      
+      statusText.textContent = text;
+      
+      if (connected) {
+        statusIcon.classList.add('connected');
+      } else {
+        statusIcon.classList.remove('connected');
+      }
+    }
+    
+    addUserMessage(text, imageData = null) {
+      const messagesContainer = document.getElementById('aiChatMessages');
+      const messageDiv = document.createElement('div');
+      messageDiv.className = 'ai-message ai-user';
+      
+      let content = `
+        <div class="ai-message-avatar">
+          <i class="fas fa-user"></i>
+        </div>
+        <div class="ai-message-content">
+      `;
+      
+      if (imageData) {
+        content += `<img src="${imageData}" alt="Uploaded image" style="max-width: 200px; max-height: 200px; border-radius: 8px; margin-bottom: 8px;">`;
+      }
+      
+      if (text) {
+        content += `<p>${text}</p>`;
+      }
+      
+      content += `</div>`;
+      messageDiv.innerHTML = content;
+      
+      messagesContainer.appendChild(messageDiv);
+      this.scrollToBottom();
+    }
+    
+    addBotMessage(text) {
+      const messagesContainer = document.getElementById('aiChatMessages');
+      const messageDiv = document.createElement('div');
+      messageDiv.className = 'ai-message ai-bot';
+      
+      messageDiv.innerHTML = `
+        <div class="ai-message-avatar">
+          <i class="fas fa-robot"></i>
+        </div>
+        <div class="ai-message-content">
+          <p>${text.replace(/\n/g, '<br>')}</p>
+        </div>
+      `;
+      
+      messagesContainer.appendChild(messageDiv);
+      this.scrollToBottom();
+    }
+    
+    addSystemMessage(text) {
+      const messagesContainer = document.getElementById('aiChatMessages');
+      const messageDiv = document.createElement('div');
+      messageDiv.className = 'ai-message ai-bot';
+      messageDiv.style.opacity = '0.8';
+      
+      messageDiv.innerHTML = `
+        <div class="ai-message-avatar">
+          <i class="fas fa-info-circle"></i>
+        </div>
+        <div class="ai-message-content">
+          <p><em>${text}</em></p>
+        </div>
+      `;
+      
+      messagesContainer.appendChild(messageDiv);
+      this.scrollToBottom();
+    }
+    
+    createStreamingMessage() {
+      const messagesContainer = document.getElementById('aiChatMessages');
+      const messageDiv = document.createElement('div');
+      messageDiv.className = 'ai-message ai-bot';
+      
+      messageDiv.innerHTML = `
+        <div class="ai-message-avatar">
+          <i class="fas fa-robot"></i>
+        </div>
+        <div class="ai-message-content">
+          <span class="streaming-indicator">🌊 Đang nhận phản hồi...</span>
+        </div>
+      `;
+      
+      messagesContainer.appendChild(messageDiv);
+      this.scrollToBottom();
+      
+      return messageDiv.querySelector('.ai-message-content');
+    }
+    
+    appendToStreamingMessage(messageElement, chunk) {
+      if (!messageElement) return;
+      
+      // Remove streaming indicator
+      const indicator = messageElement.querySelector('.streaming-indicator');
+      if (indicator) {
+        indicator.remove();
+      }
+      
+      // Append chunk to content
+      const currentContent = messageElement.textContent || '';
+      messageElement.innerHTML = (currentContent + chunk).replace(/\n/g, '<br>');
+      this.scrollToBottom();
+    }
+    
+    showTyping() {
+      const typingIndicator = document.getElementById('aiTypingIndicator');
+      typingIndicator.style.display = 'block';
+      this.scrollToBottom();
+    }
+    
+    hideTyping() {
+      const typingIndicator = document.getElementById('aiTypingIndicator');
+      typingIndicator.style.display = 'none';
+    }
+    
+    scrollToBottom() {
+      const messagesContainer = document.getElementById('aiChatMessages');
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+    
+    handleImageSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      // Check file size (5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        this.addBotMessage('❌ File quá lớn! Vui lòng chọn ảnh nhỏ hơn 5MB.');
+        return;
+      }
+      
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        this.addBotMessage('❌ Vui lòng chọn file hình ảnh!');
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        this.selectedImage = e.target.result;
+        this.showSelectedImage();
+      };
+      reader.readAsDataURL(file);
+    }
+    
+    showSelectedImage() {
+      const selectedImageDiv = document.getElementById('aiSelectedImage');
+      const preview = document.getElementById('aiSelectedImagePreview');
+      
+      preview.src = this.selectedImage;
+      selectedImageDiv.style.display = 'flex';
+    }
+    
+    sendMessage() {
+      const messageInput = document.getElementById('aiMessageInput');
+      const message = messageInput.value.trim();
+      
+      if (!message && !this.selectedImage) {
+        messageInput.focus();
+        return;
+      }
+      
+      if (!this.isConnected) {
+        this.addBotMessage('❌ Chưa kết nối với AI Assistant. Vui lòng thử lại sau.');
+        return;
+      }
+      
+      // Add user message to chat
+      this.addUserMessage(message, this.selectedImage);
+      
+      // Show typing indicator
+      this.showTyping();
+      
+      try {
+        if (this.selectedImage) {
+          // Send image + text with specific product suggestion request
+          const imageAnalysisPrompt = message || 'Hãy phân tích bản vẽ thiết kế này và gợi ý 2 sản phẩm nội thất phù hợp nhất cho không gian. Vui lòng chỉ gợi ý tên sản phẩm cụ thể (ví dụ: "sofa", "bàn coffee", "tủ kệ TV", v.v.)';
+          
+          this.socket.emit('user_image', {
+            image: this.selectedImage,
+            message: imageAnalysisPrompt
+          });
+          
+          this.removeSelectedImage();
+        } else {
+          // Send text only with context
+          const contextMessage = this.buildContextualMessage(message);
+          
+          this.socket.emit('user_message', {
+            message: contextMessage
+          });
+        }
+        
+        // Clear input
+        messageInput.value = '';
+        this.autoResizeTextarea({ target: messageInput });
+        
+      } catch (error) {
+        this.addBotMessage('❌ Lỗi khi gửi tin nhắn. Vui lòng thử lại.');
+        this.hideTyping();
+      }
+    }
+    
+    buildContextualMessage(userMessage) {
+      // Gather context from form
+      const projectInfo = {
+        customerName: document.getElementById('name').value || 'Chưa có',
+        roomType: document.getElementById('room_name').value || 'Chưa xác định',
+        budget: document.getElementById('budget').value || 'Chưa xác định',
+        designFee: document.getElementById('design_fee').value || 'Chưa xác định',
+        description: document.getElementById('design_description').value || 'Chưa có',
+        styleRequirement: document.getElementById('style_design').value || 'Chưa có',
+        requirements: document.getElementById('require_design').value || 'Chưa có'
+      };
+      
+      const contextInfo = `
+THÔNG TIN DỰ ÁN THIẾT KẾ HIỆN TẠI:
+- Khách hàng: ${projectInfo.customerName}
+- Không gian thiết kế: ${projectInfo.roomType}
+- Ngân sách: ${projectInfo.budget}
+- Chi phí thiết kế: ${projectInfo.designFee}
+- Mô tả yêu cầu: ${projectInfo.description}
+- Phong cách thiết kế: ${projectInfo.styleRequirement}
+- Yêu cầu chi tiết: ${projectInfo.requirements}
+
+YÊU CẦU: ${userMessage}
+
+Hãy tư vấn dựa trên thông tin dự án trên và đưa ra gợi ý cụ thể cho SONA SPACE.`;
+      
+      return contextInfo;
+    }
+    
+    removeSelectedImage() {
+      this.selectedImage = null;
+      document.getElementById('aiSelectedImage').style.display = 'none';
+      document.getElementById('aiImageInput').value = '';
+    }
+    
+    autoResizeTextarea(event) {
+      const textarea = event.target;
+      textarea.style.height = 'auto';
+      textarea.style.height = Math.min(textarea.scrollHeight, 100) + 'px';
+    }
+    
+    // Parse AI response for product suggestions
+    parseAndShowProductSuggestions(responseText) {
+      // Enhanced furniture keywords with more variations
+      const furnitureKeywords = [
+        // Ghế ngồi
+        'sofa', 'ghế sofa', 'sofa góc', 'ghế bành', 'ghế thư giãn', 'ghế', 'ghế ăn', 'ghế làm việc', 'ghế bar',
+        // Bàn
+        'bàn', 'bàn trà', 'bàn coffee', 'coffee table', 'bàn ăn', 'bàn làm việc', 'bàn trang điểm', 'bàn console',
+        // Tủ kệ
+        'tủ', 'kệ', 'tủ quần áo', 'tủ tivi', 'tủ kệ tv', 'kệ sách', 'tủ giày', 'tủ bếp', 'kệ trang trí',
+        // Giường ngủ
+        'giường', 'giường ngủ', 'giường đôi', 'giường đơn', 'giường tầng',
+        // Đồ trang trí
+        'đèn', 'đèn bàn', 'đèn trần', 'đèn trang trí', 'thảm', 'thảm trải sàn', 'rèm', 'rèm cửa', 
+        'tranh', 'gương', 'gương trang trí', 'cây xanh', 'chậu cây', 'đồ trang trí', 'bình hoa',
+        // Thiết bị
+        'tivi', 'tv', 'tủ lavabo', 'lavabo', 'bồn cầu', 'vòi sen', 'bếp gas', 'bếp điện từ'
+      ];
+      
+      const foundProducts = [];
+      const lowerResponse = responseText.toLowerCase();
+      
+      // Method 1: Direct keyword matching (more flexible)
+      furnitureKeywords.forEach(keyword => {
+        const regex = new RegExp('\\b' + keyword.toLowerCase().replace(/\s+/g, '\\s*') + '\\b', 'gi');
+        if (regex.test(lowerResponse) && !foundProducts.includes(keyword)) {
+          foundProducts.push(keyword);
+        }
+      });
+      
+      // Method 2: Parse structured sections (for organized responses)
+      const sections = responseText.split(/\*\*.*?\*\*/);
+      sections.forEach((section, index) => {
+        if (section.trim()) {
+          furnitureKeywords.forEach(keyword => {
+            const regex = new RegExp('\\b' + keyword.toLowerCase().replace(/\s+/g, '\\s*') + '\\b', 'gi');
+            if (regex.test(section.toLowerCase()) && !foundProducts.includes(keyword)) {
+              foundProducts.push(keyword);
+            }
+          });
+        }
+      });
+      
+      // Method 3: Extract items from bullet points and lists
+      const bulletMatches = responseText.match(/[•\-\*]\s*\*\*(.*?)\*\*/g);
+      if (bulletMatches) {
+        bulletMatches.forEach((match, index) => {
+          const item = match.replace(/[•\-\*]\s*\*\*(.*?)\*\*/, '$1').toLowerCase();
+          furnitureKeywords.forEach(keyword => {
+            if (item.includes(keyword.toLowerCase()) && !foundProducts.includes(keyword)) {
+              foundProducts.push(keyword);
+            }
+          });
+        });
+      }
+      
+      // Remove duplicates and limit results
+      const uniqueProducts = [...new Set(foundProducts)];
+      const limitedProducts = uniqueProducts.slice(0, 8); // Increase limit to 8 products
+      
+      if (limitedProducts.length > 0) {
+        this.searchAndDisplaySuggestedProducts(limitedProducts);
+      }
+    }
+    
+    // Search for products based on AI suggestions and display them
+    async searchAndDisplaySuggestedProducts(suggestedItems) {
+      try {
+        // Clear current products and show loading
+        this.clearProductsColumn();
+        this.showProductsLoading('Đang tìm sản phẩm theo gợi ý AI...');
+        
+        // Search for multiple products in parallel for better performance
+        const searchPromises = suggestedItems.map(async (item) => {
+          try {
+            const response = await fetch(`/api/products/variants?search=${encodeURIComponent(item)}&limit=2`);
+            const data = await response.json();
+            
+            if (response.ok && data.length > 0) {
+              return data; // Return array of products
+            }
+            return [];
+          } catch (error) {
+            return [];
+          }
+        });
+        
+        // Wait for all searches to complete
+        const searchResults = await Promise.all(searchPromises);
+        
+        // Flatten and remove duplicates
+        const allMatchedProducts = searchResults.flat();
+        const uniqueProducts = allMatchedProducts.filter((product, index, self) => 
+          index === self.findIndex(p => p.variant_id === product.variant_id)
+        );
+        
+        // Limit to reasonable number for display
+        const limitedProducts = uniqueProducts.slice(0, 8);
+        
+        if (limitedProducts.length > 0) {
+          this.renderAISuggestedProducts(limitedProducts);
+          this.addSystemMessage(`🤖 Đã tìm thấy ${limitedProducts.length} sản phẩm phù hợp với bản vẽ của bạn!`);
+        } else {
+          // Fallback to random products if no matches found
+          await loadAISuggestedProducts();
+          this.addSystemMessage('🤖 Không tìm thấy sản phẩm phù hợp, hiển thị sản phẩm gợi ý khác.');
+        }
+        
+      } catch (error) {
+        await loadAISuggestedProducts(); // Fallback
+      }
+    }
+    
+    // Clear products column
+    clearProductsColumn() {
+      const container = document.getElementById('aiSuggestedProducts');
+      if (container) {
+        container.innerHTML = '';
+      }
+    }
+    
+    // Show loading state for products
+    showProductsLoading(message = 'Đang tải sản phẩm...') {
+      const container = document.getElementById('aiSuggestedProducts');
+      if (container) {
+        container.innerHTML = `
+          <div class="loading-products" style="text-align: center; padding: 20px; color: #666;">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>${message}</p>
+          </div>
+        `;
+      }
+    }
+    
+    // Render AI suggested products (using the same function but with different data)
+    renderAISuggestedProducts(products) {
+      const container = document.getElementById('aiSuggestedProducts');
+      if (!container) {
+        return;
+      }
+      
+      container.innerHTML = '';
+      
+      // Add a header for AI suggestions with count
+      const headerDiv = document.createElement('div');
+      headerDiv.className = 'ai-suggestions-header';
+      headerDiv.innerHTML = `
+        <div class="ai-header-content">
+          <i class="fas fa-robot"></i> <strong>Gợi ý từ AI (${products.length} sản phẩm)</strong>
+          <div class="ai-header-subtitle">Sản phẩm phù hợp với bản vẽ thiết kế</div>
+        </div>
+      `;
+      container.appendChild(headerDiv);
+      
+      products.forEach((product, index) => {
+        const productItem = document.createElement('div');
+        productItem.className = 'ai-product-item ai-suggested';
+        productItem.style.animationDelay = `${index * 0.1}s`; // Staggered animation
+        
+        productItem.innerHTML = `
+          <div class="product-image-container">
+            <img src="${product.first_image || '/images/no-image.png'}" 
+                 alt="${product.product_name}" 
+                 class="product-image"
+                 onerror="this.src='/images/no-image.png'">
+            <div class="ai-suggestion-badge">
+              <i class="fas fa-robot"></i> AI
+            </div>
+          </div>
+          <div class="product-info">
+            <div class="product-name" title="${product.product_name}">${product.product_name}</div>
+            <div class="product-category">${product.category_name || 'Chưa phân loại'}</div>
+            <div class="product-price">${formatCurrency(Number(product.price_sale || product.price))}</div>
+            ${product.price_sale && product.price !== product.price_sale ? 
+              `<div class="product-original-price">${formatCurrency(Number(product.price))}</div>` : ''}
+          </div>
+          <button type="button" 
+                  class="add-to-design-btn ai-suggested-btn" 
+                  onclick="addProductToDesign('${product.variant_id}', '${product.product_name.replace(/'/g, "\\'")}', '${product.first_image}', '${product.price_sale || product.price}')">
+            <i class="fas fa-plus"></i> Thêm vào thiết kế
+          </button>
+        `;
+        container.appendChild(productItem);
+      });
+    }
+  }  // End of AIDesignAssistant class
+  
+  // Global functions for quick actions
+  function removeAISelectedImage() {
+    if (window.aiAssistant) {
+      window.aiAssistant.removeSelectedImage();
+    }
+  }
+  
+  // Initialize AI Assistant when page loads
+  document.addEventListener('DOMContentLoaded', function() {
+    // Wait a bit to ensure other scripts are loaded
+    setTimeout(() => {
+      window.aiAssistant = new AIDesignAssistant();
+      loadAISuggestedProducts(); // Load suggested products
+      
+      // Also add a manual trigger for testing
+      window.debugLoadProducts = loadAISuggestedProducts;
+    }, 1000);
+  });
+
+  // Load suggested products for AI assistant
+  async function loadAISuggestedProducts() {
+    try {
+      const response = await fetch('/api/products/variants?limit=10');
+      const data = await response.json();
+      if (response.ok && data.length > 0) {
+        renderAISuggestedProducts(data);
+      } else {
+        // Show fallback products for testing
+        showFallbackProducts();
+      }
+    } catch (error) {
+      // Show fallback products on error
+      showFallbackProducts();
+    }
+  }
+  
+  // Show fallback products for testing
+  function showFallbackProducts() {
+    const container = document.getElementById('aiSuggestedProducts');
+    const loadingDiv = container.querySelector('.loading-products');
+    const fallbackDiv = container.querySelector('.fallback-products');
+    
+    if (loadingDiv) loadingDiv.style.display = 'none';
+    if (fallbackDiv) fallbackDiv.style.display = 'block';
+  }
+  
+  // Test functions for fallback products
+  function testAddProduct() {
+    if (window.aiAssistant) {
+      window.aiAssistant.addSystemMessage('🧪 Test: Đã chọn "Ghế sofa hiện đại" - đây là sản phẩm test!');
+    }
+    
+    // Simulate adding to form
+    const variantSelect = document.getElementById('variant-select');
+    const quantityInput = document.getElementById('quantity-input');
+    const priceInput = document.getElementById('unit-price-input');
+    
+    quantityInput.value = 1;
+    priceInput.value = '5000000';
+    
+    alert('Test: Đã chọn "Ghế sofa hiện đại" - giá 5,000,000 VNĐ');
+  }
+  
+  function testAddProduct2() {
+    if (window.aiAssistant) {
+      window.aiAssistant.addSystemMessage('🧪 Test: Đã chọn "Bàn coffee table" - đây là sản phẩm test!');
+    }
+    
+    // Simulate adding to form
+    const variantSelect = document.getElementById('variant-select');
+    const quantityInput = document.getElementById('quantity-input');
+    const priceInput = document.getElementById('unit-price-input');
+    
+    quantityInput.value = 1;
+    priceInput.value = '2500000';
+    
+    alert('Test: Đã chọn "Bàn coffee table" - giá 2,500,000 VNĐ');
+  }
+
+  // Render suggested products
+  function renderAISuggestedProducts(products) {
+    const container = document.getElementById('aiSuggestedProducts');
+    
+    if (!container) {
+      return;
+    }
+    
+    container.innerHTML = '';
+    
+    products.forEach((product, index) => {
+      const productItem = document.createElement('div');
+      productItem.className = 'ai-product-item';
+      productItem.innerHTML = `
+        <img src="${product.first_image || '/images/no-image.png'}" 
+             alt="${product.product_name}" 
+             class="product-image"
+             onerror="this.src='/images/no-image.png'">
+        <div class="product-info">
+          <div class="product-name">${product.product_name}</div>
+          <div class="product-category">${product.category_name || 'Chưa phân loại'}</div>
+          <div class="product-price">${formatCurrency(Number(product.price_sale || product.price))}</div>
+        </div>
+        <button type="button" 
+                class="add-to-design-btn" 
+                onclick="addProductToDesign('${product.variant_id}', '${product.product_name.replace(/'/g, "\\'")}', '${product.first_image}', '${product.price_sale || product.price}')">
+          <i class="fas fa-plus"></i> Thêm
+        </button>
+      `;
+      container.appendChild(productItem);
+    });
+  }
+
+  // Add product to design from AI suggestions
+  async function addProductToDesign(variantId, productName, image, price) {
+    try {
+      // Set the variant select value
+      const variantSelect = document.getElementById('variant-select');
+      const quantityInput = document.getElementById('quantity-input');
+      const priceInput = document.getElementById('unit-price-input');
+      const imageArea = document.getElementById('first_image_drop_area');
+      
+      // Parse price correctly - handle both string and number
+      let cleanPrice = price;
+      if (typeof price === 'string') {
+        // Remove all non-digit characters except dots
+        cleanPrice = price.replace(/[^\d]/g, "");
+      }
+      cleanPrice = Number(cleanPrice);
+      
+      // Safety check: if price is too large (> 1 billion), it might be corrupted
+      if (cleanPrice > 1000000000) {
+        cleanPrice = Math.floor(cleanPrice / 100);
+      }
+      // Set values
+      if (variantSelect.tomselect) {
+        variantSelect.tomselect.setValue(variantId);
+      } else {
+        variantSelect.value = variantId;
+      }
+      
+      quantityInput.value = 1;
+      priceInput.value = cleanPrice;
+      imageArea.innerHTML = `<img src="${image}" alt="${productName}" style="height: 30%; width: 30%;">`;
+      
+      // Auto-add the product directly
+      try {
+        const res = await fetch(`/api/contact-form-design/${id}/details`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({ 
+            variant_id: variantId, 
+            quantity: 1, 
+            unit_price: cleanPrice
+          }),
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          // Add product directly to the table
+          addProductToTable({
+            contact_form_design_detail_id: data.detail_id || Date.now(),
+            variant_id: variantId,
+            product_name: productName,
+            first_image: image,
+            quantity: 1,
+            unit_price: cleanPrice,
+            total_price: 1 * cleanPrice
+          });
+          
+          // Update totals
+          total_product_price += cleanPrice;
+          updateTotalPrice();
+          updateProductPriceDisplay();
+          
+          // Reset form
+          resetAddProductForm();
+          
+          // Show success message
+          if (window.aiAssistant) {
+            window.aiAssistant.addSystemMessage(`✅ Đã thêm "${productName}" vào thiết kế thành công!`);
+          }
+          
+          showToast(`Đã thêm "${productName}" vào thiết kế`, "success");
+          
+        } else {
+          throw new Error(data.error || 'API Error');
+        }
+      } catch (error) {
+        // Fallback: just populate the form
+        if (window.aiAssistant) {
+          window.aiAssistant.addSystemMessage(`✅ Đã chọn sản phẩm "${productName}". Bấm "Thêm" để thêm vào thiết kế!`);
+        }
+        
+        // Scroll to the add product form
+        document.querySelector('.design-products-column').scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start' 
+        });
+        
+        // Highlight the add button
+        const addBtn = document.getElementById('add-product-btn');
+        addBtn.style.background = '#28a745';
+        addBtn.style.transform = 'scale(1.05)';
+        setTimeout(() => {
+          addBtn.style.background = '';
+          addBtn.style.transform = '';
+        }, 2000);
+      }
+      
+    } catch (error) {
+      if (window.aiAssistant) {
+        window.aiAssistant.addBotMessage('❌ Có lỗi khi thêm sản phẩm vào thiết kế.');
+      }
+    }
+  }
+
+  // Enhanced quick message function with product suggestions
+  function sendQuickMessage(message) {
+    if (window.aiAssistant) {
+      // If asking for product suggestions, include room type context
+      if (message.includes('Đề xuất sản phẩm')) {
+        const roomType = document.getElementById('room_name').value || 'không gian chung';
+        const budget = document.getElementById('budget').value || 'chưa xác định';
+        const enhancedMessage = `Đề xuất 5-7 sản phẩm phù hợp cho ${roomType} với ngân sách ${budget}. Hãy giải thích lý do chọn từng sản phẩm và cách bố trí.`;
+        document.getElementById('aiMessageInput').value = enhancedMessage;
+      } else {
+        document.getElementById('aiMessageInput').value = message;
+      }
+      window.aiAssistant.sendMessage();
+    }
+  }
+  
+  // Test function for AI product suggestions
+  function testProductSuggestion() {
+    if (window.aiAssistant) {
+      // Simulate AI response with product suggestions
+      const testResponse = "Dựa trên bản vẽ, tôi gợi ý 2 sản phẩm: sofa và bàn coffee phù hợp cho phòng khách này.";
+      
+      window.aiAssistant.addBotMessage('🧪 Test: ' + testResponse);
+      window.aiAssistant.parseAndShowProductSuggestions(testResponse);
+    }
   }
 </script>

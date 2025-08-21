@@ -195,7 +195,6 @@
             // Redirect to dashboard
             window.location.href = "/dashboard";
           } catch (error) {
-            console.error("Login error:", error);
             if (loginError) {
               loginError.textContent = "Đã xảy ra lỗi. Vui lòng thử lại sau.";
               loginError.classList.remove("d-none");

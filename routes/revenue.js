@@ -133,7 +133,6 @@ router.get("/", verifyToken, isAdmin, async (req, res) => {
 
     res.json(result);
   } catch (error) {
-    console.error("Error fetching revenue:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -223,7 +222,6 @@ router.get("/user", verifyToken, isAdmin, async (req, res) => {
     const result = dateList.map((date) => resultMap[date]);
     res.json(result);
   } catch (error) {
-    console.error("Error fetching user:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });

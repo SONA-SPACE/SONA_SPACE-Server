@@ -72,10 +72,8 @@
                 .then((response) => response.json())
                 .then((data) => {
                     renderCategories(data); // data.news-categories từ API backend
-                    console.log("Danh sách bài viết danh mục:", data);
                 })
                 .catch((error) => {
-                    console.error("Lỗi khi tải danh mục:", error);
                     document.querySelector(".results-info").textContent = "Không thể tải dữ liệu.";
                 });
         }
@@ -175,7 +173,6 @@
             });
         }
 
-
         function deleteNewsCategory(id, name) {
             if (!confirm(`Bạn có chắc muốn xóa danh mục "${name}"?`)) return;
 
@@ -211,7 +208,6 @@
 
         }
 
-
         function toggleCategoryVisibility(id, newStatus) {
             const token = localStorage.getItem("token");
 
@@ -233,7 +229,6 @@
                     }
                 })
                 .catch(err => {
-                    console.error("Lỗi khi cập nhật trạng thái danh mục:", err);
                     showToast("Lỗi khi thay đổi trạng thái", "danger");
                 });
         }

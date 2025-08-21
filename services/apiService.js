@@ -13,7 +13,6 @@ const fetchData = async () => {
     });
     return response.data;
   } catch (error) {
-    console.error("Lỗi khi gọi API:", error.message);
     throw error;
   }
 };

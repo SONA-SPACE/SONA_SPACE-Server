@@ -59,7 +59,6 @@ router.post("/", async (req, res) => {
         .json({ error: "Không gửi được email. Vui lòng thử lại." });
     }
   } catch (err) {
-    console.error("Lỗi khi gửi email:", err);
     return res
       .status(500)
       .json({ error: "Đã xảy ra lỗi. Vui lòng thử lại sau." });

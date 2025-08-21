@@ -32,7 +32,6 @@ router.get("/", async (req, res) => {
     const [variants] = await db.query(query, params);
     res.json(variants);
   } catch (error) {
-    console.error("Error fetching variants:", error);
     res.status(500).json({ error: "Failed to fetch variants" });
   }
 });
@@ -94,7 +93,6 @@ router.get("/:productSlug/:colorId", async (req, res) => {
       listImage: data.variant_product_list_image,
     });
   } catch (err) {
-    console.error(err);
     return res.status(500).json({ error: "Lỗi khi lấy chi tiết biến thể" });
   }
 });
@@ -152,7 +150,6 @@ router.post("/", verifyToken, isAdmin, async (req, res) => {
       variant: newVariant[0],
     });
   } catch (error) {
-    console.error("Error creating variant:", error);
     res.status(500).json({ error: "Failed to create variant" });
   }
 });
@@ -253,7 +250,6 @@ router.post("/:productId", async (req, res) => {
       list_image: list_image,
     });
   } catch (error) {
-    console.error("[POST VARIANT] Lỗi:", error);
     res.status(500).json({
       error: "Tạo biến thể thất bại",
       detail: error.message,
@@ -430,7 +426,6 @@ router.delete("/:variantId", async (req, res) => {
         try {
           return extractPublicIdFromUrl(url);
         } catch (err) {
-          console.warn("Lỗi extract URL:", url);
           return null;
         }
       })
@@ -441,16 +436,12 @@ router.delete("/:variantId", async (req, res) => {
       publicIds.map(async (id) => {
         try {
           const result = await cloudinary.uploader.destroy(id);
-          console.log("🗑️ Đã xoá ảnh:", id, result);
           return result;
         } catch (err) {
-          console.warn("❌ Không thể xoá ảnh:", id, err.message);
           return null;
         }
       })
     );
-    console.log("🗑️ Đã xoá ảnh khỏi Cloudinary:", publicIds);
-
     // 5. Xoá biến thể
     await db.query("DELETE FROM variant_product WHERE variant_id = ?", [
       variantId,
@@ -461,7 +452,6 @@ router.delete("/:variantId", async (req, res) => {
       deletedImages: publicIds,
     });
   } catch (error) {
-    console.error("❌ Lỗi khi xoá biến thể:", error);
     res.status(500).json({
       error: "Lỗi server khi xoá biến thể",
       detail: error.message,

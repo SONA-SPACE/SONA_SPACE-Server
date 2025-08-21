@@ -68,7 +68,6 @@
     let categoryId = null;
     let oldSlug = null;
 
-
     document.addEventListener("DOMContentLoaded", async () => {
         const urlParts = window.location.pathname.split("/");
         categoryId = urlParts[urlParts.length - 1];
@@ -102,7 +101,6 @@
                 bindUpload("#avatarDropArea", (file) => (avatarFile = file));
             }
         } catch (err) {
-            console.error("Lỗi khi tải danh mục:", err);
             showToast("Không thể tải danh mục", "danger");
         }
     }
@@ -169,7 +167,6 @@
                 setTimeout(() => window.location.href = "/dashboard/Categorynews", 1000);
             }
         } catch (err) {
-            console.error("Lỗi khi cập nhật:", err);
             showToast("Có lỗi khi cập nhật danh mục", "danger");
         }
 

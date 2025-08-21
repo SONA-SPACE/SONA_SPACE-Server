@@ -9,10 +9,6 @@ exports.sendEmailFromCustomer = async (from, subject, data, templateName) => {
   try {
     htmlContent = await ejs.renderFile(templatePath, data);
   } catch (ejsError) {
-    console.error(
-      `Lỗi khi render template EJS '${templateName}.ejs':`,
-      ejsError
-    );
     throw new Error(`Không thể render template email: ${ejsError.message}`);
   }
 
@@ -35,12 +31,8 @@ exports.sendEmailFromCustomer = async (from, subject, data, templateName) => {
 
   try {
     await transporter.sendMail(mailOptions);
-    console.log(
-      `Khách hàng '${from}' đã gửi email với tiêu đề '${subject}' đến SonaSpace bằng template ${templateName}.ejs`
-    );
     return true;
   } catch (error) {
-    console.error("Lỗi khi gửi email từ khách hàng:", error);
     return false;
   }
 };

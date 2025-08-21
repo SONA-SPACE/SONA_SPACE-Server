@@ -25,7 +25,6 @@ exports.sendEmail = async (to, subject, data) => {
     await transporter.sendMail(mailOptions);
     return true;
   } catch (error) {
-    console.error("Error sending email:", error);
     return false;
   }
 };

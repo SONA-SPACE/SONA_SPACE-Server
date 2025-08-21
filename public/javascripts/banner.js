@@ -12,7 +12,6 @@ document.addEventListener("DOMContentLoaded", function () {
       const banners = await response.json();
       renderBanners(banners);
     } catch (error) {
-      console.error("Error fetching banners:", error);
       document.getElementById("banners-list").innerHTML = `
           <tr>
             <td colspan="8" class="text-center text-danger">
@@ -106,7 +105,6 @@ document.addEventListener("DOMContentLoaded", function () {
         // Hiển thị thông báo thành công
         alert("Xóa banner thành công");
       } catch (error) {
-        console.error("Error deleting banner:", error);
         alert("Đã xảy ra lỗi khi xóa banner. Vui lòng thử lại sau.");
       }
     });

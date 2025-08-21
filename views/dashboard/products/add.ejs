@@ -177,7 +177,6 @@
       }
     }
 
-
     if (!feedbackEl && (element.classList.contains("variant-image-grid") || element.id === "mainImageUpload")) {
 
       let existingSiblingFeedback = element.nextElementSibling;
@@ -223,7 +222,6 @@
       feedbackEl.style.display = "none"; // Ẩn nó đi
     }
   }
-
 
   let mainImageInput;
   let mainImageUpload;
@@ -276,7 +274,6 @@
       const data = await res.json();
       return data.url || null;
     } catch (error) {
-      console.error("Error uploading image:", error);
       showToast("Lỗi khi tải ảnh lên: " + error.message, "danger");
       return null;
     }
@@ -304,7 +301,6 @@
   ) {
     const select = document.getElementById(selectId);
     if (!select) {
-      console.warn(`Select element with ID '${selectId}' not found.`);
       return;
     }
 
@@ -331,7 +327,6 @@
           )
           .join("");
     } catch (error) {
-      console.error(`Error loading ${selectId}:`, error);
       select.innerHTML = `<option value="">Lỗi tải dữ liệu</option>`;
       showToast(
         `Lỗi khi tải dữ liệu cho ${placeholder}: ${error.message}`,
@@ -391,7 +386,6 @@
           }, 50);
         });
     } catch (error) {
-      console.error("Error loading colors:", error);
       showToast("Lỗi khi tải dữ liệu màu sắc", "danger");
     }
   }
@@ -413,7 +407,6 @@
       }
       allMaterials = materials;
     } catch (error) {
-      console.error("Error loading all materials:", error);
       showToast("Lỗi khi tải danh sách chất liệu.", "danger");
     }
   }
@@ -423,11 +416,8 @@
     dynamicAttributesContainer.innerHTML = ""; // Clear existing attributes
 
     if (!categoryId) {
-      console.log("No category ID provided for loading attributes.");
       return;
     }
-
-    console.log("Loading category attributes for category ID:", categoryId);
     try {
       const response = await fetch(`/api/attribute/${categoryId}/attributes`);
       if (!response.ok) {
@@ -437,10 +427,7 @@
         );
       }
       const attributes = await response.json();
-      console.log("API response for category attributes:", attributes);
-
       if (!attributes || !Array.isArray(attributes) || attributes.length === 0) {
-        console.log("No attributes found for this category.");
         // showToast("Không tìm thấy thuộc tính cho danh mục này.", "info"); // Removed this toast for cleaner UX
         return;
       }
@@ -500,13 +487,10 @@
       });
 
       dynamicAttributesContainer.innerHTML = formRowsHtml;
-      console.log("Dynamic attributes container updated.");
     } catch (error) {
-      console.error("Error loading category attributes:", error);
       showToast("Lỗi khi tải thuộc tính danh mục: " + error.message, "danger");
     }
   }
-
 
   // Khởi tạo form
   async function initializeForm() {
@@ -550,12 +534,8 @@
           loadCategoryAttributes(productCategorySelect.value);
         }
       } else {
-        console.warn(
-          "Element with ID 'productCategory' not found during initialization."
-        );
       }
     } catch (error) {
-      console.error("Error initializing form:", error);
       showToast("Lỗi khởi tạo form", "danger");
     }
   }
@@ -706,7 +686,6 @@
     const imageGrid = variantElement.querySelector(".variant-image-grid");
     const maxImages = 7;
 
-
     if (typeof variantElement._imageCount === "undefined") {
       variantElement._imageCount = 0;
     } else {
@@ -715,7 +694,6 @@
         ".variant-image-item.loaded"
       ).length;
     }
-
 
     function createImageBox() {
       const div = document.createElement("div");
@@ -729,14 +707,11 @@
       return div;
     }
 
-
     function setupImageBox(imageBox) {
       const input = imageBox.querySelector('input[type="file"]');
       const placeholder = imageBox.querySelector(".upload-placeholder");
 
-
       imageBox.addEventListener("click", () => input.click());
-
 
       input.addEventListener("change", function (e) {
         const file = e.target.files[0];
@@ -764,7 +739,6 @@
               e.stopPropagation();
               imageBox.remove();
 
-
               if (
                 imageGrid.querySelectorAll(".variant-image-item.active")
                   .length === 0 &&
@@ -788,7 +762,6 @@
               setupImageBox(newBox);
             }
 
-
             if (imageGrid.classList.contains("is-invalid")) {
               imageGrid.classList.remove("is-invalid");
               const feedback = imageGrid.nextElementSibling;
@@ -802,10 +775,8 @@
       });
     }
 
-
     imageGrid.innerHTML = "";
     variantElement._imageCount = 0;
-
 
     const firstBox = createImageBox();
     imageGrid.appendChild(firstBox);
@@ -848,7 +819,6 @@
         });
       }
     } else {
-      console.warn("Main image upload elements not found.");
     }
   }
 
@@ -862,7 +832,6 @@
         productSlugInput.value = slug;
       });
     } else {
-      console.warn("Product name or slug input not found.");
     }
   }
 
@@ -898,7 +867,6 @@
       hasErrors = true;
     }
 
-
     if (hasErrors) {
       return;
     }
@@ -910,7 +878,7 @@
       is_required,
     };
 
-    console.log("Attempting to save new attribute:", payload); // Log payload
+     // Log payload
     try {
       const response = await fetch(`/api/attribute/${selectedCategoryId}`, {
         method: "POST",
@@ -921,21 +889,17 @@
       });
 
       const addAttributeRes = await response.json();
-      console.log("API response for saving new attribute:", addAttributeRes); // Log API response
+       // Log API response
 
       if (response.ok && addAttributeRes && addAttributeRes.success) {
         showToast(`Đã thêm thuộc tính mới: ${attribute_name}`, "success");
         rowElement.remove(); // Remove the new attribute row from the DOM
-        console.log("New attribute saved successfully, removing row and reloading category attributes.");
         // Reload dynamic attributes to show the newly added one
         await loadCategoryAttributes(selectedCategoryId, []);
-        console.log("Category attributes reloaded.");
       } else {
         showToast(addAttributeRes?.message || "Không thể thêm thuộc tính mới.", "danger");
-        console.error("Failed to save new attribute:", addAttributeRes);
       }
     } catch (error) {
-      console.error("Lỗi khi thêm thuộc tính mới:", error);
       showToast(`Lỗi khi thêm thuộc tính '${attribute_name}': ${error.message}`, "danger");
     }
   }
@@ -1108,7 +1072,6 @@
         }
       }
 
-
       if (input.hasAttribute("required") && (value === null || value === "" || material_id === null || material_id === "")) {
         addValidationError(input, `Thông tin ${input.previousElementSibling.textContent.replace('<span class="required-asterisk">*</span>', '').trim()} là bắt buộc.`);
       }
@@ -1121,9 +1084,6 @@
         });
       }
     });
-
-
-
 
     const variantElements = [
       ...document.querySelectorAll(".variant-item"),
@@ -1314,7 +1274,6 @@
       });
     }
 
-
     try {
       const res = await fetch(`/api/products/add`, {
         method: "POST",
@@ -1498,7 +1457,6 @@
         window.location.href = "/dashboard/products";
       }, 1000);
     } catch (error) {
-      console.error(error);
       showToast("Lỗi khi kết nối đến máy chủ: " + error.message, "danger");
 
       saveButton.textContent = originalButtonText;

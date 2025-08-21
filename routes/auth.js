@@ -23,7 +23,6 @@ async function verifyGoogleToken(token) {
 
     return payload;
   } catch (error) {
-    console.error("verifyGoogleToken error:", error);
     throw new Error("Token Google không hợp lệ!");
   }
 }
@@ -130,8 +129,6 @@ router.post("/register", async (req, res) => {
     );
 
     if (!emailSent) {
-      console.error("Không thể gửi email xác thực:", normalizedEmail);
-
       // Gỡ token khỏi DB vì chưa gửi được email
       await db.query("UPDATE user SET user_token = NULL WHERE user_id = ?", [
         userId,
@@ -160,7 +157,6 @@ router.post("/register", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Lỗi khi đăng ký:", error);
     res.status(500).json({ error: "Lỗi máy chủ. Vui lòng thử lại sau." });
   }
 });
@@ -240,7 +236,6 @@ router.get("/verify-email", async (req, res) => {
         encodeURIComponent("Email của bạn đã được xác thực thành công!")
     );
   } catch (error) {
-    console.error("Lỗi xác thực email:", error);
     return res.redirect(
       `${frontendBaseUrl}/xac-thuc-email?status=error&message=` +
         encodeURIComponent(
@@ -324,14 +319,12 @@ router.post("/google-login", async (req, res) => {
       user,
     });
   } catch (error) {
-    console.error("Lỗi khi đăng nhập với Google:", error);
     res.status(500).json({
       success: false,
       error: "Lỗi máy chủ trong quá trình đăng nhập.",
     });
   }
 });
-
 
 /**
  * @route   POST /api/auth/login
@@ -409,7 +402,6 @@ router.post("/login", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Lỗi đăng nhập:", error);
     res.status(500).json({ error: "Lỗi máy chủ trong quá trình đăng nhập." });
   }
 });
@@ -442,7 +434,6 @@ router.get("/profile", verifyToken, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Profile fetch error:", error);
     res.status(500).json({ error: "Server error while fetching profile" });
   }
 });
@@ -492,7 +483,6 @@ router.post("/change-password", verifyToken, async (req, res) => {
         user.user_password
       );
     } catch (err) {
-      console.log("Password is not bcrypt hashed, doing direct comparison");
     }
 
     // Nếu bcrypt không thành công, thử so sánh trực tiếp
@@ -513,7 +503,6 @@ router.post("/change-password", verifyToken, async (req, res) => {
       const salt = await bcrypt.genSalt(10);
       hashedNewPassword = await bcrypt.hash(newPassword, salt);
     } catch (error) {
-      console.error("Error hashing password:", error);
       // Nếu không thể hash, sử dụng mật khẩu gốc (chỉ cho mục đích test)
       hashedNewPassword = newPassword;
     }
@@ -529,7 +518,6 @@ router.post("/change-password", verifyToken, async (req, res) => {
       user_id: req.user.id,
     });
   } catch (error) {
-    console.error("Change password error:", error);
     res.status(500).json({ error: "Server error during password change" });
   }
 });
@@ -578,7 +566,6 @@ router.post("/admin-login", async (req, res) => {
     try {
       isPasswordValid = await bcrypt.compare(password, user.user_password);
     } catch (err) {
-      console.log("Password is not bcrypt hashed, doing direct comparison");
     }
 
     if (!isPasswordValid) {
@@ -617,9 +604,7 @@ router.post("/admin-login", async (req, res) => {
         "UPDATE user SET user_token = ?, updated_at = NOW() WHERE user_id = ?",
         [token, user.user_id]
       );
-      console.log("Token đã được lưu vào database cho user_id:", user.user_id);
     } catch (dbError) {
-      console.error("Lỗi khi lưu token vào database:", dbError);
       // Tiếp tục xử lý đăng nhập ngay cả khi không thể lưu token vào database
     }
 
@@ -634,7 +619,6 @@ router.post("/admin-login", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Admin login error:", error);
     res.status(500).json({ error: "Lỗi server khi đăng nhập" });
   }
 });
@@ -680,7 +664,6 @@ router.get("/check-token", verifyToken, async (req, res) => {
       updated_at: user.updated_at,
     });
   } catch (error) {
-    console.error("Lỗi khi kiểm tra token:", error);
     res.status(500).json({ error: "Lỗi server khi kiểm tra token" });
   }
 });
@@ -703,7 +686,6 @@ router.post("/logout", verifyToken, async (req, res) => {
 
     res.json({ message: "Đăng xuất thành công" });
   } catch (error) {
-    console.error("Lỗi khi đăng xuất:", error);
     res.status(500).json({ error: "Lỗi server khi đăng xuất" });
   }
 });
@@ -800,13 +782,11 @@ router.post("/send-otp", async (req, res) => {
           "Mã OTP đã được gửi đến email của bạn. Vui lòng kiểm tra hộp thư đến và cả thư mục spam.",
       });
     } else {
-      console.error("Lỗi khi gửi email OTP:", email);
       return res
         .status(500)
         .json({ error: "Lỗi máy chủ khi gửi mã OTP. Vui lòng thử lại sau." });
     }
   } catch (error) {
-    console.error("Lỗi gửi mã OTP:", error);
     res
       .status(500)
       .json({ error: "Lỗi máy chủ nội bộ. Vui lòng thử lại sau." });
@@ -909,7 +889,6 @@ router.post("/verify-otp", async (req, res) => {
       resetToken: resetToken,
     });
   } catch (error) {
-    console.error("Lỗi xác thực OTP:", error);
     res
       .status(500)
       .json({ error: "Lỗi máy chủ nội bộ. Vui lòng thử lại sau." });
@@ -950,7 +929,6 @@ router.post("/reset-password", async (req, res) => {
 
     res.json({ message: "Mật khẩu đã được cập nhật thành công." });
   } catch (err) {
-    console.error("Lỗi đặt lại mật khẩu:", err);
     res.status(500).json({ error: "Lỗi máy chủ nội bộ." });
   }
 });

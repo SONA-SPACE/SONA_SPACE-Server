@@ -113,7 +113,6 @@
     return data.url || null;
   }
 
-
   async function handleSaveCategory() {
     const name = document.getElementById("categoryName").value.trim();
     const slug = document.getElementById("categorySlug").value.trim();
@@ -163,7 +162,6 @@
         }, 1500);
       }
     } catch (err) {
-      console.error("Error:", err);
       showToast("Có lỗi khi tạo danh mục", "danger");
       saveBtn.disabled = false;
       saveBtn.innerText = "Lưu";

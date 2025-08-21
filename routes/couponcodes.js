@@ -17,7 +17,6 @@ router.get('/', verifyToken, isAdmin, async (req, res) => {
 
     res.json(coupons);
   } catch (error) {
-    console.error('Error fetching coupon codes:', error);
     res.status(500).json({ error: 'Failed to fetch coupon codes' });
   }
 });
@@ -44,7 +43,6 @@ router.get('/notification', verifyToken, async (req, res) => {
 
     res.status(200).json(rows);
   } catch (error) {
-    console.error("Lỗi lấy thông báo:", error);
     res.status(500).json({ error: "Lỗi server khi lấy thông báo" });
   }
 });
@@ -72,7 +70,6 @@ router.patch('/notification/read/:id', verifyToken, async (req, res) => {
 
     res.status(200).json({ message: 'Đã đánh dấu là đã đọc' });
   } catch (error) {
-    console.error('Lỗi đánh dấu đã đọc:', error);
     res.status(500).json({ message: 'Lỗi server khi đánh dấu đã đọc' });
   }
 });
@@ -108,7 +105,6 @@ router.get('/user-has-coupon', verifyToken, async (req, res) => {
 
     res.json(rows);
   } catch (error) {
-    console.error('Lỗi khi gọi user-has-coupon:', error);
     res.status(500).json({ error: 'Failed to fetch user coupons' });
   }
 });
@@ -155,7 +151,6 @@ router.get('/codes', verifyToken, async (req, res) => {
 
     res.json(rows);
   } catch (error) {
-    console.error('Error fetching coupon codes:', error);
     res.status(500).json({ error: 'Failed to fetch coupons' });
   }
 });
@@ -182,7 +177,6 @@ router.get('/admin', verifyToken, async (req, res) => {
     `);
     res.json(rows);
   } catch (error) {
-    console.error('Error fetching public coupon codes:', error);
     res.status(500).json({ error: 'Failed to fetch public coupons' });
   }
 });
@@ -217,7 +211,6 @@ router.get('/userCoupon', verifyToken, async (req, res) => {
 
     res.json(rows);
   } catch (error) {
-    console.error('Error fetching user vouchers:', error);
     res.status(500).json({ error: 'Failed to fetch user vouchers' });
   }
 });
@@ -264,7 +257,6 @@ router.get('/:id', verifyToken, isAdmin, async (req, res) => {
 
     res.json({ ...coupon, user_ids });
   } catch (error) {
-    console.error('Error fetching coupon code by ID:', error);
     res.status(500).json({ error: 'Failed to fetch coupon code' });
   }
 });
@@ -284,7 +276,6 @@ router.post("/mark-all-read", verifyToken, async (req, res) => {
       updatedRows: result.affectedRows,
     });
   } catch (error) {
-    console.error("Lỗi đánh dấu thông báo đã đọc:", error);
     res.status(500).json({
       success: false,
       message: "Lỗi máy chủ",
@@ -340,7 +331,6 @@ router.post('/', verifyToken, isAdmin, async (req, res) => {
     if (status === undefined) {
       return res.status(400).json({ error: 'Vui lòng chọn trạng thái' });
     }
-
 
     if (used !== undefined && (isNaN(used) || Number(used) <= 0)) {
       return res.status(400).json({ error: 'Lượt sử dụng không hợp lệ' });
@@ -480,7 +470,6 @@ router.post('/', verifyToken, isAdmin, async (req, res) => {
     res.status(201).json({ message: 'Tạo voucher thành công', coupon: newCoupon[0] });
 
   } catch (error) {
-    console.error('Error creating coupon code:', error);
     res.status(500).json({ error: 'Lỗi khi tạo voucher' });
   }
 });
@@ -511,7 +500,6 @@ router.put('/:id/status', verifyToken, isAdmin, async (req, res) => {
 
     res.json({ message: 'Cập nhật trạng thái thành công', newStatus: Number(status) });
   } catch (error) {
-    console.error('Lỗi cập nhật trạng thái voucher:', error);
     res.status(500).json({ error: 'Lỗi máy chủ khi cập nhật trạng thái voucher' });
   }
 });
@@ -673,11 +661,9 @@ router.put('/:id', verifyToken, isAdmin, async (req, res) => {
 
     }
 
-
     const [updated] = await db.query('SELECT * FROM couponcode WHERE couponcode_id = ?', [id]);
     res.json({ message: 'Cập nhật voucher thành công', coupon: updated[0] });
   } catch (error) {
-    console.error('Error updating coupon code:', error);
     res.status(500).json({ error: 'Lỗi máy chủ khi cập nhật voucher' });
   }
 });
@@ -704,7 +690,6 @@ router.delete('/notification/:id', verifyToken, async (req, res) => {
 
     res.json({ message: 'Đã xoá thông báo thành công' });
   } catch (error) {
-    console.error('Lỗi khi xoá thông báo:', error);
     res.status(500).json({ error: 'Lỗi server khi xoá thông báo' });
   }
 });
@@ -726,11 +711,9 @@ router.delete('/:id', verifyToken, isAdmin, async (req, res) => {
 
     res.json({ message: 'Xóa mã giảm giá thành công' });
   } catch (error) {
-    console.error('Error deleting coupon code:', error);
     res.status(500).json({ error: 'Không xóa được mã giảm giá' });
   }
 });
-
 
 /**
  * @route   POST /api/couponcodes/validate
@@ -751,12 +734,9 @@ router.post('/validate', verifyToken, async (req, res) => {
   WHERE c.code = ? AND uhc.user_id = ? 
 `, [code, req.user.id]);
 
-
-
     if (coupons.length === 0) {
       return res.status(404).json({ error: 'Mã giảm giá không tồn tại' });
     }
-
 
     const coupon = coupons[0];
     const now = new Date();
@@ -820,8 +800,6 @@ router.post('/validate', verifyToken, async (req, res) => {
       discountAmount = Math.min(cart_total, value);
     }
 
-
-
     res.json({
       valid: true,
       coupon: {
@@ -840,13 +818,8 @@ router.post('/validate', verifyToken, async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Lỗi mã giảm giá:', error);
     res.status(500).json({ error: 'Không xác thực được mã  giảm giá' });
   }
 });
-
-
-
-
 
 module.exports = router; 

@@ -94,8 +94,6 @@
     try {
       const res = await fetch(`/api/news/${slug}`);
       const data = await res.json();
-      console.log(data);
-
       if (data) {
         document.getElementById("newsTitle").value = data.news_title || "";
         document.getElementById("newsSlug").value = data.news_slug || "";
@@ -116,7 +114,6 @@
         }
       }
     } catch (err) {
-      console.error("Lỗi tải tin tức:", err);
       showToast("Không thể tải tin tức", "danger");
     }
   }
@@ -296,7 +293,6 @@
         setTimeout(() => (window.location.href = "/dashboard/news"), 1000);
       }
     } catch (err) {
-      console.error("Error:", err);
       showToast("Có lỗi khi cập nhật tin tức", "danger");
     }
 
@@ -318,7 +314,6 @@
         select.appendChild(option);
       });
     } catch (err) {
-      console.error("Lỗi tải danh mục:", err);
       showToast("Không thể tải danh mục", "danger");
     }
   }

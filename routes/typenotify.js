@@ -61,7 +61,6 @@ router.put("/:id/status", async (req, res) => {
 
     res.json({ message: "Cập nhật trạng thái thành công" });
   } catch (err) {
-    console.error("Lỗi khi cập nhật trạng thái:", err);
     res.status(500).json({ error: "Lỗi khi cập nhật trạng thái" });
   }
 });
@@ -102,11 +101,8 @@ router.delete("/:id", async (req, res) => {
     await db.execute("DELETE FROM notification_types WHERE id = ?", [id]);
     res.json({ message: "Xóa thành công" });
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: "Lỗi khi xóa loại thông báo" });
   }
 });
-
-
 
 module.exports = router; 

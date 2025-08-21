@@ -32,7 +32,6 @@
           <textarea id="notifyContent" class="form-control" placeholder="Nhập nội dung"></textarea>
         </div>
 
-
       </div>
 
       <div class="form-row">
@@ -59,7 +58,6 @@
     </div>
   </div>
 </div>
-
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
@@ -96,7 +94,6 @@ document.addEventListener("DOMContentLoaded", () => {
         showToast(data.error || "Lỗi tạo thông báo", "danger");
       }
     } catch (err) {
-      console.error("Lỗi:", err);
       showToast("Lỗi máy chủ", "danger");
     }
   });

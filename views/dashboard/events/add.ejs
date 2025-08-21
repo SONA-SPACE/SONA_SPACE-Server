@@ -109,7 +109,6 @@
             { id: "eventStatus", msgId: "statusValidationMessage" }
         ];
 
-
         requiredInputs.forEach(field => {
             const inputElement = document.getElementById(field.id);
             const msgElement = document.getElementById(field.msgId);
@@ -145,8 +144,6 @@
             autoUpdateStatus();
         });
 
-
-
         function autoUpdateStatus() {
             const startDate = startDateInput.value;
             const endDate = document.getElementById("endDate").value;
@@ -173,7 +170,6 @@
             }
         }
 
-
         const handleFileSelection = (file) => {
             if (!file) return;
 
@@ -190,7 +186,6 @@
             uploadedFile = file;
             renderLocalPreviewImage(file);
         };
-
 
         imageDropArea.addEventListener("click", () => {
             const fileInput = document.createElement("input");
@@ -223,10 +218,8 @@
             handleFileSelection(e.dataTransfer.files[0]);
         });
 
-
         createEventBtn.addEventListener("click", handleCreateEvent);
     });
-
 
     function renderLocalPreviewImage(file) {
         const container = document.getElementById("previewImageContainer");
@@ -258,8 +251,6 @@
         fileInput.click();
     }
 
-
-
     function removeUploadedImage() {
         if (uploadedFile) {
             URL.revokeObjectURL(document.querySelector("#previewImageContainer img").src); // Clean up the object URL
@@ -268,7 +259,6 @@
         document.getElementById("previewImageContainer").innerHTML = "";
         document.getElementById("initialUploadPlaceholder").style.display = 'flex'; // Show placeholder again
     }
-
 
     async function handleCreateEvent() {
         const createEventBtn = document.getElementById("createEventBtn");
@@ -282,7 +272,6 @@
         const end_date = document.getElementById("endDate").value;
         const display_order = parseInt(document.getElementById("displayOrder").value) || 0;
         const status = document.getElementById("eventStatus").value;
-
 
         const requiredFields = [
             { id: "eventTitle", msgId: "titleValidationMessage" },
@@ -327,7 +316,6 @@
             return;
         }
 
-
         // Date order validation
         if (new Date(start_date) >= new Date(end_date)) {
             showToast("Ngày kết thúc phải sau ngày bắt đầu.", "danger");
@@ -337,7 +325,6 @@
             createEventBtn.innerText = "Thêm mới";
             return;
         }
-
 
         let finalImageUrl = "";
         if (uploadedFile) {
@@ -361,7 +348,6 @@
                     throw new Error(uploadData.error?.message || "Lỗi khi tải ảnh lên Cloudinary.");
                 }
             } catch (uploadErr) {
-                console.error("Upload image failed during submission:", uploadErr);
                 showToast(uploadErr.message || "Lỗi upload ảnh.", "danger");
                 createEventBtn.disabled = false;
                 createEventBtn.innerText = "Thêm mới";
@@ -406,7 +392,6 @@
                 showToast(data.message || "Lỗi khi tạo sự kiện.", "danger");
             }
         } catch (apiError) {
-            console.error("Error creating event:", apiError);
             showToast("Lỗi kết nối hoặc hệ thống khi tạo sự kiện.", "danger");
         } finally {
             createEventBtn.disabled = false;

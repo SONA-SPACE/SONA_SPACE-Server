@@ -102,7 +102,6 @@
         }
     }
 
-
     document.getElementById("addMaterialForm").addEventListener("submit", async function (e) {
         e.preventDefault();
 
@@ -155,11 +154,9 @@
                 return;
             }
 
-
             showToast("Thêm vật liệu thành công!");
             window.location.href = "/dashboard/material";
         } catch (error) {
-            console.error("Lỗi kết nối:", error);
             showToast("Không thể kết nối đến máy chủ.");
         }
     });

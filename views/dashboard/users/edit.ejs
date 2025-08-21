@@ -162,7 +162,6 @@
                 const userData = JSON.parse(storedUser);
                 currentUserRole = userData.role;
             } catch (e) {
-                console.error('Lỗi khi phân tích dữ liệu người dùng từ localStorage:', e);
             }
         }
 
@@ -184,7 +183,6 @@
                 }
             }
         } else {
-            console.warn("Lỗi: Không tìm thấy một hoặc nhiều phần tử điều khiển quyền người dùng.");
         }
 
         try {
@@ -228,7 +226,6 @@
             document.getElementById('userVerifiedAt').value = user.verified_at ? new Date(user.verified_at).toLocaleString('vi-VN') : '';
             document.getElementById('userDisabledAtDisplay').value = user.disabled_at ? new Date(user.disabled_at).toLocaleString('vi-VN') : '';
 
-
             if (currentImageUrl) {
                 renderImagePreview(currentImageUrl);
             } else {
@@ -236,7 +233,6 @@
             }
 
         } catch (err) {
-            console.error('Lỗi khi tải dữ liệu người dùng:', err);
             showToast('Không thể tải dữ liệu người dùng: ' + err.message, 'danger');
         }
     });
@@ -296,11 +292,9 @@
                 isRemoveImage = false;
                 document.dispatchEvent(new Event('DOMContentLoaded'));
             } else {
-                console.error('Lỗi phản hồi từ server:', result);
                 showToast(result.error || 'Cập nhật thất bại', 'danger');
             }
         } catch (err) {
-            console.error('Lỗi khi gửi dữ liệu:', err);
             showToast('Có lỗi xảy ra khi gửi dữ liệu: ' + err.message, 'danger');
         } finally {
             submitBtn.disabled = false;

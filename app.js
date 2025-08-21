@@ -4,15 +4,10 @@ const result = dotenv.config();
 
 // Log environment loading status
 if (result.error) {
-  console.warn("Warning: .env file not found or cannot be read.");
 } else {
-  console.log("Environment variables loaded from .env file");
 }
 
 // Log important environment variables for debugging
-console.log("Environment:", process.env.NODE_ENV || "development");
-console.log("Port:", process.env.PORT || "3501");
-
 var createError = require("http-errors");
 var express = require("express");
 var cors = require("cors");
@@ -175,14 +170,11 @@ app.use("/api/chat", chatRouter);
 app.use("/api/contact-forms", contactFormsRouter);
 
 app.use(function (req, res, next) {
-  console.warn("Route not found:", req.method, req.originalUrl);
   next(createError(404));
 });
 
 app.use(function (err, req, res, next) {
   // Log the error for server-side debugging
-  console.error(err);
-
   // Return JSON error response for API requests
   if (req.path.startsWith("/api/")) {
     return res.status(err.status || 500).json({

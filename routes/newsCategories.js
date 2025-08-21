@@ -56,7 +56,6 @@ router.get("/", async (req, res) => {
 
     res.json(results);
   } catch (error) {
-    console.error("Error fetching categories:", error);
     res.status(500).json({ error: "Failed to fetch categories" });
   }
 });
@@ -107,7 +106,6 @@ router.get("/:slug", async (req, res) => {
       status: category.news_category_status,
     });
   } catch (err) {
-    console.error("Lỗi khi truy vấn danh mục:", err);
     res.status(500).json({ error: "Lỗi máy chủ." });
   }
 });
@@ -183,7 +181,6 @@ router.post("/", verifyToken, isAdmin, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Lỗi khi tạo danh mục:", error);
     res.status(500).json({ error: "Lỗi máy chủ khi tạo danh mục" });
   }
 });
@@ -213,12 +210,9 @@ router.put("/:id/status", verifyToken, isAdmin, async (req, res) => {
 
     res.json({ message: "Cập nhật trạng thái danh mục thành công." });
   } catch (err) {
-    console.error("Lỗi cập nhật trạng thái danh mục:", err);
     res.status(500).json({ error: "Không thể cập nhật trạng thái. Vui lòng thử lại." });
   }
 });
-
-
 
 /**
  * @route   PUT /api/news-categories/:id
@@ -285,7 +279,6 @@ router.put("/:slug", verifyToken, isAdmin, async (req, res) => {
 
     res.json({ message: "Cập nhật danh mục thành công." });
   } catch (err) {
-    console.error("Lỗi cập nhật danh mục:", err);
     res
       .status(500)
       .json({ error: "Không thể cập nhật danh mục. Vui lòng thử lại." });
@@ -333,7 +326,6 @@ router.delete("/:id", verifyToken, isAdmin, async (req, res) => {
 
     res.json({ message: "Xoá danh mục thành công" });
   } catch (error) {
-    console.error("Error deleting category:", error);
     res.status(500).json({ error: "Không thể xoá danh mục" });
   }
 });
@@ -365,7 +357,6 @@ router.get("/news/:slug", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching news:", error);
     res.status(500).json({ error: "Failed to fetch news" });
   }
 });

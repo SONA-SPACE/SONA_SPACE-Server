@@ -298,7 +298,6 @@
                 }
                 // Nếu existingAttr.value rỗng nhưng material_id có giá trị số (trường hợp backend lưu sai)
                 else if (existingAttr.material_id !== null && existingAttr.material_id !== '' && !isNaN(parseFloat(existingAttr.material_id))) {
-                  console.warn(`Backend inconsistency: Attribute ${attrMeta.attribute_name} (ID: ${attrMeta.attribute_id}) is number type but 'value' is null while 'material_id' has a value. Using material_id as fallback.`);
                   inputElement.value = parseFloat(existingAttr.material_id);
                 } else {
                   inputElement.value = ''; // Nếu cả hai đều rỗng hoặc không hợp lệ
@@ -313,7 +312,6 @@
         }
       });
     } catch (error) {
-      console.error("Lỗi khi tải thuộc tính động:", error);
       showToast("Lỗi khi tải thông tin bổ sung cho danh mục này.", "danger");
     }
   }
@@ -332,7 +330,6 @@
       const publicId = extractPublicIdFromUrl(mainImagePreview.src);
       if (publicId) {
         removedImages.push(publicId);
-        console.log("Đã đánh dấu xóa ảnh chính:", publicId);
       }
       mainImagePreview.src = "";
       mainImageContainer.style.display = "none";
@@ -374,8 +371,6 @@
         product.category_id,
         data.rooms?.map((r) => r.room_id)
       );
-
-      console.log("Dữ liệu thuộc tính sản phẩm nhận được từ backend:", product.attributes);
       await loadDynamicAttributes(product.category_id, product.attributes);
 
       if (product.main_image) {
@@ -429,7 +424,6 @@
         setupVariantEvents(clone);
       });
     } catch (err) {
-      console.error("Lỗi load sản phẩm:", err);
       showToast("Không thể tải sản phẩm", "danger");
     }
   }
@@ -479,7 +473,6 @@
         )
         .join("");
     } catch (error) {
-      console.error("Lỗi khi tải select boxes:", error);
       showToast(
         "Lỗi khi tải thông tin danh mục / phòng / màu sắc / chất liệu ",
         "danger"
@@ -543,7 +536,6 @@
           const publicId = extractPublicIdFromUrl(imgUrl);
           if (publicId) {
             removedImages.push(publicId);
-            console.log("Đã đánh dấu xóa ảnh biến thể:", publicId);
           }
         }
         loadedBox.remove();
@@ -592,10 +584,6 @@
           const publicId = extractPublicIdFromUrl(imgUrl);
           if (publicId) {
             removedImages.push(publicId);
-            console.log(
-              "Đã đánh dấu xóa ảnh biến thể:",
-              publicId
-            );
           }
           imgBox.remove();
           if (
@@ -657,8 +645,6 @@
       unit,
       is_required,
     };
-
-    console.log("Đang cố gắng lưu thuộc tính mới:", payload);
     try {
       const rawRes = await fetch(`/api/attribute/${selectedCategoryId}`, {
         method: "POST",
@@ -668,7 +654,6 @@
       const contentType = rawRes.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
         const errorText = await rawRes.text();
-        console.error("Không phải JSON:", errorText);
         showToast("Phản hồi không hợp lệ từ server.", "danger");
         return;
       }
@@ -680,11 +665,9 @@
         await loadDynamicAttributes(selectedCategoryId, []);
       } else {
         showToast(addAttributeRes?.message || "Không thể thêm thuộc tính mới.", "danger");
-        console.error("Lỗi khi lưu thuộc tính mới:", addAttributeRes);
       }
 
     } catch (error) {
-      console.error("Lỗi khi thêm thuộc tính mới:", error);
       showToast(`Lỗi khi thêm thuộc tính '${attribute_name}': ${error.message}`, "danger");
     }
   }
@@ -800,13 +783,10 @@
           `Xoá biến thể ${variantId} thất bại: ` + (result.error || ""),
           "danger"
         );
-        console.error("Lỗi xoá biến thể:", result);
         return false;
       }
-      console.log("Xoá biến thể thành công:", variantId);
       return true;
     } catch (err) {
-      console.error("Lỗi khi gọi deleteVariant:", err);
       showToast("Lỗi kết nối khi xoá biến thể", "danger");
       return false;
     }
@@ -877,7 +857,6 @@
         const attrMeta = attributesMetaMap.get(attribute_id);
 
         if (!attrMeta) {
-          console.warn(`Thuộc tính ID ${attribute_id} không tìm thấy metadata hoặc không thuộc danh mục này.`);
           return;
         }
 
@@ -949,7 +928,6 @@
             throw new Error(uploadData.error || "Upload ảnh chính thất bại.");
           }
         } catch (err) {
-          console.error("Lỗi upload ảnh chính:", err);
           showToast("Lỗi upload ảnh chính: " + err.message, "danger");
           validationErrors.push("main_image_upload_failed");
         }
@@ -1043,7 +1021,6 @@
                   hasVariantValidationErrors = true;
                 }
               } catch (err) {
-                console.error("Lỗi khi tải ảnh biến thể:", err);
                 showToast(`Lỗi tải ảnh cho biến thể: ${err.message}`, "danger");
                 variantHasErrors = true;
                 showFieldError(imageGrid, `Lỗi tải ảnh: ${err.message}`);
@@ -1089,12 +1066,9 @@
             });
             if (!res.ok) {
               const result = await res.json();
-              console.warn("Lỗi xoá ảnh Cloudinary:", publicId, result.error || res.statusText);
             } else {
-              console.log("Đã xoá ảnh Cloudinary:", publicId);
             }
           } catch (err) {
-            console.error("Lỗi kết nối khi xoá ảnh Cloudinary:", err);
           }
         }
         removedImages = [];
@@ -1110,16 +1084,12 @@
         room_ids: room_ids,
         attributes: attributes,
       };
-      console.log("Payload gửi đến backend:", JSON.stringify(payload, null, 2));
-
       const res = await fetch(`/api/products/admin/${slug}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
       const result = await res.json();
-      console.log("Phản hồi từ backend sau khi cập nhật sản phẩm:", result);
-
       if (!res.ok) {
         if (result.errors && Array.isArray(result.errors)) {
           result.errors.forEach((err) => {
@@ -1261,7 +1231,6 @@
       //   window.location.href = "/dashboard/products";
       // }, 1500);
     } catch (err) {
-      console.error("Lỗi khi lưu sản phẩm:", err);
       showToast("Lỗi khi lưu sản phẩm: " + err.message, "danger");
     } finally {
       saveButton.disabled = false;
@@ -1282,15 +1251,11 @@
 
       const result = await res.json();
       if (!res.ok) {
-        console.error("Lỗi cập nhật variant:", result);
         showToast("Cập nhật biến thể thất bại", "danger");
         return null;
       }
-
-      console.log("Cập nhật variant thành công:", result);
       return result;
     } catch (err) {
-      console.error("Lỗi kết nối khi gọi updateVariant:", err);
       showToast("Lỗi kết nối khi cập nhật biến thể", "danger");
       return null;
     }
@@ -1298,7 +1263,6 @@
 
   async function addVariant(productId, data) {
     try {
-      console.log("Payload thêm biến thể:", productId, "Dữ liệu:", data);
       const res = await fetch(`/api/variants/${productId}`, {
         method: "POST",
         headers: {
@@ -1309,15 +1273,11 @@
 
       const result = await res.json();
       if (!res.ok) {
-        console.error("Lỗi tạo biến thể:", result);
         showToast("Tạo biến thể thất bại", "danger");
         return null;
       }
-
-      console.log("Tạo biến thể thành công:", result);
       return result;
     } catch (err) {
-      console.error("Lỗi kết nối khi gọi addVariant:", err);
       showToast("Lỗi kết nối khi tạo biến thể", "danger");
       return null;
     }
@@ -1377,11 +1337,6 @@
               return;
             }
           }
-
-          console.log(
-            "Đã xóa biến thể khỏi DOM:",
-            variantId || "new (chưa có ID)"
-          );
           variantElement.remove();
           showToast("Đã xóa biến thể.", "info");
         }
@@ -1444,7 +1399,6 @@
 
       return result.url;
     } catch (error) {
-      console.error("Lỗi kết nối:", error);
       showToast("Lỗi kết nối khi upload ảnh", "danger");
       return null;
     }

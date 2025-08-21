@@ -30,7 +30,6 @@ function initTableSorting() {
             this.classList.add(isAscending ? 'sort-desc' : 'sort-asc');
             
             // Logic sắp xếp bảng sẽ được thêm vào đây
-            console.log(`Sắp xếp theo ${this.textContent} theo thứ tự ${isAscending ? 'giảm dần' : 'tăng dần'}`);
         });
     });
 }
@@ -46,8 +45,6 @@ function initVisibilityToggles() {
             const statusText = newStatus === 'visible' ? 'hiển thị' : 'ẩn';
             
             // Trong thực tế, đây sẽ là một API call
-            console.log(`Chuyển trạng thái danh mục ${categoryId} thành ${statusText}`);
-            
             // Cập nhật UI
             this.setAttribute('data-status', newStatus);
             
@@ -80,8 +77,6 @@ function initDeleteButtons() {
             
             if (confirm(`Bạn có chắc chắn muốn xóa danh mục "${categoryName}"? Hành động này không thể hoàn tác.`)) {
                 // Trong thực tế, đây sẽ là một API call
-                console.log(`Xóa danh mục ${categoryId} - ${categoryName}`);
-                
                 // Xóa hàng khỏi bảng
                 const row = this.closest('tr');
                 row.remove();
@@ -104,7 +99,6 @@ function initEditButtons() {
             const categoryId = this.getAttribute('data-id');
             
             // Trong thực tế, đây sẽ chuyển hướng đến trang chỉnh sửa danh mục
-            console.log(`Chỉnh sửa danh mục ${categoryId}`);
             // window.location.href = `/dashboard/news-categories/edit/${categoryId}`;
             
             // Hiển thị thông báo tạm thời

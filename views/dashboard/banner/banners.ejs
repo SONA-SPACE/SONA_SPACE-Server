@@ -118,7 +118,6 @@
           renderBannersByPage(data);
         })
         .catch((error) => {
-          console.error("Lỗi khi tải banner:", error);
           document.querySelector(".results-info").textContent =
             "Không thể tải dữ liệu.";
         });
@@ -145,13 +144,12 @@
           groups[pageType].banners.push(banner);
         } else {
           // Nếu không thuộc nhóm nào đã định nghĩa, thêm vào home
-          console.log(`Banner with unknown page_type: ${pageType}, adding to home`, banner);
           groups['home'].banners.push(banner);
         }
       });
       
       // Log để debug
-      console.log("Banner groups:", Object.keys(groups).map(key => ({
+      .map(key => ({
         page: key,
         count: groups[key].banners.length
       })));
@@ -374,7 +372,6 @@
         // Hiển thị thông báo thành công
         showToast(result.message || "Cập nhật trạng thái thành công", "success");
       } catch (error) {
-        console.error("Error updating banner status:", error);
         showToast("Đã xảy ra lỗi khi cập nhật trạng thái", "danger");
       }
     }
@@ -409,7 +406,6 @@
         // Hiển thị thông báo thành công
         showToast("Xóa banner thành công", "success");
       } catch (error) {
-        console.error("Error deleting banner:", error);
         showToast("Đã xảy ra lỗi khi xóa banner", "danger");
       }
     });

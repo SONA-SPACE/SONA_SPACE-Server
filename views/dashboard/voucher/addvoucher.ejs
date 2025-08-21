@@ -89,7 +89,6 @@
                     </div>
                 </div>
 
-
             </div>
 
             <div class="form-row">
@@ -160,9 +159,6 @@
             user_ids = "all";
         }
 
-
-
-
         const saveBtn = document.querySelector(".btn-save");
         saveBtn.disabled = true;
         saveBtn.innerText = "Đang lưu...";
@@ -224,7 +220,6 @@
                 setTimeout(() => (window.location.href = "/dashboard/voucher"), 1500);
             }
         } catch (err) {
-            console.error("Lỗi tạo voucher:", err);
             showToast("Lỗi máy chủ", "danger");
         } finally {
             saveBtn.disabled = false;
@@ -261,6 +256,5 @@
 
         toast.addEventListener("hidden.bs.toast", () => toast.remove());
     }
-
 
 </script>

@@ -109,7 +109,6 @@ router.post("/", async (req, res) => {
       contactId: result.insertId,
     });
   } catch (error) {
-    console.error("Error submitting contact form:", error);
     res.status(500).json({
       success: false,
       error: error.message || "Gửi yêu cầu thất bại",
@@ -191,7 +190,6 @@ router.get("/", verifyToken, isAdmin, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching contact forms:", error);
     res.status(500).json({ error: "Failed to fetch contact forms" });
   }
 });
@@ -224,7 +222,6 @@ router.get("/:id", verifyToken, isAdmin, async (req, res) => {
 
     res.json(forms[0]);
   } catch (error) {
-    console.error("Error fetching contact form:", error);
     res.status(500).json({ error: "Failed to fetch contact form" });
   }
 });
@@ -362,8 +359,48 @@ router.put("/:id", verifyToken, isAdmin, async (req, res) => {
       form: updatedForm[0],
     });
   } catch (error) {
-    console.error("Error updating contact form:", error);
     res.status(500).json({ error: "Failed to update contact form" });
+  }
+});
+
+/**
+ * @route   GET /api/contact-form-design/:id/details/debug
+ * @desc    Debug - Get design details without auth
+ */
+router.get("/:id/details/debug", async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+
+    if (isNaN(id)) {
+      return res.status(400).json({ error: "Invalid ID" });
+    }
+
+    const [details] = await db.query(
+      `SELECT cfdd.*, v.variant_name, v.variant_price, v.variant_description,
+              v.variant_product_list_image, v.variant_discount,
+              p.product_name, p.product_description, p.product_code,
+              vd.variant_default_id, vd.variant_default_name
+       FROM contact_form_design_details cfdd
+       LEFT JOIN variants v ON cfdd.variant_id = v.variant_id
+       LEFT JOIN products p ON v.product_id = p.product_id
+       LEFT JOIN variant_defaults vd ON v.variant_default_id = vd.variant_default_id
+       WHERE cfdd.contact_form_design_id = ?`,
+      [id]
+    );
+    if (details.length > 0) {
+    } else {
+    }
+
+    res.json({ 
+      success: true, 
+      data: details,
+      debug: {
+        count: details.length,
+        firstItemKeys: details.length > 0 ? Object.keys(details[0]) : []
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Lỗi server" });
   }
 });
 
@@ -406,15 +443,16 @@ router.get("/:id/details", verifyToken, isAdmin, async (req, res) => {
       }
 
       const { variant_product_list_image, ...rest } = item;
-      return {
+      const resultItem = {
         ...rest,
         first_image: first_image || null,
       };
+      
+      return resultItem;
     });
 
     res.json(result);
   } catch (error) {
-    console.error("Error fetching design details:", error);
     res.status(500).json({ error: "Failed to fetch design details" });
   }
 });
@@ -518,7 +556,6 @@ router.post("/:id/details", verifyToken, isAdmin, async (req, res) => {
       total_price,
     });
   } catch (error) {
-    console.error("Error adding product variant to design:", error);
     res.status(500).json({ error: "Failed to add product variant to design" });
   }
 });
@@ -598,7 +635,6 @@ router.put(
         },
       });
     } catch (error) {
-      console.error("Error updating design detail:", error);
       res.status(500).json({ error: "Failed to update design detail" });
     }
   }
@@ -636,7 +672,6 @@ router.delete(
 
       res.json({ message: "Sản phẩm đã được xóa khỏi form thiết kế" });
     } catch (error) {
-      console.error("Error removing product variant from design:", error);
       res
         .status(500)
         .json({ error: "Không thể xóa sản phẩm khỏi form thiết kế" });
@@ -680,7 +715,6 @@ router.delete("/:id", verifyToken, isAdmin, async (req, res) => {
 
     res.json({ message: "Form liên hệ đã được xóa thành công" });
   } catch (error) {
-    console.error("Error deleting contact form:", error);
     res.status(500).json({ error: "Không thể xóa form liên hệ" });
   }
 });

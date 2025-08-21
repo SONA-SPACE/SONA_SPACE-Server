@@ -41,7 +41,6 @@ router.post("/:categoryId", async (req, res) => {
       attribute_id: result.insertId,
     });
   } catch (err) {
-    console.error("Error creating attribute:", err);
     res
       .status(500)
       .json({ success: false, message: "Lỗi máy chủ khi tạo thuộc tính." });
@@ -79,7 +78,6 @@ router.get("/:categoryId/attributes", async (req, res) => {
 
     res.status(200).json(attributes);
   } catch (err) {
-    console.error(`Error fetching attributes for category ${categoryId}:`, err);
     res.status(500).json({
       success: false,
       message: `Lỗi máy chủ khi lấy danh sách thuộc tính cho danh mục ID ${categoryId}.`,

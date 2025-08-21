@@ -61,7 +61,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 renderNotificationTypes(data);
             })
             .catch((err) => {
-                console.error("Lỗi khi tải loại thông báo:", err);
                 document.querySelector(".results-info").textContent = "Không thể tải dữ liệu.";
             });
     }
@@ -168,7 +167,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             })
             .catch((err) => {
-                console.error("Lỗi khi xóa loại thông báo:", err);
                 alert("Xảy ra lỗi khi xóa.");
             });
     }
@@ -194,7 +192,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
             })
             .catch(err => {
-                console.error("Lỗi khi thay đổi trạng thái:", err);
                 alert("Lỗi khi thay đổi trạng thái");
             });
     }

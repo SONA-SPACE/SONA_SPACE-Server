@@ -213,7 +213,6 @@ router.get('/:userId', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Lỗi khi lấy đơn hàng:', error);
     res.status(500).json({
       error: 'Không thể lấy đơn hàng',
       details: error.message
@@ -374,7 +373,6 @@ router.put('/cancel/:orderId', verifyToken, async (req, res) => {
                  VALUES (?, 'ORDER_CANCELLED', ?, ?, NOW(), 0)`,
                 [order.user_id, notificationMessage, orderId]
               );
-              console.log(`Đã tạo thông báo hủy đơn hàng cho user ${order.user_id}`);
             } 
             // Nếu bảng có cột customer_id thay vì user_id
             else if (columnNames.includes('customer_id')) {
@@ -383,17 +381,13 @@ router.put('/cancel/:orderId', verifyToken, async (req, res) => {
                  VALUES (?, 'ORDER_CANCELLED', ?, ?, NOW(), 0)`,
                 [order.user_id, notificationMessage, orderId]
               );
-              console.log(`Đã tạo thông báo hủy đơn hàng cho customer ${order.user_id}`);
             }
             else {
-              console.log('Không thể tạo thông báo: Cấu trúc bảng notifications không phù hợp');
             }
           } catch (tableError) {
             // Bảng notifications có thể không tồn tại
             if (tableError.code === 'ER_NO_SUCH_TABLE') {
-              console.log('Bảng notifications không tồn tại trong cơ sở dữ liệu');
             } else {
-              console.error('Lỗi khi kiểm tra bảng notifications:', tableError);
             }
           }
           
@@ -406,14 +400,11 @@ router.put('/cancel/:orderId', verifyToken, async (req, res) => {
             //   reason: reason || 'Không có lý do được cung cấp',
             //   cancelled_by: 'Admin'
             // });
-            console.log(`Đã gửi email thông báo hủy đơn hàng đến ${order.user_email}`);
           } catch (emailError) {
-            console.error('Lỗi khi gửi email thông báo:', emailError);
             // Không throw lỗi ở đây để transaction vẫn tiếp tục
           }
         } catch (notificationError) {
           // Ghi log lỗi nhưng không làm ảnh hưởng đến transaction
-          console.error('Lỗi khi tạo thông báo:', notificationError);
           // Không throw lỗi để transaction vẫn tiếp tục
         }
       }
@@ -435,7 +426,6 @@ router.put('/cancel/:orderId', verifyToken, async (req, res) => {
       connection.release();
     }
   } catch (error) {
-    console.error('Lỗi khi hủy đơn hàng:', error);
     return res.status(500).json({
       success: false,
       message: 'Đã xảy ra lỗi khi hủy đơn hàng',

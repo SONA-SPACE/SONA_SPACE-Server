@@ -89,7 +89,6 @@ document.getElementById("roomSlug").addEventListener("input", (e) => {
     e.target.dataset.manual = true;
 });
 
-
     function bindUpload(selector, setter) {
         const dropArea = document.querySelector(selector);
         dropArea.addEventListener("click", () => {
@@ -202,7 +201,6 @@ document.getElementById("roomSlug").addEventListener("input", (e) => {
                 }, 1500);
             }
         } catch (err) {
-            console.error("Lỗi:", err);
             showToast("Có lỗi khi tạo danh mục", "danger");
         } finally {
             resetBtn();
@@ -213,7 +211,6 @@ document.getElementById("roomSlug").addEventListener("input", (e) => {
             saveBtn.innerText = "Lưu";
         }
     }
-
 
     function showToast(message, type = "success") {
         let toastContainer = document.getElementById("toastContainer");

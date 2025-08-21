@@ -101,10 +101,10 @@
           allRooms = Array.isArray(data) ? data : [];
           currentFilteredRooms = [...allRooms];
           renderRooms(data);
-          // console.log("Danh sách không gian:", data);
+          // 
         })
         .catch((error) => {
-          // console.error("Lỗi khi tải danh sách không gian:", error);
+          // 
           setResultsInfo("Không thể tải dữ liệu.");
         });
     }
@@ -267,7 +267,6 @@
               }
             })
             .catch((err) => {
-              console.error("Lỗi khi xóa:", err);
               showToast("Xảy ra lỗi khi xóa không gian", "danger");
             });
         },

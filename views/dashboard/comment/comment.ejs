@@ -117,7 +117,6 @@
         let currentConfirmCallback = null;
 
         function showModal(title, message, onConfirmCallback) {
-            console.log('showModal called:', title, message);
             modalTitle.textContent = title;
             modalMessage.textContent = message;
             currentConfirmCallback = onConfirmCallback;
@@ -139,7 +138,6 @@
         cancelBtn.addEventListener('click', () => {
             hideModal();
         });
-
 
         // Tìm kiếm
         document.getElementById("searchInput").addEventListener("keyup", function () {
@@ -240,7 +238,6 @@
                     renderComments(currentFilteredComments);
                 })
                 .catch((err) => {
-                    console.error("Lỗi khi tải bình luận:", err);
                     document.querySelector(".results-info").textContent =
                         `Không thể tải dữ liệu: ${err.message}`;
                 });
@@ -250,8 +247,6 @@
         function renderComments(comments) {
             const tableBody = document.querySelector("#materialsTable tbody");
             tableBody.innerHTML = "";
-
-
 
             comments.forEach((comment) => {
                 const statusText = comment.comment_status === 1 ? "Hiển thị" : "Ẩn";
@@ -286,11 +281,9 @@
                 `;
                 tableBody.appendChild(row);
 
-
                 const visibilityButton = row.querySelector(`.action-button.visibility`);
                 if (visibilityButton) {
                     visibilityButton.addEventListener('click', function () {
-                        console.log('Clicked eye icon', comment.comment_id);
                         const commentId = this.dataset.id;
                         const currentStatus = parseInt(this.dataset.status);
                         const newStatus = currentStatus === 1 ? 0 : 1;
@@ -335,13 +328,9 @@
                 }
 
                 const result = await response.json();
-                console.log("Cập nhật trạng thái bình luận thành công:", result.message);
-
-
                 const button = document.querySelector(`.action-button.visibility[data-id="${commentId}"]`);
                 const icon = button.querySelector("i");
                 const row = button.closest("tr");
-
 
                 icon.classList.remove("fa-eye", "fa-eye-slash");
                 icon.classList.add(newStatus === 1 ? "fa-eye" : "fa-eye-slash");
@@ -354,7 +343,6 @@
                 }
 
             } catch (error) {
-                console.error("Lỗi khi cập nhật trạng thái bình luận:", error);
                 alert(`Lỗi: ${error.message}`);
             }
         }
@@ -374,10 +362,8 @@
                 }
 
                 const result = await response.json();
-                console.log("Xóa bình luận thành công:", result.message);
                 getComments(); // Reload data after deletion
             } catch (error) {
-                console.error("Lỗi khi xóa bình luận:", error);
                 alert(`Lỗi: ${error.message}`);
             }
         }
@@ -400,7 +386,6 @@
                     hour12: false
                 });
             } catch (e) {
-                console.error("Error formatting date:", e);
                 return "-";
             }
         }

@@ -173,7 +173,6 @@
                 setTimeout(() => window.location.href = "/dashboard/colors", 1500);
             }
         } catch (err) {
-            console.error("Update failed:", err);
             showToast("Lỗi khi cập nhật", "danger");
         } finally {
             saveBtn.disabled = false;

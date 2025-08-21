@@ -93,7 +93,6 @@ router.get("/", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching news:", error);
     res.status(500).json({ error: "Failed to fetch news" });
   }
 });
@@ -191,7 +190,6 @@ router.get("/simple", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching news:", error);
     res.status(500).json({ error: "Failed to fetch news" });
   }
 });
@@ -280,7 +278,6 @@ router.get("/admin", verifyToken, isAdmin, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching news:", error);
     res.status(500).json({ error: "Failed to fetch news" });
   }
 });
@@ -312,7 +309,6 @@ router.get("/views", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Lỗi lấy danh sách tin theo view:", error);
     res.status(500).json({ error: "Lấy danh sách tin thất bại" });
   }
 });
@@ -445,7 +441,6 @@ router.get("/category/:categoryId", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching news by category:", error);
     res.status(500).json({ error: "Failed to fetch news by category" });
   }
 });
@@ -539,7 +534,6 @@ router.post("/", verifyToken, async (req, res) => {
       news: newNews[0],
     });
   } catch (error) {
-    console.error("Lỗi tạo tin tức:", error);
     res.status(500).json({ error: "Không thể tạo tin tức." });
   }
 });
@@ -574,7 +568,6 @@ router.get("/:slug", async (req, res) => {
 
     res.json(newsItem);
   } catch (err) {
-    console.error("Error fetching news by slug:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -745,7 +738,6 @@ router.put("/:slug", verifyToken, async (req, res) => {
       news: updatedNewsItem,
     });
   } catch (error) {
-    console.error("Error updating news article:", error);
     res.status(500).json({ error: "Failed to update news article" });
   }
 });
@@ -822,7 +814,6 @@ router.delete("/:id", verifyToken, isAdmin, async (req, res) => {
 
     res.json({ message: "Xóa tin tức thành công" });
   } catch (error) {
-    console.error("Lỗi xóa tin tức:", error);
     res.status(500).json({ error: "Lỗi xóa tin tức" });
   }
 });

@@ -68,7 +68,6 @@ router.get("/", verifyToken, isAdmin, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching users:", error);
     res.status(500).json({ error: "Failed to fetch users" });
   }
 });
@@ -81,7 +80,6 @@ router.get("/simple", verifyToken, isAdmin, async (req, res) => {
     `);
     res.json(users);
   } catch (error) {
-    console.error("Lỗi khi lấy danh sách user:", error);
     res.status(500).json({ error: "Lỗi máy chủ khi lấy danh sách người dùng" });
   }
 });
@@ -222,7 +220,6 @@ router.get("/staff", async (req, res) => {
 
     res.json({ users });
   } catch (error) {
-    console.error("Error fetching users:", error);
     res.status(500).json({ error: "Lỗi server khi lấy danh sách người dùng" });
   }
 });
@@ -286,7 +283,6 @@ router.get("/admin/:id", async (req, res) => {
       category: diffDays <= 30 ? "Khách hàng mới" : "Khách hàng cũ",
     });
   } catch (err) {
-    console.error("Lỗi lấy người dùng:", err);
     res.status(500).json({ error: "Lỗi server" });
   }
 });
@@ -607,7 +603,6 @@ router.get("/:id", async (req, res) => {
 
     res.json(user);
   } catch (error) {
-    console.error("Error fetching user:", error);
     res.status(500).json({ error: "Failed to fetch user" });
   }
 });
@@ -718,7 +713,6 @@ router.put("/:id", isAdminOnly, async (req, res) => {
       user: formattedUser,
     });
   } catch (error) {
-    console.error("Error updating user:", error);
     res.status(500).json({ error: "Failed to update user" });
   }
 });
@@ -779,7 +773,6 @@ router.delete("/:id", isAdmin, async (req, res) => {
 
     res.json({ message: "User deleted successfully" });
   } catch (error) {
-    console.error("Error deleting user:", error);
     res.status(500).json({ error: "Failed to delete user" });
   }
 });
@@ -862,7 +855,6 @@ router.get("/:id/orders", async (req, res) => {
 
     res.json(orders);
   } catch (error) {
-    console.error("Error fetching user orders:", error);
     res.status(500).json({ error: "Failed to fetch user orders" });
   }
 });
@@ -907,7 +899,6 @@ router.get("/:id/wishlist", async (req, res) => {
 
     res.json(wishlist);
   } catch (error) {
-    console.error("Error fetching user wishlist:", error);
     res.status(500).json({ error: "Failed to fetch user wishlist" });
   }
 });
@@ -950,7 +941,6 @@ router.get("/:id/reviews", async (req, res) => {
 
     res.json(reviews);
   } catch (error) {
-    console.error("Error fetching user reviews:", error);
     res.status(500).json({ error: "Failed to fetch user reviews" });
   }
 });

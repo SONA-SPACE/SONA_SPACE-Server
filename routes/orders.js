@@ -43,8 +43,6 @@ router.get("/test-email", async (req, res) => {
 
 router.get("/complete/:orderHash", optionalAuth, async (req, res) => {
   const { orderHash } = req.params;
-  console.log(" Truy vấn đơn hàng:", orderHash);
-
   try {
     const [[order]] = await db.query(
       `
@@ -81,7 +79,6 @@ router.get("/complete/:orderHash", optionalAuth, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Lỗi lấy thông tin đơn hàng:", error.message);
     return res
       .status(500)
       .json({ success: false, message: "Lỗi máy chủ", error: error.message });
@@ -323,7 +320,6 @@ router.get("/hash/:orderHash", optionalAuth, async (req, res) => {
       order: orderData,
     });
   } catch (error) {
-    console.error(" Lỗi khi truy vấn đơn hàng:", error.message);
     return res
       .status(500)
       .json({ success: false, message: "Lỗi máy chủ", error: error.message });
@@ -431,7 +427,6 @@ router.get("/admin", verifyToken, isAdmin, async (req, res) => {
 
     res.json({ success: true, orders: processedOrders });
   } catch (err) {
-    console.error("Error fetching orders:", err);
     res.status(500).json({ success: false, message: "Failed to fetch orders" });
   }
 });
@@ -468,7 +463,6 @@ router.get("/count", async (req, res) => {
 
     res.json(statistics);
   } catch (error) {
-    console.error("Error counting orders by status:", error);
     res.status(500).json({ error: "Failed to count orders" });
   }
 });
@@ -480,17 +474,11 @@ router.get("/count", async (req, res) => {
  */
 router.get("/", verifyToken, isAdmin, async (req, res) => {
   try {
-    console.log("Đang truy cập GET /api/orders");
-    console.log("User info:", req.user);
-
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
     const status = req.query.status; // Changed from status_id to status
     const search = req.query.search;
-
-    console.log("Query params:", { page, limit, offset, status, search });
-
     // Xây dựng điều kiện tìm kiếm
     let conditions = [];
     let params = [];
@@ -510,28 +498,19 @@ router.get("/", verifyToken, isAdmin, async (req, res) => {
 
     const whereClause =
       conditions.length > 0 ? "WHERE " + conditions.join(" AND ") : "";
-    console.log("Where clause:", whereClause);
-    console.log("Params:", params);
-
     // Đếm tổng số đơn hàng
-    console.log("Executing count query...");
     const countQuery = `
       SELECT COUNT(*) as total 
       FROM \`orders\` o
       LEFT JOIN user u ON o.user_id = u.user_id
       ${whereClause}
     `;
-    console.log("Count query:", countQuery);
-
     try {
       const [countResult] = await db.query(countQuery, params);
-      console.log("Count result:", countResult);
-
       const totalOrders = countResult[0].total;
       const totalPages = Math.ceil(totalOrders / limit);
 
       // Lấy danh sách đơn hàng với phân trang
-      console.log("Executing orders query...");
       const ordersQuery = `
         SELECT 
           o.*,
@@ -543,12 +522,7 @@ router.get("/", verifyToken, isAdmin, async (req, res) => {
         ORDER BY o.created_at DESC
         LIMIT ?, ?
       `;
-      console.log("Orders query:", ordersQuery);
-      console.log("Orders params:", [...params, offset, limit]);
-
       const [orders] = await db.query(ordersQuery, [...params, offset, limit]);
-      console.log(`Found ${orders.length} orders`);
-
       res.json({
         orders,
         pagination: {
@@ -559,11 +533,9 @@ router.get("/", verifyToken, isAdmin, async (req, res) => {
         },
       });
     } catch (dbError) {
-      console.error("Database error:", dbError);
       throw dbError;
     }
   } catch (error) {
-    console.error("Error fetching orders:", error);
     res
       .status(500)
       .json({ error: "Failed to fetch orders", details: error.message });
@@ -764,9 +736,6 @@ router.post("/", verifyToken, async (req, res) => {
           ]
         );
       } else {
-        console.warn(
-          "Loại thông báo 'order' không tồn tại hoặc đã bị vô hiệu hóa."
-        );
       }
 
       if ((couponcode_id || coupon_code) && user_id) {
@@ -842,7 +811,6 @@ router.post("/", verifyToken, async (req, res) => {
       try {
         await sendEmail1(emailData.email, "Xác nhận đơn hàng", emailData);
       } catch (err) {
-        console.error("Lỗi gửi email:", err.message);
       }
 
       return res.status(201).json({
@@ -966,7 +934,6 @@ router.post("/", verifyToken, async (req, res) => {
       .status(400)
       .json({ error: "Phương thức thanh toán không hỗ trợ" });
   } catch (err) {
-    console.error("Error:", err);
     return res.status(500).json({ error: "Lỗi server khi tạo đơn hàng" });
   }
 });
@@ -994,8 +961,6 @@ router.post("/payment/momo", async (req, res) => {
   try {
     // Kiểm tra chữ ký hợp lệ
     const rawSignature = `accessKey=${accessKey}&amount=${amount}&extraData=${extraData}&message=${message}&orderId=${orderId}&orderInfo=${orderInfo}&orderType=${orderType}&partnerCode=${partnerCode}&payType=${payType}&requestId=${requestId}&responseTime=${responseTime}&resultCode=${resultCode}&transId=${transId}`;
-    console.log("Raw Signature:", rawSignature);
-
     // Kiểm tra chữ ký
     if (!signature || !rawSignature) {
       return res.status(400).json({ message: "Thiếu thông tin chữ ký" });
@@ -1007,11 +972,6 @@ router.post("/payment/momo", async (req, res) => {
       .digest("hex");
 
     if (!signature || expectedSignature !== signature) {
-      console.error("MoMo signature mismatch", {
-        rawSignature,
-        expectedSignature,
-        signature,
-      });
       return res.status(403).json({ error: "Sai chữ ký MoMo" });
     }
     if (parseInt(resultCode) !== 0) {
@@ -1240,9 +1200,6 @@ router.post("/payment/momo", async (req, res) => {
                 headers: { "Content-Type": "application/json" },
               }
             );
-
-            console.log("Kết quả hoàn tiền:", refundRes.data);
-
             if (refundRes.data.resultCode === 0) {
               await db.query(
                 "UPDATE payments SET status = 'REFUNDED' WHERE order_id = ?",
@@ -1253,16 +1210,10 @@ router.post("/payment/momo", async (req, res) => {
                 [order_id]
               );
             } else {
-              console.error("Refund thất bại:", refundRes.data.message);
             }
           } catch (error) {
-            console.error(
-              "Lỗi gọi API hoàn tiền MoMo:",
-              error.response?.data || error.message
-            );
           }
         } catch (refundErr) {
-          console.error("Lỗi gọi API hoàn tiền MoMo:", refundErr.message);
         }
 
         return res.status(200).json({
@@ -1327,9 +1278,6 @@ router.post("/payment/momo", async (req, res) => {
         ]
       );
     } else {
-      console.warn(
-        "Loại thông báo 'order' không tồn tại hoặc đã bị vô hiệu hóa."
-      );
     }
 
     if ((couponcode_id || coupon_code) && user_id) {
@@ -1394,7 +1342,6 @@ router.post("/payment/momo", async (req, res) => {
     try {
       await sendEmail1(emailData.email, "Xác nhận đơn hàng", emailData);
     } catch (err) {
-      console.error("Lỗi gửi email:", err.message);
     }
 
     return res.status(200).json({
@@ -1403,7 +1350,6 @@ router.post("/payment/momo", async (req, res) => {
       message: "Đơn hàng đã thanh toán thành công qua MoMo",
     });
   } catch (error) {
-    console.error("MoMo IPN error:", error);
     return res.status(500).json({ error: "Lỗi server khi xử lý IPN MoMo" });
   }
 });
@@ -1453,9 +1399,7 @@ router.get("/:id", verifyToken, async (req, res) => {
     let orders;
     try {
       [orders] = await db.query(orderQuery, [orderId]);
-      console.log("Order query result length:", orders.length);
     } catch (error) {
-      console.error("Error in order query:", error);
       return res
         .status(500)
         .json({ error: "Failed to fetch order", details: error.message });
@@ -1526,7 +1470,6 @@ router.get("/:id", verifyToken, async (req, res) => {
         }
         order.items = orderItems;
       } catch (error) {
-        console.error("Error in order items query:", error);
         order.items = [];
       }
 
@@ -1544,7 +1487,6 @@ router.get("/:id", verifyToken, async (req, res) => {
         [statusLogs] = await db.query(statusLogsQuery, [orderId]);
         order.status_logs = statusLogs;
       } catch (error) {
-        console.error("Error in status logs query:", error);
         order.status_logs = [];
       }
 
@@ -1556,7 +1498,6 @@ router.get("/:id", verifyToken, async (req, res) => {
       });
     }
   } catch (error) {
-    console.error("Error fetching order:", error);
     res
       .status(500)
       .json({ error: "Failed to fetch order", details: error.message });
@@ -1678,9 +1619,6 @@ router.put("/:id/status", verifyToken, isAdmin, async (req, res) => {
           [userId, notificationId]
         );
       } else {
-        console.warn(
-          "Loại thông báo 'order' không tồn tại hoặc đã bị vô hiệu hóa."
-        );
       }
     }
 
@@ -1690,7 +1628,6 @@ router.put("/:id/status", verifyToken, isAdmin, async (req, res) => {
       new_status: toStatus,
     });
   } catch (err) {
-    console.error("Lỗi cập nhật trạng thái đơn hàng:", err);
     res.status(500).json({
       success: false,
       message: "Lỗi máy chủ khi cập nhật trạng thái",
@@ -1850,18 +1787,9 @@ router.put("/:id/return-status", verifyToken, isAdmin, async (req, res) => {
                 emailData,
                 "return-approved"
               );
-
-              console.log(
-                `📧 Email sent to ${customerEmail}:`,
-                emailResult ? "Success" : "Failed"
-              );
             }
           }
         } catch (emailError) {
-          console.error(
-            "❌ Failed to send return approval email:",
-            emailError.message
-          );
           // Continue execution even if email fails
         }
 
@@ -1960,16 +1888,8 @@ router.put("/:id/return-status", verifyToken, isAdmin, async (req, res) => {
                 [userInfo.user_id, notificationId, 0, null, 0]
               );
             }
-
-            console.log(
-              `🎁 Created return coupon ${couponCode} for user ${userInfo.user_id} (${userInfo.user_name})`
-            );
           }
         } catch (couponError) {
-          console.error(
-            "❌ Failed to create return coupon:",
-            couponError.message
-          );
           // Continue execution even if coupon creation fails
         }
       }
@@ -2020,18 +1940,9 @@ router.put("/:id/return-status", verifyToken, isAdmin, async (req, res) => {
                 emailData,
                 "return-rejected"
               );
-
-              console.log(
-                `📧 Rejection email sent to ${customerEmail}:`,
-                emailResult ? "Success" : "Failed"
-              );
             }
           }
         } catch (emailError) {
-          console.error(
-            "❌ Failed to send return rejection email:",
-            emailError.message
-          );
           // Continue execution even if email fails
         }
       }
@@ -2064,7 +1975,6 @@ router.put("/:id/return-status", verifyToken, isAdmin, async (req, res) => {
       connection.release();
     }
   } catch (err) {
-    console.error("Lỗi cập nhật trạng thái hoàn trả:", err);
     res.status(500).json({
       success: false,
       message: "Lỗi máy chủ khi cập nhật trạng thái hoàn trả",
@@ -2190,7 +2100,6 @@ router.delete("/:id", async (req, res) => {
       connection.release();
     }
   } catch (error) {
-    console.error("Error cancelling order:", error);
     res.status(500).json({ error: "Failed to cancel order" });
   }
 });
@@ -2231,7 +2140,6 @@ router.get("/status/count", isAdmin, async (req, res) => {
 
     res.json(statistics);
   } catch (error) {
-    console.error("Error fetching order status counts:", error);
     res.status(500).json({ error: "Failed to fetch order status counts" });
   }
 });
@@ -2287,9 +2195,6 @@ router.post("/send-invoice", verifyToken, async (req, res) => {
 
     // Trong thực tế, bạn sẽ sử dụng một thư viện gửi email như nodemailer
     // Ví dụ mẫu này chỉ giả lập việc gửi email
-    console.log(`Gửi hóa đơn #${order_id} đến email: ${email}`);
-    console.log(`URL hóa đơn: ${invoiceUrl}`);
-
     // Trong môi trường thực tế, bạn sẽ gửi email thực sự:
     /*
     const transporter = nodemailer.createTransport({
@@ -2327,7 +2232,6 @@ router.post("/send-invoice", verifyToken, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error sending invoice:", error);
     res.status(500).json({
       success: false,
       message: "Lỗi khi gửi hóa đơn",
@@ -2411,10 +2315,6 @@ router.post(
 
       if (emailResult.success) {
         // Log hoạt động
-        console.log(
-          `✅ Sent apology email for order ${order.order_id} to ${order.user_gmail}`
-        );
-
         res.json({
           success: true,
           message: "Email xin lỗi đã được gửi thành công",
@@ -2431,7 +2331,6 @@ router.post(
         throw new Error(emailResult.error || "Không thể gửi email");
       }
     } catch (error) {
-      console.error("❌ Error sending apology email:", error);
       res.status(500).json({
         success: false,
         message: "Lỗi khi gửi email xin lỗi",
@@ -2567,7 +2466,6 @@ router.patch("/:id", verifyToken, isAdmin, async (req, res) => {
       connection.release();
     }
   } catch (error) {
-    console.error("Error updating order:", error);
     return res.status(500).json({
       success: false,
       message: "Server error while updating order",
@@ -2650,7 +2548,6 @@ router.post(
                   },
                   (error, result) => {
                     if (error) {
-                      console.error("Cloudinary upload error:", error);
                       reject(error);
                     } else {
                       resolve(result.secure_url);
@@ -2662,13 +2559,7 @@ router.post(
           });
 
           uploadedImageUrls = await Promise.all(uploadPromises);
-          console.log(
-            "Đã upload thành công:",
-            uploadedImageUrls.length,
-            "hình ảnh"
-          );
         } catch (uploadError) {
-          console.error("Lỗi upload hình ảnh:", uploadError);
           return res.status(500).json({
             success: false,
             message: "Lỗi khi upload hình ảnh",
@@ -2838,7 +2729,6 @@ router.post(
               }
             }
           } catch (notificationError) {
-            console.error("Lỗi khi tạo thông báo:", notificationError);
             // Không throw lỗi để transaction vẫn tiếp tục
           }
         }
@@ -2879,13 +2769,7 @@ router.post(
               return cloudinary.uploader.destroy(`order_returns/${publicId}`);
             });
             await Promise.all(deletePromises);
-            console.log(
-              "Đã xóa",
-              uploadedImageUrls.length,
-              "hình ảnh do lỗi transaction"
-            );
           } catch (deleteError) {
-            console.error("Lỗi khi xóa hình ảnh:", deleteError);
           }
         }
 
@@ -2894,7 +2778,6 @@ router.post(
         connection.release();
       }
     } catch (error) {
-      console.error("Lỗi khi xử lý yêu cầu trả hàng:", error);
       return res.status(500).json({
         success: false,
         message: "Đã xảy ra lỗi khi xử lý yêu cầu trả hàng",
@@ -2931,7 +2814,6 @@ router.get("/return/count", verifyToken, isAdmin, async (req, res) => {
         count = result[0].count;
       }
     } catch (error) {
-      console.error("Error checking order_returns table:", error);
       // Fallback to checking orders with RETURNED status
       const [result] = await db.query(
         "SELECT COUNT(*) as count FROM orders WHERE current_status = 'RETURNED'"
@@ -2944,7 +2826,6 @@ router.get("/return/count", verifyToken, isAdmin, async (req, res) => {
       count,
     });
   } catch (error) {
-    console.error("Error counting return orders:", error);
     return res.status(500).json({
       success: false,
       message: "Server error while counting return orders",

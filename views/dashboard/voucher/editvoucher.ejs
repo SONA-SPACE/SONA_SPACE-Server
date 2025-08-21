@@ -69,7 +69,6 @@
                     </div>
                 </div>
 
-
             </div>
 
             <div class="form-row">
@@ -142,7 +141,6 @@ document.querySelector(".btn-cancel").addEventListener("click", () => {
                 document.getElementById("applyToAll").value = "all"; // fallback
             }
 
-
             if (data && !data.error) {
                 document.getElementById("vouchertitle").value = data.title || "";
                 document.getElementById("vouchercode").value = data.code || "";
@@ -159,7 +157,6 @@ document.querySelector(".btn-cancel").addEventListener("click", () => {
                 showToast("Không tìm thấy voucher", "danger");
             }
         } catch (err) {
-            console.error("Lỗi khi tải voucher:", err);
             showToast("Lỗi máy chủ", "danger");
         }
     }
@@ -185,7 +182,6 @@ document.querySelector(".btn-cancel").addEventListener("click", () => {
             user_ids = "all";
         }
 
-
         const saveBtn = document.querySelector(".btn-save");
         saveBtn.disabled = true;
         saveBtn.innerText = "Đang lưu...";
@@ -196,9 +192,6 @@ document.querySelector(".btn-cancel").addEventListener("click", () => {
             saveBtn.innerText = "Lưu";
             return;
         }
-        console.log("Status:", status);
-
-
         const payload = {
             code,
             title,
@@ -232,7 +225,6 @@ document.querySelector(".btn-cancel").addEventListener("click", () => {
                 setTimeout(() => window.location.href = "/dashboard/voucher", 1200);
             }
         } catch (err) {
-            console.error("Lỗi cập nhật voucher:", err);
             showToast("Lỗi máy chủ", "danger");
         } finally {
             saveBtn.disabled = false;

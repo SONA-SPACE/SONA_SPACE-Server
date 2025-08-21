@@ -27,7 +27,6 @@ const checkAuth = (req, res, next) => {
       isAdmin(req, res, next);
     });
   } catch (error) {
-    console.error("Authentication error:", error);
     return res.redirect("/");
   }
 };
@@ -298,17 +297,12 @@ router.get("/orders/view/:id", (req, res) => {
 router.get("/orders/detail/:id", isAdmin, async (req, res) => {
   try {
     const orderId = req.params.id;
-    console.log(`Fetching order details for ID: ${orderId}`);
-
     // Build API URL based on environment
     const protocol = req.protocol;
     const host = req.get('host');
     const apiUrl = process.env.NODE_ENV === 'production' 
       ? `${protocol}://${host}/api/orders/${orderId}`
       : `http://localhost:${process.env.PORT || 3501}/api/orders/${orderId}`;
-
-    console.log(`Order detail API URL: ${apiUrl}`);
-
     // Fetch order data from API
     const response = await fetch(apiUrl, {
       headers: {
@@ -317,18 +311,10 @@ router.get("/orders/detail/:id", isAdmin, async (req, res) => {
     });
 
     if (!response.ok) {
-      console.error(
-        `API response not OK: ${response.status} ${response.statusText}`
-      );
       throw new Error("Failed to fetch order details");
     }
 
     const orderData = await response.json();
-    console.log(
-      "API Response:",
-      JSON.stringify(orderData).substring(0, 200) + "..."
-    );
-
     // Extract the order object from the response
     const order = orderData.data || orderData;
 
@@ -339,7 +325,6 @@ router.get("/orders/detail/:id", isAdmin, async (req, res) => {
 
     // If items are missing, fetch them directly from the database
     if (!order.items || order.items.length === 0) {
-      console.log("No items found in API response, fetching from database");
       const db = require("../config/database");
       const [items] = await db.query(
         `
@@ -352,8 +337,6 @@ router.get("/orders/detail/:id", isAdmin, async (req, res) => {
       `,
         [orderId]
       );
-
-      console.log(`Found ${items.length} items in database`);
       order.items = items;
     }
 
@@ -368,7 +351,6 @@ router.get("/orders/detail/:id", isAdmin, async (req, res) => {
 
         if (paymentInfo) {
           order.payment = [paymentInfo];
-          console.log(`Found payment info:`, paymentInfo);
         } else {
           order.payment = [
             {
@@ -380,7 +362,6 @@ router.get("/orders/detail/:id", isAdmin, async (req, res) => {
           ];
         }
       } catch (error) {
-        console.error("Error fetching payment method:", error);
         order.payment = [
           {
             method: "N/A",
@@ -391,17 +372,6 @@ router.get("/orders/detail/:id", isAdmin, async (req, res) => {
         ];
       }
     }
-
-    console.log(
-      "Order payment before rendering:",
-      JSON.stringify(order.payment)
-    );
-    console.log(
-      "Payment status before rendering:",
-      order.payment && order.payment.length > 0
-        ? order.payment[0].status
-        : "No payment data"
-    );
 
     // Define available payment methods for dropdown
     const paymentMethods = ["COD", "BANK_TRANSFER", "VNPAY", "MOMO", "ZALOPAY"];
@@ -461,7 +431,6 @@ router.get("/orders/detail/:id", isAdmin, async (req, res) => {
     // Helper functions for template
     const helpers = {
       mapPaymentStatus: (status) => {
-        console.log("mapPaymentStatus called with:", status);
         switch (status) {
           case "PENDING":
             return "Chờ thanh toán";
@@ -572,7 +541,6 @@ router.get("/orders/detail/:id", isAdmin, async (req, res) => {
         try {
           return parseFloat(price).toLocaleString("vi-VN");
         } catch (error) {
-          console.error("Error formatting price:", error);
           return "0";
         }
       },
@@ -589,13 +557,10 @@ router.get("/orders/detail/:id", isAdmin, async (req, res) => {
             second: "2-digit",
           });
         } catch (error) {
-          console.error("Error formatting date:", error);
           return dateTimeStr;
         }
       },
     };
-
-    console.log("Rendering order detail template with data");
     res.render("dashboard/orders/order-detail", {
       title: `Chi tiết đơn hàng #${orderId}`,
       layout: "layouts/dashboard",
@@ -619,7 +584,6 @@ router.get("/orders/detail/:id", isAdmin, async (req, res) => {
       formatDateTime: helpers.formatDateTime,
     });
   } catch (error) {
-    console.error("Error loading order details:", error);
     res.status(500).render("error", {
       message: "Không thể tải thông tin đơn hàng",
       error: { status: 500, stack: error.stack },
@@ -632,17 +596,12 @@ router.get("/orders/detail/:id", isAdmin, async (req, res) => {
 router.get("/orders/invoice/:id", async (req, res) => {
   try {
     const orderId = req.params.id;
-    console.log(`Fetching invoice for order ID: ${orderId}`);
-
     // Build API URL based on environment
     const protocol = req.protocol;
     const host = req.get('host');
     const apiUrl = process.env.NODE_ENV === 'production' 
       ? `${protocol}://${host}/api/orders/${orderId}`
       : `http://localhost:${process.env.PORT || 3501}/api/orders/${orderId}`;
-
-    console.log(`Invoice API URL: ${apiUrl}`);
-
     // Fetch order data from API
     const response = await fetch(apiUrl, {
       headers: {
@@ -651,26 +610,15 @@ router.get("/orders/invoice/:id", async (req, res) => {
     });
 
     if (!response.ok) {
-      console.error(
-        `API response not OK: ${response.status} ${response.statusText}`
-      );
       throw new Error("Failed to fetch order details for invoice");
     }
 
     const orderData = await response.json();
-    console.log(
-      "API Response for invoice:",
-      JSON.stringify(orderData).substring(0, 200) + "..."
-    );
-
     // Extract the order object from the response
     const order = orderData.data || orderData;
 
     // If items are missing, fetch them directly from the database
     if (!order.items || order.items.length === 0) {
-      console.log(
-        "No items found in API response, fetching from database for invoice"
-      );
       const db = require("../config/database");
       const [items] = await db.query(
         `
@@ -682,8 +630,6 @@ router.get("/orders/invoice/:id", async (req, res) => {
       `,
         [orderId]
       );
-
-      console.log(`Found ${items.length} items in database for invoice`);
       order.items = items;
     }
 
@@ -767,16 +713,6 @@ router.get("/orders/invoice/:id", async (req, res) => {
       }
     };
 
-    console.log("Rendering invoice template with data");
-    console.log(
-      "Order data:",
-      JSON.stringify({
-        id: order.order_id || order.id,
-        customer: order.customer_name,
-        items_count: order.items?.length || 0,
-      })
-    );
-
     res.render("dashboard/orders/order-invoice", {
       title: "Order Invoice",
       layout: false, // Không sử dụng layout để in hóa đơn dễ dàng
@@ -786,7 +722,6 @@ router.get("/orders/invoice/:id", async (req, res) => {
       mapShippingStatus,
     });
   } catch (error) {
-    console.error("Lỗi khi hiển thị hóa đơn:", error);
     res.status(500).send("Đã xảy ra lỗi khi tải hóa đơn: " + error.message);
   }
 });

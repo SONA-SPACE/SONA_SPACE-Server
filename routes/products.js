@@ -236,7 +236,6 @@ router.get("/all", optionalAuth, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching products:", error);
     res.status(500).json({ error: "Failed to fetch products" });
   }
 });
@@ -475,7 +474,6 @@ router.get("/", optionalAuth, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching products:", error);
     res.status(500).json({ error: "Failed to fetch products" });
   }
 });
@@ -513,7 +511,6 @@ router.get("/search", async (req, res) => {
       })),
     });
   } catch (err) {
-    console.error("Search error:", err);
     res.status(500).json({ error: "Search failed" });
   }
 });
@@ -591,7 +588,6 @@ router.get("/admin", async (req, res) => {
 
     res.json(formattedProducts);
   } catch (error) {
-    console.error("Error fetching admin products:", error);
     res.status(500).json({ error: "Failed to fetch admin product list" });
   }
 });
@@ -688,7 +684,6 @@ router.get("/related/by-room/:productId", optionalAuth, async (req, res) => {
 
     res.json({ related_products: result });
   } catch (err) {
-    console.error("Error fetching related products by room:", err);
     res.status(500).json({ error: "Lỗi lấy sản phẩm liên quan theo room" });
   }
 });
@@ -794,7 +789,6 @@ router.get("/newest", optionalAuth, async (req, res) => {
 
     res.json(result);
   } catch (error) {
-    console.error("Error fetching newest products:", error);
     res.status(500).json({ error: "Failed to fetch newest products" });
   }
 });
@@ -844,7 +838,6 @@ router.get("/variants", async (req, res) => {
 
     res.json(result);
   } catch (error) {
-    console.error("Error fetching variants:", error);
     res.status(500).json({ error: "Failed to fetch variants" });
   }
 });
@@ -1126,7 +1119,6 @@ router.get("/full-list-all", async (req, res) => {
 
     return res.json({ products: result });
   } catch (err) {
-    console.error("[FULL LIST ALL] Error:", err);
     return res.status(500).json({ error: "Failed to fetch full product list" });
   }
 });
@@ -1387,7 +1379,6 @@ router.get("/ai-catalog", async (req, res) => {
 
     return res.json({ items });
   } catch (err) {
-    console.error("[AI-CATALOG] Error:", err);
     return res.status(500).json({ error: "Failed to build AI catalog" });
   }
 });
@@ -1580,7 +1571,6 @@ router.get("/test/:slug", async (req, res) => {
       })),
     });
   } catch (error) {
-    console.error("Error fetching product details:", error);
     res.status(500).json({ error: "Failed to fetch product details" });
   }
 });
@@ -1717,7 +1707,6 @@ ORDER BY c.color_priority DESC
       })),
     });
   } catch (error) {
-    console.error("Error fetching product details:", error);
     res.status(500).json({ error: "Failed to fetch product details" });
   }
 });
@@ -1828,7 +1817,6 @@ router.post("/", verifyToken, isAdmin, async (req, res) => {
       product: createdProduct[0],
     });
   } catch (error) {
-    console.error("Error creating product:", error);
     res.status(500).json({ error: "Failed to create product" });
   }
 });
@@ -1963,7 +1951,6 @@ router.put("/:id", async (req, res) => {
       product: updatedProduct[0],
     });
   } catch (error) {
-    console.error("Error updating product:", error);
     res.status(500).json({ error: "Failed to update product" });
   }
 });
@@ -2045,21 +2032,10 @@ router.delete("/:slug", async (req, res) => {
         const publicId = extractPublicIdFromUrl(trimmedUrl);
         if (publicId) {
           try {
-            console.log(`Đang xóa ảnh variant: ${publicId}`);
             await cloudinary.uploader.destroy(publicId);
-            console.log(`Đã xóa ảnh variant: ${publicId}`);
           } catch (err) {
-            console.error(
-              "Lỗi khi xoá ảnh variant:",
-              publicId,
-              err.message,
-              err.http_code
-            );
           }
         } else {
-          console.warn(
-            `Không thể trích xuất publicId từ URL variant: ${trimmedUrl}`
-          );
         }
       }
     }
@@ -2068,21 +2044,10 @@ router.delete("/:slug", async (req, res) => {
       const publicId = extractPublicIdFromUrl(product_image.trim());
       if (publicId) {
         try {
-          console.log(`Đang xóa ảnh chính sản phẩm: ${publicId}`);
           await cloudinary.uploader.destroy(publicId);
-          console.log(`Đã xóa ảnh chính sản phẩm: ${publicId}`);
         } catch (err) {
-          console.error(
-            "Lỗi khi xoá ảnh sản phẩm chính:",
-            publicId,
-            err.message,
-            err.http_code
-          );
         }
       } else {
-        console.warn(
-          `Không thể trích xuất publicId từ URL ảnh chính sản phẩm: ${product_image.trim()}`
-        );
       }
     }
 
@@ -2119,7 +2084,6 @@ router.delete("/:slug", async (req, res) => {
     res.json({ message: "Xoá sản phẩm thành công" });
   } catch (error) {
     await connection.rollback();
-    console.error("Error deleting product:", error);
     res.status(500).json({ error: "Failed to delete product" });
   } finally {
     connection.release();
@@ -2152,7 +2116,6 @@ router.get("/featured/list", async (req, res) => {
 
     res.json(products);
   } catch (error) {
-    console.error("Error fetching featured products:", error);
     res.status(500).json({ error: "Failed to fetch featured products" });
   }
 });
@@ -2230,7 +2193,6 @@ router.get("/by-category/:categoryId", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching products by category:", error);
     res.status(500).json({ error: "Failed to fetch products by category" });
   }
 });
@@ -2250,7 +2212,6 @@ router.put("/status/:id", verifyToken, isAdmin, async (req, res) => {
     }
     res.json({ message: "Product status updated successfully" });
   } catch (err) {
-    console.error("Error updating product status:", err);
     res.status(500).json({ error: "Failed to update product status" });
   }
 });
@@ -2493,7 +2454,6 @@ router.post("/add", async (req, res) => {
         .json({ message: "Tạo sản phẩm thành công", product_id: productId });
     } catch (insertErr) {
       await connection.rollback();
-      console.error("Lỗi trong giao dịch:", insertErr);
       return res.status(500).json({
         error: "Lỗi server khi tạo sản phẩm",
         details: insertErr.message,
@@ -2502,7 +2462,6 @@ router.post("/add", async (req, res) => {
       connection.release();
     }
   } catch (err) {
-    console.error("Lỗi tổng thể khi tạo sản phẩm:", err);
     return res.status(500).json({ error: "Lỗi server", details: err.message });
   }
 });
@@ -2558,7 +2517,6 @@ router.put("/admin/:slug", async (req, res) => {
         });
       }
     } catch (dbErr) {
-      console.error("Error checking slug uniqueness:", dbErr);
       errors.push({ field: "slug", message: "Lỗi kiểm tra slug duy nhất." });
     }
   }
@@ -2666,7 +2624,6 @@ router.put("/admin/:slug", async (req, res) => {
         }
       }
     } catch (attrErr) {
-      console.error("Error validating dynamic attributes:", attrErr);
       errors.push({
         field: "attributes",
         message: "Lỗi server khi xác thực thuộc tính.",
@@ -2695,13 +2652,7 @@ router.put("/admin/:slug", async (req, res) => {
       if (publicId) {
         try {
           await cloudinary.uploader.destroy(publicId);
-          console.log("🗑️ Đã xoá ảnh Cloudinary:", publicId);
         } catch (destroyErr) {
-          console.warn(
-            "Không thể xoá ảnh Cloudinary:",
-            publicId,
-            destroyErr.message
-          );
         }
       }
     }
@@ -2729,13 +2680,7 @@ router.put("/admin/:slug", async (req, res) => {
       );
       const maxPriority = maxPriorityResult[0].max_priority || 0;
       newPriority = maxPriority + 1;
-      console.log(
-        `Debug: Product ID ${productId}, currentPriority was 0, newPriority calculated: ${newPriority}`
-      );
     } else {
-      console.log(
-        `Debug: Product ID ${productId}, currentPriority is ${currentPriority}, not recalculating priority.`
-      );
     }
 
     await connection.query(
@@ -2818,7 +2763,6 @@ router.put("/admin/:slug", async (req, res) => {
     });
   } catch (error) {
     await connection.rollback();
-    console.error("Error updating product:", error);
     res.status(500).json({
       error: "Failed to update product",
       details: error.message,
@@ -2972,7 +2916,6 @@ router.get("/admin/:slug", async (req, res) => {
       rooms,
     });
   } catch (error) {
-    console.error("Error fetching product details (admin):", error);
     res.status(500).json({ error: "Failed to fetch product details" });
   }
 });

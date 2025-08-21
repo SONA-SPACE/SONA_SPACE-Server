@@ -128,7 +128,6 @@
       body: formData,
     });
     const data = await res.json();
-    console.log(data);
     return data.url || null;
   }
 
@@ -181,7 +180,6 @@
         }, 1500);
       }
     } catch (err) {
-      console.error("Error:", err);
       showToast("Có lỗi khi tạo phòng", "danger");
       saveBtn.disabled = false;
       saveBtn.innerText = "Lưu";

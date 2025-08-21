@@ -38,7 +38,6 @@ router.get("/by-product/:slug", async (req, res) => {
     );
     res.json(rows);
   } catch (error) {
-    console.error("Error fetching colors by product:", error);
     res.status(500).json({ error: "Failed to fetch colors by product" });
   }
 });
@@ -65,7 +64,6 @@ router.get("/admin", async (req, res) => {
 
     res.json(rows);
   } catch (error) {
-    console.error("Error fetching all colors for admin:", error);
     res.status(500).json({ error: "Failed to fetch all colors" });
   }
 });
@@ -102,7 +100,6 @@ router.get("/admin/:slug", async (req, res) => {
 
     res.json(rows[0]);
   } catch (error) {
-    console.error("Error fetching color by slug:", error);
     res.status(500).json({ error: "Failed to fetch color" });
   }
 });
@@ -129,7 +126,6 @@ router.post("/admin", async (req, res) => {
       color_id: result.insertId,
     });
   } catch (error) {
-    console.error("Error creating new color:", error);
     res.status(500).json({ error: "Lỗi khi tạo màu" });
   }
 });
@@ -159,7 +155,6 @@ router.put("/admin/:id", async (req, res) => {
 
     res.json({ message: "Xóa màu thành công" });
   } catch (error) {
-    console.error("Error updating color:", error);
     res.status(500).json({ error: "Failed to update color" });
   }
 });
@@ -189,7 +184,6 @@ router.put("/admin/:id/toggle-status", async (req, res) => {
       status: newStatus,
     });
   } catch (error) {
-    console.error("Error toggling color status:", error);
     res.status(500).json({ error: "Failed to toggle color status" });
   }
 });
@@ -228,7 +222,6 @@ router.delete("/admin/:id", async (req, res) => {
 
     res.json({ message: "Xóa màu thành công" });
   } catch (error) {
-    console.error("Error deleting color:", error);
     res.status(500).json({ error: "Lỗi khi xóa màu" });
   }
 });

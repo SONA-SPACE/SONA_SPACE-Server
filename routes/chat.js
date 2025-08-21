@@ -9,7 +9,6 @@ router.get("/", async (req, res) => {
     const context = result[0].context_text;
     res.json({ context });
   } catch (error) {
-    console.error("Có lỗi với bảng chat_context:", error);
     return res.status(500).json({ error: "Lỗi server" });
   }
 });
@@ -30,7 +29,6 @@ router.put("/context", async (req, res) => {
       context: context,
     });
   } catch (error) {
-    console.error("Có lỗi với bảng chat_context:", error);
     return res.status(500).json({ error: "Lỗi server" });
   }
 });

@@ -83,7 +83,6 @@ router.get("/", verifyToken, async (req, res) => {
 
     res.status(200).json(result);
   } catch (err) {
-    console.error("Error fetching wishlist/cart:", err);
     res.status(500).json({ error: "Lỗi khi lấy dữ liệu giỏ hàng/wishlist" });
   }
 });
@@ -143,8 +142,6 @@ router.get("/wwww", verifyToken, async (req, res) => {
   WHERE vp2.product_id = p.product_id
 ) AS colors,
 
-
-
         -- Comment stats
         (SELECT COUNT(*) FROM comment WHERE product_id = p.product_id) AS comment_count,
         (SELECT AVG(comment_rating) FROM comment WHERE product_id = p.product_id) AS average_rating
@@ -169,12 +166,9 @@ router.get("/wwww", verifyToken, async (req, res) => {
 
     res.status(200).json(result);
   } catch (err) {
-    console.error("Error fetching wishlist/cart:", err);
     res.status(500).json({ error: "Lỗi khi lấy dữ liệu giỏ hàng/wishlist" });
   }
 });
-
-
 
 router.get('/variant/:variantId', verifyToken, async (req, res) => {
   try {
@@ -195,11 +189,9 @@ router.get('/variant/:variantId', verifyToken, async (req, res) => {
       wishlist_id: wishlistItem.length > 0 ? wishlistItem[0].wishlist_id : null
     });
   } catch (error) {
-    console.error('Error checking variant in wishlist:', error);
     res.status(500).json({ error: 'Failed to check variant in wishlist' });
   }
 });
-
 
 /**
  * @route   POST /api/wishlists
@@ -277,7 +269,6 @@ router.post('/', verifyToken, async (req, res) => {
         return res.status(200).json({ message: 'Cart item updated successfully' });
       }
 
-
       const [result] = await db.query(
         'INSERT INTO wishlist (user_id, variant_id, quantity, status, created_at) VALUES (?, ?, ?, 0, NOW())',
         [userId, variant_id, quantity]
@@ -304,7 +295,6 @@ router.post('/', verifyToken, async (req, res) => {
     }
 
   } catch (error) {
-    console.error('Error processing wishlist/cart:', error);
     res.status(500).json({ error: 'Failed to process request' });
   }
 });
@@ -342,11 +332,9 @@ router.put('/:id', verifyToken, async (req, res) => {
 
     return res.status(200).json({ message: 'Cập nhật số lượng thành công' });
   } catch (error) {
-    console.error('Lỗi khi cập nhật số lượng:', error);
     res.status(500).json({ error: 'Cập nhật số lượng thất bại' });
   }
 });
-
 
 /**
  * @route   DELETE /api/wishlists/:id
@@ -365,7 +353,6 @@ router.delete('/clear', verifyToken, async (req, res) => {
 
     res.status(200).json({ message: 'Đã xóa các sản phẩm chưa thanh toán khỏi giỏ hàng' });
   } catch (error) {
-    console.error('Error clearing wishlist:', error);
     res.status(500).json({ error: 'Đã xảy ra lỗi khi xóa giỏ hàng' });
   }
 });
@@ -373,29 +360,18 @@ router.delete('/clearid', verifyToken, async (req, res) => {
   try {
     const userId = req.user.id;
     const { selectedItemIds = [] } = req.body;
-
-    console.log(">> Xóa giỏ hàng với userId:", userId);
-    console.log(">> selectedItemIds:", selectedItemIds);
-
     if (!Array.isArray(selectedItemIds) || selectedItemIds.length === 0) {
       return res.status(400).json({ error: 'Danh sách sản phẩm cần xóa không hợp lệ.' });
     }
 
     const placeholders = selectedItemIds.map(() => '?').join(', ');
     const sql = `DELETE FROM wishlist WHERE user_id = ? AND status = 0 AND wishlist_id IN (${placeholders})`;
-
-    console.log(">> SQL:", sql);
     const [result] = await db.query(sql, [userId, ...selectedItemIds]);
-
-    console.log(">> Xóa thành công:", result);
     return res.status(200).json({ message: 'Đã xóa các sản phẩm đã chọn khỏi giỏ hàng' });
   } catch (error) {
-    console.error('❌ Lỗi khi xóa sản phẩm đã chọn khỏi wishlist:', error);
     return res.status(500).json({ error: 'Đã xảy ra lỗi khi xóa giỏ hàng' });
   }
 });
-
-
 
 // routes/wishlist.js
 router.delete('/:id', verifyToken, async (req, res) => {
@@ -422,12 +398,9 @@ router.delete('/:id', verifyToken, async (req, res) => {
 
     res.status(200).json({ message: 'Xóa sản phẩm thành công' });
   } catch (error) {
-    console.error('Error removing from wishlist:', error);
     res.status(500).json({ error: 'Đã xảy ra lỗi khi xóa sản phẩm' });
   }
 });
-
-
 
 /**
  * @route   DELETE /api/wishlists/product/:productId
@@ -447,7 +420,6 @@ router.delete('/variant/:variantId', verifyToken, async (req, res) => {
 
     res.status(200).json({ success: true, message: 'Xoá wishlist thành công' });
   } catch (error) {
-    console.error('Error deleting from wishlist by variant_id:', error);
     res.status(500).json({ success: false, message: 'Lỗi server khi xoá' });
   }
 });
@@ -479,7 +451,6 @@ router.delete('/product/:productId', async (req, res) => {
 
     res.json({ message: 'Product removed from wishlist successfully' });
   } catch (error) {
-    console.error('Error removing from wishlist:', error);
     res.status(500).json({ error: 'Failed to remove product from wishlist' });
   }
 });
@@ -509,7 +480,6 @@ router.get('/check/:productId', async (req, res) => {
       wishlist_id: wishlistItem.length > 0 ? wishlistItem[0].wishlist_id : null
     });
   } catch (error) {
-    console.error('Error checking wishlist:', error);
     res.status(500).json({ error: 'Failed to check wishlist status' });
   }
 });

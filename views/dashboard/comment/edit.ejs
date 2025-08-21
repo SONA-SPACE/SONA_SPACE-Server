@@ -119,7 +119,6 @@
     // Function to fetch and populate material data when the page loads
     async function fetchMaterialData() {
         if (!materialId) {
-            console.error("Material ID not found in URL. Cannot fetch data.");
             showToast("Không tìm thấy ID vật liệu để chỉnh sửa.", "danger");
             return;
         }
@@ -131,7 +130,6 @@
 
             if (!res.ok || data.success === false) {
                 showToast(data.message || "Không thể tải dữ liệu vật liệu.", "danger");
-                console.error("Error fetching material:", data.error);
                 return;
             }
 
@@ -144,7 +142,6 @@
             materialDescriptionInput.value = material.material_description || '';
 
         } catch (error) {
-            console.error("Lỗi kết nối khi tải dữ liệu:", error);
             showToast("Không thể kết nối đến máy chủ để tải dữ liệu.");
         }
     }
@@ -226,7 +223,6 @@
                 window.location.href = "/dashboard/material";
             }, 3000);
         } catch (err) {
-            console.error("Lỗi kết nối:", err);
             showToast("Không thể kết nối đến máy chủ.");
         }
     });

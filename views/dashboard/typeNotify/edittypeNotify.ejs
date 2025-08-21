@@ -58,11 +58,9 @@ document.querySelector(".btn-cancel").addEventListener("click", () => {
             showToast("Không tìm thấy dữ liệu loại thông báo", "danger");
         }
     } catch (err) {
-        console.error("Lỗi khi tải loại thông báo:", err);
         showToast("Lỗi máy chủ", "danger");
     }
 }
-
 
     async function handleUpdateNotificationType() {
         const type_code = document.getElementById("typeCode").value.trim();
@@ -99,7 +97,6 @@ document.querySelector(".btn-cancel").addEventListener("click", () => {
                 setTimeout(() => window.location.href = "/dashboard/typeNotify", 1000);
             }
         } catch (err) {
-            console.error("Lỗi khi cập nhật loại thông báo:", err);
             showToast("Lỗi máy chủ", "danger");
         }
     }

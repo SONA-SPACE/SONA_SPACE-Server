@@ -99,7 +99,6 @@
           renderNotifications(data);
         })
         .catch((err) => {
-          console.error("Lỗi khi tải thông báo:", err);
           document.querySelector(".results-info").textContent = "Không thể tải dữ liệu.";
         });
     }
@@ -168,7 +167,6 @@
           }
         })
         .catch((err) => {
-          console.error("Lỗi khi xóa thông báo:", err);
           showToast("Xảy ra lỗi khi xóa thông báo", "danger");
         });
     }

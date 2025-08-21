@@ -41,7 +41,6 @@
 
     </div>
 
-
   </div>
   <div class="stat-card">
     <div class="stat-card-title-product">Sản phẩm có lượt mua thấp</div>
@@ -95,7 +94,6 @@
       </a>
       <span class="red">Hết hàng </span>
     </div>
-
 
   </div>
   <div class="stat-card">
@@ -676,7 +674,6 @@
           dropdown.appendChild(a);
         });
       } catch (error) {
-        console.error('Lỗi khi tải danh mục:', error);
       }
     }
 
@@ -686,7 +683,6 @@
         .then((response) => response.json())
         .then((products) => {
           if (!Array.isArray(products)) {
-            console.error("Invalid data format received:", products);
             document.querySelector(".results-info").textContent =
               "Lỗi định dạng dữ liệu.";
             return;
@@ -696,7 +692,6 @@
           renderProducts(products);
         })
         .catch((error) => {
-          console.error("Lỗi khi tải sản phẩm:", error);
           document.querySelector(".results-info").textContent =
             "Không thể tải dữ liệu.";
         });
@@ -931,11 +926,9 @@
           getProducts(); // Refresh danh sách
         })
         .catch((error) => {
-          console.error("Lỗi:", error);
           showToast("Có lỗi xảy ra khi xoá sản phẩm", "danger");
         });
     }
-
 
     function toggleProductVisibility(productId, currentlyVisible) {
       fetch(`/api/products/status/${productId}`, {
@@ -958,7 +951,6 @@
           }
         })
         .catch((error) => {
-          console.error("Error:", error);
           showToast("Có lỗi xảy ra khi cập nhật trạng thái sản phẩm", "danger");
         });
     }

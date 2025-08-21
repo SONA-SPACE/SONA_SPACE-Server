@@ -95,7 +95,6 @@
                     renderMaterials(currentFilteredMaterials);
                 })
                 .catch((err) => {
-                    console.error("Lỗi khi tải vật liệu:", err);
                     document.querySelector(".results-info").textContent =
                         "Không thể tải dữ liệu.";
                 });

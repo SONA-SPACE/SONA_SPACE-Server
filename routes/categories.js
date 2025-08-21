@@ -26,8 +26,6 @@ router.get("/filter/", async (req, res) => {
  */
 router.get("/", async (req, res) => {
   try {
-    console.log("Fetching categories...");
-
     const sql = `
       SELECT
         c.*,
@@ -35,26 +33,13 @@ router.get("/", async (req, res) => {
       FROM category c WHERE category_status = 1
       ORDER BY c.category_priority ASC
     `;
-
-    console.log("SQL Query:", sql);
-
     try {
       const [categories] = await db.query(sql);
-      console.log(`Found ${categories.length} categories`);
-
       return res.json(categories);
     } catch (dbError) {
-      console.error("Database error:", dbError);
-      console.error("SQL Error Code:", dbError.code);
-      console.error("SQL Error Number:", dbError.errno);
-      console.error("SQL Error Message:", dbError.message);
-      console.error("SQL Error State:", dbError.sqlState);
-      console.error("SQL Error Stack:", dbError.stack);
-
       throw new Error(`Database error: ${dbError.message}`);
     }
   } catch (error) {
-    console.error("Error fetching categories:", error);
     res
       .status(500)
       .json({ error: "Failed to fetch categories", details: error.message });
@@ -86,7 +71,6 @@ router.get("/:slug", async (req, res) => {
 
     res.json(category[0]);
   } catch (error) {
-    console.error("Error fetching category:", error);
     res.status(500).json({ error: "Failed to fetch category" });
   }
 });
@@ -119,7 +103,6 @@ router.get("/:categoryId", async (req, res) => {
 
     res.status(200).json(attributes);
   } catch (err) {
-    console.error("Error fetching category attributes:", err);
     res.status(500).json({
       success: false,
       message: "Lỗi máy chủ khi lấy danh sách thuộc tính danh mục.",
@@ -134,8 +117,6 @@ router.get("/:categoryId", async (req, res) => {
  */
 router.get("/admin/all", verifyToken, isAdmin, async (req, res) => {
   try {
-    console.log("Fetching categories...");
-
     const sql = `
       SELECT
         c.*,
@@ -143,26 +124,13 @@ router.get("/admin/all", verifyToken, isAdmin, async (req, res) => {
       FROM category c
       ORDER BY c.category_priority ASC
     `;
-
-    console.log("SQL Query:", sql);
-
     try {
       const [categories] = await db.query(sql);
-      console.log(`Found ${categories.length} categories`);
-
       return res.json(categories);
     } catch (dbError) {
-      console.error("Database error:", dbError);
-      console.error("SQL Error Code:", dbError.code);
-      console.error("SQL Error Number:", dbError.errno);
-      console.error("SQL Error Message:", dbError.message);
-      console.error("SQL Error State:", dbError.sqlState);
-      console.error("SQL Error Stack:", dbError.stack);
-
       throw new Error(`Database error: ${dbError.message}`);
     }
   } catch (error) {
-    console.error("Error fetching categories:", error);
     res
       .status(500)
       .json({ error: "Failed to fetch categories", details: error.message });
@@ -224,7 +192,6 @@ router.post("/", verifyToken, isAdmin, async (req, res) => {
       category: newCategory[0],
     });
   } catch (error) {
-    console.error("Error creating category:", error);
     res.status(500).json({ error: "Failed to create category" });
   }
 });
@@ -318,7 +285,6 @@ router.put("/:slug", verifyToken, isAdmin, async (req, res) => {
       category: updatedCategory[0],
     });
   } catch (error) {
-    console.error("Error updating category:", error);
     res.status(500).json({ error: "Failed to update category" });
   }
 });
@@ -345,8 +311,6 @@ router.delete("/:slug", verifyToken, isAdmin, async (req, res) => {
     }
 
     const categoryId = categoryData[0].category_id;
-    console.log("Category ID:", categoryId);
-
     const { category_image, category_banner } = categoryData[0];
 
     // Kiểm tra xem danh mục có sản phẩm nào không
@@ -383,7 +347,6 @@ router.delete("/:slug", verifyToken, isAdmin, async (req, res) => {
 
     res.json({ message: "Category deleted successfully" });
   } catch (error) {
-    console.error("Error deleting category:", error);
     res.status(500).json({ error: "Failed to delete category" });
   }
 });
@@ -445,7 +408,6 @@ router.get("/:slug/products", async (req, res) => {
   p.created_at,
   p.updated_at,
 
-
  (
   SELECT vp2.variant_product_price
   FROM variant_product vp2
@@ -460,7 +422,6 @@ router.get("/:slug/products", async (req, res) => {
   ORDER BY vp2.variant_id ASC
   LIMIT 1
 ) AS price_sale,
-
 
   JSON_ARRAYAGG(DISTINCT col.color_hex) AS color_hex
 
@@ -508,7 +469,6 @@ router.get("/:slug/products", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching products by category:", error);
     res.status(500).json({ error: "Failed to fetch products by category" });
   }
 });
@@ -539,7 +499,6 @@ router.get("/by-product/:slug", async (req, res) => {
 
     res.json(rows);
   } catch (error) {
-    console.error("Error fetching categories by product:", error);
     res.status(500).json({ error: "Failed to fetch categories by product" });
   }
 });

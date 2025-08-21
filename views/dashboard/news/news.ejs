@@ -53,10 +53,8 @@
                 .then((response) => response.json())
                 .then((data) => {
                     renderNews(data.news);
-                    console.log("Danh sách bài viết:", data.news);
                 })
                 .catch((error) => {
-                    console.error("Lỗi khi tải danh sách bài viết:", error);
                     document.querySelector(".results-info").textContent =
                         "Không thể tải dữ liệu.";
                 });
@@ -152,11 +150,9 @@
                     }
                 })
                 .catch((err) => {
-                    console.error("Lỗi khi xóa:", err);
                     showToast("Xảy ra lỗi khi xóa bài viết", "danger");
                 });
         }
-
 
         function formatDate(dateStr) {
             if (!dateStr) return "-";

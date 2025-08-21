@@ -1,6 +1,6 @@
 <!-- Trang chi tiết đơn hàng -->
-<% console.log("Order payment in EJS:", order.payment); %>
-<% console.log("Payment status in EJS:", (order.payment && order.payment.length > 0) ? order.payment[0].status : 'No payment data'); %>
+<%  %>
+<% ? order.payment[0].status : 'No payment data'); %>
 <div class="order-detail-page">
   <div class="container">
     <div class="order-card">
@@ -16,8 +16,6 @@
               <div class="status-label">Trạng thái thanh toán:</div>
               <% 
                 const paymentStatus = (order.payment && order.payment.length > 0) ? order.payment[0].status : order.payment_status;
-                console.log("Payment status in template:", paymentStatus);
-                
                 let statusDisplay = "Chờ thanh toán";
                 let statusClass = "pending";
                 
@@ -210,7 +208,6 @@
               </select>
             </div>
 
-            
           </div>
 
           <div class="order-summary">
@@ -461,7 +458,6 @@
           }
         })
         .catch(error => {
-          console.error('Lỗi khi cập nhật:', error);
           alert('Đã xảy ra lỗi khi cập nhật thông tin');
         });
     }
@@ -510,7 +506,6 @@
                   });
                 }
               } catch (error) {
-                console.error('Lỗi khi cập nhật trạng thái:', error);
                 window.antd.notification.error({
                   message: 'Lỗi',
                   description: 'Đã xảy ra lỗi khi cập nhật trạng thái đơn hàng',
@@ -540,7 +535,6 @@
                 }
               })
               .catch(error => {
-                console.error('Lỗi khi cập nhật trạng thái:', error);
                 alert('Đã xảy ra lỗi khi cập nhật trạng thái đơn hàng');
               });
           }

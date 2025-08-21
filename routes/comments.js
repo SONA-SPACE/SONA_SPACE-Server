@@ -1,4 +1,4 @@
-console.log("comments.js router loaded.");
+
 const express = require("express");
 const router = express.Router();
 const db = require("../config/database");
@@ -61,7 +61,6 @@ router.get("/", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching comments:", error);
     res.status(500).json({ error: "Failed to fetch comments" });
   }
 });
@@ -100,7 +99,6 @@ router.get("/admin", async (req, res) => {
 
     res.json(rows);
   } catch (error) {
-    console.error("Lỗi khi lấy danh sách bình luận:", error);
     res.status(500).json({ error: "Lỗi máy chủ khi lấy bình luận" });
   }
 });
@@ -157,7 +155,6 @@ router.put("/:comment_id/status", async (req, res) => {
       comment: updatedComment[0],
     });
   } catch (error) {
-    console.error("Error updating comment status:", error);
     res.status(500).json({ error: "Failed to update comment status" });
   }
 });
@@ -198,7 +195,6 @@ router.get("/:id", async (req, res) => {
 
     res.json(comment);
   } catch (error) {
-    console.error("Error fetching comment:", error);
     res.status(500).json({ error: "Failed to fetch comment" });
   }
 });
@@ -309,7 +305,6 @@ router.get("/product/:productId", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching product comments:", error);
     res.status(500).json({ error: "Failed to fetch product comments" });
   }
 });
@@ -374,7 +369,6 @@ router.get("/user/:userId", verifyToken, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching user comments:", error);
     res.status(500).json({ error: "Failed to fetch user comments" });
   }
 });
@@ -569,7 +563,6 @@ router.post("/", verifyToken, async (req, res) => {
     if (connection) {
       await connection.rollback();
     }
-    console.error("Lỗi khi tạo bình luận:", error);
     res.status(500).json({
       error: "Có lỗi xảy ra khi tạo bình luận.",
       details: error.message,
@@ -689,7 +682,6 @@ router.put("/:id", verifyToken, async (req, res) => {
       comment: commentWithPlaceholder,
     });
   } catch (error) {
-    console.error("Error updating comment:", error);
     res.status(500).json({ error: "Failed to update comment" });
   }
 });
@@ -742,7 +734,6 @@ router.delete("/:id", verifyToken, async (req, res) => {
 
     res.json({ message: "Comment deleted successfully" });
   } catch (error) {
-    console.error("Error deleting comment:", error);
     res.status(500).json({ error: "Failed to delete comment" });
   }
 });
@@ -773,7 +764,6 @@ router.put("/:id/toggle-status", async (req, res) => {
       status: newStatus,
     });
   } catch (error) {
-    console.error("Error toggling comment status:", error);
     res.status(500).json({ error: "Failed to toggle comment status" });
   }
 });

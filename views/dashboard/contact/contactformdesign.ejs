@@ -46,10 +46,8 @@
         .then((response) => response.json())
         .then((data) => {
           renderContactForm(data.forms);
-          console.log(data.forms);
         })
         .catch((error) => {
-          console.error("Lỗi khi tải contact form:", error);
           document.querySelector(".results-info").textContent =
             "Không thể tải dữ liệu.";
         });
@@ -200,7 +198,6 @@
           }
         })
         .catch((error) => {
-          console.error("Error:", error);
           showToast("Có lỗi xảy ra khi xóa contact form", "danger");
         });
     }
@@ -225,7 +222,6 @@
           }
         })
         .catch((error) => {
-          console.error("Error:", error);
           alert("Có lỗi xảy ra khi cập nhật trạng thái contact form");
         });
     }

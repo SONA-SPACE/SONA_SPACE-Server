@@ -61,7 +61,6 @@ router.get('/:userId', async (req, res) => {
       wishlists: wishlists
     });
   } catch (error) {
-    console.error('Error fetching user wishlists:', error);
     res.status(500).json({ 
       error: 'Failed to fetch wishlists',
       details: error.message

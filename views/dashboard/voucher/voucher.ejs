@@ -122,10 +122,8 @@
                 .then((data) => {
                     originalVoucherList = data;
                     renderVoucher(data);
-                    console.log("Danh sách voucher:", data);
                 })
                 .catch((error) => {
-                    console.error("Lỗi khi tải danh sách voucher:", error);
                     document.querySelector(".results-info").textContent = "Không thể tải dữ liệu.";
                 });
         }
@@ -212,7 +210,6 @@
                 document.getElementById("confirmationModal").style.display = "none";
             });
 
-
         }
         function toggleVoucherVisibility(voucherId, newStatus) {
             const token = localStorage.getItem("token");
@@ -235,7 +232,6 @@
                     }
                 })
                 .catch((err) => {
-                    console.error("Lỗi khi cập nhật trạng thái:", err);
                     showToast("Lỗi khi thay đổi trạng thái voucher", "danger");
                 });
         }
@@ -261,7 +257,6 @@
                     }
                 })
                 .catch((err) => {
-                    console.error("Lỗi khi xóa voucher:", err);
                     showToast("Xảy ra lỗi khi xóa voucher", "danger");
                 });
         }
@@ -347,7 +342,6 @@
             });
         });
 
-
         // Click ra ngoài thì đóng dropdown
         document.addEventListener("click", () => {
             document.querySelectorAll(".header-filter").forEach((filter) => {
@@ -355,9 +349,6 @@
                 filter.querySelector(".filter-dropdown").classList.remove("show");
             });
         });
-
-
-
 
         //  Khởi động
         getNews();

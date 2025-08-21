@@ -190,7 +190,6 @@
     fetch(`/api/rooms/products`)
       .then((res) => res.json())
       .then((data) => {
-        console.log(data, "data nhận được");
         const select = document.getElementById("product-select");
         select.innerHTML = '<option value="">Chọn một sản phẩm</option>';
         data.forEach((product) => {
@@ -281,8 +280,6 @@
         body: JSON.stringify(body),
       });
       // data đã gửi đi
-      console.log(body, "data đã gửi đi");
-
       const data = await res.json();
       if (res.ok) {
         showToast("Thêm sản phẩm thành công", "success");
@@ -393,7 +390,6 @@
         setTimeout(() => (window.location.href = "/dashboard/room"), 1500);
       }
     } catch (err) {
-      console.error("Update error", err);
       showToast("Lỗi khi cập nhật", "danger");
     } finally {
       saveBtn.disabled = false;

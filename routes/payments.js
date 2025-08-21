@@ -43,7 +43,6 @@ router.get('/', verifyToken, isAdmin, async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching payments:', error);
     res.status(500).json({ error: 'Failed to fetch payments' });
   }
 });
@@ -86,7 +85,6 @@ router.get('/:id', verifyToken, async (req, res) => {
 
     res.json(payment);
   } catch (error) {
-    console.error('Error fetching payment:', error);
     res.status(500).json({ error: 'Failed to fetch payment' });
   }
 });
@@ -125,7 +123,6 @@ router.get('/order/:orderId', verifyToken, async (req, res) => {
       payments
     });
   } catch (error) {
-    console.error('Error fetching order payments:', error);
     res.status(500).json({ error: 'Failed to fetch order payments' });
   }
 });
@@ -233,11 +230,9 @@ router.post('/', verifyToken, async (req, res) => {
       payment: newPayment[0]
     });
   } catch (error) {
-    console.error('Error creating payment:', error);
     return res.status(500).json({ error: 'Failed to create payment' });
   }
 });
-
 
 /**
  * @route   PUT /api/payments/:id
@@ -326,7 +321,6 @@ router.put('/:id', verifyToken, isAdmin, async (req, res) => {
       payment: updatedPayment[0]
     });
   } catch (error) {
-    console.error('Error updating payment:', error);
     res.status(500).json({ error: 'Failed to update payment' });
   }
 });
@@ -378,7 +372,6 @@ router.delete('/:id', verifyToken, isAdmin, async (req, res) => {
 
     res.json({ message: 'Payment deleted successfully' });
   } catch (error) {
-    console.error('Error deleting payment:', error);
     res.status(500).json({ error: 'Failed to delete payment' });
   }
 });

@@ -152,8 +152,6 @@
             autoUpdateStatus();
         });
 
-
-
         function autoUpdateStatus() {
             const startDate = startDateInput.value;
             const endDate = document.getElementById("endDate").value;
@@ -233,7 +231,6 @@
 
     async function loadEventData() {
         try {
-            console.log("Loading event data for ID:", currentEventId);
             const token = localStorage.getItem("token");
             const response = await fetch(`/api/events/admin/${currentEventId}`, {
                 headers: {
@@ -246,27 +243,21 @@
             }
 
             const eventData = await response.json();
-            console.log("Loaded event data:", eventData);
-
             // Populate form fields
             document.getElementById("eventTitle").value = eventData.title || "";
             document.getElementById("eventDescription").value = eventData.description || "";
             document.getElementById("eventLink").value = eventData.link_url || "";
             document.getElementById("displayOrder").value = eventData.display_order || 0;
             document.getElementById("eventStatus").value = eventData.status || "";
-            console.log("Set status value to:", eventData.status);
-
             // Format dates for datetime-local input
             if (eventData.start_date) {
                 const startDate = new Date(eventData.start_date);
                 document.getElementById("startDate").value = startDate.toISOString().slice(0, 16);
-                console.log("Set start date to:", startDate.toISOString().slice(0, 16));
             }
 
             if (eventData.end_date) {
                 const endDate = new Date(eventData.end_date);
                 document.getElementById("endDate").value = endDate.toISOString().slice(0, 16);
-                console.log("Set end date to:", endDate.toISOString().slice(0, 16));
             }
 
             // Display existing image if available
@@ -290,12 +281,9 @@
             }, 100);
 
         } catch (error) {
-            console.error("Error loading event data:", error);
             showToast("Lỗi khi tải dữ liệu sự kiện: " + error.message, "danger");
         }
     }
-
-
 
     function handleImageClick() {
         const fileInput = document.createElement("input");
@@ -324,7 +312,6 @@
                 return publicId;
             }
         } catch (error) {
-            console.error("Error extracting public ID:", error);
         }
         return null;
     }
@@ -342,10 +329,7 @@
             if (!response.ok) {
                 throw new Error("Failed to delete image from Cloudinary");
             }
-
-            console.log("Successfully deleted old image:", publicId);
         } catch (error) {
-            console.error("Error deleting image from Cloudinary:", error);
             throw error;
         }
     }
@@ -387,17 +371,6 @@
         const end_date = document.getElementById("endDate").value;
         const display_order = parseInt(document.getElementById("displayOrder").value) || 0;
         const status = document.getElementById("eventStatus").value;
-
-        console.log("Form data:", {
-            title,
-            description,
-            link_url,
-            start_date,
-            end_date,
-            display_order,
-            status
-        });
-
         const requiredFields = [
             { id: "eventTitle", msgId: "titleValidationMessage" },
             { id: "startDate", msgId: "startDateValidationMessage" },
@@ -482,7 +455,6 @@
                                 await deleteImageFromCloudinary(publicId);
                             }
                         } catch (deleteErr) {
-                            console.error("Failed to delete old image:", deleteErr);
                             // Don't stop the process if deletion fails
                         }
                     }
@@ -490,7 +462,6 @@
                     throw new Error(uploadData.error?.message || "Lỗi khi tải ảnh lên Cloudinary.");
                 }
             } catch (uploadErr) {
-                console.error("Upload image failed during submission:", uploadErr);
                 showToast(uploadErr.message || "Lỗi upload ảnh.", "danger");
                 updateEventBtn.disabled = false;
                 updateEventBtn.innerText = "Cập nhật";
@@ -538,7 +509,6 @@
                 showToast(data.message || "Lỗi khi cập nhật sự kiện.", "danger");
             }
         } catch (apiError) {
-            console.error("Error updating event:", apiError);
             showToast("Lỗi kết nối hoặc hệ thống khi cập nhật sự kiện.", "danger");
         } finally {
             updateEventBtn.disabled = false;

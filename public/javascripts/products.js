@@ -143,7 +143,6 @@ function updateSelectedCount() {
     (document.querySelector('th input[type="checkbox"]:checked') ? 1 : 0);
 
   // Here you could update UI to show selected count or enable bulk actions
-  console.log(`${count} items selected`);
 }
 
 // Setup action buttons
@@ -187,7 +186,6 @@ function setupActionButtons() {
   document.querySelectorAll(".filter-btn").forEach((button) => {
     button.addEventListener("click", function () {
       // In a real application, you would show a dropdown here
-      console.log(`Filter clicked: ${this.textContent.trim()}`);
     });
   });
 }
@@ -198,8 +196,6 @@ function toggleProductVisibility(productId, currentStatus) {
 
   // Here you would normally make an AJAX call to your API
   // For demonstration, we'll just show a success message
-  console.log(`Product ${productId} visibility changed to ${newStatus}`);
-
   // Show a toast notification
   showToast(
     `Sản phẩm đã được ${
@@ -222,8 +218,6 @@ function confirmDeleteProduct(productId, productName) {
   ) {
     // Here you would normally make an AJAX call to your API
     // For demonstration, we'll just show a success message
-    console.log(`Product ${productId} deleted`);
-
     // Show a toast notification
     showToast(`Sản phẩm "${productName}" đã được xóa thành công.`, "danger");
 

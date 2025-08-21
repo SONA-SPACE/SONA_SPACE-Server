@@ -179,7 +179,6 @@
                 setTimeout(() => (window.location.href = "/dashboard/categories"), 1500);
             }
         } catch (err) {
-            console.error("Update error", err);
             showToast("Lỗi khi cập nhật", "danger");
         } finally {
             saveBtn.disabled = false;

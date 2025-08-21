@@ -2657,7 +2657,6 @@
                 instances.push(node._flatpickr);
             }
             catch (e) {
-                console.error(e);
             }
         }
         return instances.length === 1 ? instances[0] : instances;

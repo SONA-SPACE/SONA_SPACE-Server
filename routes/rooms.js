@@ -20,7 +20,6 @@ router.get("/", async (req, res) => {
 
     res.json(rooms);
   } catch (error) {
-    console.error("Error fetching rooms:", error);
     res.status(500).json({ error: "Failed to fetch rooms" });
   }
 });
@@ -42,7 +41,6 @@ router.get("/admin", verifyToken, isAdmin, async (req, res) => {
 
     res.json(rooms);
   } catch (error) {
-    console.error("Error fetching rooms:", error);
     res.status(500).json({ error: "Failed to fetch rooms" });
   }
 });
@@ -106,7 +104,6 @@ router.get("/products", async (req, res) => {
 
     res.json(result);
   } catch (error) {
-    console.error("Error fetching products:", error);
     res.status(500).json({ error: "Failed to fetch products" });
   }
 });
@@ -142,7 +139,6 @@ router.get("/:slug", async (req, res) => {
 
     res.json(rooms[0]);
   } catch (error) {
-    console.error("Error fetching room:", error);
     res.status(500).json({ error: "Failed to fetch room" });
   }
 });
@@ -204,7 +200,6 @@ router.post("/", async (req, res) => {
       room: newRoom[0],
     });
   } catch (error) {
-    console.error("Error creating room:", error);
     res.status(500).json({ error: "Failed to create room" });
   }
 });
@@ -297,7 +292,6 @@ router.put("/:slug", verifyToken, isAdmin, async (req, res) => {
       room: updatedRoom[0],
     });
   } catch (error) {
-    console.error("Error updating room:", error);
     res.status(500).json({ error: "Failed to update room" });
   }
 });
@@ -348,7 +342,6 @@ router.delete("/:slug", verifyToken, isAdmin, async (req, res) => {
 
     res.json({ message: "Room deleted successfully" });
   } catch (error) {
-    console.error("Error deleting room:", error);
     res.status(500).json({ error: "Failed to delete room" });
   }
 });
@@ -463,7 +456,6 @@ router.get("/:slug/products", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching room products:", error);
     res.status(500).json({ error: "Failed to fetch room products" });
   }
 });
@@ -556,7 +548,6 @@ router.post("/:slug/products", verifyToken, isAdmin, async (req, res) => {
       existing_products: existingProducts,
     });
   } catch (error) {
-    console.error("Error adding products to room:", error);
     res.status(500).json({ error: "Failed to add products to room" });
   }
 });
@@ -611,7 +602,6 @@ router.delete(
 
       res.json({ message: "Product removed from room successfully" });
     } catch (error) {
-      console.error("Error removing product from room:", error);
       res.status(500).json({ error: "Failed to remove product from room" });
     }
   }

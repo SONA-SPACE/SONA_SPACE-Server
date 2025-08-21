@@ -22,8 +22,6 @@ function initializeFileUploads() {
         mainUploadArea.addEventListener('click', function() {
             createFileInput(function(file) {
                 // Here you would handle the main image upload
-                console.log('Main image selected:', file.name);
-                
                 // Preview the image
                 previewMainImage(file);
             });
@@ -41,8 +39,6 @@ function initializeFileUploads() {
         item.addEventListener('click', function() {
             createFileInput(function(file) {
                 // Here you would handle the thumbnail image upload
-                console.log('Thumbnail image selected:', file.name, 'for position', index + 1);
-                
                 // Preview the thumbnail
                 previewThumbnail(file, item);
             });

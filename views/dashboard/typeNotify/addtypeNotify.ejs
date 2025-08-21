@@ -83,7 +83,6 @@ document.querySelector(".btn-cancel").addEventListener("click", () => {
         }, 1500);
       }
     } catch (err) {
-      console.error("Lỗi khi thêm loại thông báo:", err);
       showToast("Lỗi máy chủ", "danger");
     } finally {
       saveBtn.disabled = false;

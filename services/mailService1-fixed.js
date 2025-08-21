@@ -38,12 +38,8 @@ exports.sendEmail1 = async (to, subject, data, templateType = 'order') => {
   };
   try {
     const info = await transporter.sendMail(mailOptions);
-    console.log(" Email gửi thành công:", info.response);
-
     return true;
   } catch (error) {
-    console.error(" Lỗi gửi mail:", error.message);
-    console.error(" Stack:", error.stack);
     return false;
   }
 };

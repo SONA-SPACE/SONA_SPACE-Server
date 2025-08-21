@@ -226,7 +226,6 @@
           return;
         }
       }
-      console.log(imageUrl);
       const payload = {
         title,
         slug,
@@ -248,7 +247,6 @@
       });
 
       const data = await res.json();
-      console.log(data);
       if (data.error) {
         showToast(data.error, "danger");
       } else {
@@ -256,7 +254,6 @@
         setTimeout(() => (window.location.href = "/dashboard/news"), 1000);
       }
     } catch (err) {
-      console.error("Error:", err);
       showToast("Có lỗi khi tạo tin tức", "danger");
     }
 
@@ -278,7 +275,6 @@
         select.appendChild(option);
       });
     } catch (err) {
-      console.error("Lỗi tải danh mục:", err);
       showToast("Không thể tải danh mục", "danger");
     }
   }

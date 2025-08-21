@@ -391,8 +391,6 @@ router.put('/cancel/:orderId', verifyToken, async (req, res) => {
             } else {
               console.log('Không thể tạo thông báo: Cấu trúc bảng notifications không phù hợp');
             }
-            else {
-            }
           } catch (tableError) {
             if (tableError.code === 'ER_NO_SUCH_TABLE') {
             } else {

@@ -116,10 +116,18 @@
     border: 1px solid #a6d5fa;
   }
 
+  .order-status-select {
+    appearance: auto;
+    -webkit-appearance: auto;
+    -moz-appearance: auto;
+  }
+
   .badge-secondary {
     background-color: #e2e3e5;
     color: #383d41;
     border: 1px solid #c6c8ca;
+    width: 100%;
+    text-align: left;
   }
 
   /* Return status select dropdown styles */
@@ -229,11 +237,7 @@
       <div class="container-fluid">
         <div class="page-header">
           <h1>Đơn hàng</h1>
-          <div class="actions">
-            <button class="btn btn-primary">
-              <i class="fas fa-plus"></i> Thêm đơn hàng mới
-            </button>
-          </div>
+
         </div>
 
         <div class="search-bar">
@@ -287,7 +291,8 @@
           <table>
             <thead>
               <tr>
-                <th></th>
+
+
                 <th class="filterable">
                   Mã đơn hàng
                   <div class="header-filter">
@@ -609,7 +614,7 @@
 
         // Toggle active class cho header-filter này
         const isCurrentlyActive = headerFilter.classList.contains('active');
-        
+
         // Close tất cả dropdowns khác
         document.querySelectorAll('.header-filter').forEach(otherFilter => {
           otherFilter.classList.remove('active');
@@ -842,7 +847,7 @@
       case 'return-pending':
       case 'return-approved':
       case 'return-cancel-confirmed':
-      case 'return-cancelled': 
+      case 'return-cancelled':
       case 'return-rejected':
         // Lấy trạng thái trả hàng cần lọc
         let returnStatusToFilter;
@@ -853,12 +858,12 @@
         } else {
           returnStatusToFilter = sortType.replace('return-', '').toUpperCase();
         }
-        
+
         // Lọc các đơn hàng theo trạng thái trả hàng trong select dropdown
         rows.forEach(row => {
           const returnSelectElement = row.querySelectorAll('td')[7].querySelector('.return-status-select');
           const returnStatus = returnSelectElement ? returnSelectElement.value : '';
-          
+
           // Hiển thị đơn hàng nếu trạng thái khớp
           row.style.display = (returnStatus === returnStatusToFilter) ? '' : 'none';
         });
@@ -869,7 +874,7 @@
         rows.forEach(row => {
           const returnSelectElement = row.querySelectorAll('td')[7].querySelector('.return-status-select');
           const returnStatus = returnSelectElement ? returnSelectElement.value : '';
-          
+
           // Hiển thị nếu không có return status (rỗng)
           row.style.display = (returnStatus === '' || !returnStatus) ? '' : 'none';
         });
@@ -1076,7 +1081,7 @@
         const paymentMethod = paymentInfo.method || order.payment_method || 'N/A';
 
         tr.innerHTML = `
-        <td><input type="checkbox" class="checkbox"></td>
+     
         <td class="order-id">${order.order_hash}</td>
         <td>${formatDate(order.created_at)}</td>
         <td>${order.order_name_new || order.order_name_old || order.user_name}</td>
@@ -1101,7 +1106,7 @@
         <td>
           <div class="actions">
             <a href="/dashboard/orders/detail/${order.order_id}" class="action-btn view-btn" title="Xem chi tiết"><i class="fas fa-pencil"></i></a>
-            <button class="action-btn"><i class="fas fa-trash-alt"></i></button>
+          
           </div>
         </td>
       `;
@@ -1243,10 +1248,10 @@
     return `
       <select class="return-status-select" data-order-id="${order.order_id}" data-current-return-status="${currentReturnStatus || ''}" onchange="confirmReturnStatusChange(this)">
         <option value="" ${!currentReturnStatus ? 'selected' : ''}>Không có hoàn trả</option>
-        <option value="PENDING" ${currentReturnStatus === 'PENDING' ? 'selected' : ''} ${currentReturnStatus && !canTransitionTo(currentReturnStatus, 'PENDING') && currentReturnStatus !== 'PENDING' ? 'disabled' : ''}>Đang chờ xử lý (1)</option>
-        <option value="APPROVED" ${currentReturnStatus === 'APPROVED' ? 'selected' : ''} ${currentReturnStatus && !canTransitionTo(currentReturnStatus, 'APPROVED') && currentReturnStatus !== 'APPROVED' ? 'disabled' : ''}>Đã duyệt trả hàng (2)</option>
-        <option value="CANCEL_CONFIRMED" ${currentReturnStatus === 'CANCEL_CONFIRMED' ? 'selected' : ''} ${currentReturnStatus && !canTransitionTo(currentReturnStatus, 'CANCEL_CONFIRMED') && currentReturnStatus !== 'CANCEL_CONFIRMED' ? 'disabled' : ''}>Xác nhận hủy đơn hàng (3)</option>
-        <option value="CANCELLED" ${currentReturnStatus === 'CANCELLED' ? 'selected' : ''} ${currentReturnStatus && !canTransitionTo(currentReturnStatus, 'CANCELLED') && currentReturnStatus !== 'CANCELLED' ? 'disabled' : ''}>Đã hủy hoàn tất (4)</option>
+        <option value="PENDING" ${currentReturnStatus === 'PENDING' ? 'selected' : ''} ${currentReturnStatus && !canTransitionTo(currentReturnStatus, 'PENDING') && currentReturnStatus !== 'PENDING' ? 'disabled' : ''}>Đang chờ xử lý </option>
+        <option value="APPROVED" ${currentReturnStatus === 'APPROVED' ? 'selected' : ''} ${currentReturnStatus && !canTransitionTo(currentReturnStatus, 'APPROVED') && currentReturnStatus !== 'APPROVED' ? 'disabled' : ''}>Đã xử lý</option>
+        <option value="CANCEL_CONFIRMED" ${currentReturnStatus === 'CANCEL_CONFIRMED' ? 'selected' : ''} ${currentReturnStatus && !canTransitionTo(currentReturnStatus, 'CANCEL_CONFIRMED') && currentReturnStatus !== 'CANCEL_CONFIRMED' ? 'disabled' : ''}>Xác nhận hoàn trả</option>
+        <option value="CANCELLED" ${currentReturnStatus === 'CANCELLED' ? 'selected' : ''} ${currentReturnStatus && !canTransitionTo(currentReturnStatus, 'CANCELLED') && currentReturnStatus !== 'CANCELLED' ? 'disabled' : ''}>Đã hoàn trả hoàn tất</option>
         <option value="REJECTED" ${currentReturnStatus === 'REJECTED' ? 'selected' : ''} ${currentReturnStatus && !canTransitionTo(currentReturnStatus, 'REJECTED') && currentReturnStatus !== 'REJECTED' ? 'disabled' : ''}>Từ chối trả hàng</option>
       </select>
     `;
@@ -1496,12 +1501,12 @@
             });
 
             const emailData = await emailResponse.json();
-            
+
             if (emailData.success) {
               // Hiển thị thông báo thành công với thông tin voucher chi tiết
               const voucherInfo = emailData.data;
               const voucherMessage = `Đã cập nhật trạng thái và gửi email xin lỗi kèm voucher giảm giá ${voucherInfo.discountPercent}% cho khách hàng.\n\n🎫 Mã voucher: ${voucherInfo.voucherCode}\n📅 Hạn sử dụng: ${voucherInfo.expiryDate}\n📧 Gửi đến: ${voucherInfo.email}`;
-              
+
               if (window.antd && window.antd.notification) {
                 window.antd.notification.success({
                   message: 'Thành công',

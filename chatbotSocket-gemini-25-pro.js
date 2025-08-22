@@ -1,20 +1,21 @@
-// SOCKET.IO cho Gemini 2.5 Pro với Google Search + Context
+// attachChatbotSocketGemini25.js
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { v4: uuidv4 } = require("uuid");
 const db = require("./config/database");
 require("dotenv").config();
 
-const MAX_IMAGE_MB = 5;
-
-// Giới hạn lịch sử để tránh prompt nặng
-const MAX_TURNS = 12; // mỗi turn = 1 user + 1 model
+const MAX_TURNS = Number(process.env.MAX_TURNS || 12);
+const MAX_IMAGE_MB = Number(process.env.MAX_IMAGE_MB || 5);
+// 1) Tăng tokens để hạn chế bị cụt ý
+const MAX_OUTPUT_TOKENS = Number(process.env.GEMINI_MAX_TOKENS || 9048);
+// 2) Làm chậm stream để kéo dài typing (0 = tắt)
+const STREAM_DELAY_MS = Number(process.env.STREAM_DELAY_MS || 0);
+// 3) Ping keepalive để client giữ typing
+const KEEPALIVE_MS = Number(process.env.KEEPALIVE_MS || 2000);
 
 module.exports = function attachChatbotSocketGemini25(io) {
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-  // Tools cho Gemini 2.5 Pro (Grounding)
-  const tools = [{ googleSearch: {} }];
-
-  // ---- get system prompt từ DB ----
   async function getSystemPrompt() {
     try {
       const [rows] = await db.query(
@@ -29,81 +30,105 @@ module.exports = function attachChatbotSocketGemini25(io) {
     }
   }
 
-  // Helper: cắt bớt lịch sử
   function trimHistory(history) {
     if (!Array.isArray(history)) return [];
-    // giữ tối đa MAX_TURNS*2 message (user+model)
     const maxMsgs = MAX_TURNS * 2;
     return history.length > maxMsgs ? history.slice(-maxMsgs) : history;
   }
 
-  // Helper: build contents từ history + tin nhắn mới
   function buildContents(history, userText) {
     const base = Array.isArray(history) ? history : [];
     return [...base, { role: "user", parts: [{ text: userText }] }];
   }
 
-  // Sử dụng namespace riêng cho Gemini
-  const geminiNamespace = io.of("/gemini");
+  function sleep(ms) {
+    return new Promise((r) => setTimeout(r, ms));
+  }
 
-  geminiNamespace.on("connection", async (socket) => {
-    // Tải sẵn system prompt cho phiên này
+  // Heuristic: nhận biết trả lời có thể bị đứt
+  function looksTruncated(text) {
+    if (!text) return true;
+    const t = text.trim();
+    const endsPunct = /[.!?…'”’」』]$/.test(t);
+    const backticks = (t.match(/```/g) || []).length;
+    const unclosedCode = backticks % 2 === 1;
+    return !endsPunct || unclosedCode;
+  }
+
+  const ns = io.of("/gemini");
+
+  ns.on("connection", async (socket) => {
     socket.data.systemPrompt = await getSystemPrompt();
-    // Khởi tạo lịch sử hội thoại
     socket.data.history = [];
 
-    // ===== TEXT: Google Search + Context + Streaming =====
+    // ===== TEXT =====
     socket.on("user_message", async (data) => {
-      const userText = (data && (data.message || data)) || "Xin chào!";
+      const userText = (data && (data.message || data))?.toString().trim();
+      if (!userText) return;
+
+      const id = uuidv4();
+      ns.to(socket.id).emit("bot_response_start", { id });
+
+      const keepAlive = setInterval(() => {
+        ns.to(socket.id).emit("bot_keepalive", { id });
+      }, KEEPALIVE_MS);
 
       try {
-        // Build contents có context lịch sử
         const contents = buildContents(socket.data.history, userText);
 
         const model = genAI.getGenerativeModel({
-          model: "gemini-2.5-pro",
-          systemInstruction: socket.data.systemPrompt, // Context từ DB
-          tools, // Google Search
+          model: "gemini-2.5-flash",
+          systemInstruction: socket.data.systemPrompt,
           generationConfig: {
-            temperature: 0.7,
+            temperature: 0.6,
             topP: 0.9,
-            maxOutputTokens: 1024,
+            maxOutputTokens: MAX_OUTPUT_TOKENS,
           },
         });
 
-        const result = await model.generateContentStream({
-          contents,
-        });
-
         let fullText = "";
-        let lastGrounding = null;
 
-        // Kiểm tra xem result có stream không và xử lý đúng cách
-        if (result && result.stream) {
-          try {
-            for await (const chunk of result.stream) {
-              const chunkText = chunk.text();
-              if (chunkText) {
-                fullText += chunkText;
-                socket.emit("bot_response_chunk", { chunk: chunkText });
-              }
-            }
-          } catch (streamError) {
-            // Nếu stream fail, thử dùng response thường
-            const response = await result.response;
-            fullText = response.text();
-          }
-        } else {
-          // Fallback: sử dụng generateContent thường nếu stream không khả dụng
-          const response = await model.generateContent({
-            contents,
-          });
-          fullText = response.response.text();
+        // Ưu tiên stream
+        const result = await model.generateContentStream({ contents });
+        for await (const chunk of result.stream) {
+          const chunkText = chunk.text() || "";
+          if (!chunkText) continue;
+          fullText += chunkText;
+          ns.to(socket.id).emit("bot_response_chunk", { id, chunk: chunkText });
+          if (STREAM_DELAY_MS) await sleep(STREAM_DELAY_MS);
         }
 
-        const finalText = fullText.trim();
+        // Fallback nếu stream rỗng (lib fail/timeout)
+        if (!fullText) {
+          const fallback = await model.generateContent({ contents });
+          fullText = fallback.response.text() || "";
+        }
 
-        // Cập nhật lịch sử (giữ ngắn)
+        // Anti-truncation: cố gắng nối thêm 1 lần nếu thấy có dấu hiệu bị đứt
+        if (looksTruncated(fullText)) {
+          const cont = await model.generateContent({
+            contents: [
+              ...contents,
+              { role: "model", parts: [{ text: fullText }] },
+              {
+                role: "user",
+                parts: [
+                  {
+                    text: "Viết tiếp câu trả lời ngay trước đó (không lặp lại).",
+                  },
+                ],
+              },
+            ],
+          });
+          const more = cont.response.text() || "";
+          if (more) fullText += (fullText.endsWith(" ") ? "" : " ") + more;
+        }
+
+        const finalText = (
+          fullText || "Xin chào! Mình có thể giúp gì cho bạn?"
+        ).trim();
+
+        // Cập nhật history gọn nhẹ
         socket.data.history.push({ role: "user", parts: [{ text: userText }] });
         socket.data.history.push({
           role: "model",
@@ -111,30 +136,35 @@ module.exports = function attachChatbotSocketGemini25(io) {
         });
         socket.data.history = trimHistory(socket.data.history);
 
-        socket.emit("bot_response", {
+        ns.to(socket.id).emit("bot_response", {
+          id,
           response: finalText,
-          // đưa grounding metadata để client render citation/search widget
-          groundingMetadata: lastGrounding || null,
+          groundingMetadata: null,
         });
+        ns.to(socket.id).emit("bot_response_end", { id });
       } catch (e) {
-        socket.emit("error_response", {
+        ns.to(socket.id).emit("error_response", {
           error:
             "Lỗi khi xử lý tin nhắn (Gemini 2.5 Pro): " +
             (e?.message || "Không rõ nguyên nhân"),
         });
+        ns.to(socket.id).emit("bot_response_end", { id });
+      } finally {
+        clearInterval(keepAlive);
       }
     });
 
-    // ===== VISION: 1.5 Flash (giữ nguyên logic của bạn) =====
+    // ===== VISION =====
     socket.on("user_image", async (payload = {}) => {
-      try {
-        // Sử dụng Gemini 1.5 Flash cho vision analysis (tốt hơn 2.5 Pro cho image)
-        const visionModel = genAI.getGenerativeModel({
-          model: "gemini-1.5-flash",
-        });
+      const id = uuidv4();
+      ns.to(socket.id).emit("bot_response_start", { id });
+      const keepAlive = setInterval(() => {
+        ns.to(socket.id).emit("bot_keepalive", { id });
+      }, KEEPALIVE_MS);
 
+      try {
         const data = payload.data || payload.image;
-        const prompt = payload.prompt || payload.message || "";
+        const prompt = (payload.prompt || payload.message || "").toString();
 
         if (data && data.startsWith("data:")) {
           const commaIndex = data.indexOf(",");
@@ -143,14 +173,24 @@ module.exports = function attachChatbotSocketGemini25(io) {
             const bytes = Math.floor((base64.length * 3) / 4);
             const mb = bytes / (1024 * 1024);
             if (mb > MAX_IMAGE_MB) {
-              socket.emit("error_response", {
+              ns.to(socket.id).emit("error_response", {
                 error: `Ảnh quá lớn (~${mb.toFixed(
                   2
                 )}MB). Vui lòng nén < ${MAX_IMAGE_MB}MB.`,
               });
+              ns.to(socket.id).emit("bot_response_end", { id });
+              clearInterval(keepAlive);
               return;
             }
           }
+        } else {
+          ns.to(socket.id).emit("error_response", {
+            error:
+              "Không tìm thấy dữ liệu ảnh hợp lệ. Vui lòng gửi ảnh base64.",
+          });
+          ns.to(socket.id).emit("bot_response_end", { id });
+          clearInterval(keepAlive);
+          return;
         }
 
         const parts = [];
@@ -158,51 +198,44 @@ module.exports = function attachChatbotSocketGemini25(io) {
           parts.push({ text: prompt.trim() });
         } else {
           parts.push({
-            text: "Hãy phân tích bản vẽ thiết kế này và gợi ý 2 sản phẩm nội thất phù hợp nhất cho không gian. Vui lòng chỉ gợi ý tên sản phẩm cụ thể (ví dụ: 'sofa', 'bàn coffee', 'tủ kệ TV', v.v.)",
+            text: "Hãy mô tả chi tiết hình ảnh và gợi ý 2 sản phẩm nội thất phù hợp nhất (tên sản phẩm cụ thể).",
           });
         }
 
-        if (data && data.startsWith("data:")) {
-          const commaIndex = data.indexOf(",");
-          if (commaIndex === -1) {
-            socket.emit("error_response", {
-              error: "Định dạng ảnh không hợp lệ - thiếu dấu phẩy.",
-            });
-            return;
-          }
-          const meta = data.substring(0, commaIndex);
-          const base64 = data.substring(commaIndex + 1);
-          const mimeType = meta.split(";")[0].replace("data:", "");
-          if (!base64 || base64.length === 0) {
-            socket.emit("error_response", {
-              error: "Dữ liệu base64 trống hoặc không hợp lệ.",
-            });
-            return;
-          }
-          parts.push({
-            inlineData: { mimeType, data: base64 },
+        const commaIndex = data.indexOf(",");
+        const meta = data.substring(0, commaIndex);
+        const base64 = data.substring(commaIndex + 1);
+        const mimeType = meta.split(";")[0].replace("data:", "");
+        if (!base64) {
+          ns.to(socket.id).emit("error_response", {
+            error: "Dữ liệu base64 trống hoặc không hợp lệ.",
           });
-        } else {
-          socket.emit("error_response", {
-            error:
-              "Không tìm thấy dữ liệu ảnh hợp lệ. Vui lòng gửi ảnh dạng base64.",
-          });
+          ns.to(socket.id).emit("bot_response_end", { id });
+          clearInterval(keepAlive);
           return;
         }
 
-        const result = await visionModel.generateContent(parts);
+        parts.push({ inlineData: { mimeType, data: base64 } });
 
-        const reply = result.response.text();
-        socket.emit("bot_response", { response: reply });
-        
+        const visionModel = genAI.getGenerativeModel({
+          model: "gemini-1.5-flash",
+          generationConfig: { maxOutputTokens: MAX_OUTPUT_TOKENS },
+        });
+
+        const result = await visionModel.generateContent(parts);
+        const reply =
+          result.response.text() || "Mình không thấy rõ nội dung hình.";
+
+        ns.to(socket.id).emit("bot_response", { id, response: reply });
+        ns.to(socket.id).emit("bot_response_end", { id });
       } catch (error) {
-        socket.emit("error_response", {
+        ns.to(socket.id).emit("error_response", {
           error: "Lỗi khi xử lý hình ảnh (Gemini): " + error.message,
         });
+        ns.to(socket.id).emit("bot_response_end", { id });
+      } finally {
+        clearInterval(keepAlive);
       }
-    });
-
-    socket.on("disconnect", () => {
     });
   });
 };

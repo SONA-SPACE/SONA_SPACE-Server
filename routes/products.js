@@ -1123,12 +1123,55 @@ router.get("/full-list-all", async (req, res) => {
   }
 });
 
-// GỢI Ý: tạo endpoint mới để phục vụ AI, không ảnh hưởng client hiện có
+// GỢI Ý: tạo endpoint mới để phục vụ AI/FE, trả về đủ ảnh cho từng variant
 router.get("/ai-catalog", async (req, res) => {
-  const userId = 0; // hoặc lấy từ auth nếu cần
+  // Cho phép truyền ?limit=; mặc định 50, tối đa 200 (tránh quá tải)
+  const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+
   try {
-    // 1) Lấy toàn bộ product đang active (chỉ field cần thiết)
-    const [products] = await db.query(`
+    // --- Helpers ---
+    const normalize = (s) => (s || "").trim().replace(/^['"]+|['"]+$/g, "");
+    const splitImages = (list) =>
+      (list || "")
+        .split(",")
+        .map((x) => normalize(x))
+        .filter(Boolean);
+
+    // Thêm transform Cloudinary nếu URL là Cloudinary (tạo thumbnail nhanh)
+    const addCldTransform = (
+      url,
+      trans = "c_fill,w_480,h_360,q_auto,f_auto"
+    ) => {
+      if (!url) return url;
+      return url.includes("/upload/")
+        ? url.replace("/upload/", `/upload/${trans}/`)
+        : url;
+    };
+
+    const sanitizePrice = (price) => {
+      const n = Number(price);
+      return Number.isFinite(n) && n >= 0 ? n : null;
+    };
+    const computeActualPrice = (price, price_sale) => {
+      const p = sanitizePrice(price);
+      const ps = sanitizePrice(price_sale);
+      if (ps != null && p != null && ps > 0 && ps < p) return ps;
+      return p ?? ps ?? null;
+    };
+    const compactText = (s) => (s || "").replace(/\s+/g, " ").trim();
+    const buildAttributesText = (attrs = []) =>
+      attrs
+        .map(
+          (x) =>
+            `${x.attribute_name}: ${x.value_display}${
+              x.unit ? ` ${x.unit}` : ""
+            }`
+        )
+        .join("; ");
+
+    // 1) Lấy danh sách sản phẩm đang active (chỉ field cần thiết)
+    const [products] = await db.query(
+      `
       SELECT
         p.product_id,
         p.product_name,
@@ -1137,24 +1180,23 @@ router.get("/ai-catalog", async (req, res) => {
         p.product_status,
         p.category_id,
         c.category_name,
+        p.product_image,
         p.created_at,
         p.updated_at
       FROM product p
       LEFT JOIN category c ON p.category_id = c.category_id
       WHERE p.product_status = 1
       ORDER BY p.created_at DESC
-      LIMIT 6
-    `);
+      LIMIT 3
+      `
+    );
 
-    if (!products.length) {
-      return res.json({ items: [] });
-    }
+    if (!products.length) return res.json({ items: [] });
 
     const productIds = products.map((p) => p.product_id);
-    const idParams = productIds.length ? productIds : [-1];
     const inClause = productIds.map(() => "?").join(",");
 
-    // 2) Variants + màu (đã sắp theo priority)
+    // 2) Variants + màu + LIST IMAGE (đã sắp theo color priority & variant_id)
     const [variantRows] = await db.query(
       `
       SELECT
@@ -1173,10 +1215,10 @@ router.get("/ai-catalog", async (req, res) => {
       WHERE vp.product_id IN (${inClause})
       ORDER BY col.color_priority = 1 DESC, col.color_priority ASC, vp.variant_id ASC
       `,
-      idParams
+      productIds
     );
 
-    // 3) Rooms
+    // 3) Rooms theo sản phẩm
     const [roomRows] = await db.query(
       `
       SELECT rp.product_id, r.room_id, r.room_name, r.slug
@@ -1184,10 +1226,10 @@ router.get("/ai-catalog", async (req, res) => {
       JOIN room r ON rp.room_id = r.room_id
       WHERE rp.product_id IN (${inClause})
       `,
-      idParams
+      productIds
     );
 
-    // 4) Attributes (chỉ attr có value)
+    // 4) Attributes có giá trị (gộp text)
     const [attrRows] = await db.query(
       `
       SELECT
@@ -1210,10 +1252,10 @@ router.get("/ai-catalog", async (req, res) => {
       WHERE pav.product_id IN (${inClause})
       ORDER BY a.attribute_name ASC
       `,
-      idParams
+      productIds
     );
 
-    // 5) comment_count
+    // 5) comment_count theo sản phẩm
     const [commentAgg] = await db.query(
       `
       SELECT product_id, COUNT(*) AS comment_count
@@ -1221,10 +1263,10 @@ router.get("/ai-catalog", async (req, res) => {
       WHERE product_id IN (${inClause}) AND deleted_at IS NULL
       GROUP BY product_id
       `,
-      idParams
+      productIds
     );
 
-    // 6) total_stock
+    // 6) total_stock theo sản phẩm
     const [stockAgg] = await db.query(
       `
       SELECT product_id, COALESCE(SUM(variant_product_quantity),0) AS total_stock
@@ -1232,10 +1274,10 @@ router.get("/ai-catalog", async (req, res) => {
       WHERE product_id IN (${inClause})
       GROUP BY product_id
       `,
-      idParams
+      productIds
     );
 
-    // --- Build map phụ ---
+    // --- Build maps ---
     const variantsByPid = new Map();
     for (const v of variantRows) {
       if (!variantsByPid.has(v.product_id)) variantsByPid.set(v.product_id, []);
@@ -1255,18 +1297,8 @@ router.get("/ai-catalog", async (req, res) => {
     const attrsByPid = new Map();
     for (const a of attrRows) {
       if (!attrsByPid.has(a.product_id)) attrsByPid.set(a.product_id, []);
-      // Bỏ trường rác (không có value)
-      if (a.value_display == null || a.value_display === "") continue;
-      attrsByPid.get(a.product_id).push({
-        attribute_id: a.attribute_id,
-        name: a.attribute_name,
-        unit: a.unit || "",
-        is_required: !!a.is_required,
-        value_type: a.value_type,
-        value_display: a.value_display,
-        raw_value: a.raw_value,
-        material_id: a.material_id,
-      });
+      if (a.value_display == null || a.value_display === "") continue; // bỏ thuộc tính rỗng
+      attrsByPid.get(a.product_id).push(a);
     }
 
     const commentByPid = new Map(
@@ -1276,42 +1308,16 @@ router.get("/ai-catalog", async (req, res) => {
       stockAgg.map((r) => [r.product_id, Number(r.total_stock || 0)])
     );
 
-    // --- Helper để chuẩn hoá giá & text ---
-    const sanitizePrice = (price) => {
-      const n = Number(price);
-      return Number.isFinite(n) && n >= 0 ? n : null;
-    };
-    const computeActualPrice = (price, price_sale) => {
-      const p = sanitizePrice(price);
-      const ps = sanitizePrice(price_sale);
-      if (ps != null && p != null && ps > 0 && ps < p) return ps;
-      return p ?? ps ?? null;
-    };
-    const buildAttributesText = (attrs = []) => {
-      return attrs
-        .map((x) => {
-          const unit = x.unit ? ` ${x.unit}` : "";
-          return `${x.name}: ${x.value_display}${unit}`;
-        })
-        .join("; ");
-    };
-    const compactText = (s) => (s || "").replace(/\s+/g, " ").trim();
-
-    // --- Kết xuất: MỖI BIẾN THỂ = 1 DOCUMENT gọn cho AI ---
+    // --- Xuất items: MỖI VARIANT = 1 record, kèm ảnh ---
     const items = [];
     for (const p of products) {
       const pid = p.product_id;
-      const vListRaw = variantsByPid.get(pid) || [];
-
-      // Rooms & attributes dùng chung theo sản phẩm
+      const vList = variantsByPid.get(pid) || [];
       const rooms = roomsByPid.get(pid) || [];
       const attributes = attrsByPid.get(pid) || [];
-      const attributes_text = buildAttributesText(attributes);
 
-      // Text mô tả ngắn gọn
       const description_plain = compactText(p.product_description);
-
-      // Search blob (để embedding)
+      const attributes_text = buildAttributesText(attributes);
       const baseBlob = [
         p.product_name,
         p.category_name,
@@ -1322,29 +1328,34 @@ router.get("/ai-catalog", async (req, res) => {
         .filter(Boolean)
         .join(" — ");
 
-      // total_stock & comment_count cấp sản phẩm (để hiển thị/ưu tiên)
       const total_stock = Number(stockByPid.get(pid) ?? 0);
       const comment_count = Number(commentByPid.get(pid) ?? 0);
+      const product_main_image = normalize(p.product_image);
 
-      // Với mỗi biến thể → 1 record gọn
-      for (const v of vListRaw) {
+      for (const v of vList) {
         const price = sanitizePrice(v.price);
         const price_sale = sanitizePrice(v.price_sale);
         const actual_price = computeActualPrice(price, price_sale);
         const quantity = Number(v.quantity ?? 0);
         const is_in_stock = quantity > 0;
 
+        // Ảnh variant (đầy đủ) + primary + thumbnail
+        const images = splitImages(v.list_image);
+        const primary_image = images[0] || product_main_image || null;
+
         items.push({
-          // ID & nhận diện
+          // Khóa định danh
           doc_id: `product:${pid}:variant:${v.variant_id}`,
           product_id: pid,
           variant_id: v.variant_id,
 
-          // Thông tin hiển thị chính
+          // Hiển thị tên & phân loại
           name: p.product_name,
           category: p.category_name,
           slug: p.product_slug,
           variant_slug: v.variant_slug,
+
+          // Màu sắc
           color_name: v.color_name,
           color_hex: v.color_hex,
 
@@ -1356,21 +1367,25 @@ router.get("/ai-catalog", async (req, res) => {
           quantity,
           total_stock,
           comment_count,
-
-          // Ngữ nghĩa & bối cảnh
-          rooms: rooms.map((r) => ({
-            room_id: r.room_id,
-            room_name: r.room_name,
-            slug: r.slug,
+          primary_image, // ảnh đại diện (lấy tấm đầu tiên của variant, fallback sang ảnh chính sp)
+          // Bối cảnh
+          rooms,
+          attributes: attributes.map((x) => ({
+            attribute_id: x.attribute_id,
+            attribute_name: x.attribute_name,
+            unit: x.unit || "",
+            value_type: x.value_type,
+            value_display: x.value_display,
           })),
-          attributes, // vẫn giữ mảng chi tiết (không ảnh, gọn)
-          attributes_text, // chuỗi rút gọn, tiện embed/search
-          description_plain, // mô tả ngắn gọn (đã compact)
+          attributes_text,
+          description_plain,
+
+          // Search blob cho embedding / filter
           search_blob: compactText(
             `${baseBlob} — Màu: ${v.color_name} ${v.color_hex || ""}`
           ),
 
-          // Dấu thời gian
+          // Timestamps
           created_at: p.created_at,
           updated_at: p.updated_at,
         });
@@ -1379,7 +1394,12 @@ router.get("/ai-catalog", async (req, res) => {
 
     return res.json({ items });
   } catch (err) {
-    return res.status(500).json({ error: "Failed to build AI catalog" });
+    return res
+      .status(500)
+      .json({
+        error: "Failed to build AI catalog with images",
+        details: err.message,
+      });
   }
 });
 
@@ -2033,8 +2053,7 @@ router.delete("/:slug", async (req, res) => {
         if (publicId) {
           try {
             await cloudinary.uploader.destroy(publicId);
-          } catch (err) {
-          }
+          } catch (err) {}
         } else {
         }
       }
@@ -2045,8 +2064,7 @@ router.delete("/:slug", async (req, res) => {
       if (publicId) {
         try {
           await cloudinary.uploader.destroy(publicId);
-        } catch (err) {
-        }
+        } catch (err) {}
       } else {
       }
     }
@@ -2652,8 +2670,7 @@ router.put("/admin/:slug", async (req, res) => {
       if (publicId) {
         try {
           await cloudinary.uploader.destroy(publicId);
-        } catch (destroyErr) {
-        }
+        } catch (destroyErr) {}
       }
     }
   }

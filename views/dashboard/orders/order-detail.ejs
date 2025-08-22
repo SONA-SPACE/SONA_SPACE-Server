@@ -12,37 +12,25 @@
           <div class="status-item">
             <div class="record-status">
               <div class="status-label">Trạng thái thanh toán:</div>
-              <% 
-                const paymentStatus = (order.payment && order.payment.length > 0) ? order.payment[0].status : order.payment_status;
+              <% const paymentStatus=(order.payment && order.payment.length> 0) ? order.payment[0].status :
+                order.payment_status;
                 let statusDisplay = "Chờ thanh toán";
                 let statusClass = "pending";
-                
+
                 if (paymentStatus === "SUCCESS") {
-                  statusDisplay = "Đã thanh toán";
-                  statusClass = "paid";
+                statusDisplay = "Đã thanh toán";
+                statusClass = "paid";
                 } else if (paymentStatus === "FAILED") {
-                  statusDisplay = "Thanh toán thất bại";
-                  statusClass = "failed";
+                statusDisplay = "Thanh toán thất bại";
+                statusClass = "failed";
                 } else if (paymentStatus === "REFUNDED") {
-                  statusDisplay = "Đã hủy";
-                  statusClass = "refunded";
+                statusDisplay = "Đã hủy";
+                statusClass = "refunded";
                 }
-              %>
-              <div class="status-value <%= statusClass %>">
-                <%= statusDisplay %>
-              </div>
-            </div>
-            <div class="record-log">
-              <% if (statusLogs.latestPayment) { %>
-                <div class="log-time">
-                  <i class="far fa-clock"></i> 
-                  <%= formatDateTime(statusLogs.latestPayment.created_at) %>
+                %>
+                <div class="status-value <%= statusClass %>">
+                  <%= statusDisplay %>
                 </div>
-                <div class="log-user">
-                  <i class="far fa-user"></i> 
-                  <%= statusLogs.latestPayment.trigger_by %>
-                </div>
-              <% } %>
             </div>
           </div>
           <div class="status-item">
@@ -55,14 +43,14 @@
             <div class="record-log">
               <% if (statusLogs.latestOrder) { %>
                 <div class="log-time">
-                  <i class="far fa-clock"></i> 
+                  <i class="far fa-clock"></i>
                   <%= formatDateTime(statusLogs.latestOrder.created_at) %>
                 </div>
                 <div class="log-user">
-                  <i class="far fa-user"></i> 
+                  <i class="far fa-user"></i>
                   <%= statusLogs.latestOrder.trigger_by %>
                 </div>
-              <% } %>
+                <% } %>
             </div>
           </div>
           <div class="status-item">
@@ -70,645 +58,705 @@
               <div class="status-label">Trạng thái vận chuyển:</div>
               <div class="status-value">
                 <span class="badge <%= mapShippingStatusClass(order.shipping_status) %>">
-                <i class="fas <%= mapShippingStatusIcon(order.shipping_status) %> mr-1"></i>
-                <%= mapShippingStatus(order.shipping_status) %>
-              </span>
-            </div>
-            <div class="record-log">
-              <% if (statusLogs.latestShipping) { %>
-                <div class="log-time">
-                  <i class="far fa-clock"></i> 
-                  <%= formatDateTime(statusLogs.latestShipping.created_at) %>
-                </div>
-                <div class="log-user">
-                  <i class="far fa-user"></i> 
-                  <%= statusLogs.latestShipping.trigger_by %>
-                </div>
-              <% } %>
+                  <i class="fas <%= mapShippingStatusIcon(order.shipping_status) %> mr-1"></i>
+                  <%= mapShippingStatus(order.shipping_status) %>
+                </span>
+              </div>
+              <div class="record-log">
+                <% if (statusLogs.latestShipping) { %>
+                  <div class="log-time">
+                    <i class="far fa-clock"></i>
+                    <%= formatDateTime(statusLogs.latestShipping.created_at) %>
+                  </div>
+                  <div class="log-user">
+                    <i class="far fa-user"></i>
+                    <%= statusLogs.latestShipping.trigger_by %>
+                  </div>
+                  <% } %>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="row --product">
-        <h3 class="section-title">Sản phẩm</h3>
+        <div class="row --product">
+          <h3 class="section-title">Sản phẩm</h3>
 
-        <div class="col-md-8">
-          <div class="product-section">
-            <% if (order.items && order.items.length> 0) { %>
-              <% order.items.forEach(item=> { %>
-                <div class="product-item">
-                  <div class="product-image">
-                    <img src="<%= item.product_image || item.image || '/images/products/default.png' %>"
-                      alt="<%= item.product_name %>">
-                  </div>
-                  <div class="product-details">
-                    <div class="product-name">
-                      <%= item.product_name %>
+          <div class="col-md-8">
+            <div class="product-section">
+              <% if (order.items && order.items.length> 0) { %>
+                <% order.items.forEach(item=> { %>
+                  <div class="product-item">
+                    <div class="product-image">
+                      <img src="<%= item.product_image || item.image || '/images/products/default.png' %>"
+                        alt="<%= item.product_name %>">
                     </div>
-                    <div class="product-type">
-                      <%= item.variant_name || 'Sản phẩm' %>
-                    </div>
-                    <div class="price-row">
-                      <div class="price-label">Thành tiền:</div>
-                      <div class="price-value">
-                        <%= formatPrice((item.price_sale || item.price || item.product_price) * item.quantity) %>đ
+                    <div class="product-details">
+                      <div class="product-name">
+                        <%= item.product_name %>
                       </div>
-                    </div>
-                    <div class="wrapper">
+                      <div class="product-type">
+                        <%= item.variant_name || 'Sản phẩm' %>
+                      </div>
                       <div class="price-row">
-                        <div class="price-label">Màu</div>
+                        <div class="price-label">Thành tiền:</div>
                         <div class="price-value">
-                          <% if (item.color && item.color.hex) { %>
-                            <span class="color-dot" data-color="<%= item.color.hex %>"></span>
-                            <% } else if (item.color_hex) { %>
-                              <span class="color-dot" data-color="<%= item.color_hex %>"></span>
-                              <% } else { %>
-                                -
-                                <% } %>
+                          <%= formatPrice((item.price_sale || item.price || item.product_price) * item.quantity) %>đ
+                        </div>
+                      </div>
+                      <div class="wrapper">
+                        <div class="price-row">
+                          <div class="price-label">Màu</div>
+                          <div class="price-value">
+                            <% if (item.color && item.color.hex) { %>
+                              <span class="color-dot" data-color="<%= item.color.hex %>"></span>
+                              <% } else if (item.color_hex) { %>
+                                <span class="color-dot" data-color="<%= item.color_hex %>"></span>
+                                <% } else { %>
+                                  -
+                                  <% } %>
+                          </div>
+                        </div>
+                        <div class="price-row">
+                          <div class="price-label">Số lượng:</div>
+                          <div class="price-value">
+                            <%= item.quantity %>
+                          </div>
                         </div>
                       </div>
                       <div class="price-row">
-                        <div class="price-label">Số lượng:</div>
-                        <div class="price-value">
-                          <%= item.quantity %>
-                        </div>
+                        <a href="#" class="price-label">Xem chi tiết</a>
                       </div>
                     </div>
-                    <div class="price-row">
-                      <a href="#" class="price-label">Xem chi tiết</a>
-                    </div>
                   </div>
+                  <% }); %>
+                    <% } else { %>
+                      <div class="no-products">Không có sản phẩm nào</div>
+                      <% } %>
+            </div>
+          </div>
+
+          <div class="col-md-3">
+            <div class="customer-info">
+              <h3 class="section-title">Thông tin khách hàng</h3>
+
+              <div class="info-row">
+                <div class="info-label">Tên khách hàng <i class="fas fa-pencil-alt edit-btn"
+                    data-field="customer_name"></i></div>
+                <div class="info-value" id="customer_name">
+                  <%= order.order_name_new || order.order_name_old || order.user_name || 'Không có thông tin' %>
                 </div>
-                <% }); %>
-                  <% } else { %>
-                    <div class="no-products">Không có sản phẩm nào</div>
-                    <% } %>
-          </div>
-        </div>
-
-        <div class="col-md-3">
-          <div class="customer-info">
-            <h3 class="section-title">Thông tin khách hàng</h3>
-
-            <div class="info-row">
-              <div class="info-label">Tên khách hàng <i class="fas fa-pencil-alt edit-btn"
-                  data-field="customer_name"></i></div>
-              <div class="info-value" id="customer_name">
-                <%= order.order_name_new || order.order_name_old || order.user_name || 'Không có thông tin' %>
+                <input type="text" class="info-input" id="input_customer_name"
+                  value="<%= order.order_name_new || order.order_name_old || order.user_name || '' %>"
+                  style="display: none;">
               </div>
-              <input type="text" class="info-input" id="input_customer_name"
-                value="<%= order.order_name_new || order.order_name_old || order.user_name || '' %>"
-                style="display: none;">
+
+              <div class="info-row">
+                <div class="info-label">Số điện thoại <i class="fas fa-pencil-alt edit-btn"
+                    data-field="customer_phone"></i></div>
+                <div class="info-value" id="customer_phone">
+                  <%= order.order_number2 || order.order_number1 || order.user_phone || 'Không có thông tin' %>
+                </div>
+                <input type="text" class="info-input" id="input_customer_phone"
+                  value="<%= order.order_number2 || order.order_number1 || order.user_phone || '' %>"
+                  style="display: none;">
+              </div>
+
+              <div class="info-row">
+                <div class="info-label">Email</div>
+                <div class="info-value" id="customer_email">
+                  <%= order.order_email_new || order.order_email_old || order.user_email || 'Không có thông tin' %>
+                </div>
+                <input type="text" class="info-input" id="input_customer_email"
+                  value="<%= order.order_email_new || order.order_email_old || order.user_email || '' %>"
+                  style="display: none;">
+              </div>
+
+              <div class="info-row">
+                <div class="info-label">Địa chỉ giao hàng <i class="fas fa-pencil-alt edit-btn"
+                    data-field="shipping_address"></i></div>
+                <div class="info-value" id="shipping_address">
+                  <%= order.order_address_new || order.order_address_old || 'Không có thông tin' %>
+                </div>
+                <input type="text" class="info-input" id="input_shipping_address"
+                  value="<%= order.order_address_new || order.order_address_old || '' %>" style="display: none;">
+              </div>
+
+              <div class="info-row">
+                <div class="info-label">Phương thức thanh toán <i class="fas fa-pencil-alt edit-btn"
+                    data-field="payment_method"></i></div>
+                <div class="info-value" id="payment_method">
+                  <%= order.payment && order.payment.length> 0 ? order.payment[0].method : 'Không có thông tin' %>
+                </div>
+                <select class="info-input" id="input_payment_method" style="display: none;">
+                  <option value="">-- Chọn phương thức thanh toán --</option>
+                  <% paymentMethods.forEach(method=> { %>
+                    <option value="<%= method %>" <%=(order.payment && order.payment.length> 0 &&
+                      order.payment[0].method === method) ? 'selected' : '' %>><%= method %>
+                    </option>
+                    <% }); %>
+                </select>
+              </div>
+
             </div>
 
-            <div class="info-row">
-              <div class="info-label">Số điện thoại <i class="fas fa-pencil-alt edit-btn"
-                  data-field="customer_phone"></i></div>
-              <div class="info-value" id="customer_phone">
-                <%= order.order_number2 || order.order_number1 || order.user_phone || 'Không có thông tin' %>
-              </div>
-              <input type="text" class="info-input" id="input_customer_phone"
-                value="<%= order.order_number2 || order.order_number1 || order.user_phone || '' %>"
-                style="display: none;">
-            </div>
+            <div class="order-summary">
+              <h3 class="section-title">Tóm tắt đơn hàng</h3>
 
-            <div class="info-row">
-              <div class="info-label">Email</div>
-              <div class="info-value" id="customer_email">
-                <%= order.order_email_new || order.order_email_old || order.user_email || 'Không có thông tin' %>
-              </div>
-              <input type="text" class="info-input" id="input_customer_email"
-                value="<%= order.order_email_new || order.order_email_old || order.user_email || '' %>"
-                style="display: none;">
-            </div>
-
-            <div class="info-row">
-              <div class="info-label">Địa chỉ giao hàng <i class="fas fa-pencil-alt edit-btn"
-                  data-field="shipping_address"></i></div>
-              <div class="info-value" id="shipping_address">
-                <%= order.order_address_new || order.order_address_old || 'Không có thông tin' %>
-              </div>
-              <input type="text" class="info-input" id="input_shipping_address"
-                value="<%= order.order_address_new || order.order_address_old || '' %>" style="display: none;">
-            </div>
-
-            <div class="info-row">
-              <div class="info-label">Phương thức thanh toán <i class="fas fa-pencil-alt edit-btn" data-field="payment_method"></i></div>
-              <div class="info-value" id="payment_method">
-                <%= order.payment && order.payment.length > 0 ? order.payment[0].method : 'Không có thông tin' %>
-              </div>
-              <select class="info-input" id="input_payment_method" style="display: none;">
-                <option value="">-- Chọn phương thức thanh toán --</option>
-                <% paymentMethods.forEach(method => { %>
-                  <option value="<%= method %>" <%= (order.payment && order.payment.length > 0 && order.payment[0].method === method) ? 'selected' : '' %>><%= method %></option>
-                <% }); %>
-              </select>
-            </div>
-
-          </div>
-
-          <div class="order-summary">
-            <h3 class="section-title">Tóm tắt đơn hàng</h3>
-
-            <div class="summary-row">
-              <div class="summary-label">Thành tiền</div>
-              <div class="summary-value">
-                <%= formatPrice(order.order_total || 0) %>đ
-              </div>
-            </div>
-
-            <div class="summary-row">
-              <div class="summary-label">Vận chuyển</div>
-              <div class="summary-value">
-                <%= formatPrice(order.shipping_fee || 0) %>đ
-              </div>
-            </div>
-
-            <div class="summary-row">
-              <div class="summary-label">Giảm giá</div>
-              <div class="summary-value discount">
-                <%= formatPrice(order.order_discount || 0) %>đ
-              </div>
-            </div>
-
-            <% if (order.couponcode_id) { %>
               <div class="summary-row">
-                <div class="summary-label">Mã giảm giá</div>
+                <div class="summary-label">Thành tiền</div>
                 <div class="summary-value">
-                  <%= order.coupon_code || 'Đã áp dụng' %>
+                  <%= formatPrice(order.order_total || 0) %>đ
                 </div>
               </div>
-              <% } %>
 
+              <div class="summary-row">
+                <div class="summary-label">Vận chuyển</div>
+                <div class="summary-value">
+                  <%= formatPrice(order.shipping_fee || 0) %>đ
+                </div>
+              </div>
+
+              <div class="summary-row">
+                <div class="summary-label">Giảm giá</div>
+                <div class="summary-value discount">
+                  <%= formatPrice(order.order_discount || 0) %>đ
+                </div>
+              </div>
+
+              <% if (order.couponcode_id) { %>
                 <div class="summary-row">
-                  <div class="summary-label">Tổng cộng</div>
+                  <div class="summary-label">Mã giảm giá</div>
                   <div class="summary-value">
-                    <%= formatPrice(order.order_total_final || 0) %>đ
+                    <%= order.coupon_code || 'Đã áp dụng' %>
                   </div>
                 </div>
-          </div>
+                <% } %>
 
-          <div class="action-buttons">
-            <a href="/dashboard/orders" class="btn btn-cancel">Quay lại</a>
-            <!-- Button using for hard reset data for testing - Remove this button when starting UAT -->
-            <!-- <button class="btn btn-save" id="update-status-btn">Cập nhật</button> -->
-            <a href="/dashboard/orders/invoice/<%= orderId %>" target="_blank" class="btn btn-save"
-              style="background-color: #4CAF50; margin-left: 10px;">Xem hóa đơn</a>
+                  <div class="summary-row">
+                    <div class="summary-label">Tổng cộng</div>
+                    <div class="summary-value">
+                      <%= formatPrice(order.order_total_final || 0) %>đ
+                    </div>
+                  </div>
+            </div>
+
+            <div class="action-buttons">
+              <a href="/dashboard/orders" class="btn btn-cancel">Quay lại</a>
+              <!-- Button using for hard reset data for testing - Remove this button when starting UAT -->
+              <!-- <button class="btn btn-save" id="update-status-btn">Cập nhật</button> -->
+              <a href="/dashboard/orders/invoice/<%= orderId %>" target="_blank" class="btn btn-save"
+                style="background-color: #4CAF50; margin-left: 10px;">Xem hóa đơn</a>
+            </div>
           </div>
         </div>
-      </div>
-      
-      <% if (order.returnInfo || (order.current_status === 'RETURN' || order.current_status === 'CANCELLED')) { %>
-      <div class="row --return-product">
-        <h3 class="section-title">Sản phẩm hoàn trả</h3>
 
-        <div class="col-md-8">
-          <% if (order.returnInfo) { %>
-          <div class="return-info-section mb-3">
-            <div class="card">
-              <div class="card-body">
-                <h5 class="card-title">Thông tin hoàn trả</h5>
-                <div class="row">
-                  <div class="col-md-6">
-                    <p><strong>Mã hoàn trả:</strong> <%= order.returnInfo.return_id %></p>
-                    <p><strong>Lý do:</strong> <%= order.returnInfo.reason || 'Không có thông tin' %></p>
-                    <p><strong>Loại hoàn trả:</strong> <%= order.returnInfo.return_type || 'Không có thông tin' %></p>
+        <% if (order.returnInfo || (order.current_status==='RETURN' || order.current_status==='CANCELLED' )) { %>
+          <div class="row --return-product">
+            <h3 class="section-title">Sản phẩm hoàn trả</h3>
+
+            <div class="col-md-8">
+              <% if (order.returnInfo) { %>
+                <div class="return-info-section mb-3">
+                  <div class="card">
+                    <div class="card-body">
+                      <h5 class="card-title">Thông tin hoàn trả</h5>
+                      <div class="row">
+                        <div class="col-md-6">
+                          <p><strong>Mã hoàn trả:</strong>
+                            <%= order.returnInfo.return_id %>
+                          </p>
+                          <p><strong>Lý do:</strong>
+                            <%= order.returnInfo.reason || 'Không có thông tin' %>
+                          </p>
+                          <p><strong>Loại hoàn trả:</strong>
+                            <%= order.returnInfo.return_type || 'Không có thông tin' %>
+                          </p>
+                        </div>
+                        <div class="col-md-6">
+                          <p><strong>Số tiền hoàn:</strong>
+                            <%= formatPrice(order.returnInfo.total_refund || 0) %>đ
+                          </p>
+                          <p><strong>Trạng thái:</strong> <span class="badge badge-warning">
+                              <%= order.returnInfo.return_status %>
+                            </span></p>
+                          <p><strong>Ngày tạo:</strong>
+                            <%= formatDateTime(order.returnInfo.return_created_at) %>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div class="col-md-6">
-                    <p><strong>Số tiền hoàn:</strong> <%= formatPrice(order.returnInfo.total_refund || 0) %>đ</p>
-                    <p><strong>Trạng thái:</strong> <span class="badge badge-warning"><%= order.returnInfo.return_status %></span></p>
-                    <p><strong>Ngày tạo:</strong> <%= formatDateTime(order.returnInfo.return_created_at) %></p>
+                </div>
+                <% } %>
+
+                  <div class="product-section">
+                    <% if (order.items && order.items.length> 0) { %>
+                      <% order.items.forEach(item=> { %>
+                        <div class="product-item">
+                          <div class="product-image">
+                            <img src="<%= item.product_image || item.image || '/images/products/default.png' %>"
+                              alt="<%= item.product_name %>">
+                          </div>
+                          <div class="product-details">
+                            <div class="product-name">
+                              <%= item.product_name %>
+                            </div>
+                            <div class="product-type">
+                              <%= item.variant_name || 'Sản phẩm' %>
+                            </div>
+                            <div class="price-row">
+                              <div class="price-label">Thành tiền:</div>
+                              <div class="price-value">
+                                <%= formatPrice((item.price_sale || item.price || item.product_price) * item.quantity)
+                                  %>đ
+                              </div>
+                            </div>
+                            <div class="wrapper">
+                              <div class="price-row">
+                                <div class="price-label">Màu</div>
+                                <div class="price-value">
+                                  <% if (item.color && item.color.hex) { %>
+                                    <span class="color-dot" data-color="<%= item.color.hex %>"></span>
+                                    <% } else if (item.color_hex) { %>
+                                      <span class="color-dot" data-color="<%= item.color_hex %>"></span>
+                                      <% } else { %>
+                                        -
+                                        <% } %>
+                                </div>
+                              </div>
+                              <div class="price-row">
+                                <div class="price-label">Số lượng:</div>
+                                <div class="price-value">
+                                  <%= item.quantity %>
+                                </div>
+                              </div>
+                            </div>
+                            <div class="price-row">
+                              <a href="#" class="price-label">Xem chi tiết</a>
+                            </div>
+                          </div>
+
+                        </div>
+                        <% }); %>
+                          <% } else { %>
+                            <div class="no-products">Không có sản phẩm nào</div>
+                            <% } %>
                   </div>
+            </div>
+            <div class="col-md-3">
+              <div class="product-resons">
+                <div class="info-row" style="word-break: break-word;">
+                  <div class="info-label">Ghi chú <i class="fas fa-pencil-alt edit-btn" data-field="note"></i></div>
+                  <div class="info-value" id="note" style="word-wrap: break-word; overflow-wrap: break-word;">
+                    <%= order.note || '' %>
+                  </div>
+                  <textarea class="info-input" id="input_note" style="display: none;"><%= order.note || '' %></textarea>
                 </div>
               </div>
             </div>
           </div>
           <% } %>
-          
-          <div class="product-section">
-            <% if (order.items && order.items.length> 0) { %>
-              <% order.items.forEach(item=> { %>
-                <div class="product-item">
-                  <div class="product-image">
-                    <img src="<%= item.product_image || item.image || '/images/products/default.png' %>"
-                      alt="<%= item.product_name %>">
-                  </div>
-                  <div class="product-details">
-                    <div class="product-name">
-                      <%= item.product_name %>
-                    </div>
-                    <div class="product-type">
-                      <%= item.variant_name || 'Sản phẩm' %>
-                    </div>
-                    <div class="price-row">
-                      <div class="price-label">Thành tiền:</div>
-                      <div class="price-value">
-                        <%= formatPrice((item.price_sale || item.price || item.product_price) * item.quantity) %>đ
-                      </div>
-                    </div>
-                    <div class="wrapper">
-                      <div class="price-row">
-                        <div class="price-label">Màu</div>
-                        <div class="price-value">
-                          <% if (item.color && item.color.hex) { %>
-                            <span class="color-dot" data-color="<%= item.color.hex %>"></span>
-                            <% } else if (item.color_hex) { %>
-                              <span class="color-dot" data-color="<%= item.color_hex %>"></span>
-                              <% } else { %>
-                                -
-                                <% } %>
-                        </div>
-                      </div>
-                      <div class="price-row">
-                        <div class="price-label">Số lượng:</div>
-                        <div class="price-value">
-                          <%= item.quantity %>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="price-row">
-                      <a href="#" class="price-label">Xem chi tiết</a>
-                    </div>
-                  </div>
-                  
-                </div>
-                <% }); %>
-                  <% } else { %>
-                    <div class="no-products">Không có sản phẩm nào</div>
-                    <% } %>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="product-resons">
-            <div class="info-row" style="word-break: break-word;">
-              <div class="info-label">Ghi chú <i class="fas fa-pencil-alt edit-btn" data-field="note"></i></div>
-              <div class="info-value" id="note" style="word-wrap: break-word; overflow-wrap: break-word;">
-                <%= order.note || '' %>
-              </div>
-              <textarea class="info-input" id="input_note" style="display: none;"><%= order.note || '' %></textarea>
-            </div>
-          </div>
-        </div>
       </div>
-      <% } %>
     </div>
   </div>
-</div>
 
-<script>
-  document.addEventListener('DOMContentLoaded', function () {
-    // Set background color for color dots from data attribute
-    document.querySelectorAll('.color-dot').forEach(dot => {
-      const color = dot.getAttribute('data-color');
-      if (color) {
-        dot.style.backgroundColor = color;
-      }
-    });
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      // Set background color for color dots from data attribute
+      document.querySelectorAll('.color-dot').forEach(dot => {
+        const color = dot.getAttribute('data-color');
+        if (color) {
+          dot.style.backgroundColor = color;
+        }
+      });
 
-    // Edit functionality for customer information
-    const editButtons = document.querySelectorAll('.edit-btn');
-    editButtons.forEach(btn => {
-      btn.addEventListener('click', function () {
-        const field = this.getAttribute('data-field');
-        const valueElement = document.getElementById(field);
-        const inputElement = document.getElementById('input_' + field);
+      // Edit functionality for customer information
+      const editButtons = document.querySelectorAll('.edit-btn');
+      editButtons.forEach(btn => {
+        btn.addEventListener('click', function () {
+          const field = this.getAttribute('data-field');
+          const valueElement = document.getElementById(field);
+          const inputElement = document.getElementById('input_' + field);
 
-        // Hide value display and show input
-        valueElement.style.display = 'none';
-        inputElement.style.display = 'block';
-        inputElement.focus();
+          // Hide value display and show input
+          valueElement.style.display = 'none';
+          inputElement.style.display = 'block';
+          inputElement.focus();
 
-        // Handle input blur (when user clicks away)
-        inputElement.addEventListener('keydown', function (e) {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            const oldValue = valueElement.innerText;
-            const newValue = inputElement.value;
+          // Handle input blur (when user clicks away)
+          inputElement.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              const oldValue = valueElement.innerText;
+              const newValue = inputElement.value;
 
-            if (oldValue !== newValue) {
-              // Show confirmation dialog
-              if (confirm(`Bạn có muốn cập nhật lại nội dung "${newValue}" cho trường "${btn.parentElement.innerText.replace(' ', '')}" không?`)) {
-                // Update the value if confirmed
-                updateOrderField(field, newValue, '<%= orderId %>');
-                valueElement.innerText = newValue || 'Không có thông tin';
-              } else {
-                // Reset to old value if canceled
-                inputElement.value = oldValue === 'Không có thông tin' ? '' : oldValue;
+              if (oldValue !== newValue) {
+                // Show confirmation dialog
+                if (confirm(`Bạn có muốn cập nhật lại nội dung "${newValue}" cho trường "${btn.parentElement.innerText.replace(' ', '')}" không?`)) {
+                  // Update the value if confirmed
+                  updateOrderField(field, newValue, '<%= orderId %>');
+                  valueElement.innerText = newValue || 'Không có thông tin';
+                } else {
+                  // Reset to old value if canceled
+                  inputElement.value = oldValue === 'Không có thông tin' ? '' : oldValue;
+                }
               }
-            }
 
+              // Hide input and show value display
+              inputElement.style.display = 'none';
+              valueElement.style.display = 'block';
+            } else if (e.key === 'Escape') {
+              // Cancel edit on Escape key
+              inputElement.value = valueElement.innerText === 'Không có thông tin' ? '' : valueElement.innerText;
+              inputElement.style.display = 'none';
+              valueElement.style.display = 'block';
+            }
+          });
+
+          // Handle input blur (when user clicks away)
+          inputElement.addEventListener('blur', function () {
             // Hide input and show value display
             inputElement.style.display = 'none';
             valueElement.style.display = 'block';
-          } else if (e.key === 'Escape') {
-            // Cancel edit on Escape key
-            inputElement.value = valueElement.innerText === 'Không có thông tin' ? '' : valueElement.innerText;
-            inputElement.style.display = 'none';
-            valueElement.style.display = 'block';
-          }
-        });
-
-        // Handle input blur (when user clicks away)
-        inputElement.addEventListener('blur', function () {
-          // Hide input and show value display
-          inputElement.style.display = 'none';
-          valueElement.style.display = 'block';
+          });
         });
       });
-    });
 
-    // Function to update order field via API
-    function updateOrderField(field, value, orderId) {
-      // Map field names to database field names
-      const fieldMapping = {
-        'customer_name': 'order_name_new',
-        'customer_phone': 'order_number2',
-        'customer_email': 'order_email_new',
-        'shipping_address': 'order_address_new',
-        'payment_method': 'payment_method',
-        'note': 'note'
-      };
+      // Function to update order field via API
+      function updateOrderField(field, value, orderId) {
+        // Map field names to database field names
+        const fieldMapping = {
+          'customer_name': 'order_name_new',
+          'customer_phone': 'order_number2',
+          'customer_email': 'order_email_new',
+          'shipping_address': 'order_address_new',
+          'payment_method': 'payment_method',
+          'note': 'note'
+        };
 
-      const dbField = fieldMapping[field];
-      if (!dbField) return;
+        const dbField = fieldMapping[field];
+        if (!dbField) return;
 
-      const data = {};
-      data[dbField] = value;
+        const data = {};
+        data[dbField] = value;
 
-      // Send update to server
-      fetch(`/api/orders/${orderId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + localStorage.getItem('token')
-        },
-        body: JSON.stringify(data)
-      })
-        .then(response => response.json())
-        .then(data => {
-          if (data.success) {
-            // Show success notification
-            alert('Cập nhật thành công!');
-          } else {
-            // Show error notification
-            alert('Lỗi: ' + (data.message || 'Không thể cập nhật thông tin'));
-          }
+        // Send update to server
+        fetch(`/api/orders/${orderId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + localStorage.getItem('token')
+          },
+          body: JSON.stringify(data)
         })
-        .catch(error => {
-          alert('Đã xảy ra lỗi khi cập nhật thông tin');
-        });
-    }
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              // Show success notification
+              alert('Cập nhật thành công!');
+            } else {
+              // Show error notification
+              alert('Lỗi: ' + (data.message || 'Không thể cập nhật thông tin'));
+            }
+          })
+          .catch(error => {
+            alert('Đã xảy ra lỗi khi cập nhật thông tin');
+          });
+      }
 
-    // Xử lý sự kiện khi click vào nút Cập nhật
-    const updateButton = document.getElementById('update-status-btn');
-    if (updateButton) {
-      updateButton.addEventListener('click', function () {
-        // Hiển thị modal hoặc form cập nhật trạng thái
-        if (window.antd && window.antd.Modal) {
-          window.antd.Modal.confirm({
-            title: 'Cập nhật trạng thái đơn hàng',
-            content: 'Bạn có chắc chắn muốn cập nhật trạng thái đơn hàng này?',
-            okText: 'Cập nhật',
-            cancelText: 'Hủy',
-            onOk: async () => {
-              try {
-                // Gọi API cập nhật trạng thái
-                const response = await fetch(`/api/orders/<%= orderId %>/status`, {
-                  method: 'PUT',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + localStorage.getItem('token')
-                  },
-                  body: JSON.stringify({ new_status: 'CONFIRMED' }) // Cần thay đổi tùy theo trạng thái hiện tại
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                  window.antd.notification.success({
-                    message: 'Thành công',
-                    description: 'Đã cập nhật trạng thái đơn hàng',
-                    placement: 'topRight'
+      // Xử lý sự kiện khi click vào nút Cập nhật
+      const updateButton = document.getElementById('update-status-btn');
+      if (updateButton) {
+        updateButton.addEventListener('click', function () {
+          // Hiển thị modal hoặc form cập nhật trạng thái
+          if (window.antd && window.antd.Modal) {
+            window.antd.Modal.confirm({
+              title: 'Cập nhật trạng thái đơn hàng',
+              content: 'Bạn có chắc chắn muốn cập nhật trạng thái đơn hàng này?',
+              okText: 'Cập nhật',
+              cancelText: 'Hủy',
+              onOk: async () => {
+                try {
+                  // Gọi API cập nhật trạng thái
+                  const response = await fetch(`/api/orders/<%= orderId %>/status`, {
+                    method: 'PUT',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    },
+                    body: JSON.stringify({ new_status: 'CONFIRMED' }) // Cần thay đổi tùy theo trạng thái hiện tại
                   });
 
-                  // Reload trang sau 1 giây
-                  setTimeout(() => {
-                    window.location.reload();
-                  }, 1000);
-                } else {
+                  const data = await response.json();
+
+                  if (data.success) {
+                    window.antd.notification.success({
+                      message: 'Thành công',
+                      description: 'Đã cập nhật trạng thái đơn hàng',
+                      placement: 'topRight'
+                    });
+
+                    // Reload trang sau 1 giây
+                    setTimeout(() => {
+                      window.location.reload();
+                    }, 1000);
+                  } else {
+                    window.antd.notification.error({
+                      message: 'Lỗi',
+                      description: data.message || 'Không thể cập nhật trạng thái đơn hàng',
+                      placement: 'topRight'
+                    });
+                  }
+                } catch (error) {
                   window.antd.notification.error({
                     message: 'Lỗi',
-                    description: data.message || 'Không thể cập nhật trạng thái đơn hàng',
+                    description: 'Đã xảy ra lỗi khi cập nhật trạng thái đơn hàng',
                     placement: 'topRight'
                   });
                 }
-              } catch (error) {
-                window.antd.notification.error({
-                  message: 'Lỗi',
-                  description: 'Đã xảy ra lỗi khi cập nhật trạng thái đơn hàng',
-                  placement: 'topRight'
-                });
               }
-            }
-          });
-        } else {
-          if (confirm('Bạn có chắc chắn muốn cập nhật trạng thái đơn hàng này?')) {
-            // Xử lý cập nhật trạng thái
-            fetch(`/api/orders/<%= orderId %>/status`, {
-              method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + localStorage.getItem('token')
-              },
-              body: JSON.stringify({ new_status: 'CONFIRMED' }) // Cần thay đổi tùy theo trạng thái hiện tại
-            })
-              .then(response => response.json())
-              .then(data => {
-                if (data.success) {
-                  alert('Đã cập nhật trạng thái đơn hàng');
-                  window.location.reload();
-                } else {
-                  alert('Lỗi: ' + data.message);
-                }
+            });
+          } else {
+            if (confirm('Bạn có chắc chắn muốn cập nhật trạng thái đơn hàng này?')) {
+              // Xử lý cập nhật trạng thái
+              fetch(`/api/orders/<%= orderId %>/status`, {
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': 'Bearer ' + localStorage.getItem('token')
+                },
+                body: JSON.stringify({ new_status: 'CONFIRMED' }) // Cần thay đổi tùy theo trạng thái hiện tại
               })
-              .catch(error => {
-                alert('Đã xảy ra lỗi khi cập nhật trạng thái đơn hàng');
-              });
+                .then(response => response.json())
+                .then(data => {
+                  if (data.success) {
+                    alert('Đã cập nhật trạng thái đơn hàng');
+                    window.location.reload();
+                  } else {
+                    alert('Lỗi: ' + data.message);
+                  }
+                })
+                .catch(error => {
+                  alert('Đã xảy ra lỗi khi cập nhật trạng thái đơn hàng');
+                });
+            }
           }
-        }
-      });
-    }
-  });
-</script>
+        });
+      }
+    });
+  </script>
 
-<style>
-  @media print {
+  <style>
+    @media print {
 
-    .sidebar,
-    .dashboard-header,
-    .breadcrumb,
-    #update-status-btn,
-    #print-order-btn {
-      display: none !important;
+      .sidebar,
+      .dashboard-header,
+      .breadcrumb,
+      #update-status-btn,
+      #print-order-btn {
+        display: none !important;
+      }
+
+      .content-wrapper {
+        margin-left: 0 !important;
+        padding: 0 !important;
+      }
+
+      .card {
+        box-shadow: none !important;
+        border: 1px solid #ddd !important;
+      }
     }
 
-    .content-wrapper {
-      margin-left: 0 !important;
-      padding: 0 !important;
+    /* Styles cho shipping status badge trong trang chi tiết đơn hàng */
+    .order-status .badge {
+      padding: 6px 12px;
+      font-size: 13px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
-    .card {
-      box-shadow: none !important;
-      border: 1px solid #ddd !important;
+    .order-status .badge i {
+      margin-right: 6px;
+      font-size: 14px;
     }
-  }
-  
-  /* Styles cho shipping status badge trong trang chi tiết đơn hàng */
-  .order-status .badge {
-    padding: 6px 12px;
-    font-size: 13px;
-    border-radius: 4px;
-    display: inline-flex;
-    align-items: center;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  }
-  
-  .order-status .badge i {
-    margin-right: 6px;
-    font-size: 14px;
-  }
-  
-  /* Hiệu ứng hover cho badge trong trang chi tiết */
-  .order-status .badge:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-    transition: all 0.3s ease;
-  }
-  
-  /* Màu sắc đậm hơn cho badge trong trang chi tiết */
-  .order-status .badge-secondary { background-color: #5a6268; }
-  .order-status .badge-info { background-color: #138496; }
-  .order-status .badge-primary { background-color: #0069d9; }
-  .order-status .badge-success { background-color: #218838; }
-  .order-status .badge-danger { background-color: #c82333; }
-  .order-status .badge-warning { background-color: #e0a800; }
-  .order-status .badge-dark { background-color: #23272b; }
-  
-  /* Color dot style */
-  .color-dot {
-    display: inline-block;
-    width: 15px;
-    height: 15px;
-    border-radius: 50%;
-    background-color: attr(data-color);
-  }
-  
-  /* Edit functionality styles */
-  .edit-btn {
-    cursor: pointer;
-    margin-left: 5px;
-    color: #6c757d;
-    font-size: 14px;
-    transition: color 0.2s;
-  }
-  
-  .edit-btn:hover {
-    color: #007bff;
-  }
-  
-  .info-input {
-    width: 100%;
-    padding: 6px 10px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    font-size: 14px;
-    margin-top: 5px;
-  }
-  
-  .info-input:focus {
-    border-color: #80bdff;
-    outline: 0;
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-  }
-  
-  /* Status log styles */
-  .status-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-  }
-  
-  .record-status {
-    flex: 1;
-  }
-  
-  .record-log {
-    font-size: 12px;
-    color: #6c757d;
-    text-align: right;
-    min-width: 180px;
-  }
-  
-  .log-time, .log-user {
-    margin-bottom: 2px;
-  }
-  
-  .log-time i, .log-user i {
-    margin-right: 5px;
-    width: 14px;
-    text-align: center;
-  }
-  
-  .pending { color: #6c757d; }
-  .processing { color: #17a2b8; }
-  .success { color: #28a745; }
-  .failed { color: #dc3545; }
-  .cancelled { color: #dc3545; }
-  .return { color: #fd7e14; }
-  
-  .confirmed { color: #17a2b8; }
-  .shipping { color: #007bff; }
-  
-  /* Return info section styles */
-  .return-info-section .card {
-    border: 1px solid #e3f2fd;
-    border-left: 4px solid #2196f3;
-  }
-  
-  .return-info-section .card-title {
-    color: #1976d2;
-    font-weight: 600;
-    margin-bottom: 15px;
-  }
-  
-  .return-info-section p {
-    margin-bottom: 8px;
-    font-size: 14px;
-  }
-  
-  .return-info-section strong {
-    color: #424242;
-    font-weight: 600;
-  }
-  
-  .badge-warning {
-    background-color: #ff9800;
-    color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-  }
-  
-  .row.--return-product {
-    margin-top: 30px;
-    padding-top: 20px;
-    border-top: 2px solid #f5f5f5;
-  }
-  
-  .row.--return-product .section-title {
-    color: #d32f2f;
-    font-weight: 600;
-  }
-</style>
+
+    /* Hiệu ứng hover cho badge trong trang chi tiết */
+    .order-status .badge:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+      transition: all 0.3s ease;
+    }
+
+    /* Màu sắc đậm hơn cho badge trong trang chi tiết */
+    .order-status .badge-secondary {
+      background-color: #5a6268;
+    }
+
+    .order-status .badge-info {
+      background-color: #138496;
+    }
+
+    .order-status .badge-primary {
+      background-color: #0069d9;
+    }
+
+    .order-status .badge-success {
+      background-color: #218838;
+    }
+
+    .order-status .badge-danger {
+      background-color: #c82333;
+    }
+
+    .order-status .badge-warning {
+      background-color: #e0a800;
+    }
+
+    .order-status .badge-dark {
+      background-color: #23272b;
+    }
+
+    /* Color dot style */
+    .color-dot {
+      display: inline-block;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background-color: attr(data-color);
+    }
+
+    /* Edit functionality styles */
+    .edit-btn {
+      cursor: pointer;
+      margin-left: 5px;
+      color: #6c757d;
+      font-size: 14px;
+      transition: color 0.2s;
+    }
+
+    .edit-btn:hover {
+      color: #007bff;
+    }
+
+    .info-input {
+      width: 100%;
+      padding: 6px 10px;
+      border: 1px solid #ced4da;
+      border-radius: 4px;
+      font-size: 14px;
+      margin-top: 5px;
+    }
+
+    .info-input:focus {
+      border-color: #80bdff;
+      outline: 0;
+      box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+
+    /* Status log styles */
+    .status-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .record-status {
+      flex: 1;
+    }
+
+    .record-log {
+      font-size: 12px;
+      color: #6c757d;
+      text-align: right;
+      min-width: 180px;
+    }
+
+    .log-time,
+    .log-user {
+      margin-bottom: 2px;
+    }
+
+    .log-time i,
+    .log-user i {
+      margin-right: 5px;
+      width: 14px;
+      text-align: center;
+    }
+
+    .pending {
+      color: #6c757d;
+    }
+
+    .processing {
+      color: #17a2b8;
+    }
+
+    .success {
+      color: #28a745;
+    }
+
+    .failed {
+      color: #dc3545;
+    }
+
+    .cancelled {
+      color: #dc3545;
+    }
+
+    .return {
+      color: #fd7e14;
+    }
+
+    .confirmed {
+      color: #17a2b8;
+    }
+
+    .shipping {
+      color: #007bff;
+    }
+
+    /* Return info section styles */
+    .return-info-section .card {
+      border: 1px solid #e3f2fd;
+      border-left: 4px solid #2196f3;
+    }
+
+    .return-info-section .card-title {
+      color: #1976d2;
+      font-weight: 600;
+      margin-bottom: 15px;
+    }
+
+    .return-info-section p {
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    .return-info-section strong {
+      color: #424242;
+      font-weight: 600;
+    }
+
+    .badge-warning {
+      background-color: #ff9800;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    .row.--return-product {
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 2px solid #f5f5f5;
+    }
+
+    .row.--return-product .section-title {
+
+      font-weight: 600;
+    }
+  </style>

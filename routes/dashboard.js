@@ -297,30 +297,53 @@ router.get("/orders/view/:id", (req, res) => {
 router.get("/orders/detail/:id", isAdmin, async (req, res) => {
   try {
     const orderId = req.params.id;
-    // Build API URL based on environment
-    const protocol = req.protocol;
-    const host = req.get('host');
-    const apiUrl = process.env.NODE_ENV === 'production' 
-      ? `${protocol}://${host}/api/orders/${orderId}`
-      : `http://localhost:${process.env.PORT || 3501}/api/orders/${orderId}`;
-    // Fetch order data from API
-    const response = await fetch(apiUrl, {
-      headers: {
-        Authorization: `Bearer ${req.cookies.token}`,
-      },
-    });
+    let order = null;
+    
+    try {
+      // Try to fetch from API first
+      const port = process.env.PORT || 3501;
+      const apiUrl = `http://localhost:${port}/api/orders/${orderId}`;
+      
+      const response = await fetch(apiUrl, {
+        headers: {
+          Authorization: `Bearer ${req.cookies.token}`,
+        },
+        timeout: 5000 // 5 second timeout
+      });
 
-    if (!response.ok) {
-      throw new Error("Failed to fetch order details");
+      if (response.ok) {
+        const orderData = await response.json();
+        order = orderData.data || orderData;
+        
+        // If there's returnInfo in the API response, add it to the order
+        if (orderData.returnInfo) {
+          order.returnInfo = orderData.returnInfo;
+        }
+      }
+    } catch (fetchError) {
+      console.log("API fetch failed, falling back to direct DB query:", fetchError.message);
     }
-
-    const orderData = await response.json();
-    // Extract the order object from the response
-    const order = orderData.data || orderData;
-
-    // If there's returnInfo in the API response, add it to the order
-    if (orderData.returnInfo) {
-      order.returnInfo = orderData.returnInfo;
+    
+    // If API fetch failed, get data directly from database
+    if (!order) {
+      const db = require("../config/database");
+      const [orderRows] = await db.query(
+        `SELECT o.*, u.user_name as customer_name, u.user_gmail as customer_email, u.user_number as customer_phone
+         FROM orders o 
+         LEFT JOIN user u ON o.user_id = u.user_id 
+         WHERE o.order_id = ?`,
+        [orderId]
+      );
+      
+      if (orderRows.length === 0) {
+        return res.status(404).render("error", {
+          message: "Không tìm thấy đơn hàng",
+          error: { status: 404 },
+          layout: "layouts/dashboard",
+        });
+      }
+      
+      order = orderRows[0];
     }
 
     // If items are missing, fetch them directly from the database
@@ -584,9 +607,14 @@ router.get("/orders/detail/:id", isAdmin, async (req, res) => {
       formatDateTime: helpers.formatDateTime,
     });
   } catch (error) {
+    console.error("Error in /orders/detail/:id:", error);
     res.status(500).render("error", {
       message: "Không thể tải thông tin đơn hàng",
-      error: { status: 500, stack: error.stack },
+      error: { 
+        status: 500, 
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+        message: error.message 
+      },
       layout: "layouts/dashboard",
     });
   }
@@ -596,26 +624,49 @@ router.get("/orders/detail/:id", isAdmin, async (req, res) => {
 router.get("/orders/invoice/:id", async (req, res) => {
   try {
     const orderId = req.params.id;
-    // Build API URL based on environment
-    const protocol = req.protocol;
-    const host = req.get('host');
-    const apiUrl = process.env.NODE_ENV === 'production' 
-      ? `${protocol}://${host}/api/orders/${orderId}`
-      : `http://localhost:${process.env.PORT || 3501}/api/orders/${orderId}`;
-    // Fetch order data from API
-    const response = await fetch(apiUrl, {
-      headers: {
-        Authorization: `Bearer ${req.cookies.token}`,
-      },
-    });
+    let order = null;
+    
+    try {
+      // Try to fetch from API first
+      const port = process.env.PORT || 3501;
+      const apiUrl = `http://localhost:${port}/api/orders/${orderId}`;
+      
+      const response = await fetch(apiUrl, {
+        headers: {
+          Authorization: `Bearer ${req.cookies.token}`,
+        },
+        timeout: 5000 // 5 second timeout
+      });
 
-    if (!response.ok) {
-      throw new Error("Failed to fetch order details for invoice");
+      if (response.ok) {
+        const orderData = await response.json();
+        order = orderData.data || orderData;
+      }
+    } catch (fetchError) {
+      console.log("API fetch failed for invoice, falling back to direct DB query:", fetchError.message);
     }
-
-    const orderData = await response.json();
-    // Extract the order object from the response
-    const order = orderData.data || orderData;
+    
+    // If API fetch failed, get data directly from database
+    if (!order) {
+      const db = require("../config/database");
+      const [orderRows] = await db.query(
+        `SELECT o.*, u.user_name as customer_name, u.user_gmail as customer_email, u.user_number as customer_phone
+         FROM orders o 
+         LEFT JOIN user u ON o.user_id = u.user_id 
+         WHERE o.order_id = ?`,
+        [orderId]
+      );
+      
+      if (orderRows.length === 0) {
+        return res.status(404).render("error", {
+          message: "Không tìm thấy đơn hàng",
+          error: { status: 404 },
+          layout: "layouts/dashboard",
+        });
+      }
+      
+      order = orderRows[0];
+    }
 
     // If items are missing, fetch them directly from the database
     if (!order.items || order.items.length === 0) {

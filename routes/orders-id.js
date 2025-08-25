@@ -221,6 +221,249 @@ router.get('/:userId', async (req, res) => {
 });
 
 /**
+ * @route   PUT /api/orders-id/cancel-item/:orderId/:itemId
+ * @desc    Hủy một sản phẩm cụ thể trong đơn hàng (không hủy toàn bộ đơn hàng)
+ * @access  Private
+ */
+router.put('/cancel-item/:orderId/:itemId', verifyToken, async (req, res) => {
+  try {
+    const orderId = req.params.orderId;
+    const itemId = req.params.itemId; // order_item_id
+    const user_id = req.user.id;
+    const isAdmin = req.user.role === 'admin';
+    const { reason } = req.body;
+
+    // Lấy thông tin đơn hàng và sản phẩm cần hủy
+    let orderQuery;
+    let params;
+    
+    if (isAdmin) {
+      orderQuery = `
+        SELECT o.order_id, o.user_id, o.current_status, o.created_at, o.order_hash, o.order_total_final,
+               u.user_name, u.user_gmail as user_email,
+               oi.order_item_id, oi.variant_id, oi.quantity, oi.product_price, oi.current_status as item_status,
+               p.product_name, p.product_id
+        FROM orders o
+        LEFT JOIN user u ON o.user_id = u.user_id
+        LEFT JOIN order_items oi ON o.order_id = oi.order_id
+        LEFT JOIN variant_product vp ON oi.variant_id = vp.variant_id
+        LEFT JOIN product p ON vp.product_id = p.product_id
+        WHERE o.order_id = ? AND oi.order_item_id = ?`;
+      params = [orderId, itemId];
+    } else {
+      orderQuery = `
+        SELECT o.order_id, o.user_id, o.current_status, o.created_at, o.order_hash, o.order_total_final,
+               u.user_name, u.user_gmail as user_email,
+               oi.order_item_id, oi.variant_id, oi.quantity, oi.product_price, oi.current_status as item_status,
+               p.product_name, p.product_id
+        FROM orders o
+        LEFT JOIN user u ON o.user_id = u.user_id
+        LEFT JOIN order_items oi ON o.order_id = oi.order_id
+        LEFT JOIN variant_product vp ON oi.variant_id = vp.variant_id
+        LEFT JOIN product p ON vp.product_id = p.product_id
+        WHERE o.order_id = ? AND oi.order_item_id = ? AND o.user_id = ?`;
+      params = [orderId, itemId, user_id];
+    }
+
+    const [[orderItem]] = await db.query(orderQuery, params);
+
+    if (!orderItem) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Không tìm thấy sản phẩm trong đơn hàng hoặc bạn không có quyền hủy sản phẩm này' 
+      });
+    }
+
+    // Kiểm tra trạng thái sản phẩm
+    if (orderItem.item_status !== 'NORMAL') {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Sản phẩm đã ở trạng thái: ${orderItem.item_status}. Không thể hủy.` 
+      });
+    }
+
+    // Kiểm tra điều kiện hủy nếu không phải admin
+    if (!isAdmin) {
+      if (orderItem.current_status !== 'PENDING' && orderItem.current_status !== 'CONFIRMED') {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Không thể hủy sản phẩm khi đơn hàng ở trạng thái: ${orderItem.current_status}. Chỉ có thể hủy sản phẩm khi đơn hàng ở trạng thái PENDING hoặc CONFIRMED.` 
+        });
+      }
+
+      const orderDate = new Date(orderItem.created_at);
+      const currentDate = new Date();
+      const hoursDiff = (currentDate - orderDate) / (1000 * 60 * 60);
+      if (hoursDiff > 72) {
+        return res.status(400).json({ 
+          success: false, 
+          message: `Không thể hủy sản phẩm sau 72 giờ kể từ khi đặt. Đơn hàng này đã được tạo ${hoursDiff.toFixed(1)} giờ trước.` 
+        });
+      }
+    }
+
+    // Bắt đầu transaction
+    const connection = await db.getConnection();
+    await connection.beginTransaction();
+
+    try {
+      // Cập nhật trạng thái sản phẩm trong order_items
+      await connection.query(
+        `UPDATE order_items 
+         SET current_status = 'RETURN_REQUESTED', 
+             updated_at = NOW() 
+         WHERE order_item_id = ?`,
+        [itemId]
+      );
+
+      // Cập nhật kho biến thể sản phẩm (cộng lại số lượng đã hủy)
+      if (orderItem.variant_id) {
+        await connection.query(
+          `UPDATE variant_product
+           SET variant_product_quantity = variant_product_quantity + ?
+           WHERE variant_id = ?`,
+          [orderItem.quantity, orderItem.variant_id]
+        );
+        console.log("Updated variant_product_quantity for variant_id:", orderItem.variant_id);
+      }
+
+      // Giảm số lượng đã bán của sản phẩm
+      if (orderItem.product_id) {
+        await connection.query(
+          `UPDATE product
+           SET product_sold = GREATEST(product_sold - ?, 0)
+           WHERE product_id = ?`,
+          [orderItem.quantity, orderItem.product_id]
+        );
+      }
+
+      // Tính toán lại tổng tiền đơn hàng
+      const itemTotal = Number(orderItem.product_price) * Number(orderItem.quantity);
+      
+      // Cập nhật tổng tiền đơn hàng (trừ đi giá trị sản phẩm đã hủy)
+      await connection.query(
+        `UPDATE orders 
+         SET order_total = order_total - ?,
+             order_total_final = order_total_final - ?,
+             updated_at = NOW(),
+             note = CONCAT(IFNULL(note, ''), ?)
+         WHERE order_id = ?`,
+        [
+          itemTotal, 
+          itemTotal, 
+          `\nĐã hủy sản phẩm: ${orderItem.product_name} (${orderItem.quantity} x ${Number(orderItem.product_price).toLocaleString('vi-VN')}đ) - Lý do: ${reason || 'Không có lý do'}`, 
+          orderId
+        ]
+      );
+
+      // Tạo bản ghi trong order_returns cho sản phẩm bị hủy
+      const returnReason = reason || (isAdmin ? `Sản phẩm "${orderItem.product_name}" đã bị hủy bởi admin` : `Sản phẩm "${orderItem.product_name}" đã được hủy bởi khách hàng`);
+      
+      await connection.query(
+        `INSERT INTO order_returns (
+          order_id, user_id, reason, return_type, total_refund, status, created_at, updated_at
+        ) VALUES (?, ?, ?, 'REFUND', ?, 'COMPLETED', NOW(), NOW())`,
+        [orderId, orderItem.user_id, returnReason, itemTotal]
+      );
+
+      // Ghi log cho việc hủy sản phẩm
+      await connection.query(
+        `INSERT INTO order_status_log (order_id, from_status, to_status, trigger_by, step, created_at) 
+         VALUES (?, 'NORMAL', 'ITEM_CANCELLED', ?, ?, NOW())`,
+        [orderId, isAdmin ? 'admin' : 'user', `Hủy sản phẩm: ${orderItem.product_name} (ID: ${itemId})`]
+      );
+
+      // Kiểm tra xem còn sản phẩm nào trong đơn hàng không
+      const [[remainingItems]] = await connection.query(
+        `SELECT COUNT(*) as count FROM order_items WHERE order_id = ? AND current_status = 'NORMAL'`,
+        [orderId]
+      );
+
+      let orderStatusMessage = '';
+      if (remainingItems.count === 0) {
+        // Nếu không còn sản phẩm nào, hủy toàn bộ đơn hàng
+        await connection.query(
+          `UPDATE orders 
+           SET current_status = 'CANCELLED',
+               status_updated_by = ?,
+               status_updated_at = NOW(),
+               note = CONCAT(IFNULL(note, ''), ?)
+           WHERE order_id = ?`,
+          [isAdmin ? 'admin' : 'user', '\nĐơn hàng đã được hủy hoàn toàn do tất cả sản phẩm đều bị hủy.', orderId]
+        );
+        orderStatusMessage = ' Đơn hàng đã được hủy hoàn toàn do không còn sản phẩm nào.';
+      }
+
+      // Tạo thông báo nếu admin hủy sản phẩm
+      if (isAdmin && orderItem.user_id) {
+        try {
+          const notificationMessage = reason 
+            ? `Sản phẩm "${orderItem.product_name}" trong đơn hàng #${orderItem.order_hash} đã bị hủy bởi admin. Lý do: ${reason}`
+            : `Sản phẩm "${orderItem.product_name}" trong đơn hàng #${orderItem.order_hash} đã bị hủy bởi admin.`;
+
+          // Kiểm tra cấu trúc bảng notifications và chèn thông báo
+          try {
+            const [notificationColumns] = await connection.query(`SHOW COLUMNS FROM notifications`);
+            const columnNames = notificationColumns.map(col => col.Field);
+
+            if (columnNames.includes('user_id')) {
+              await connection.query(
+                `INSERT INTO notifications (user_id, type, message, related_id, created_at, is_read)
+                 VALUES (?, 'ITEM_CANCELLED', ?, ?, NOW(), 0)`,
+                [orderItem.user_id, notificationMessage, orderId]
+              );
+            } else if (columnNames.includes('customer_id')) {
+              await connection.query(
+                `INSERT INTO notifications (customer_id, type, message, related_id, created_at, is_read)
+                 VALUES (?, 'ITEM_CANCELLED', ?, ?, NOW(), 0)`,
+                [orderItem.user_id, notificationMessage, orderId]
+              );
+            }
+          } catch (tableError) {
+            console.log('Không thể tạo thông báo:', tableError.message);
+          }
+
+        } catch (notificationError) {
+          console.error('Lỗi khi tạo thông báo:', notificationError);
+        }
+      }
+
+      // Commit transaction
+      await connection.commit();
+
+      return res.status(200).json({
+        success: true,
+        message: `Hủy sản phẩm "${orderItem.product_name}" thành công.${orderStatusMessage}`,
+        data: {
+          order_id: orderId,
+          order_hash: orderItem.order_hash,
+          cancelled_item: {
+            item_id: itemId,
+            product_name: orderItem.product_name,
+            quantity: orderItem.quantity,
+            refund_amount: itemTotal
+          },
+          remaining_items: remainingItems.count
+        }
+      });
+
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Đã xảy ra lỗi khi hủy sản phẩm',
+      error: error.message
+    });
+  }
+});
+
+/**
  * @route   PUT /api/orders-id/cancel
  * @desc    Handle case when no order ID is provided
  * @access  Private
@@ -442,5 +685,120 @@ router.put('/cancel/:orderId', verifyToken, async (req, res) => {
   }
 });
 
+/**
+ * @route   GET /api/orders-id/items/:orderId
+ * @desc    Lấy danh sách sản phẩm trong đơn hàng cụ thể
+ * @access  Private
+ */
+router.get('/items/:orderId', verifyToken, async (req, res) => {
+  try {
+    const orderId = req.params.orderId;
+    const user_id = req.user.id;
+    const isAdmin = req.user.role === 'admin';
+
+    // Kiểm tra quyền truy cập đơn hàng
+    let orderQuery;
+    let params;
+    
+    if (isAdmin) {
+      orderQuery = `SELECT order_id, order_hash, current_status FROM orders WHERE order_id = ?`;
+      params = [orderId];
+    } else {
+      orderQuery = `SELECT order_id, order_hash, current_status FROM orders WHERE order_id = ? AND user_id = ?`;
+      params = [orderId, user_id];
+    }
+
+    const [[order]] = await db.query(orderQuery, params);
+
+    if (!order) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Không tìm thấy đơn hàng hoặc bạn không có quyền truy cập' 
+      });
+    }
+
+    // Lấy danh sách sản phẩm trong đơn hàng
+    const [items] = await db.query(`
+      SELECT 
+        oi.order_item_id,
+        oi.quantity,
+        oi.product_price,
+        oi.current_status as item_status,
+        oi.created_at,
+        oi.updated_at,
+        vp.variant_id,
+        vp.variant_product_price AS variant_price,
+        vp.variant_product_price_sale AS variant_price_sale,
+        vp.variant_product_list_image AS variant_image,
+        c.color_name,
+        c.color_hex,
+        p.product_id,
+        p.product_name,
+        p.product_slug,
+        p.product_image,
+        cat.category_name AS category
+      FROM order_items oi
+      JOIN variant_product vp ON oi.variant_id = vp.variant_id
+      JOIN product p ON vp.product_id = p.product_id
+      LEFT JOIN color c ON vp.color_id = c.color_id
+      LEFT JOIN category cat ON p.category_id = cat.category_id
+      WHERE oi.order_id = ?
+      ORDER BY oi.created_at ASC
+    `, [orderId]);
+
+    // Format dữ liệu trả về
+    const formattedItems = items.map(item => ({
+      item_id: item.order_item_id,
+      variant_id: item.variant_id,
+      product: {
+        id: item.product_id,
+        name: item.product_name,
+        slug: item.product_slug,
+        image: item.variant_image || item.product_image,
+        category: item.category
+      },
+      color: {
+        name: item.color_name,
+        hex: item.color_hex
+      },
+      quantity: item.quantity,
+      price: Number(item.product_price),
+      item_total: Number(item.product_price) * Number(item.quantity),
+      status: item.item_status,
+      can_cancel: item.item_status === 'NORMAL' && ['PENDING', 'CONFIRMED'].includes(order.current_status),
+      created_at: item.created_at,
+      updated_at: item.updated_at
+    }));
+
+    // Tính tổng giá trị các sản phẩm còn lại
+    const activeItems = formattedItems.filter(item => item.status === 'NORMAL');
+    const totalValue = activeItems.reduce((sum, item) => sum + item.item_total, 0);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        order: {
+          id: order.order_id,
+          hash: order.order_hash,
+          status: order.current_status
+        },
+        items: formattedItems,
+        summary: {
+          total_items: formattedItems.length,
+          active_items: activeItems.length,
+          cancelled_items: formattedItems.filter(item => item.status !== 'NORMAL').length,
+          total_value: totalValue
+        }
+      }
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Đã xảy ra lỗi khi lấy danh sách sản phẩm',
+      error: error.message
+    });
+  }
+});
 
 module.exports = router;

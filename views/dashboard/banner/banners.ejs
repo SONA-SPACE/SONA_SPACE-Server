@@ -149,7 +149,7 @@
       });
       
       // Log để debug
-      .map(key => ({
+      console.log('Banner groups:', Object.keys(groups).map(key => ({
         page: key,
         count: groups[key].banners.length
       })));

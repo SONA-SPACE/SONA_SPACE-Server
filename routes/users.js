@@ -612,7 +612,7 @@ router.get("/:id", async (req, res) => {
  * @desc    Cập nhật thông tin người dùng
  * @access  Private
  */
-router.put("/:id", isAdminOnly, async (req, res) => {
+router.put("/:id", verifyToken, async (req, res) => {
   try {
     const userId = Number(req.params.id);
 

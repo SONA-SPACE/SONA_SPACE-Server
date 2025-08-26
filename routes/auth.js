@@ -329,7 +329,7 @@ router.post("/google-login", async (req, res) => {
 
     // *** select ***
     const [users] = await db.query(
-      "SELECT user_id, user_gmail, user_name, user_image, user_role, created_at, user_address, user_number, user_email_active FROM user WHERE user_gmail = ?",
+      "SELECT user_id, user_gmail, user_name, user_image, user_role, created_at, user_address, user_number, user_email_active, user_disabled_at FROM user WHERE user_gmail = ?",
       [email]
     );
 
@@ -364,7 +364,12 @@ router.post("/google-login", async (req, res) => {
             "Tài khoản của bạn đã bị chặn khỏi nền tảng này. Vui lòng liên hệ với admin để được hỗ trợ.",
         });
       }
-
+if (u.user_disabled_at) {
+  return res.status(403).json({
+    success: false,
+    message: "Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên.",
+  });
+}
       userId = u.user_id;
       user = {
         id: u.user_id,
@@ -424,11 +429,11 @@ router.post("/login", async (req, res) => {
 
     // 2. Truy vấn người dùng từ DB
     const [users] = await db.query(
-      `SELECT user_id, user_gmail, user_password, user_name, user_role, 
-              user_number, user_address, user_email_active 
-       FROM user WHERE user_gmail = ?`,
-      [email.trim().toLowerCase()]
-    );
+  `SELECT user_id, user_gmail, user_password, user_name, user_role, 
+          user_number, user_address, user_email_active, user_disabled_at
+   FROM user WHERE user_gmail = ?`,
+  [email.trim().toLowerCase()]
+);
 
     if (users.length === 0) {
       return res
@@ -437,6 +442,13 @@ router.post("/login", async (req, res) => {
     }
 
     const user = users[0];
+
+    // Kiểm tra trạng thái tài khoản
+    if (user.user_disabled_at !== null) {
+      return res.status(403).json({
+        error: "Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên.",
+      });
+    }
 
     // 3. Kiểm tra xác thực email
     if (!user.user_email_active) {

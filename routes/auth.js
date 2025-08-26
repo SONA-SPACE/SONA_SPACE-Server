@@ -143,7 +143,69 @@ router.post("/register", async (req, res) => {
     // 12. Tạo token đăng nhập (nếu muốn login luôn)
     const loginToken = generateToken(userId);
 
-    // 13. Trả về thông tin user
+    // 12. Tạo mã giảm giá 20%
+    const timestamp = Date.now().toString().slice(-6);
+    const userIdStr = userId.toString().padStart(3, "0");
+    const couponCode = `WELCOME20_${userIdStr}_${timestamp}`;
+
+    const startDate = new Date();
+    const expDate = new Date();
+    expDate.setDate(expDate.getDate() + 14);
+
+    const [couponResult] = await db.query(
+      `INSERT INTO couponcode (
+    code, title, value_price, description, start_time, exp_time,
+    min_order, used, is_flash_sale, combinations, discount_type, status
+  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        couponCode,
+        "Mã giảm giá chào mừng",
+        5,
+        "Mã giảm giá 5% dành cho khách hàng mới. Áp dụng cho đơn hàng từ 1.000.000đ.",
+        startDate,
+        expDate,
+        1000000,
+        1,            // số lượt sử dụng
+        0,            // không phải flash sale
+        null,         // combinations
+        "percentage", // kiểu giảm giá theo %
+        1             // đang hoạt động
+      ]
+    );
+
+    const couponId = couponResult.insertId;
+
+    await db.query(
+      `INSERT INTO user_has_coupon (user_id, couponcode_id, status) VALUES (?, ?, 0)`,
+      [userId, couponId]
+    );
+
+    // 13. Gửi thông báo
+    const [typeRows] = await db.query(
+      `SELECT id FROM notification_types WHERE type_code = ? AND is_active = 1`,
+      ["coupon"]
+    );
+
+    if (typeRows.length > 0) {
+      const notificationTypeId = typeRows[0].id;
+      const notificationTitle = "Bạn nhận được mã giảm giá chào mừng!";
+      const notificationMessage = `Cảm ơn bạn đã đăng ký! Mã ${couponCode} giảm 5% đã được thêm vào tài khoản. Áp dụng cho đơn hàng từ 1.000.000đ. Hạn sử dụng tới: ${expDate.toLocaleDateString("vi-VN")}`;
+
+      const [notiResult] = await db.query(
+        `INSERT INTO notifications (type_id, title, message, created_by) VALUES (?, ?, ?, ?)`,
+        [notificationTypeId, notificationTitle, notificationMessage, "system"]
+      );
+
+      const notificationId = notiResult.insertId;
+
+      await db.query(
+        `INSERT INTO user_notifications (user_id, notification_id, is_read, read_at, is_deleted)
+     VALUES (?, ?, 0, NULL, 0)`,
+        [userId, notificationId]
+      );
+    }
+
+
     res.status(201).json({
       message:
         "Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.",
@@ -155,7 +217,14 @@ router.post("/register", async (req, res) => {
         role: "user",
         email_active: false,
       },
+      coupon: {
+        code: couponCode,
+        expires: expDate,
+      }
     });
+
+
+
   } catch (error) {
     res.status(500).json({ error: "Lỗi máy chủ. Vui lòng thử lại sau." });
   }
@@ -169,7 +238,7 @@ router.get("/verify-email", async (req, res) => {
     if (!token) {
       return res.redirect(
         `${frontendBaseUrl}/xac-thuc-email?status=error&message=` +
-          encodeURIComponent("Liên kết xác thực không hợp lệ hoặc bị thiếu.")
+        encodeURIComponent("Liên kết xác thực không hợp lệ hoặc bị thiếu.")
       );
     }
 
@@ -179,7 +248,7 @@ router.get("/verify-email", async (req, res) => {
     } catch (err) {
       return res.redirect(
         `${frontendBaseUrl}/xac-thuc-email?status=error&message=` +
-          encodeURIComponent("Liên kết xác thực không hợp lệ hoặc đã hết hạn.")
+        encodeURIComponent("Liên kết xác thực không hợp lệ hoặc đã hết hạn.")
       );
     }
 
@@ -187,7 +256,7 @@ router.get("/verify-email", async (req, res) => {
     if (decodedToken.purpose !== "email_verification") {
       return res.redirect(
         `${frontendBaseUrl}/xac-thuc-email?status=error&message=` +
-          encodeURIComponent("Token không dùng cho mục đích xác thực email.")
+        encodeURIComponent("Token không dùng cho mục đích xác thực email.")
       );
     }
 
@@ -200,7 +269,7 @@ router.get("/verify-email", async (req, res) => {
     if (users.length === 0) {
       return res.redirect(
         `${frontendBaseUrl}/xac-thuc-email?status=error&message=` +
-          encodeURIComponent("Tài khoản không tồn tại.")
+        encodeURIComponent("Tài khoản không tồn tại.")
       );
     }
 
@@ -209,18 +278,18 @@ router.get("/verify-email", async (req, res) => {
     if (user.user_email_active && !user.user_token) {
       return res.redirect(
         `${frontendBaseUrl}/xac-thuc-email?status=success&message=` +
-          encodeURIComponent(
-            "Email của bạn đã được xác thực trước đó. Bạn có thể đăng nhập."
-          )
+        encodeURIComponent(
+          "Email của bạn đã được xác thực trước đó. Bạn có thể đăng nhập."
+        )
       );
     }
 
     if (user.user_token !== token) {
       return res.redirect(
         `${frontendBaseUrl}/xac-thuc-email?status=error&message=` +
-          encodeURIComponent(
-            "Liên kết xác thực đã được sử dụng hoặc không hợp lệ."
-          )
+        encodeURIComponent(
+          "Liên kết xác thực đã được sử dụng hoặc không hợp lệ."
+        )
       );
     }
 
@@ -233,14 +302,14 @@ router.get("/verify-email", async (req, res) => {
 
     return res.redirect(
       `${frontendBaseUrl}/xac-thuc-email?status=success&message=` +
-        encodeURIComponent("Email của bạn đã được xác thực thành công!")
+      encodeURIComponent("Email của bạn đã được xác thực thành công!")
     );
   } catch (error) {
     return res.redirect(
       `${frontendBaseUrl}/xac-thuc-email?status=error&message=` +
-        encodeURIComponent(
-          "Lỗi máy chủ khi xác thực email. Vui lòng thử lại sau."
-        )
+      encodeURIComponent(
+        "Lỗi máy chủ khi xác thực email. Vui lòng thử lại sau."
+      )
     );
   }
 });

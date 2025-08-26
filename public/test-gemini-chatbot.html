@@ -296,7 +296,7 @@
                 info.textContent = `📁 ${file.name} (${fileSize} MB)`;
                 
                 if (fileSize > 5) {
-                    alert('⚠️ Ảnh quá lớn! Vui lòng chọn ảnh nhỏ hơn 5MB');
+                    alert(' Ảnh quá lớn! Vui lòng chọn ảnh nhỏ hơn 5MB');
                     input.value = '';
                     preview.style.display = 'none';
                     info.textContent = '';
@@ -332,7 +332,7 @@
                 };
                 reader.readAsDataURL(input.files[0]);
             } else if (!input.files || !input.files[0]) {
-                alert('🖼️ Vui lòng chọn hình ảnh trước khi gửi!');
+                alert(' Vui lòng chọn hình ảnh trước khi gửi!');
             }
         }
         

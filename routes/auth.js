@@ -32,48 +32,55 @@ async function verifyGoogleToken(token) {
  * @desc    Đăng ký người dùng mới
  * @access  Public
  */
+// Helper: chuẩn hoá phone (tuỳ bạn, có thể bỏ)
+const normalizePhone = (p) =>
+  p ? String(p).trim().replace(/\s+/g, "") : null;
 router.post("/register", async (req, res) => {
   try {
-    const { email, password, full_name, phone, address } = req.body;
+    // Map field name từ FE (fullName) sang BE (full_name)
+    const fullName = (req.body.full_name ?? req.body.fullName ?? "").trim();
+    const emailRaw = (req.body.email ?? "").trim().toLowerCase();
+    const password = String(req.body.password ?? "");
+    const phone = normalizePhone(req.body.phone);
+    const address = req.body.address ? String(req.body.address).trim() : null;
+
     const errors = {};
 
-    // 1. Validate bắt buộc
-    if (!email || !password || !full_name) {
-      return res
-        .status(400)
-        .json({ error: "Vui lòng nhập đủ thông tin bắt buộc" });
-    }
+    // 1) Validate bắt buộc
+    if (!emailRaw) errors.email = "Vui lòng nhập email.";
+    if (!password) errors.password = "Vui lòng nhập mật khẩu.";
+    if (!fullName) errors.fullName = "Vui lòng nhập họ và tên.";
 
-    const normalizedEmail = email.trim().toLowerCase();
-
-    // 2. Kiểm tra định dạng email
+    // 2) Định dạng email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(normalizedEmail)) {
+    if (!errors.email && !emailRegex.test(emailRaw)) {
       errors.email = "Email không hợp lệ.";
     }
 
-    // 3. Kiểm tra email đã tồn tại
-    const [emailCheck] = await db.query(
-      "SELECT user_id FROM user WHERE user_gmail = ?",
-      [normalizedEmail]
-    );
-    if (emailCheck.length > 0) {
-      errors.email = "Email đã được sử dụng.";
-    }
-
-    // 4. Kiểm tra số điện thoại
-    if (phone) {
-      const [phoneCheck] = await db.query(
-        "SELECT user_id FROM user WHERE user_number = ?",
-        [phone]
+    // 3) Kiểm tra email đã tồn tại
+    if (!errors.email) {
+      const [emailCheck] = await db.query(
+        "SELECT user_id FROM user WHERE user_gmail = ? LIMIT 1",
+        [emailRaw]
       );
-      if (phoneCheck.length > 0) {
-        errors.phone = "Số điện thoại đã được sử dụng";
+      if (Array.isArray(emailCheck) && emailCheck.length > 0) {
+        errors.email = "Email đã được sử dụng.";
       }
     }
 
-    // 5. Kiểm tra mật khẩu
-    if (password.length < 6) {
+    // 4) Kiểm tra số điện thoại (nếu có)
+    if (phone) {
+      const [phoneCheck] = await db.query(
+        "SELECT user_id FROM user WHERE user_number = ? LIMIT 1",
+        [phone]
+      );
+      if (Array.isArray(phoneCheck) && phoneCheck.length > 0) {
+        errors.phone = "Số điện thoại đã được sử dụng.";
+      }
+    }
+
+    // 5) Kiểm tra mật khẩu
+    if (!errors.password && password.length < 6) {
       errors.password = "Mật khẩu phải có ít nhất 6 ký tự.";
     }
 
@@ -81,72 +88,63 @@ router.post("/register", async (req, res) => {
       return res.status(400).json({ errors });
     }
 
-    // 6. Mã hóa mật khẩu
+    // 6) Hash mật khẩu
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 7. Lưu user vào DB
-    const result = await db.query(
+    // 7) Lưu user
+    const [insertResult] = await db.query(
       `INSERT INTO user (
         user_gmail, user_password, user_name, user_number, user_address, user_role,
         user_email_active, created_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
-      [
-        normalizedEmail,
-        hashedPassword,
-        full_name,
-        phone || null,
-        address || null,
-        "user",
-        0, // chưa xác thực
-      ]
+      [emailRaw, hashedPassword, fullName, phone, address, "user", 0]
     );
+    const userId = insertResult.insertId;
 
-    const userId = result[0].insertId;
-
-    // 8. Tạo token xác thực email
+    // 8) Token xác thực email
     const verificationToken = jwt.sign(
       { id: userId, purpose: "email_verification" },
       JWT_SECRET,
       { expiresIn: "24h" }
     );
 
-    // 9. Lưu token xác thực vào DB
+    // 9) Lưu token xác thực
     await db.query("UPDATE user SET user_token = ? WHERE user_id = ?", [
       verificationToken,
       userId,
     ]);
 
-    // 10. Tạo link xác thực
-    const verificationLink = `http://localhost:3501/api/auth/verify-email?token=${verificationToken}`;
-    // Nếu deploy thực tế: `${process.env.BACKEND_URL}/api/auth/verify-email?token=...`
+    // 10) Link xác thực (đổi sang env khi deploy)
+    const backendBase = process.env.BACKEND_URL || "http://localhost:3501";
+    const verificationLink = `${backendBase}/api/auth/verify-email?token=${verificationToken}`;
 
-    // 11. Gửi email xác thực
+    // 11) Gửi email xác thực
     const emailSent = await sendEmail(
-      normalizedEmail,
+      emailRaw,
       "Xác thực tài khoản Furnitown của bạn",
-      { userName: full_name, verificationLink },
-      "emailVerification" // EJS template
+      { userName: fullName, verificationLink },
+      "emailVerification"
     );
 
     if (!emailSent) {
-      // Gỡ token khỏi DB vì chưa gửi được email
       await db.query("UPDATE user SET user_token = NULL WHERE user_id = ?", [
         userId,
       ]);
-
       return res.status(500).json({
         error:
           "Đăng ký thành công nhưng gửi email xác thực thất bại. Vui lòng thử lại sau.",
       });
     }
 
-    // 12. Tạo token đăng nhập (nếu muốn login luôn)
-    const loginToken = generateToken(userId);
+    // 12) (tuỳ chọn) Token đăng nhập ngay
+    const loginToken = jwt.sign({ id: userId, role: "user" }, JWT_SECRET, {
+      expiresIn: "7d",
+    });
 
-    // 12. Tạo mã giảm giá 20%
-    const timestamp = Date.now().toString().slice(-6);
-    const userIdStr = userId.toString().padStart(3, "0");
-    const couponCode = `WELCOME20_${userIdStr}_${timestamp}`;
+    // 12b) Tạo mã giảm giá 5% cho user mới
+    const ts = Date.now().toString().slice(-6);
+    const userIdStr = String(userId).padStart(3, "0");
+    const couponCode = `WELCOME20_${userIdStr}_${ts}`;
 
     const startDate = new Date();
     const expDate = new Date();
@@ -154,9 +152,9 @@ router.post("/register", async (req, res) => {
 
     const [couponResult] = await db.query(
       `INSERT INTO couponcode (
-    code, title, value_price, description, start_time, exp_time,
-    min_order, used, is_flash_sale, combinations, discount_type, status
-  ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        code, title, value_price, description, start_time, exp_time,
+        min_order, used, is_flash_sale, combinations, discount_type, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         couponCode,
         "Mã giảm giá chào mừng",
@@ -165,14 +163,13 @@ router.post("/register", async (req, res) => {
         startDate,
         expDate,
         1000000,
-        1,            // số lượt sử dụng
-        0,            // không phải flash sale
-        null,         // combinations
-        "percentage", // kiểu giảm giá theo %
-        1             // đang hoạt động
+        1,
+        0,
+        null,
+        "percentage",
+        1,
       ]
     );
-
     const couponId = couponResult.insertId;
 
     await db.query(
@@ -180,53 +177,52 @@ router.post("/register", async (req, res) => {
       [userId, couponId]
     );
 
-    // 13. Gửi thông báo
+    // 13) Thông báo
     const [typeRows] = await db.query(
-      `SELECT id FROM notification_types WHERE type_code = ? AND is_active = 1`,
+      `SELECT id FROM notification_types WHERE type_code = ? AND is_active = 1 LIMIT 1`,
       ["coupon"]
     );
-
-    if (typeRows.length > 0) {
+    if (Array.isArray(typeRows) && typeRows.length > 0) {
       const notificationTypeId = typeRows[0].id;
       const notificationTitle = "Bạn nhận được mã giảm giá chào mừng!";
-      const notificationMessage = `Cảm ơn bạn đã đăng ký! Mã ${couponCode} giảm 5% đã được thêm vào tài khoản. Áp dụng cho đơn hàng từ 1.000.000đ. Hạn sử dụng tới: ${expDate.toLocaleDateString("vi-VN")}`;
+      const notificationMessage = `Cảm ơn bạn đã đăng ký! Mã ${couponCode} giảm 5% đã được thêm vào tài khoản. Áp dụng cho đơn hàng từ 1.000.000đ. Hạn sử dụng tới: ${expDate.toLocaleDateString(
+        "vi-VN"
+      )}`;
 
       const [notiResult] = await db.query(
         `INSERT INTO notifications (type_id, title, message, created_by) VALUES (?, ?, ?, ?)`,
         [notificationTypeId, notificationTitle, notificationMessage, "system"]
       );
-
       const notificationId = notiResult.insertId;
 
       await db.query(
         `INSERT INTO user_notifications (user_id, notification_id, is_read, read_at, is_deleted)
-     VALUES (?, ?, 0, NULL, 0)`,
+         VALUES (?, ?, 0, NULL, 0)`,
         [userId, notificationId]
       );
     }
 
-
-    res.status(201).json({
+    return res.status(201).json({
       message:
         "Đăng ký thành công! Vui lòng kiểm tra email để xác thực tài khoản.",
       token: loginToken,
       user: {
         id: userId,
-        email: normalizedEmail,
-        full_name,
+        email: emailRaw,
+        full_name: fullName,
         role: "user",
         email_active: false,
       },
       coupon: {
         code: couponCode,
         expires: expDate,
-      }
+      },
     });
-
-
-
   } catch (error) {
-    res.status(500).json({ error: "Lỗi máy chủ. Vui lòng thử lại sau." });
+    console.error("POST /api/auth/register error:", error);
+    return res
+      .status(500)
+      .json({ error: "Lỗi máy chủ. Vui lòng thử lại sau." });
   }
 });
 

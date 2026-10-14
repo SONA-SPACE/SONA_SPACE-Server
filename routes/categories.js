@@ -1,8 +1,25 @@
-const express = require("express");
+﻿const express = require("express");
 const router = express.Router();
 const db = require("../config/database");
+const { withTransaction } = require("../db/transaction");
 const { verifyToken, isAdmin } = require("../middleware/auth");
 const cloudinary = require("cloudinary").v2;
+
+const CATEGORY_COMPAT_SELECT = `
+  c.category_id,
+  c.category_name,
+  c.category_description,
+  c.slug,
+  c.category_image,
+  c.category_image AS category_icon,
+  c.category_banner,
+  c.status,
+  c.status AS category_status,
+  c.category_priority,
+  c.created_at,
+  c.updated_at,
+  c.deleted_at
+`;
 
 /**
  * @route   GET /filter/categories
@@ -10,13 +27,26 @@ const cloudinary = require("cloudinary").v2;
  * @access  Public
  */
 router.get("/filter/", async (req, res) => {
-  const [rows] = await db.query(`
-    SELECT category_id, category_name, slug, category_icon
-    FROM category
-    WHERE category_status = 1
-    ORDER BY category_priority ASC
-  `);
-  res.json(rows);
+  try {
+    const { rows } = await db.query(`
+      SELECT
+        category_id,
+        category_name,
+        slug,
+        category_image,
+        category_image AS category_icon,
+        category_banner,
+        status,
+        status AS category_status,
+        category_priority
+      FROM category
+      WHERE status = 1
+      ORDER BY category_priority ASC
+    `);
+    return res.json(rows);
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to fetch categories" });
+  }
 });
 
 /**
@@ -28,13 +58,13 @@ router.get("/", async (req, res) => {
   try {
     const sql = `
       SELECT
-        c.*,
-        (SELECT COUNT(*) FROM product WHERE category_id = c.category_id) as product_count
-      FROM category c WHERE category_status = 1
+        ${CATEGORY_COMPAT_SELECT},
+        (SELECT COUNT(*)::int FROM product WHERE category_id = c.category_id) as product_count
+      FROM category c WHERE status = 1
       ORDER BY c.category_priority ASC
     `;
     try {
-      const [categories] = await db.query(sql);
+      const { rows: categories } = await db.query(sql);
       return res.json(categories);
     } catch (dbError) {
       throw new Error(`Database error: ${dbError.message}`);
@@ -57,13 +87,12 @@ router.get("/:slug", async (req, res) => {
   try {
     const sql = `
       SELECT
-        c.*,
-        c.slug,
-        (SELECT COUNT(*) FROM product WHERE category_id = c.category_id) as product_count
+        ${CATEGORY_COMPAT_SELECT},
+        (SELECT COUNT(*)::int FROM product WHERE category_id = c.category_id) as product_count
       FROM category c
-      WHERE c.slug = ?
+      WHERE c.slug = $1
     `;
-    const [category] = await db.query(sql, [slug]);
+    const { rows: category } = await db.query(sql, [slug]);
 
     if (!category || category.length === 0) {
       return res.status(404).json({ error: "Category not found" });
@@ -80,7 +109,7 @@ router.get("/:slug", async (req, res) => {
  * @desc    Lấy thuộc tính danh mục theo ID danh mục
  * @access  Public
  */
-router.get("/:categoryId", async (req, res) => {
+router.get("/atts/:categoryId", async (req, res) => {
   try {
     const categoryId = req.params.categoryId;
     if (!categoryId || isNaN(categoryId)) {
@@ -96,10 +125,10 @@ router.get("/:categoryId", async (req, res) => {
         unit,
         is_required
       FROM attributes
-      WHERE category_id = ?
+      WHERE category_id = $1
       ORDER BY attribute_name ASC
     `;
-    const [attributes] = await db.query(sql, [categoryId]);
+    const { rows: attributes } = await db.query(sql, [categoryId]);
 
     res.status(200).json(attributes);
   } catch (err) {
@@ -119,13 +148,13 @@ router.get("/admin/all", verifyToken, isAdmin, async (req, res) => {
   try {
     const sql = `
       SELECT
-        c.*,
-        (SELECT COUNT(*) FROM product WHERE category_id = c.category_id) as product_count
+        ${CATEGORY_COMPAT_SELECT},
+        (SELECT COUNT(*)::int FROM product WHERE category_id = c.category_id) as product_count
       FROM category c
       ORDER BY c.category_priority ASC
     `;
     try {
-      const [categories] = await db.query(sql);
+      const { rows: categories } = await db.query(sql);
       return res.json(categories);
     } catch (dbError) {
       throw new Error(`Database error: ${dbError.message}`);
@@ -158,9 +187,9 @@ router.post("/", verifyToken, isAdmin, async (req, res) => {
         .json({ error: "Category name and slug are required" });
     }
 
-    // Kiểm tra tên danh mục đã tồn tại chưa
-    const [existingCategories] = await db.query(
-      "SELECT category_id FROM category WHERE slug = ?",
+    // Ki?m tra tên danh m?c dã t?n t?i chua
+    const { rows: existingCategories } = await db.query(
+      "SELECT category_id FROM category WHERE slug = $1",
       [slug]
     );
 
@@ -168,22 +197,27 @@ router.post("/", verifyToken, isAdmin, async (req, res) => {
       return res.status(400).json({ error: "Category slug already exists" });
     }
 
-    // Tạo danh mục mới
+    // T?o danh m?c m?i
     await db.query(
-      "INSERT INTO category (category_name, category_image, category_banner, category_status, category_priority, created_at, slug) VALUES (?, ?, ?, ?, ?, NOW(), ?)",
+      "INSERT INTO category (category_name, category_image, category_banner, status, category_priority, created_at, slug) VALUES ($1, $2, $3, $4, $5, NOW(), $6)",
       [
         name,
         image || null,
         banner || null,
-        typeof status === "number" ? status : 1,
-        typeof priority === "number" ? priority : 0,
+        typeof status === "number" ? status : Number(status) || 1,
+        typeof priority === "number" ? priority : Number(priority) || 0,
         slug,
       ]
     );
 
-    // Lấy thông tin danh mục vừa tạo
-    const [newCategory] = await db.query(
-      "SELECT * FROM category WHERE slug = ?",
+    // L?y thông tin danh m?c v?a t?o
+    const { rows: newCategory } = await db.query(
+      `
+      SELECT
+        ${CATEGORY_COMPAT_SELECT}
+      FROM category c
+      WHERE c.slug = $1
+      `,
       [slug]
     );
 
@@ -207,25 +241,30 @@ router.put("/:slug", verifyToken, isAdmin, async (req, res) => {
   if (!slug) return res.status(400).json({ message: "Slug is required" });
 
   try {
-    const { name, image, banner, priority, status } = req.body;
+    const { name, image, banner, priority, status, slug: nextSlugValue } = req.body;
+    const nextSlug =
+      typeof nextSlugValue === "string" ? nextSlugValue.trim() : nextSlugValue;
 
-    // 1. Kiểm tra danh mục tồn tại
-    const [oldData] = await db.query(
-      "SELECT category_id, category_image, category_banner FROM category WHERE slug = ?",
+    if (nextSlugValue !== undefined && !nextSlug) {
+      return res.status(400).json({ error: "Category slug is required" });
+    }
+
+    // 1. Ki?m tra danh m?c t?n t?i
+    const { rows: oldData } = await db.query(
+      "SELECT category_id, category_image, category_banner FROM category WHERE slug = $1",
       [slug]
     );
     if (!oldData.length) {
       return res.status(404).json({ error: "Category not found" });
     }
 
-    const categoryId = oldData[0].category_id;
     const oldImage = oldData[0].category_image;
     const oldBanner = oldData[0].category_banner;
 
-    // 2. Kiểm tra tên mới có trùng không
+    // 2. Ki?m tra tên m?i có trùng không
     if (name) {
-      const [duplicateName] = await db.query(
-        "SELECT category_id FROM category WHERE category_name = ? AND slug != ?",
+      const { rows: duplicateName } = await db.query(
+        "SELECT category_id FROM category WHERE category_name = $1 AND slug != $2",
         [name, slug]
       );
       if (duplicateName.length > 0) {
@@ -233,7 +272,17 @@ router.put("/:slug", verifyToken, isAdmin, async (req, res) => {
       }
     }
 
-    // 3. Hàm xóa ảnh cũ nếu có
+    if (nextSlug && nextSlug !== slug) {
+      const { rows: duplicateSlug } = await db.query(
+        "SELECT category_id FROM category WHERE slug = $1 AND slug != $2",
+        [nextSlug, slug]
+      );
+      if (duplicateSlug.length > 0) {
+        return res.status(400).json({ error: "Category slug already exists" });
+      }
+    }
+
+    // 3. Hàm xóa ?nh cu n?u có
     const deleteFromCloudinary = async (url) => {
       if (!url) return;
       const publicId = url
@@ -247,37 +296,49 @@ router.put("/:slug", verifyToken, isAdmin, async (req, res) => {
     if (image && image !== oldImage) {
       await deleteFromCloudinary(oldImage);
     }
-
     if (banner && banner !== oldBanner) {
       await deleteFromCloudinary(oldBanner);
     }
 
-    // 4. Cập nhật
+    // 4. C?p nh?t
     await db.query(
       `
       UPDATE category
       SET
-        category_name = COALESCE(?, category_name),
-        category_image = COALESCE(?, category_image),
-        category_banner = COALESCE(?, category_banner),
-        category_priority = COALESCE(?, category_priority),
-        category_status = COALESCE(?, category_status),
+        category_name = COALESCE($1, category_name),
+        category_image = COALESCE($2, category_image),
+        category_banner = COALESCE($3, category_banner),
+        slug = COALESCE($4, slug),
+        category_priority = COALESCE($5, category_priority),
+        status = COALESCE($6, status),
         updated_at = NOW()
-      WHERE slug = ?
+      WHERE slug = $7
       `,
       [
         name || null,
         image || null,
         banner || null,
-        priority || 0,
-        status ?? 1,
+        nextSlug && nextSlug !== slug ? nextSlug : null,
+        priority === undefined || priority === null || priority === ""
+          ? null
+          : Number(priority),
+        status === undefined || status === null || status === ""
+          ? null
+          : Number(status),
         slug,
       ]
     );
 
-    const [updatedCategory] = await db.query(
-      "SELECT * FROM category WHERE slug = ?",
-      [slug]
+    const resolvedSlug = nextSlug && nextSlug !== slug ? nextSlug : slug;
+
+    const { rows: updatedCategory } = await db.query(
+      `
+      SELECT
+        ${CATEGORY_COMPAT_SELECT}
+      FROM category c
+      WHERE c.slug = $1
+      `,
+      [resolvedSlug]
     );
 
     res.json({
@@ -300,56 +361,88 @@ router.delete("/:slug", verifyToken, isAdmin, async (req, res) => {
   if (!slug) return res.status(400).json({ message: "Slug is required" });
 
   try {
-    // Kiểm tra danh mục tồn tại
-    const [categoryData] = await db.query(
-      "SELECT category_id, category_image, category_banner FROM category WHERE slug = ?",
-      [slug]
-    );
+    const result = await withTransaction(async (client) => {
+      const { rows: categoryData } = await client.query(
+        "SELECT category_id, category_image, category_banner FROM category WHERE slug = $1 FOR UPDATE",
+        [slug]
+      );
+      if (!categoryData.length) {
+        return { status: 404, body: { error: "Không tìm thấy danh mục" } };
+      }
+      const { category_id: categoryId, category_image, category_banner } = categoryData[0];
 
-    if (!categoryData.length) {
-      return res.status(404).json({ error: "Category not found" });
+      // Products and banners still pointing at the category must be moved first
+      const { rows: products } = await client.query(
+        "SELECT product_id FROM product WHERE category_id = $1",
+        [categoryId]
+      );
+      if (products.length > 0) {
+        return {
+          status: 409,
+          body: {
+            error: `Danh mục còn ${products.length} sản phẩm. Hãy chuyển hoặc xóa các sản phẩm này trước.`,
+            totalProducts: products.length,
+            productIds: products.map((p) => p.product_id).join(", "),
+          },
+        };
+      }
+      const { rows: banners } = await client.query(
+        "SELECT COUNT(*)::int AS total FROM banners WHERE category_id = $1",
+        [categoryId]
+      );
+      if (banners[0].total > 0) {
+        return {
+          status: 409,
+          body: { error: `Danh mục đang được dùng cho ${banners[0].total} banner. Hãy đổi hoặc xóa các banner đó trước.` },
+        };
+      }
+
+      // The category's own attribute definitions go with it, unless a product still stores a value for one
+      const { rows: usedValues } = await client.query(
+        `SELECT COUNT(*)::int AS total
+         FROM product_attribute_value pav
+         JOIN attributes a ON a.attribute_id = pav.attribute_id
+         WHERE a.category_id = $1`,
+        [categoryId]
+      );
+      if (usedValues[0].total > 0) {
+        return {
+          status: 409,
+          body: { error: "Thuộc tính của danh mục vẫn đang được sản phẩm sử dụng." },
+        };
+      }
+      await client.query("DELETE FROM attributes WHERE category_id = $1", [categoryId]);
+      await client.query("DELETE FROM category WHERE category_id = $1", [categoryId]);
+
+      return { status: 200, body: { message: "Category deleted successfully" }, images: [category_image, category_banner] };
+    });
+
+    // Images are removed only after the rows are gone; a failed delete must not cost the images
+    if (result.images) {
+      await Promise.all(result.images.map(deleteCategoryImageFromCloudinary));
     }
-
-    const categoryId = categoryData[0].category_id;
-    const { category_image, category_banner } = categoryData[0];
-
-    // Kiểm tra xem danh mục có sản phẩm nào không
-    const [products] = await db.query(
-      "SELECT product_id FROM product WHERE category_id = ? ",
-      [categoryId]
-    );
-
-    if (products.length > 0) {
-      const productIds = products.map((p) => p.product_id).join(", ");
-      return res.status(400).json({
-        error:
-          "Cannot delete category with products. Remove or reassign products first.",
-        totalProducts: products.length,
-        productIds: productIds,
-      });
-    }
-
-    const deleteFromCloudinary = async (url) => {
-      if (!url) return;
-      const publicId = url
-        .split("/")
-        .slice(7)
-        .join("/")
-        .replace(/\.(jpg|jpeg|png|webp)$/i, "");
-      await cloudinary.uploader.destroy(publicId);
-    };
-
-    deleteFromCloudinary(category_image);
-    deleteFromCloudinary(category_banner);
-
-    // Xóa danh mục
-    await db.query("DELETE FROM category WHERE slug = ?", [slug]);
-
-    res.json({ message: "Category deleted successfully" });
+    return res.status(result.status).json(result.body);
   } catch (error) {
-    res.status(500).json({ error: "Failed to delete category" });
+    console.error("Error deleting category:", error);
+    return res.status(500).json({ error: "Không thể xóa danh mục. Vui lòng thử lại." });
   }
 });
+
+// "https://res.cloudinary.com/<cloud>/image/upload/v123/SonaSpace/Category/x.jpg" -> "SonaSpace/Category/x"
+async function deleteCategoryImageFromCloudinary(url) {
+  if (!url) return;
+  const publicId = url
+    .split("/")
+    .slice(7)
+    .join("/")
+    .replace(/\.(jpg|jpeg|png|webp)$/i, "");
+  try {
+    await cloudinary.uploader.destroy(publicId);
+  } catch (error) {
+    // The category is already deleted; an orphaned image is not worth failing the request
+    console.error("Error deleting category image from Cloudinary:", publicId, error.message);
+  }
+}
 
 /**
  * @route   GET /api/categories/:id/products
@@ -374,8 +467,8 @@ router.get("/:slug/products", async (req, res) => {
       req.query.sort_order?.toUpperCase() === "ASC" ? "ASC" : "DESC";
 
     // Kiểm tra danh mục
-    const [category] = await db.query(
-      "SELECT category_id, category_name FROM category WHERE slug = ?",
+    const { rows: category } = await db.query(
+      "SELECT category_id, category_name FROM category WHERE slug = $1",
       [slug]
     );
 
@@ -386,8 +479,8 @@ router.get("/:slug/products", async (req, res) => {
     const categoryId = category[0].category_id;
 
     // Đếm tổng sản phẩm
-    const [countResult] = await db.query(
-      "SELECT COUNT(*) as total FROM product WHERE category_id = ?",
+    const { rows: countResult } = await db.query(
+      "SELECT COUNT(*) as total FROM product WHERE category_id = $1",
       [categoryId]
     );
 
@@ -395,7 +488,7 @@ router.get("/:slug/products", async (req, res) => {
     const totalPages = Math.ceil(totalProducts / limit);
 
     // Query sản phẩm
-    const [products] = await db.query(
+    const { rows: products } = await db.query(
       `
        SELECT
   p.product_id AS id,
@@ -423,25 +516,22 @@ router.get("/:slug/products", async (req, res) => {
   LIMIT 1
 ) AS price_sale,
 
-  JSON_ARRAYAGG(DISTINCT col.color_hex) AS color_hex
+  COALESCE(json_agg(DISTINCT col.color_code) FILTER (WHERE col.color_code IS NOT NULL), '[]') AS color_hex
 
         FROM product p
         LEFT JOIN category c ON p.category_id = c.category_id
         LEFT JOIN variant_product vp ON p.product_id = vp.product_id
         LEFT JOIN color col ON vp.color_id = col.color_id
-        WHERE p.category_id = ?
-        GROUP BY p.product_id
+        WHERE p.category_id = $1
+        GROUP BY p.product_id, c.category_id, c.category_name
         ORDER BY p.${sort_by} ${sort_order}
-        LIMIT ?, ?
+        LIMIT $2 OFFSET $3
     `,
-      [categoryId, offset, limit]
+      [categoryId, limit, offset]
     );
 
     const transformedProducts = products.map((product) => {
-      let colorHex = [];
-      try {
-        colorHex = JSON.parse(product.color_hex || "[]");
-      } catch {}
+      let colorHex = product.color_hex || [];
 
       return {
         id: product.id,
@@ -483,12 +573,12 @@ router.get("/by-product/:slug", async (req, res) => {
   if (!slug) return res.status(400).json({ message: "Slug is required" });
 
   try {
-    const [rows] = await db.query(
+    const { rows } = await db.query(
       `
       SELECT c.category_id, c.category_name, c.slug
       FROM category c
       JOIN product p ON c.category_id = p.category_id
-      WHERE p.product_slug = ?
+      WHERE p.product_slug = $1
     `,
       [slug]
     );
@@ -504,3 +594,4 @@ router.get("/by-product/:slug", async (req, res) => {
 });
 
 module.exports = router;
+

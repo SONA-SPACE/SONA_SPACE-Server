@@ -17,9 +17,9 @@ var logger = require("morgan");
 
 // Authentication middleware
 const authMiddleware = require("./middleware/auth");
+const { markDeprecatedRoute } = require("./middleware/deprecateRoute");
 
 // Import all route files
-var indexRouter = require("./routes/index");
 var usersRouter = require("./routes/users");
 var productsRouter = require("./routes/products");
 var categoriesRouter = require("./routes/categories");
@@ -73,16 +73,6 @@ app.use(express.urlencoded({ extended: false, limit: "20mb" }));
 app.use(cookieParser());
 // Serve static files
 app.use(express.static(path.join(__dirname, "public")));
-
-// Test route for categories
-app.get("/test-categories", (req, res) => {
-  res.sendFile(path.join(__dirname, "test-categories.html"));
-});
-
-// Test route for Gemini chatbot
-app.get("/test-gemini-chatbot", (req, res) => {
-  res.sendFile(path.join(__dirname, "test-gemini-chatbot.html"));
-});
 
 app.use(cors());
 
@@ -163,6 +153,7 @@ app.use("/api/banners", bannersRouter);
 app.use("/api/materials", materialsRouter);
 app.use("/api/revenue", revenueRouter);
 app.use("/api/notify", NotifyRouter);
+app.use("/api/notifications", markDeprecatedRoute("/api/notifications"), NotifyRouter);
 app.use("/api/typeNotify", typeNotifyRouter);
 app.use("/api/attribute", attributeRouter);
 app.use("/api/events", eventsRouter);
@@ -189,7 +180,8 @@ app.use(function (err, req, res, next) {
   res.locals.message = err.message;
   res.locals.error = req.app.get("env") === "development" ? err : {};
   res.status(err.status || 500);
-  res.render("error");
+  res.render("error", { layout: "layouts/error" });
 });
 
 module.exports = app;
+

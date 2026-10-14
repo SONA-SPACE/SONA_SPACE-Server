@@ -1,0 +1,39 @@
+services:
+    postgres:
+        image: postgres:16-alpine
+        container_name: furnitown_postgres
+        restart: unless-stopped
+        env_file:
+            - .env.db
+        ports:
+            - "5432:5432"
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+            - ./db/init:/docker-entrypoint-initdb.d:ro
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+
+    backend:
+        build:
+            context: .
+            dockerfile: Dockerfile.dev
+        container_name: furnitown_backend
+        restart: unless-stopped
+        env_file:
+            - .env
+        ports:
+            - "3502:3502"
+        volumes:
+            - .:/app
+            - /app/node_modules
+        depends_on:
+            postgres:
+                condition: service_healthy
+        tty: true
+        stdin_open: true
+
+volumes:
+    postgres_data:

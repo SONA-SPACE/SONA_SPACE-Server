@@ -4,28 +4,91 @@ const db = require("../config/database");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const authMiddleware = require("../middleware/auth");
+const { verifyToken, isAdmin } = require("../middleware/auth");
 
-// Cấu hình multer để upload hình ảnh
+const BANNER_UPLOAD_DIR = path.join(__dirname, "../public/uploads/banners");
+const PAGE_TYPES = [
+  "home",
+  "danh-muc",
+  "san-pham",
+  "gio-hang",
+  "thanh-toan",
+  "dat-hang-thanh-cong",
+  "khong-gian",
+  "dich-vu-thiet-ke",
+  "ho-so-kien-truc",
+  "lien-he",
+  "dang-ky",
+  "dang-nhap",
+  "quen-mat-khau",
+  "tai-khoan",
+  "chi-tiet-don-hang",
+  "dieu-khoan-su-dung",
+  "chinh-sach-bao-mat",
+  "tin-tuc",
+];
+
+function ensureUploadDir() {
+  if (!fs.existsSync(BANNER_UPLOAD_DIR)) {
+    fs.mkdirSync(BANNER_UPLOAD_DIR, { recursive: true });
+  }
+}
+
+function toImageUrl(fileName) {
+  if (!fileName) return null;
+  if (String(fileName).startsWith("http")) return fileName;
+  return `/uploads/banners/${path.basename(fileName)}`;
+}
+
+function normalizeStatus(status) {
+  if (status === "active" || status === 1 || status === "1" || status === true) {
+    return 1;
+  }
+  return 0;
+}
+
+function normalizePageType(pageType) {
+  const normalized = String(pageType || "home").trim().toLowerCase();
+  return PAGE_TYPES.includes(normalized) ? normalized : "home";
+}
+
+function normalizeOptionalDate(dateValue) {
+  if (dateValue === undefined || dateValue === null || dateValue === "") {
+    return null;
+  }
+  return dateValue;
+}
+
+function mapBannerRow(row) {
+  const numericStatus = Number(row.status) === 1 ? 1 : 0;
+  return {
+    ...row,
+    id: row.banner_id,
+    title: row.banner_title,
+    subtitle: row.banner_description,
+    image_url: toImageUrl(row.banner_image),
+    link_url: row.banner_link,
+    position: row.banner_priority ?? 0,
+    is_active: numericStatus,
+    status: numericStatus === 1 ? "active" : "inactive",
+    page_type: row.page_type || "home",
+    start_date: row.start_date,
+    end_date: row.end_date,
+  };
+}
+
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const uploadPath = path.join(__dirname, "../public/uploads/banners");
-    
-    // Tạo thư mục nếu chưa tồn tại
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true });
-    }
-    
-    cb(null, uploadPath);
+  destination(req, file, cb) {
+    ensureUploadDir();
+    cb(null, BANNER_UPLOAD_DIR);
   },
-  filename: function (req, file, cb) {
+  filename(req, file, cb) {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
     const ext = path.extname(file.originalname);
-    cb(null, "banner-" + uniqueSuffix + ext);
+    cb(null, `banner-${uniqueSuffix}${ext}`);
   },
 });
 
-// Kiểm tra loại file
 const fileFilter = (req, file, cb) => {
   const allowedTypes = /jpeg|jpg|png|gif|webp/;
   const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
@@ -33,396 +96,365 @@ const fileFilter = (req, file, cb) => {
 
   if (extname && mimetype) {
     return cb(null, true);
-  } else {
-    cb(new Error("Chỉ chấp nhận file hình ảnh: jpeg, jpg, png, gif, webp!"));
   }
+
+  return cb(new Error("Chi chap nhan file hinh anh: jpeg, jpg, png, gif, webp"));
 };
 
 const upload = multer({
-  storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // Giới hạn 5MB
-  fileFilter: fileFilter,
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter,
 });
 
-// Middleware xác thực admin
-const isAdmin = (req, res, next) => {
-  if (req.user && req.user.role === "admin") {
-    next();
-  } else {
-    res.status(403).json({ error: "Access denied. Admin privileges required." });
-  }
-};
-
-// GET: Lấy tất cả banner
 router.get("/", async (req, res) => {
   try {
-    const [banners] = await db.query(`
-      SELECT 
+    const { rows } = await db.query(
+      `
+      SELECT
         b.*,
-        b.banner_id as id,
         c.category_name
       FROM banners b
       LEFT JOIN category c ON b.category_id = c.category_id
-      ORDER BY b.position ASC, b.created_at DESC
-    `);
-    
-    // Chuyển đổi đường dẫn hình ảnh thành URL đầy đủ và thêm status
-    banners.forEach(banner => {
-      if (banner.image_url && !banner.image_url.startsWith('http')) {
-        banner.image_url = `/uploads/banners/${path.basename(banner.image_url)}`;
-      }
-      
-      // Thêm trường status theo định dạng frontend mong đợi
-      banner.status = banner.is_active === 1 ? 'active' : 'inactive';
-    });
-    
-    res.json(banners);
+      WHERE b.deleted_at IS NULL
+      ORDER BY b.banner_priority ASC, b.created_at DESC
+      `
+    );
+
+    return res.json(rows.map(mapBannerRow));
   } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// GET: Lấy banner theo page_type
 router.get("/page/:pageType", async (req, res) => {
   try {
-    const pageType = req.params.pageType;
-    
-    const [banners] = await db.query(`
-      SELECT 
-        b.*,
-        b.banner_id as id,
-        c.category_name
-      FROM banners b
-      LEFT JOIN category c ON b.category_id = c.category_id
-      WHERE b.page_type = ? AND b.is_active = 1 
-      ORDER BY b.position ASC, b.created_at DESC
-    `, [pageType]);
-    
-    // Chuyển đổi đường dẫn hình ảnh thành URL đầy đủ và thêm status
-    banners.forEach(banner => {
-      if (banner.image_url && !banner.image_url.startsWith('http')) {
-        banner.image_url = `/uploads/banners/${path.basename(banner.image_url)}`;
-      }
-      
-      // Thêm trường status theo định dạng frontend mong đợi  
-      banner.status = banner.is_active === 1 ? 'active' : 'inactive';
-    });
-    
-    res.json(banners);
+    const pageType = normalizePageType(req.params.pageType);
+    const { rows } = await db.query(
+      `
+      SELECT *
+      FROM banners
+      WHERE deleted_at IS NULL
+        AND status = 1
+        AND LOWER(page_type) = $1
+        AND (start_date IS NULL OR start_date <= NOW())
+        AND (end_date IS NULL OR end_date >= NOW())
+      ORDER BY banner_priority ASC, created_at DESC
+      `,
+      [pageType]
+    );
+
+    return res.json(rows.map(mapBannerRow));
   } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// POST: Lấy banner cho nhiều page_type cùng lúc
 router.post("/pages", async (req, res) => {
   try {
     const { pageTypes } = req.body;
-    
-    if (!pageTypes || !Array.isArray(pageTypes) || pageTypes.length === 0) {
+    if (!Array.isArray(pageTypes) || pageTypes.length === 0) {
       return res.status(400).json({ error: "pageTypes array is required" });
     }
-    
-    // Tạo placeholders cho câu query
-    const placeholders = pageTypes.map(() => '?').join(',');
-    
-    const [banners] = await db.query(
-      `SELECT * FROM banners WHERE page_type IN (${placeholders}) AND status = 'active' ORDER BY page_type, position ASC, created_at DESC`,
-      pageTypes
+
+    const normalizedPageTypes = pageTypes.map(normalizePageType);
+    const { rows } = await db.query(
+      `
+      SELECT *
+      FROM banners
+      WHERE deleted_at IS NULL
+        AND status = 1
+        AND page_type = ANY($1::text[])
+        AND (start_date IS NULL OR start_date <= NOW())
+        AND (end_date IS NULL OR end_date >= NOW())
+      ORDER BY banner_priority ASC, created_at DESC
+      `,
+      [normalizedPageTypes]
     );
-    
-    // Chuyển đổi đường dẫn hình ảnh thành URL đầy đủ
-    banners.forEach(banner => {
-      if (banner.image_url && !banner.image_url.startsWith('http')) {
-        banner.image_url = `/uploads/banners/${path.basename(banner.image_url)}`;
-      }
-    });
-    
-    // Nhóm banner theo page_type
-    const result = pageTypes.reduce((acc, pageType) => {
-      acc[pageType] = banners.filter(banner => banner.page_type === pageType);
+
+    const grouped = normalizedPageTypes.reduce((acc, pageType) => {
+      acc[pageType] = [];
       return acc;
     }, {});
-    
-    res.json(result);
+
+    rows.map(mapBannerRow).forEach((banner) => {
+      if (!grouped[banner.page_type]) {
+        grouped[banner.page_type] = [];
+      }
+      grouped[banner.page_type].push(banner);
+    });
+
+    return res.json(grouped);
   } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// GET: Lấy banner cho nhiều page_type cùng lúc (qua query string)
 router.get("/pages", async (req, res) => {
   try {
     let { types } = req.query;
-    
     if (!types) {
       return res.status(400).json({ error: "types query parameter is required" });
     }
-    
-    // Chuyển đổi từ string sang array nếu cần
-    const pageTypes = Array.isArray(types) ? types : types.split(',');
-    
-    if (pageTypes.length === 0) {
-      return res.status(400).json({ error: "At least one page type is required" });
-    }
-    
-    // Tạo placeholders cho câu query
-    const placeholders = pageTypes.map(() => '?').join(',');
-    
-    const [banners] = await db.query(
-      `SELECT * FROM banners WHERE page_type IN (${placeholders}) AND status = 'active' ORDER BY page_type, position ASC, created_at DESC`,
-      pageTypes
+
+    const pageTypes = Array.isArray(types) ? types : String(types).split(",");
+    const normalizedPageTypes = pageTypes.map(normalizePageType);
+    const { rows } = await db.query(
+      `
+      SELECT *
+      FROM banners
+      WHERE deleted_at IS NULL
+        AND status = 1
+        AND page_type = ANY($1::text[])
+        AND (start_date IS NULL OR start_date <= NOW())
+        AND (end_date IS NULL OR end_date >= NOW())
+      ORDER BY banner_priority ASC, created_at DESC
+      `,
+      [normalizedPageTypes]
     );
-    
-    // Chuyển đổi đường dẫn hình ảnh thành URL đầy đủ
-    banners.forEach(banner => {
-      if (banner.image_url && !banner.image_url.startsWith('http')) {
-        banner.image_url = `/uploads/banners/${path.basename(banner.image_url)}`;
-      }
-    });
-    
-    // Nhóm banner theo page_type
-    const result = pageTypes.reduce((acc, pageType) => {
-      acc[pageType] = banners.filter(banner => banner.page_type === pageType);
+
+    const grouped = normalizedPageTypes.reduce((acc, pageType) => {
+      acc[pageType] = [];
       return acc;
     }, {});
-    
-    res.json(result);
+
+    rows.map(mapBannerRow).forEach((banner) => {
+      if (!grouped[banner.page_type]) {
+        grouped[banner.page_type] = [];
+      }
+      grouped[banner.page_type].push(banner);
+    });
+
+    return res.json(grouped);
   } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// GET: Lấy danh sách tất cả các page_type có banner
 router.get("/page-types", async (req, res) => {
-  try {
-    const [result] = await db.query(
-      "SELECT DISTINCT page_type FROM banners WHERE status = 'active' ORDER BY page_type"
-    );
-    
-    const pageTypes = result.map(item => item.page_type);
-    
-    res.json(pageTypes);
-  } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
-  }
+  return res.json(PAGE_TYPES);
 });
 
-// GET: Lấy banner theo ID
 router.get("/:id", async (req, res) => {
   try {
-    const [banners] = await db.query("SELECT *, banner_id as id FROM banners WHERE banner_id = ?", [
-      req.params.id,
-    ]);
+    const bannerId = Number.parseInt(req.params.id, 10);
+    if (!Number.isInteger(bannerId) || bannerId <= 0) {
+      return res.status(400).json({ error: "Invalid banner ID" });
+    }
 
-    if (banners.length === 0) {
+    const { rows } = await db.query(
+      "SELECT *, banner_id AS id FROM banners WHERE banner_id = $1 AND deleted_at IS NULL",
+      [bannerId]
+    );
+
+    if (!rows.length) {
       return res.status(404).json({ error: "Banner not found" });
     }
 
-    const banner = banners[0];
-    
-    // Chuyển đổi đường dẫn hình ảnh thành URL đầy đủ
-    if (banner.image_url && !banner.image_url.startsWith('http')) {
-      banner.image_url = `/uploads/banners/${path.basename(banner.image_url)}`;
-    }
-    
-    // Thêm trường status theo định dạng frontend mong đợi
-    banner.status = banner.is_active === 1 ? 'active' : 'inactive';
-    
-    res.json(banner);
+    return res.json(mapBannerRow(rows[0]));
   } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// POST: Tạo banner mới (yêu cầu xác thực admin)
-router.post("/", authMiddleware.verifyToken, isAdmin, upload.single("image"), async (req, res) => {
+router.post("/", verifyToken, isAdmin, upload.single("image"), async (req, res) => {
   try {
-    const { title, position, page_type, start_date, end_date, category_id } = req.body;
-    
-    // Kiểm tra dữ liệu đầu vào
+    const { title, subtitle, link_url, position, category_id, page_type, start_date, end_date } =
+      req.body;
+
     if (!title || !req.file) {
       return res.status(400).json({ error: "Title and image are required" });
     }
-    
-    const image_url = req.file ? path.basename(req.file.path) : null;
-    
-    // Convert status to is_active boolean
-    const is_active = req.body.status === 'active' ? 1 : 0;
-    
-    const [result] = await db.query(
-      "INSERT INTO banners (title, image_url, position, is_active, page_type, category_id, start_date, end_date, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())",
+
+    const status = normalizeStatus(req.body.status);
+    const { rows } = await db.query(
+      `
+      INSERT INTO banners (
+        banner_title,
+        banner_description,
+        banner_image,
+        banner_link,
+        banner_priority,
+        page_type,
+        status,
+        category_id,
+        start_date,
+        end_date,
+        created_at,
+        updated_at,
+        deleted_at
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW(), NULL)
+      RETURNING *
+      `,
       [
-        title, 
-        image_url, 
-        position || 0, 
-        is_active, 
-        page_type || "home",
-        category_id || null,
-        start_date || null,
-        end_date || null
+        title,
+        subtitle || null,
+        path.basename(req.file.path),
+        link_url || null,
+        Number(position) || 0,
+        normalizePageType(page_type),
+        status,
+        category_id ? Number(category_id) : null,
+        normalizeOptionalDate(start_date),
+        normalizeOptionalDate(end_date),
       ]
     );
-    
-    res.status(201).json({
-      id: result.insertId,
-      banner_id: result.insertId,
-      title,
-      image_url: `/uploads/banners/${image_url}`,
-      position,
-      is_active,
-      status: is_active === 1 ? 'active' : 'inactive',
-      page_type: page_type || "home",
-      category_id: category_id || null,
-      start_date: start_date || null,
-      end_date: end_date || null
-    });
+
+    return res.status(201).json(mapBannerRow(rows[0]));
   } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// PUT: Cập nhật banner (yêu cầu xác thực admin)
-router.put("/:id", authMiddleware.verifyToken, isAdmin, upload.single("image"), async (req, res) => {
+router.put("/:id", verifyToken, isAdmin, upload.single("image"), async (req, res) => {
   try {
-    const { title, position, page_type, start_date, end_date, category_id } = req.body;
-    const bannerId = req.params.id;
-    
-    // Kiểm tra banner có tồn tại không
-    const [existingBanners] = await db.query("SELECT * FROM banners WHERE banner_id = ?", [bannerId]);
-    
-    if (existingBanners.length === 0) {
+    const bannerId = Number.parseInt(req.params.id, 10);
+    if (!Number.isInteger(bannerId) || bannerId <= 0) {
+      return res.status(400).json({ error: "Invalid banner ID" });
+    }
+
+    const { rows: existingRows } = await db.query(
+      "SELECT * FROM banners WHERE banner_id = $1 AND deleted_at IS NULL",
+      [bannerId]
+    );
+
+    if (!existingRows.length) {
       return res.status(404).json({ error: "Banner not found" });
     }
-    
-    const existingBanner = existingBanners[0];
-    let image_url = existingBanner.image_url;
-    
-    // Convert status to is_active boolean
-    const is_active = req.body.status === 'active' ? 1 : 0;
-    
-    // Nếu có upload ảnh mới
+
+    const existing = existingRows[0];
+    let nextImage = existing.banner_image;
+
     if (req.file) {
-      // Xóa ảnh cũ nếu tồn tại và không phải URL bên ngoài
-      if (existingBanner.image_url && !existingBanner.image_url.startsWith('http')) {
-        const oldImagePath = path.join(__dirname, "../public/uploads/banners", existingBanner.image_url);
+      if (existing.banner_image && !String(existing.banner_image).startsWith("http")) {
+        const oldImagePath = path.join(BANNER_UPLOAD_DIR, path.basename(existing.banner_image));
         if (fs.existsSync(oldImagePath)) {
           fs.unlinkSync(oldImagePath);
         }
       }
-      
-      // Cập nhật đường dẫn ảnh mới
-      image_url = path.basename(req.file.path);
+      nextImage = path.basename(req.file.path);
     }
-    
-    // Cập nhật banner trong database
+
+    const nextStatus =
+      req.body.status === undefined ? Number(existing.status) : normalizeStatus(req.body.status);
+
     await db.query(
-      "UPDATE banners SET title = ?, image_url = ?, position = ?, is_active = ?, page_type = ?, category_id = ?, start_date = ?, end_date = ?, updated_at = NOW() WHERE banner_id = ?",
+      `
+      UPDATE banners
+      SET
+        banner_title = $1,
+        banner_description = $2,
+        banner_image = $3,
+        banner_link = $4,
+        banner_priority = $5,
+        page_type = $6,
+        status = $7,
+        category_id = $8,
+        start_date = $9,
+        end_date = $10,
+        updated_at = NOW()
+      WHERE banner_id = $11
+      `,
       [
-        title || existingBanner.title,
-        image_url,
-        position !== undefined ? position : existingBanner.position,
-        is_active !== undefined ? is_active : existingBanner.is_active,
-        page_type || existingBanner.page_type || "home",
-        category_id !== undefined ? category_id : existingBanner.category_id,
-        start_date !== undefined ? start_date : existingBanner.start_date,
-        end_date !== undefined ? end_date : existingBanner.end_date,
-        bannerId
+        req.body.title || existing.banner_title,
+        req.body.subtitle !== undefined ? req.body.subtitle : existing.banner_description,
+        nextImage,
+        req.body.link_url !== undefined ? req.body.link_url : existing.banner_link,
+        req.body.position !== undefined ? Number(req.body.position) : existing.banner_priority,
+        req.body.page_type !== undefined
+          ? normalizePageType(req.body.page_type)
+          : existing.page_type,
+        nextStatus,
+        req.body.category_id !== undefined && req.body.category_id !== ""
+          ? Number(req.body.category_id)
+          : existing.category_id,
+        req.body.start_date !== undefined
+          ? normalizeOptionalDate(req.body.start_date)
+          : existing.start_date,
+        req.body.end_date !== undefined
+          ? normalizeOptionalDate(req.body.end_date)
+          : existing.end_date,
+        bannerId,
       ]
     );
-    
-    // Lấy dữ liệu banner sau khi cập nhật
-    const [updatedBanners] = await db.query("SELECT *, banner_id as id FROM banners WHERE banner_id = ?", [bannerId]);
-    const updatedBanner = updatedBanners[0];
-    
-    // Chuyển đổi đường dẫn hình ảnh thành URL đầy đủ
-    if (updatedBanner.image_url && !updatedBanner.image_url.startsWith('http')) {
-      updatedBanner.image_url = `/uploads/banners/${path.basename(updatedBanner.image_url)}`;
-    }
-    
-    // Thêm status field
-    updatedBanner.status = updatedBanner.is_active === 1 ? 'active' : 'inactive';
-    
-    res.json(updatedBanner);
+
+    const { rows: updatedRows } = await db.query("SELECT * FROM banners WHERE banner_id = $1", [
+      bannerId,
+    ]);
+
+    return res.json(mapBannerRow(updatedRows[0]));
   } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// DELETE: Xóa banner (yêu cầu xác thực admin)
-router.delete("/:id", authMiddleware.verifyToken, isAdmin, async (req, res) => {
+router.delete("/:id", verifyToken, isAdmin, async (req, res) => {
   try {
-    const bannerId = req.params.id;
-    
-    // Kiểm tra banner có tồn tại không
-    const [existingBanners] = await db.query("SELECT * FROM banners WHERE banner_id = ?", [bannerId]);
-    
-    if (existingBanners.length === 0) {
+    const bannerId = Number.parseInt(req.params.id, 10);
+    if (!Number.isInteger(bannerId) || bannerId <= 0) {
+      return res.status(400).json({ error: "Invalid banner ID" });
+    }
+
+    const { rows: existingRows } = await db.query(
+      "SELECT * FROM banners WHERE banner_id = $1 AND deleted_at IS NULL",
+      [bannerId]
+    );
+
+    if (!existingRows.length) {
       return res.status(404).json({ error: "Banner not found" });
     }
-    
-    const existingBanner = existingBanners[0];
-    
-    // Xóa file ảnh nếu tồn tại và không phải URL bên ngoài
-    if (existingBanner.image_url && !existingBanner.image_url.startsWith('http')) {
-      const imagePath = path.join(__dirname, "../public/uploads/banners", existingBanner.image_url);
+
+    const existing = existingRows[0];
+    if (existing.banner_image && !String(existing.banner_image).startsWith("http")) {
+      const imagePath = path.join(BANNER_UPLOAD_DIR, path.basename(existing.banner_image));
       if (fs.existsSync(imagePath)) {
         fs.unlinkSync(imagePath);
       }
     }
-    
-    // Xóa banner từ database
-    await db.query("DELETE FROM banners WHERE banner_id = ?", [bannerId]);
-    
-    res.json({ message: "Banner deleted successfully" });
+
+    await db.query("DELETE FROM banners WHERE banner_id = $1", [bannerId]);
+    return res.json({ message: "Banner deleted successfully" });
   } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// PUT: Toggle trạng thái hiển thị banner (is_active)
-router.put("/:id/toggle-status", authMiddleware.verifyToken, isAdmin, async (req, res) => {
+router.put("/:id/toggle-status", verifyToken, isAdmin, async (req, res) => {
   try {
-    const bannerId = req.params.id;
-    
-    // Kiểm tra banner có tồn tại không
-    const [existingBanners] = await db.query("SELECT * FROM banners WHERE banner_id = ?", [bannerId]);
-    
-    if (existingBanners.length === 0) {
+    const bannerId = Number.parseInt(req.params.id, 10);
+    if (!Number.isInteger(bannerId) || bannerId <= 0) {
+      return res.status(400).json({ error: "Invalid banner ID" });
+    }
+
+    const { rows: existingRows } = await db.query(
+      "SELECT * FROM banners WHERE banner_id = $1 AND deleted_at IS NULL",
+      [bannerId]
+    );
+
+    if (!existingRows.length) {
       return res.status(404).json({ error: "Banner not found" });
     }
-    
-    const existingBanner = existingBanners[0];
-    
-    // Toggle trạng thái is_active (1 -> 0, 0 -> 1)
-    const newStatus = existingBanner.is_active === 1 ? 0 : 1;
-    
-    // Cập nhật trạng thái trong database
-    await db.query(
-      "UPDATE banners SET is_active = ?, updated_at = NOW() WHERE banner_id = ?",
-      [newStatus, bannerId]
-    );
-    
-    // Lấy dữ liệu banner sau khi cập nhật
-    const [updatedBanners] = await db.query("SELECT * FROM banners WHERE banner_id = ?", [bannerId]);
-    const updatedBanner = updatedBanners[0];
-    
-    // Chuyển đổi đường dẫn hình ảnh thành URL đầy đủ
-    if (updatedBanner.image_url && !updatedBanner.image_url.startsWith('http')) {
-      updatedBanner.image_url = `/uploads/banners/${path.basename(updatedBanner.image_url)}`;
-    }
-    
-    // Trả về status theo định dạng frontend mong đợi
-    updatedBanner.status = updatedBanner.is_active === 1 ? 'active' : 'inactive';
-    
-    res.json({
-      message: `Banner ${newStatus === 1 ? 'đã được hiển thị' : 'đã được ẩn'}`,
-      banner: updatedBanner,
-      is_active: newStatus
+
+    const existing = existingRows[0];
+    const newStatus = Number(existing.status) === 1 ? 0 : 1;
+
+    await db.query("UPDATE banners SET status = $1, updated_at = NOW() WHERE banner_id = $2", [
+      newStatus,
+      bannerId,
+    ]);
+
+    const { rows: updatedRows } = await db.query("SELECT * FROM banners WHERE banner_id = $1", [
+      bannerId,
+    ]);
+
+    return res.json({
+      message: `Banner ${newStatus === 1 ? "da duoc hien thi" : "da duoc an"}`,
+      banner: mapBannerRow(updatedRows[0]),
+      is_active: newStatus,
     });
-    
   } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 

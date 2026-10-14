@@ -21,16 +21,17 @@ router.get("/", verifyToken, isAdmin, async (req, res) => {
     // Tìm kiếm người dùng nếu có tham số search
     let whereClause = "";
     let params = [];
+    let paramIndex = 1;
 
     if (search) {
       whereClause =
-        "WHERE user_gmail LIKE ? OR user_name LIKE ? OR user_number LIKE ?";
+        `WHERE user_gmail LIKE $${paramIndex++} OR user_name LIKE $${paramIndex++} OR user_number LIKE $${paramIndex++}`;
       params = [`%${search}%`, `%${search}%`, `%${search}%`];
     }
 
     // Đếm tổng số người dùng
-    const [countResult] = await db.query(
-      `SELECT COUNT(*) as total FROM user ${whereClause}`,
+    const { rows: countResult } = await db.query(
+      `SELECT COUNT(*) as total FROM "user" ${whereClause}`,
       params
     );
 
@@ -38,12 +39,12 @@ router.get("/", verifyToken, isAdmin, async (req, res) => {
     const totalPages = Math.ceil(totalUsers / limit);
 
     // Lấy danh sách người dùng với phân trang
-    const [users] = await db.query(
+    const { rows: users } = await db.query(
       `SELECT user_id, user_gmail, user_name, user_number, user_address, user_role, created_at, updated_at 
-       FROM user ${whereClause}
+       FROM "user" ${whereClause}
        ORDER BY created_at DESC
-       LIMIT ?, ?`,
-      [...params, offset, limit]
+       LIMIT $${paramIndex++} OFFSET $${paramIndex++}`,
+      [...params, limit, offset]
     );
 
     // Định dạng lại kết quả
@@ -73,9 +74,9 @@ router.get("/", verifyToken, isAdmin, async (req, res) => {
 });
 router.get("/simple", verifyToken, isAdmin, async (req, res) => {
   try {
-    const [users] = await db.query(`
+    const { rows: users } = await db.query(`
       SELECT user_id AS id, user_name AS name, user_gmail AS email
-      FROM user
+      FROM "user"
       WHERE user_role = 'user'
     `);
     res.json(users);
@@ -102,9 +103,9 @@ router.get("/admin", verifyToken, isAdmin, async (req, res) => {
         u.user_disabled_at,
         u.created_at,
         u.updated_at,
-        COUNT(CASE WHEN o.current_status = 'SUCCESS' THEN 1 END) AS total_success_orders,
-        COUNT(CASE WHEN o.current_status = 'CANCELLED' THEN 1 END) AS total_cancelled_orders
-      FROM user u
+        COUNT(CASE WHEN o.order_status = 4 THEN 1 END) AS total_success_orders,
+        COUNT(CASE WHEN o.order_status = -1 THEN 1 END) AS total_cancelled_orders
+      FROM "user" u
       LEFT JOIN orders o ON u.user_id = o.user_id
       WHERE u.deleted_at IS NULL
     `;
@@ -116,7 +117,7 @@ router.get("/admin", verifyToken, isAdmin, async (req, res) => {
       : "guest";
 
     if (requestingUserRole === "staff") {
-      sqlQuery += ` AND u.user_role = ?`;
+      sqlQuery += ` AND u.user_role = $1`;
       queryParams.push("user");
     } else if (requestingUserRole !== "admin") {
       return res.status(403).json({
@@ -130,7 +131,7 @@ router.get("/admin", verifyToken, isAdmin, async (req, res) => {
       ORDER BY u.created_at DESC
     `;
 
-    const [rows] = await db.execute(sqlQuery, queryParams);
+    const { rows } = await db.query(sqlQuery, queryParams);
 
     const users = rows.map((user) => {
       const birth = user.user_birth ? new Date(user.user_birth) : null;
@@ -184,7 +185,7 @@ router.get("/admin", verifyToken, isAdmin, async (req, res) => {
 
 router.get("/staff", async (req, res) => {
   try {
-    const [rows] = await db.execute(`
+    const { rows } = await db.query(`
       SELECT 
         user_id,
         user_name,
@@ -198,7 +199,7 @@ router.get("/staff", async (req, res) => {
         user_email_active,
         created_at,
         updated_at
-      FROM user
+      FROM "user"
       WHERE deleted_at IS NULL AND user_role = 'staff'
       ORDER BY created_at DESC
     `);
@@ -224,24 +225,24 @@ router.get("/staff", async (req, res) => {
   }
 });
 
-router.get("/admin/:id", async (req, res) => {
+router.get("/admin/:id", verifyToken, isAdmin, async (req, res) => {
   try {
     const userId = Number(req.params.id);
     if (isNaN(userId)) {
       return res.status(400).json({ error: "ID không hợp lệ" });
     }
 
-    const [users] = await db.query(
+    const { rows: users } = await db.query(
       `
       SELECT
         u.user_id, u.user_name, u.user_gmail, u.user_number, u.user_image, u.user_address,
         u.user_role, u.user_gender, u.user_birth, u.user_email_active, u.user_verified_at, u.user_disabled_at,
         u.created_at, u.updated_at,
-        COUNT(CASE WHEN o.current_status = 'SUCCESS' THEN 1 END) AS total_success_orders,
-        COUNT(CASE WHEN o.current_status = 'CANCELLED' THEN 1 END) AS total_cancelled_orders
-      FROM user u
+        COUNT(CASE WHEN o.order_status = 4 THEN 1 END) AS total_success_orders,
+        COUNT(CASE WHEN o.order_status = -1 THEN 1 END) AS total_cancelled_orders
+      FROM "user" u
       LEFT JOIN orders o ON u.user_id = o.user_id
-      WHERE u.user_id = ? AND u.deleted_at IS NULL
+      WHERE u.user_id = $1 AND u.deleted_at IS NULL
       GROUP BY u.user_id
     `,
       [userId]
@@ -297,7 +298,7 @@ router.get("/admin/:id", async (req, res) => {
 //         return res.status(400).json({ error: "ID không hợp lệ" });
 //       }
 
-//       const [existingUsers] = await db.query(
+//       const { rows: existingUsers } = await db.query(
 //         "SELECT user_role, user_image, user_name, user_number, user_gender, user_birth, user_address, user_email_active, user_verified_at, user_disabled_at FROM user WHERE user_id = ?",
 //         [userId]
 //       );
@@ -377,7 +378,7 @@ router.get("/admin/:id", async (req, res) => {
 //         imageUrl = existingUser.user_image || null;
 //       }
 
-//       const [updateResult] = await db.query(
+//       const { rowCount } = await db.query(
 //         `UPDATE user SET
 //          user_name = ?,
 //          user_number = ?,
@@ -412,7 +413,7 @@ router.get("/admin/:id", async (req, res) => {
 //         ]
 //       );
 
-//       if (updateResult.affectedRows === 0) {
+//       if (rowCount === 0) {
 //         return res.status(404).json({
 //           error:
 //             "Không tìm thấy người dùng hoặc không có thay đổi nào được thực hiện.",
@@ -428,6 +429,7 @@ router.get("/admin/:id", async (req, res) => {
 router.put(
   "/admin/:id",
   verifyToken,
+  isAdmin,
   upload.single("image"),
   async (req, res) => {
     try {
@@ -436,8 +438,8 @@ router.put(
         return res.status(400).json({ error: "ID không hợp lệ" });
       }
 
-      const [existingUsers] = await db.query(
-        "SELECT user_role, user_image, user_name, user_number, user_gender, user_birth, user_address, user_verified_at, user_disabled_at FROM user WHERE user_id = ?",
+      const { rows: existingUsers } = await db.query(
+        "SELECT user_role, user_image, user_name, user_number, user_gender, user_birth, user_address, user_verified_at, user_disabled_at FROM \"user\" WHERE user_id = $1",
         [userId]
       );
 
@@ -515,19 +517,19 @@ router.put(
         imageUrl = existingUser.user_image || null;
       }
 
-      const [updateResult] = await db.query(
-        `UPDATE user SET
-          user_name = ?,
-          user_number = ?,
-          user_gender = ?,
-          user_birth = ?,
-          user_role = ?,
-          user_address = ?,
-          user_verified_at = ?,
-          user_disabled_at = ?,
-          user_image = ?,
+      const { rows: updateResult, rowCount } = await db.query(
+        `UPDATE "user" SET
+          user_name = $1,
+          user_number = $2,
+          user_gender = $3,
+          user_birth = $4,
+          user_role = $5,
+          user_address = $6,
+          user_verified_at = $7,
+          user_disabled_at = $8,
+          user_image = $9,
           updated_at = NOW()
-        WHERE user_id = ?`,
+        WHERE user_id = $10`,
         [
           user_name !== undefined ? user_name : existingUser.user_name,
           user_number !== undefined ? user_number : existingUser.user_number,
@@ -546,7 +548,7 @@ router.put(
         ]
       );
 
-      if (updateResult.affectedRows === 0) {
+      if (rowCount === 0) {
         return res.status(404).json({
           error:
             "Không tìm thấy người dùng hoặc không có thay đổi nào được thực hiện.",
@@ -564,7 +566,7 @@ router.put(
  * @desc    Lấy thông tin người dùng theo ID
  * @access  Private
  */
-router.get("/:id", async (req, res) => {
+router.get("/:id", verifyToken, async (req, res) => {
   try {
     const userId = Number(req.params.id);
 
@@ -579,9 +581,9 @@ router.get("/:id", async (req, res) => {
         .json({ error: "You do not have permission to view this user" });
     }
 
-    const [users] = await db.query(
+    const { rows: users } = await db.query(
       `SELECT user_id, user_gmail, user_name, user_number, user_address, user_role, created_at, updated_at 
-       FROM user WHERE user_id = ?`,
+       FROM "user" WHERE user_id = $1`,
       [userId]
     );
 
@@ -630,8 +632,8 @@ router.put("/:id", verifyToken, async (req, res) => {
     const { full_name, phone, address, password, role } = req.body;
 
     // Kiểm tra người dùng tồn tại
-    const [existingUser] = await db.query(
-      "SELECT * FROM user WHERE user_id = ?",
+    const { rows: existingUser } = await db.query(
+      "SELECT * FROM \"user\" WHERE user_id = $1",
       [userId]
     );
 
@@ -662,37 +664,48 @@ router.put("/:id", verifyToken, async (req, res) => {
     }
 
     // Cập nhật thông tin người dùng
-    await db.query(
-      `UPDATE user SET
-        user_name = ?,
-        user_number = ?,
-        user_address = ?,
-        ${password ? "user_password = ?," : ""}
-        user_role = ?,
-        updated_at = NOW()
-      WHERE user_id = ?`,
-      password
-        ? [
-            updateData.user_name,
-            updateData.user_number,
-            updateData.user_address,
-            updateData.user_password,
-            updateData.user_role,
-            userId,
-          ]
-        : [
-            updateData.user_name,
-            updateData.user_number,
-            updateData.user_address,
-            updateData.user_role,
-            userId,
-          ]
-    );
+    if (password) {
+      await db.query(
+        `UPDATE "user" SET
+          user_name = $1,
+          user_number = $2,
+          user_address = $3,
+          user_password = $4,
+          user_role = $5,
+          updated_at = NOW()
+        WHERE user_id = $6`,
+        [
+          updateData.user_name,
+          updateData.user_number,
+          updateData.user_address,
+          updateData.user_password,
+          updateData.user_role,
+          userId,
+        ]
+      );
+    } else {
+      await db.query(
+        `UPDATE "user" SET
+          user_name = $1,
+          user_number = $2,
+          user_address = $3,
+          user_role = $4,
+          updated_at = NOW()
+        WHERE user_id = $5`,
+        [
+          updateData.user_name,
+          updateData.user_number,
+          updateData.user_address,
+          updateData.user_role,
+          userId,
+        ]
+      );
+    }
 
     // Lấy thông tin người dùng đã cập nhật
-    const [updatedUser] = await db.query(
+    const { rows: updatedUser } = await db.query(
       `SELECT user_id, user_gmail, user_name, user_number, user_address, user_role, created_at, updated_at 
-       FROM user WHERE user_id = ?`,
+       FROM "user" WHERE user_id = $1`,
       [userId]
     );
 
@@ -722,7 +735,7 @@ router.put("/:id", verifyToken, async (req, res) => {
  * @desc    Xóa người dùng
  * @access  Private (Admin)
  */
-router.delete("/:id", isAdmin, async (req, res) => {
+router.delete("/:id", verifyToken, isAdmin, async (req, res) => {
   try {
     const userId = Number(req.params.id);
 
@@ -731,8 +744,8 @@ router.delete("/:id", isAdmin, async (req, res) => {
     }
 
     // Kiểm tra người dùng tồn tại
-    const [existingUser] = await db.query(
-      "SELECT * FROM user WHERE user_id = ?",
+    const { rows: existingUser } = await db.query(
+      "SELECT * FROM \"user\" WHERE user_id = $1",
       [userId]
     );
 
@@ -746,8 +759,8 @@ router.delete("/:id", isAdmin, async (req, res) => {
     }
 
     // Kiểm tra xem người dùng có đơn hàng không
-    const [orders] = await db.query(
-      "SELECT order_id FROM `orders` WHERE user_id = ? LIMIT 1",
+    const { rows: orders } = await db.query(
+      "SELECT order_id FROM orders WHERE user_id = $1 LIMIT 1",
       [userId]
     );
 
@@ -755,7 +768,7 @@ router.delete("/:id", isAdmin, async (req, res) => {
       // Nếu có đơn hàng, đánh dấu là không hoạt động thay vì xóa
       // Giả sử có cột user_email_active làm dấu hiệu cho hoạt động
       await db.query(
-        "UPDATE user SET user_email_active = 0 WHERE user_id = ?",
+        "UPDATE \"user\" SET user_email_active = false WHERE user_id = $1",
         [userId]
       );
       return res.json({
@@ -765,11 +778,11 @@ router.delete("/:id", isAdmin, async (req, res) => {
     }
 
     // Xóa các bản ghi liên quan
-    await db.query("DELETE FROM wishlist WHERE user_id = ?", [userId]);
-    await db.query("DELETE FROM comment WHERE user_id = ?", [userId]);
+    await db.query("DELETE FROM wishlist WHERE user_id = $1", [userId]);
+    await db.query("DELETE FROM comment WHERE user_id = $1", [userId]);
 
     // Xóa người dùng
-    await db.query("DELETE FROM user WHERE user_id = ?", [userId]);
+    await db.query("DELETE FROM \"user\" WHERE user_id = $1", [userId]);
 
     res.json({ message: "User deleted successfully" });
   } catch (error) {
@@ -782,7 +795,7 @@ router.delete("/:id", isAdmin, async (req, res) => {
  * @desc    Lấy danh sách đơn hàng của người dùng
  * @access  Private
  */
-router.get("/:id/orders", async (req, res) => {
+router.get("/:id/orders", verifyToken, async (req, res) => {
   try {
     const userId = Number(req.params.id);
 
@@ -798,8 +811,8 @@ router.get("/:id/orders", async (req, res) => {
     }
 
     // Kiểm tra người dùng tồn tại
-    const [existingUser] = await db.query(
-      "SELECT user_id FROM user WHERE user_id = ?",
+    const { rows: existingUser } = await db.query(
+      "SELECT user_id FROM \"user\" WHERE user_id = $1",
       [userId]
     );
 
@@ -808,14 +821,21 @@ router.get("/:id/orders", async (req, res) => {
     }
 
     // Lấy danh sách đơn hàng
-    const [orders] = await db.query(
+    const { rows: orders } = await db.query(
       `
-      SELECT 
+      SELECT
         o.*,
-        os.order_status_name as status_name
-      FROM \`orders\` o
-      LEFT JOIN order_status os ON o.order_status_id = os.order_status_id
-      WHERE o.user_id = ?
+        CASE o.order_status
+          WHEN -1 THEN 'cancelled'
+          WHEN 0 THEN 'pending'
+          WHEN 1 THEN 'confirmed'
+          WHEN 2 THEN 'shipping'
+          WHEN 3 THEN 'delivered'
+          WHEN 4 THEN 'completed'
+          ELSE 'unknown'
+        END AS status_name
+      FROM orders o
+      WHERE o.user_id = $1
       ORDER BY o.created_at DESC
     `,
       [userId]
@@ -824,11 +844,13 @@ router.get("/:id/orders", async (req, res) => {
     // Lấy chi tiết cho mỗi đơn hàng
     for (let i = 0; i < orders.length; i++) {
       // Lấy thông tin thanh toán
-      const [payments] = await db.query(
+      const { rows: payments } = await db.query(
         `
-        SELECT * FROM payment WHERE order_id = ?
+        SELECT *
+        FROM payments
+        WHERE payment_id = $1
       `,
-        [orders[i].order_id]
+        [orders[i].payment_id]
       );
 
       if (payments.length > 0) {
@@ -836,15 +858,21 @@ router.get("/:id/orders", async (req, res) => {
       }
 
       // Lấy thông tin các sản phẩm trong đơn hàng
-      const [orderItems] = await db.query(
+      const { rows: orderItems } = await db.query(
         `
         SELECT 
           oi.*,
+          vp.variant_product_price,
+          vp.variant_product_price_sale,
+          vp.variant_product_slug,
+          vp.variant_product_list_image,
+          p.product_id,
           p.product_name,
           p.product_image
         FROM order_items oi
-        LEFT JOIN product p ON oi.product_id = p.product_id
-        WHERE oi.order_id = ?
+        LEFT JOIN variant_product vp ON oi.variant_id = vp.variant_id
+        LEFT JOIN product p ON vp.product_id = p.product_id
+        WHERE oi.order_id = $1
       `,
         [orders[i].order_id]
       );
@@ -864,7 +892,7 @@ router.get("/:id/orders", async (req, res) => {
  * @desc    Lấy danh sách wishlist của người dùng
  * @access  Private
  */
-router.get("/:id/wishlist", async (req, res) => {
+router.get("/:id/wishlist", verifyToken, async (req, res) => {
   try {
     const userId = Number(req.params.id);
 
@@ -880,18 +908,37 @@ router.get("/:id/wishlist", async (req, res) => {
     }
 
     // Lấy danh sách wishlist với thông tin sản phẩm
-    const [wishlist] = await db.query(
+    const { rows: wishlist } = await db.query(
       `
       SELECT 
         w.wishlist_id,
         w.created_at,
         w.updated_at,
+        vp.variant_id,
+        vp.variant_product_quantity,
+        vp.variant_product_price,
+        vp.variant_product_price_sale,
+        vp.variant_product_slug,
+        vp.variant_product_list_image,
         p.*,
-        (SELECT COUNT(*) FROM comment WHERE product_id = p.product_id) as comment_count,
-        (SELECT AVG(comment_rating) FROM comment WHERE product_id = p.product_id) as average_rating
+        (
+          SELECT COUNT(*)
+          FROM comment c
+          JOIN order_items oi ON c.order_item_id = oi.order_item_id
+          JOIN variant_product cvp ON oi.variant_id = cvp.variant_id
+          WHERE cvp.product_id = p.product_id
+        ) AS comment_count,
+        (
+          SELECT AVG(c.comment_rating)
+          FROM comment c
+          JOIN order_items oi ON c.order_item_id = oi.order_item_id
+          JOIN variant_product cvp ON oi.variant_id = cvp.variant_id
+          WHERE cvp.product_id = p.product_id
+        ) AS average_rating
       FROM wishlist w
-      JOIN product p ON w.product_id = p.product_id
-      WHERE w.user_id = ?
+      JOIN variant_product vp ON w.variant_id = vp.variant_id
+      JOIN product p ON vp.product_id = p.product_id
+      WHERE w.user_id = $1
       ORDER BY w.created_at DESC
     `,
       [userId]
@@ -908,7 +955,7 @@ router.get("/:id/wishlist", async (req, res) => {
  * @desc    Lấy danh sách đánh giá sản phẩm của người dùng
  * @access  Private
  */
-router.get("/:id/reviews", async (req, res) => {
+router.get("/:id/reviews", verifyToken, async (req, res) => {
   try {
     const userId = Number(req.params.id);
 
@@ -924,16 +971,20 @@ router.get("/:id/reviews", async (req, res) => {
     }
 
     // Lấy danh sách đánh giá với thông tin sản phẩm
-    const [reviews] = await db.query(
+    const { rows: reviews } = await db.query(
       `
       SELECT 
         c.*,
+        oi.order_id,
+        oi.variant_id,
         p.product_name,
         p.product_image,
-        p.product_price
+        COALESCE(vp.variant_product_price_sale, vp.variant_product_price) AS product_price
       FROM comment c
-      JOIN product p ON c.product_id = p.product_id
-      WHERE c.user_id = ?
+      JOIN order_items oi ON c.order_item_id = oi.order_item_id
+      JOIN variant_product vp ON oi.variant_id = vp.variant_id
+      JOIN product p ON vp.product_id = p.product_id
+      WHERE c.user_id = $1
       ORDER BY c.created_at DESC
     `,
       [userId]
